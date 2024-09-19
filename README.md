@@ -6,7 +6,9 @@
 
 当前各个DUT的验证状态，包括功能点个数、代码行覆盖率、Bug数等。
 
+<a href="https://open-verify.cc/UnityChipForXiangShan/chart/meta.html">
 <img src="docs/snapshot/chart_meta.png" alt="meta" style="max-width: 900px; width: 90%; height: auto;">
+</a>
 
 总体目标进展与当前文档请查看 [https://open-verify.cc/UnityChipForXiangShan/](https://open-verify.cc/UnityChipForXiangShan/)
 
