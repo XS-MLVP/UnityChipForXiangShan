@@ -8,7 +8,7 @@
 
 <img src="web/snapshot/chart_meta.png" alt="meta" style="max-width: 900px; width: 90%; height: auto;">
 
-总体目标进展与当前文档请查看 [https://url](https://url)
+总体目标进展与当前文档请查看 [https://open-verify.cc/UnityChipForXiangShan/](https://open-verify.cc/UnityChipForXiangShan/)
 
 **注：本项目中的的统计信息每周根据commit、issue等数据自动更新**
 
