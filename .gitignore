@@ -8,6 +8,7 @@ __pycache__/
 out/
 dut/*
 !dut/__init__.py
+documents/public/
 
 # C extensions
 *.so
