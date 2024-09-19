@@ -1,0 +1,10 @@
+
+<div class="highlight">
+    {{ $languages := split .Params.languages "," }}
+    <div style="background-color: #f0f0f0; display: flex; justify-content: flex-end; gap: 5px; padding-right: 5px">
+        {{ range $languages }}
+            <a name="multi-lang-toggle" style="font-size: 12px;" lang='{{ . }}' href="javascript://">{{ . | title }}</a>
+        {{ end }}
+    </div>
+    {{ .Inner | safeHTML }}
+</div>

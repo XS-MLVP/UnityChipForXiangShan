@@ -2,6 +2,12 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.hugo_build.lock
+
+# results
+out/
+dut/*
+!dut/__init__.py
 
 # C extensions
 *.so

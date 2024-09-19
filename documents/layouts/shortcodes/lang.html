@@ -1,0 +1,8 @@
+{{ $show := "none" }}
+{{ $lang := "" }}
+{{ if .Params }}
+  {{ $show = .Params.show | default "none" }}
+  {{ $lang = .Params.lang | default "" }}
+{{ end }}
+{{ $data := trim .Inner " \t\n\r" }}
+<pre name="group-lang-code-{{$lang}}" class="language-{{$lang}} line-numbers" style="display:{{ $show }};"><code class="language-{{$lang}}">{{$data|safeHTML}}</code></pre>
