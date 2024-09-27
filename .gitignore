@@ -9,6 +9,8 @@ out/
 dut/*
 !dut/__init__.py
 documents/public/
+rtl/*
+!rtl/README.md
 
 # C extensions
 *.so
