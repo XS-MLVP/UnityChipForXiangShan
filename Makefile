@@ -34,7 +34,7 @@ dut_all:
 rtl:
 	@RLT_DOWNLOAD_URL="";\
 	if [ -L rtl/rtl ] && [ -e rtl/rtl ]; then \
-		echo "RTL already exists"; \
+		echo "RTL already exists. Please delete the rtl directories manually."; \
 	else \
 		if [ "$(target)" ]; then \
 			RLT_DOWNLOAD_URL="$(RLT_DOWNLOAD_URL_BASE)$(target)"; \
