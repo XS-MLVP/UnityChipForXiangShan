@@ -33,13 +33,15 @@
 
 总体进展与文档请查看 [https://open-verify.cc/UnityChipForXiangShan/](https://open-verify.cc/UnityChipForXiangShan/)
 
-- **待验证DUT列表：**[https://open-verify.cc/UnityChipForXiangShan/todolist](https://open-verify.cc/UnityChipForXiangShan/todolist)
-- **DUT文档与功能：**[https://open-verify.cc/UnityChipForXiangShan/duts](https://open-verify.cc/UnityChipForXiangShan/TBD)
-- **待确认bug列表：**[https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bugx](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bugc)
-- **已发现bug列表：**[https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bug](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bug)
-- **已修复bug列表：**[https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bugfixed](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bugfixed)
-- **正在进行的任务列表：**[https://github.com/XS-MLVP/UnityChipForXiangShan/labels/task](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/task)
-- **已完成的任务列表：**[https://github.com/XS-MLVP/UnityChipForXiangShan/labels/taskdone](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/taskdone)
+其他内容快捷连接：
+
+- **[待验证DUT列表](https://open-verify.cc/UnityChipForXiangShan/todolist)**
+- **[DUT文档与功能](https://open-verify.cc/UnityChipForXiangShan/TBD)**
+- **[待确认bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bugc)**
+- **[已发现bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bug)**
+- **[已修复bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bugfixed)**
+- **[正在进行的任务列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/task)**
+- **[已完成的任务列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/taskdone)**
 
 注：本项目中的统计信息根据commit、issue等数据自动更新，参与者可以提交issue（写明任务内容，预计完成时间等）同步正在进行的任务。
 
