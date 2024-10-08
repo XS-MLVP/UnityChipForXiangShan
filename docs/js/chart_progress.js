@@ -70,7 +70,7 @@ function show_progress_chart(chart_id, data_url) {
       },
       series: [
         {
-          name: graph_data["name"],
+          name: graph_data["tree"]["name"],
           type: 'treemap', // sunburst treemap
           visibleMin: 300,
           label: {
@@ -133,7 +133,7 @@ function show_progress_chart(chart_id, data_url) {
             borderColor: '#fff'
           },
           levels: getLevelOption(),
-          data: graph_data["children"],
+          data: graph_data["tree"]["children"],
         }
       ]
     };

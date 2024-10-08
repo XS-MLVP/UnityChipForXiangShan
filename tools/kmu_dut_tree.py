@@ -298,4 +298,6 @@ if __name__ == "__main__":
     dut_tree.update_leaf_meta({"/kmh_dut/misc/mmio": {"cases": {"total": 10, "pass": 12, "fail": 0, "skip": 0}},
                                "/kmh_dut/mem_block/ptw": {"cases": {"total": 10, "pass": 6, "fail": 2, "skip": 2}},
                                })
-    print(dut_tree.as_json())
+    print(dut_tree.export_echart_jsondata(
+        ["bpu", "rename", "dispatch_queue", "scheduler", "exu_block", "lsq", "v_mem"]
+    ))

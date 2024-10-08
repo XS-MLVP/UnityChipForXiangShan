@@ -99,9 +99,10 @@ class DutTree(object):
     def from_json(self, json_str):
         self.tree = json.loads(json_str)
     
-    def update_leaf_meta(self, meta_path_values: dict):
+    def update_leaf_meta(self, meta_path_values: dict, update=True):
         # get all nodes mapping to meta_path_values
-        update_dut_tree_node_meta(self.tree)
+        if update:
+            update_dut_tree_node_meta(self.tree)
         leaf_map = {}
         def seek_leaf_node(node):
             if "children" not in node:
@@ -120,3 +121,53 @@ class DutTree(object):
             if total > 0:
                 leaf_map[path]["itemStyle"]["colorAlpha"] = min(1.0, float(total)/10.0)
                 leaf_map[path]["meta"]["light"] = total >= 10
+
+    def export_nodes_as_list(self, node_names=[], update=True):
+        if update:
+            update_dut_tree_node_meta(self.tree)
+        info_list = []
+        def seek_leaf_node(node):
+            if node["name"] in node_names or "children" not in node:
+                # get info: name, cases(total, pass, fail, skip), functions (covered/total), lines (covered/total)
+                info_list.append({
+                    "name": node["name"] + ("-*" if "children" in node else ""),
+                    "cases": node["meta"]["cases"],
+                    "functions": node["meta"]["functions"],
+                    "lines": node["meta"]["lines"],
+                })
+            else:
+                for child in node["children"]:
+                    seek_leaf_node(child)
+        seek_leaf_node(self.tree)
+        return info_list
+
+    def export_echart_jsondata(self, node_names=[]):
+        update_dut_tree_node_meta(self.tree)
+        node_list = self.export_nodes_as_list(node_names, False)
+        list_data = {
+            "names": [],
+            "series": [],
+        }
+        for se in [("passed cases", "cases", lambda x:x["cases"]["pass"]),
+                   ("failed cases", "cases", lambda x:x["cases"]["fail"]),
+                   ("skiped cases", "cases", lambda x:x["cases"]["skip"]),
+                   ("function covered", "function", lambda x:x["functions"]["cover"]),
+                   ("function un-covered", "function", lambda x:x["functions"]["total"]-x["functions"]["cover"]),
+                   ("line-coverage-rate(%)","", lambda x: 100*x["lines"]["cover"]/x["lines"]["total"] if x["lines"]["total"] > 0 else 0)]:
+            data = {
+                "name": se[0],
+                "type": "bar",
+                "data": []
+            }
+            if se[1]:
+                data["stack"] = se[1]
+            name_empty = list_data["names"] == []
+            for node in node_list:
+                data["data"].append(se[2](node))
+                if name_empty:
+                    list_data["names"].append(node["name"])
+            list_data["series"].append(data)
+        return json.dumps({
+            "list": list_data,
+            "tree": self.tree
+        }, indent=4)
