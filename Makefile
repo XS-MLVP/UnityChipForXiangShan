@@ -59,3 +59,6 @@ rtl:
         fi;\
 		ln -s $$RTL_DIR rtl/rtl;\
 	fi;\
+
+doc:
+	cd documents && hugo server

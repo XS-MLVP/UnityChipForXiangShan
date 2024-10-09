@@ -2,7 +2,7 @@
 
 中文|[English](/README.en.md)
 
-本项目旨在通过开源众包的方式对[香山处理器](https://github.com/OpenXiangShan/XiangShan)的昆明湖架构进行单元（UT）验证。该项目选择Python作为主要的验证语言，参与验证你将学习到以下内容：
+本项目旨在通过开源众包的方式对[香山处理器](https://github.com/OpenXiangShan/XiangShan)的昆明湖架构进行单元（Unit Test）验证。该项目选择Python作为主要的验证语言，参与验证你将学习到以下内容：
 
 1. **电路的运行特性**：从软件的角度观察电路的运行特性，深入了解电路设计的原理。
 2. **高性能处理器设计**：学习Chisel硬件描述语言，研读相关代码和论文，掌握最新的架构设计理念。
@@ -25,25 +25,19 @@
 
 #### 验证进度
 
-当前各个DUT的验证状态，包括功能点个数、代码行覆盖率、Bug数等。
+当前各个DUT的验证状态，包括功能点个数、代码行覆盖率、Bug数等，请查看 [https://open-verify.cc/UnityChipForXiangShan/](https://open-verify.cc/UnityChipForXiangShan/)。
 
-<a href="https://open-verify.cc/UnityChipForXiangShan/chart/meta.html">
-<img src="/docs/snapshot/chart_meta.png" alt="meta" style="max-width: 900px; width: 90%; height: auto;">
-</a>
-
-总体进展与文档请查看 [https://open-verify.cc/UnityChipForXiangShan/](https://open-verify.cc/UnityChipForXiangShan/)
 
 其他内容快捷连接：
 
-- **[待验证DUT列表](https://open-verify.cc/UnityChipForXiangShan/todolist)**
-- **[DUT文档与功能](https://open-verify.cc/UnityChipForXiangShan/TBD)**
+- **[DUT文档与功能](https://open-verify.cc/UnityChipForXiangShan/)**
 - **[待确认bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bugc)**
 - **[已发现bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bug)**
 - **[已修复bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bugfixed)**
 - **[正在进行的任务列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/task)**
 - **[已完成的任务列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/taskdone)**
 
-注：本项目中的统计信息根据commit、issue等数据自动更新，参与者可以提交issue（写明任务内容，预计完成时间等）同步正在进行的任务。
+注：本项目中的统计信息根据commit等数据自动更新，参与者可以提交issue（写明任务内容，预计完成时间等）同步正在进行的任务。
 
 ### 准备环境
 
@@ -80,12 +74,12 @@ make rtl target=2024092701/openxiangshan-kmh-97e37a2237-24092701.tar.gz
 # 调用scripts目录中的Makefile.build_ut_<name>，创建待验证的Python版DUT
 make dut target=<name>
 # 例如：
-make dut target=backend_decode
+make dut target=backend_ctrlblock_decode
 # 调用scripts目录中所有的Makefile.build_ut_*文件，创建所有DUT。
 make dut_all
 ```
 
-以`make dut target=backend_decode`为例，命令执行完成后，会在dut目录下生成对应的Python包：
+以`make dut target=backend_ctrlblock_decode`为例，命令执行完成后，会在dut目录下生成对应的Python包：
 
 ```
 dut/
@@ -121,11 +115,13 @@ make test target=ut_backend/ut_decode
 
 添加一个全新的DUT测试用例，需要完成以下三部分内容：
 
-1. **添加编译脚本**： 在`scripts`目录下编写对应的`rtl`到`python`的编译`Makefile`文件（例如Makefile.build_ut_**backend_decode**，必须以`Makefile.build_ut_`开头）以及对应的目录（目录中包含必要的输入文件，例如`rtl`的`filelist`，需要导出的内部信号等）。
-1. **添加测试用例**： 在对应的`ut_*`目录中创建对应的`python`模块（例如`ut_backend/ut_decode`）,在该模块中需要包含以`test_*.py`的测试用例。测试用例的编写方法请参考[Pytest官方文档](https://docs.pytest.org/en/stable/)。
-1. **添加依赖模块**： 如果有需要的话，可以在`tools、comm`等模块中添加该DUT测试需要的基础工具。如果该工具不够通用请添加到对应的`ut_`模块中，且不能以`test_`前缀进行命名（例如参考模型可以是`ut_backend/ut_xxx/reference.py`）
+1. **添加编译脚本**： 在`scripts`目录下编写对应的`rtl`到`python`的编译`Makefile`文件（例如Makefile.build_ut_**backend_ctrlblock_decode**，必须以`Makefile.build_ut_`开头）以及对应的目录（目录中包含必要的输入文件，例如`rtl`的`filelist`，需要导出的内部信号等）。
+1. **添加测试用例**： 在对应的`ut_*`目录中创建对应的`python`模块（例如`ut_backend/ctrl_block/decode`）,在该模块中需要包含以`test_*.py`的测试用例。用例的目录结构请按照[昆明湖层级架构图](https://open-verify.cc/UnityChipForXiangShan/)进行添加，以确保收集测试结果时能与层级图对应。测试用例的编写方法请参考[Pytest官方文档](https://docs.pytest.org/en/stable/)。
+1. **添加依赖模块**： 如果有需要的话，可以在`tools、comm`等模块中添加该DUT测试需要的基础工具。如果该工具不够通用请添加到对应的`ut_`模块中，且不能以`test_`前缀进行命名（例如参考模型可以是`ut_backend/ctrl_block/decode/reference.py`）
 
 如果是在已有的DUT测试中增加内容，按原有目录结构添加即可。
+
+*目录或文件名称需要合理，能通过其命名知晓其具体含义。
 
 如何通过picker和mlvp库进行Python芯片验证，请参考：[https://open-verify.cc/mlvp/docs](https://open-verify.cc/mlvp/docs)
 
@@ -163,15 +159,24 @@ Web Server is available at //localhost:1313/ (bind address 127.0.0.1)
 ├── scripts            # DUT转Python的编译脚本
 ├── tools              # 公共工具模块
 ├── ut_backend         # 后端测试集合
-├── ut_cache           # cache测试集合
 ├── ut_frontend        # 前端测试集合
-├── ut_mem             # 访存测试集合
+├── ut_mem_block       # 访存测试集合
 └── ut_misc            # 其他访存测试集合
 ```
 
 ### 参与本项目
 
 本项目欢迎任何人以`Fork + PR`的方式参与。
+
+若测试过程中发现bug，提交流程如下：
+
+1. 参与者编写测试用例，自测完成后提交PR
+1. 如果发现有未pass的测试，分析bug原因，然后在本仓库提交 issue（关联对应PR），并赋予bugc标签
+1. 香山开放者确认bug，修改标签为bug
+1. 参与者在香山[官方仓库](https://github.com/OpenXiangShan/XiangShan/issues)上提交issue（附上本仓库的issue确认连接）
+
+*请在issue中对bug进行详细描述，方便加速确认
+
 
 万众一芯QQ交流群：
 

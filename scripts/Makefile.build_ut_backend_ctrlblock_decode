@@ -1,0 +1,27 @@
+.PHONY: build
+
+
+_default: build
+
+
+check_rtl:
+	@files="../rtl/rtl/RVCExpander.sv ../rtl/rtl/PreDecode.sv ../rtl/rtl/DecodeStage.sv" ; \
+	for file in $$files; do \
+		file=$$(realpath $$file); \
+		if [ ! -f $$file ]; then \
+			echo "Error: File '$$file' does not exist."; \
+			exit 1; \
+		fi; \
+	done
+
+
+build: check_rtl
+	@if [ ! -d ../dut/rvcexpander ]; then\
+		picker export --cp_lib false ../rtl/rtl/RVCExpander.sv --lang python --tdir ../dut/rvcexpander $(args); \
+	fi
+	@if [ ! -d ../dut/predecode ]; then \
+		picker export --cp_lib false ../rtl/rtl/PreDecode.sv --lang python --tdir ../dut/predecode -w predecode.fst -c $(args); \
+	fi
+	@if [ ! -d ../dut/decodestage ]; then \
+		picker export --cp_lib false ../rtl/rtl/DecodeStage.sv --fs backend_ctrlblock_decode/rtl_files.f --lang python --tdir ../dut/decodestage  -w decode.fst -c $(args); \
+	fi
