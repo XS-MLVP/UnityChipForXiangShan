@@ -72,14 +72,14 @@ def open_log_file(name):
     global log_err_info_file
     # 获取当前时间并格式化
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    output_dir = get_out_dir("decoder/log/")
+    output_dir = get_out_dir("decoder/log/log")
     # 创建文件名
     if name is not None:
-        filename_all = output_dir + f"log_all_{name}.txt"
-        filename_err = output_dir + f"log_err_{name}.txt"
+        filename_all = output_dir + f"_all_{name}.txt"
+        filename_err = output_dir + f"_err_{name}.txt"
     else:
-        filename_all = output_dir + f"log_all_{current_time}.txt"
-        filename_err = output_dir + f"log_err_{current_time}.txt"
+        filename_all = output_dir + f"_all_{current_time}.txt"
+        filename_err = output_dir + f"_err_{current_time}.txt"
 
     log_all_info_file   = open(filename_all, 'w')
     log_all_info_file.close()
