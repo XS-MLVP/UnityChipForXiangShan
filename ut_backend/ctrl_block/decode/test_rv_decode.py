@@ -14,7 +14,7 @@ from comm.insn_gen import *
 from dut.rvcexpander.UT_RVCExpander import *
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-lib_path = os.path.join(current_dir, '..', 'rm', 'disasm', 'build', 'libdisasm.so')
+lib_path = os.path.join(current_dir, '..', '..', '..', 'tools', 'disasm', 'build', 'libdisasm.so')
 
 libdisasm = ctypes.CDLL(lib_path)
 
