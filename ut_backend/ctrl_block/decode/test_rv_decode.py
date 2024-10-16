@@ -10,7 +10,7 @@ from ut_backend.ctrl_block.decode.env.decode_wrapper import DecodeWrapper
 from dut.predecode.UT_PreDecode import *
 from dut.decodestage.UT_DecodeStage import *
 from comm import get_out_dir
-from comm.insn_gen import *
+from tools.insn_gen import *
 from dut.rvcexpander.UT_RVCExpander import *
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -32,6 +32,10 @@ libdisasm.disasm_free_mem.restype = None
 def decoder_fixture(request):
     # before test
     func_name = request.node.name
+    # 如果输出目录不存在则创建
+    output_dir_path = get_out_dir("decoder/log")
+    os.makedirs(output_dir_path, exist_ok=True)
+
     decoder = DecodeWrapper(DUTDecodeStage(
         waveform_filename=get_out_dir("decoder/decode_%s.fst"%func_name),
         coverage_filename=get_out_dir("decoder/decode_%s.dat"%func_name),
@@ -68,7 +72,7 @@ def open_log_file(name):
     global log_err_info_file
     # 获取当前时间并格式化
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    output_dir = get_out_dir("decoder/")
+    output_dir = get_out_dir("decoder/log/")
     # 创建文件名
     if name is not None:
         filename_all = output_dir + f"log_all_{name}.txt"
@@ -215,8 +219,8 @@ def decode_run(decoder, inst_list, need_log_file, log_file_name = None):
 
 # rvc 测试
 def test_rvc_expand():
-    # ref_insts  = generate_rvc_instructions()
-    ref_insts  = generate_random_32bits(1)
+    ref_insts  = generate_rvc_instructions()
+    # ref_insts  = generate_random_32bits(1)
     rvc_expand = DUTRVCExpander()
     rvc_expand.io_in.AsImmWrite()
     mlvp.info("###################### test_rvc_expand ##########################")
@@ -240,8 +244,8 @@ def test_rvc_inst(decoder_fixture):
     mlvp.info("###################### test_rvc_inst ##########################")
     decoder = decoder_fixture
     need_log_file   = True
-    insn_list_temp  = generate_rvc_instructions()
-    # insn_list_temp  = generate_random_32bits(1)
+    # insn_list_temp  = generate_rvc_instructions()
+    insn_list_temp  = generate_random_32bits(1)
     ref_lists       = convert_reference_format(insn_list_temp, True, libdisasm.disasm, libdisasm.disasm_free_mem)
     decode_run(decoder, ref_lists, need_log_file,"test_rvc_inst")
 
