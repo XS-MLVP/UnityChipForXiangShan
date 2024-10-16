@@ -11,6 +11,8 @@
 #
 # See the Mulan PSL v2 for more details.
 #**************************************************************************************/
+import os
+import mlvp
 
 def merge_dict(dict1, dict2):
     """
@@ -29,3 +31,10 @@ def merge_dict(dict1, dict2):
         else:
             dict1[key] = dict2[key]
     return dict1
+
+def get_out_dir(subdir=""):
+    return os.path.abspath(os.path.join(
+        os.path.dirname(__file__), '../out', subdir))
+
+def debug(msg):
+    mlvp.debug(msg)
