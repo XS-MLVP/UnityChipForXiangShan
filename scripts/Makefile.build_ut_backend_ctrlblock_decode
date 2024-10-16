@@ -25,3 +25,4 @@ build: check_rtl
 	@if [ ! -d ../dut/decodestage ]; then \
 		picker export --cp_lib false ../rtl/rtl/DecodeStage.sv --fs backend_ctrlblock_decode/rtl_files.f --lang python --tdir ../dut/decodestage  -w decode.fst -c $(args); \
 	fi
+	$(MAKE) -C ../tools/disasm
