@@ -23,9 +23,10 @@
 
 #### 快速开始
 
-首先通过文档：[准备验证环境](https://open-verify.cc/UnityChipForXiangShan/docs/01_verfiy_env/)，配置基本验证环境，然后运行以下命令：
+参照[准备验证环境文档](https://open-verify.cc/UnityChipForXiangShan/docs/01_verfiy_env/)，配置基本环境，然后运行以下命令：
 
 ```bash
+git clone git@github.com:XS-MLVP/UnityChipForXiangShan.git
 cd UnityChipForXiangShan
 make all
 ```
@@ -34,19 +35,15 @@ make all
 
 1. 下载RTL代码；
 1. 编译所有可用待验模块；
-1. 搜索所有`test_`开头的python文件，执行其中的测试用例
-1. 生成测试报告
+1. 搜索`ut_*`目录中所有`test_`开头的python文件，并运行其中`test_`开头的测试用例
+1. 生成测试报告（测试报告位于out目录）
 1. 更新统计数据（可通过[本地展示文档](#如何本地展示文档)查看统计结果）
-
-更多文档请查看：[https://open-verify.cc/UnityChipForXiangShan](https://open-verify.cc/UnityChipForXiangShan/docs/)
-
 
 #### 如何本地展示文档
 
-按照[文档部署说明](https://github.com/XS-MLVP/UnityChipForXiangShan/blob/main/documents/README.md)配置`hugo`环境，然后执行以下命令：
+按照[文档部署说明](https://github.com/XS-MLVP/UnityChipForXiangShan/blob/main/documents/README.md)配置`hugo`环境，然后执行：
 
 ```bash
-git clone git@github.com:XS-MLVP/UnityChipForXiangShan.git
 cd UnityChipForXiangShan
 make doc
 ```
@@ -61,6 +58,8 @@ Press Ctrl+C to stop
 
 此时，通过浏览器访问提示给出的地址（[http://127.0.0.1:1313](http://127.0.0.1:1313/)）即可。
 
+
+**更多文档与验证进度请查看**：[https://open-verify.cc/UnityChipForXiangShan](https://open-verify.cc/UnityChipForXiangShan/docs/)
 
 #### 万众一芯QQ交流群：
 
