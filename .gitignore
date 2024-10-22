@@ -9,6 +9,7 @@ out/
 dut/*
 !dut/__init__.py
 documents/public/
+documents/resources/_gen/
 rtl/*
 !rtl/README.md
 
