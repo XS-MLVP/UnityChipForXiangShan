@@ -38,3 +38,11 @@ def get_out_dir(subdir=""):
 
 def debug(msg):
     mlvp.debug(msg)
+
+
+def is_full_test():
+    return os.getenv("XS_FULL_TEST") == "1" or os.getenv("XS_FULL_TEST") == "true"
+
+
+def is_short_test():
+    return not is_full_test()
