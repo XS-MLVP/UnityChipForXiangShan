@@ -1,6 +1,7 @@
 .PHONY: dut rtl
 
 export PYTHONPATH := $(shell pwd):$(shell picker --show_xcom_lib_location_python):$(PYTHONPATH)
+export ENABLE_XINFO := 0
 
 RLT_DOWNLOAD_FROM="https://raw.githubusercontent.com/XS-MLVP/UnityChipXiangShanRTLs/refs/heads/main/README.md"
 RLT_DOWNLOAD_URL_BASE="https://github.com/XS-MLVP/UnityChipXiangShanRTLs/releases/download/"
@@ -34,7 +35,7 @@ dut_all:
 rtl:
 	@RLT_DOWNLOAD_URL="";\
 	if [ -L rtl/rtl ] && [ -e rtl/rtl ]; then \
-		echo "RTL already exists. Please delete the rtl directories manually."; \
+		echo "RTL already exists. If you need update, please delete the rtl directories manually."; \
 	else \
 		if [ "$(target)" ]; then \
 			RLT_DOWNLOAD_URL="$(RLT_DOWNLOAD_URL_BASE)$(target)"; \
