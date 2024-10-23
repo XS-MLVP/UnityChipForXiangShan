@@ -1,0 +1,17 @@
+# test default config
+# config load sequence: default.yaml -> ENV args -> user assigned *.yaml -> command line args
+
+rtl:
+  version: latest
+
+test:
+  test-model: "full_test"
+  ignore: []
+  target: ["all"]
+
+report:
+  report-dir: "report"
+
+coverage:
+  coverage-dir: "coverage"
+

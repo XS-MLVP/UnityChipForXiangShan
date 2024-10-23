@@ -28,6 +28,7 @@ Refer to the [Verification Environment Preparation Document](https://open-verify
 ```bash
 git clone git@github.com:XS-MLVP/UnityChipForXiangShan.git
 cd UnityChipForXiangShan
+pip3 install -r requirements.txt
 make all
 ```
 

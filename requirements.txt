@@ -1,0 +1,2 @@
+mlvp@git+https://github.com/XS-MLVP/mlvp@master
+pyyaml>=6.0.1
