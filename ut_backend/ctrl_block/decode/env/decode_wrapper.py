@@ -199,7 +199,7 @@ class DecodeWrapper(mlvp.Bundle):
 def decoder_fixture(request):
     # before test
     func_name = request.node.name
-    # 如果输出目录不存在则创建
+    # If the output directory does not exist, create it
     output_dir_path = get_out_dir("decoder/log")
     os.makedirs(output_dir_path, exist_ok=True)
     decoder = DecodeWrapper(DUTDecodeStage(
@@ -234,10 +234,10 @@ log_err_info_file = None
 def open_log_file(name):
     global log_all_info_file
     global log_err_info_file
-    # 获取当前时间并格式化
+    # Obtain the current time and format it
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     output_dir = get_out_dir("decoder/log/log")
-    # 创建文件名
+    # Create a file name
     if name is not None:
         filename_all = output_dir + f"_all_{name}.txt"
         filename_err = output_dir + f"_err_{name}.txt"
@@ -274,15 +274,18 @@ def write_err_info_to_file(info):
         mlvp.info("remember open_log_file , close_log_file")
 
 
-# 将比较结果写入文件中。
-# ref_value_list[i][0] = 指令十进制显示, ref_value_list[i][1] = 参考结果判断指令是否异常, ref_value_list[i][2] = 指令反汇编结果，ref_value_list[i][3] = 经过RVCExpander 初步初筛是否异常指令。 
-# dut_value_list[i][0] = Decoder输出的指令十进制， dut_value_list[i][1] = Decoder是否判定为异常，dut_value_list[i][2] = Decoder是否判定为复杂指令
+# Write the comparison results to a file
+# ref_value_list[i][0] = Decimal display of instructions, ref_value_list[i][1] = The reference results are used to determine whether the instruction is illegal,
+# ref_value_list[i][2] = Disassembly result of the instruction, ref_value_list[i][3] = Preliminary screening for illegal instructions is conducted through the RVCExpander module
+# dut_value_list[i][0] = Decimal representation of the instructions output by the Decoder module, 
+# dut_value_list[i][1] = The output results from the Decoder are used to determine whether anomalies exist, 
+# dut_value_list[i][2] = The output results from the Decoder are used to determine whether the instruction is a complex instruction
 def comapre_result_in_text(ref_value_list, dut_value_list, num):
     if num == 0:
         return
     else:
         for i in range(num):
-            # 暂时不改为assert，先完善功能。assert 直接停止执行了。
+            # Do not change to assert for now. First, focus on implementing the functionality. Assert directly stops execution.。
             if (ref_value_list[i][2] == 0 or (ref_value_list[i][0] == dut_value_list[i][0])) and (ref_value_list[i][1] == dut_value_list[i][1]):
                 # print("Meets expectations:（￣︶￣）↗")
                 good_info = f"good  ----- ref: {ref_value_list[i][0]}, {ref_value_list[i][1]}, {ref_value_list[i][2]}, {ref_value_list[i][3]}"
@@ -294,8 +297,8 @@ def comapre_result_in_text(ref_value_list, dut_value_list, num):
                 if(ref_value_list[i][2][0] != 'v'):
                     write_err_info_to_file(bad_info)
 
-
-# 对部分能通过指令判断出异常的情况进行过滤，-- 补充参考模型的异常判断情况
+# Filter out certain cases where exception can be identified through instruction itself, 
+# Supplement with the exception detection situation of the reference model.
 def instr_filter(insn_disasm_text):
     instr_opcode = insn_disasm_text.split(' ')[0]
     is_except = 0
@@ -324,7 +327,7 @@ def instr_filter(insn_disasm_text):
     return is_except
 
 
-# 对指令进行反汇编，送入rvc_expand进行压缩指令的译码
+# Disassemble the instruction and send it to the rvc_expand module for decoding of compressed instructions
 def convert_reference_format(ref_insts, need_expand, disasm_func, disasm_free_func, disasm_arg = 0):
     rvc_expand = DUTRVCExpander()
     rvc_expand.io_in.AsImmWrite()
@@ -351,7 +354,7 @@ def convert_reference_format(ref_insts, need_expand, disasm_func, disasm_free_fu
     return inst_list
 
 
-# 主要的测试环境运行逻辑
+# The main part of the test environment
 def decode_run(decoder, inst_list, need_log_file, log_file_name = None):
     if need_log_file == True:
         open_log_file(log_file_name)

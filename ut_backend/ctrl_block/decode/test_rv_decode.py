@@ -11,7 +11,7 @@ from comm.functions import is_short_test
 from dut.rvcexpander.UT_RVCExpander import *
 
 
-# rvc 测试
+# rvc test
 def rvc_expand(full_inst):
     if full_inst:
         ref_insts  = generate_rvc_instructions()
@@ -44,7 +44,7 @@ def test_rvc_expand_full():
     rvc_expand(True)
 
 
-# rvc 测试
+# rvc test, processed by the decoder module
 def test_rvc_inst(decoder_fixture):
     mlvp.info("###################### test_rvc_inst ##########################")
     decoder = decoder_fixture
@@ -55,7 +55,7 @@ def test_rvc_inst(decoder_fixture):
     decode_run(decoder, ref_lists, need_log_file,"test_rvc_inst")
 
 
-# 对指令进行随机测试
+# randomly generate instructions for testing
 def test_rvi_inst(decoder_fixture):
     mlvp.info("###################### test_rvi_inst ##########################")
     decoder = decoder_fixture
@@ -65,7 +65,7 @@ def test_rvi_inst(decoder_fixture):
     decode_run(decoder, ref_lists, need_log_file,"test_rvi_inst")
 
 
-# V扩展指令的测试，实际未使用
+# testing of V extension instructions, which are not actually used
 def test_rv_custom_inst(decoder_fixture):
     mlvp.info("###################### test_rv_custom_inst ##########################")
     decoder = decoder_fixture
