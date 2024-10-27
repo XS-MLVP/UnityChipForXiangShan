@@ -9,6 +9,14 @@ from comm import get_out_dir
 from mlvp.reporter import set_line_coverage
 from dut.rvcexpander.UT_RVCExpander import *
 
+import mlvp.funcov as fc
+from mlvp.reporter import set_func_coverage
+
+g = fc.CovGroup("Group X")
+
+def init_function_coverage(g):
+# Add decoder module test point content: ToDO
+    pass
 
 mlvp.setup_logging(mlvp.ERROR)
 
@@ -198,6 +206,7 @@ class DecodeWrapper(mlvp.Bundle):
 @pytest.fixture()
 def decoder_fixture(request):
     # before test
+    init_function_coverage(g)
     func_name = request.node.name
     # If the output directory does not exist, create it
     output_dir_path = get_out_dir("decoder/log")
@@ -207,6 +216,7 @@ def decoder_fixture(request):
         coverage_filename=get_out_dir("decoder/decode_%s.dat"%func_name),
     ))
     decoder.dut.InitClock("clock")
+    decoder.dut.StepRis(lambda x: g.sample())
     # decoder.dut.io_in_0_valid.AsImmWrite()
     # decoder.dut.io_in_0_bits_instr.AsImmWrite()
     yield decoder
@@ -216,6 +226,8 @@ def decoder_fixture(request):
     if not os.path.exists(coverage_file):
         raise FileNotFoundError(f"File not found: {coverage_file}")
     set_line_coverage(request, coverage_file)
+    set_func_coverage(request, g)
+    g.clear()
 
 
 def comapre_result(ref_value_list, dut_value_list, num):
