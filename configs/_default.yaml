@@ -2,16 +2,17 @@
 # config load sequence: default.yaml -> ENV args -> user assigned *.yaml -> command line args
 
 rtl:
+  base-url: https://raw.githubusercontent.com/XS-MLVP/UnityChipXiangShanRTLs/refs/heads/main/README.md
   version: latest
+  cache-dir: "../rtl"
 
 test:
-  test-model: "full_test"
+  test-model: "full"
   ignore: []
-  target: ["all"]
 
-report:
+output:
+  out-dir: "../out"
   report-dir: "report"
 
-coverage:
-  coverage-dir: "coverage"
-
+log:
+  level: "Debug"
