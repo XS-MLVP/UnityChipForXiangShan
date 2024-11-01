@@ -1,2 +1,3 @@
-mlvp@git+https://github.com/XS-MLVP/mlvp@master
+pytoffee@git+https://github.com/XS-MLVP/toffee@master
+toffee-test@git+https://github.com/XS-MLVP/toffee-test@master
 pyyaml>=6.0.1
