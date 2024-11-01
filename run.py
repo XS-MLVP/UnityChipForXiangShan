@@ -3,7 +3,8 @@
 import os
 import argparse
 import pytest
-from comm import init_cfg, cfg_as_str, error, download_rtl, get_rtl_dir, init_log
+from comm import init_cfg, cfg_as_str, get_rtl_lnk_version, error
+from comm import download_rtl, get_rtl_dir, init_log, init
 
 
 def main():
@@ -23,12 +24,28 @@ def main():
             error("config file not found:", agrs.config)
             return
     cfg = init_cfg(agrs.config, cfg_value)
+    init(cfg)
     if agrs.download_rtl:
         init_log(cfg)
         download_rtl(cfg.rtl.base_url, get_rtl_dir(cfg=cfg), cfg.rtl.version)
         return
+    cfg.unfreeze()
+    link_verison = get_rtl_lnk_version(cfg)
+    if cfg.rtl.version != "latest":
+        assert link_verison == cfg.rtl.version, f"RTL link version ({link_verison}) not equal to config version ({cfg.rtl.version})"
+    else:
+        cfg.rtl.version = link_verison # set current rtl version
+    cfg.freeze()
     cfg_value = cfg_as_str(cfg)
+    # cache global config in pytest
     pytest.global_unitychip_cfg = cfg_value
+    # set toffee config
+    pytest.toffee_current_version = cfg.rtl.version
+    pytest.toffee_skip_tags = cfg.test.skip_tags
+    pytest.toffee_run_tags = cfg.test.run_tags
+    pytest.toffee_skip_cases = cfg.test.skip_cases
+    pytest.toffee_run_cases = cfg.test.run_cases
+    pytest.toffee_ignore_exceptions = cfg.test.skip_exceptions
     pytest.main(append_args, plugins=[__import__(__name__)])
 
 
