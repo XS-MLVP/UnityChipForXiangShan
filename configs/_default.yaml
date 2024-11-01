@@ -7,12 +7,17 @@ rtl:
   cache-dir: "../rtl"
 
 test:
-  test-model: "full"
-  ignore: []
+  skip-tags: ["LONG_TIME_RUN"]
+  run-tags: []
+  skip-cases: []
+  run-cases: []
+  skip-exceptions: []
 
 output:
   out-dir: "../out"
   report-dir: "report"
+  log-dir: "log"
 
 log:
-  level: "Debug"
+  level: "info"
+  log-file: "log-%{node}-%{thread}-%{time}.txt"
