@@ -15,6 +15,7 @@ import os
 import time
 import base64
 import re
+import tarfile
 import requests
 from .logger import warning, debug
 from .cfg import get_config
@@ -84,12 +85,13 @@ def use_rtl(rtl_file, out_dir):
     rtl_dir = os.path.join(out_dir, dir_name)
     if not os.path.exists(rtl_dir):
         debug("Extract %s to %s" % (rtl_path, out_dir))
-        assert os.system(f"tar -xvf {rtl_path} -C {out_dir}")==0, "Extract RTL failed"
+        with tarfile.open(rtl_path, "r:gz") as tar:
+            tar.extractall(path=rtl_dir)
     lnk_file = os.path.join(out_dir, "rtl")
     if os.path.exists(lnk_file):
         debug("Remove old link %s" % lnk_file)
         os.remove(lnk_file)
-    os.symlink(rtl_dir, lnk_file)
+    os.symlink(os.path.join(rtl_dir,"rtl"), lnk_file)
 
 
 def download_rtl(base_url, out_dir, version="latest"):
