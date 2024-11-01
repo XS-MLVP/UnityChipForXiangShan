@@ -1,13 +1,12 @@
 #coding=utf8
 
-import mlvp
 import ctypes
 from ut_backend.ctrl_block.decode.env.decode_wrapper import *
 from dut.predecode.UT_PreDecode import *
 from dut.decodestage.UT_DecodeStage import *
 from tools.insn_gen import *
 from tools.disasm import libdisasm
-from comm.functions import is_short_test
+from comm import TAG_LONG_TIME_RUN, debug
 from dut.rvcexpander.UT_RVCExpander import *
 
 
@@ -19,7 +18,7 @@ def rvc_expand(full_inst):
         ref_insts  = generate_random_32bits(1)
     rvc_expand = DUTRVCExpander()
     rvc_expand.io_in.AsImmWrite()
-    mlvp.info("###################### test_rvc_expand ##########################")
+    debug("###################### test_rvc_expand ##########################")
     for insn in ref_insts:
         c_void_ptr = libdisasm.disasm(ctypes.c_uint64(insn))
         insn_disasm = ctypes.cast(c_void_ptr, ctypes.c_char_p).value.decode('utf-8')
@@ -30,23 +29,24 @@ def rvc_expand(full_inst):
         instr_ex    = rvc_expand.io_ill.value
         instr_bits  = rvc_expand.io_out_bits.value
         if (insn_disasm == "unknown") and  (instr_ex == 0):
-            mlvp.info(f"--- bad --- inst:{insn}, ref: 1, dut: 0")
+            debug(f"--- bad --- inst:{insn}, ref: 1, dut: 0")
         elif (insn_disasm != "unknown") and  (instr_ex == 1):
-            mlvp.info(f"--- bad --- inst:{insn}, ref: 0, dut: 1")
+            debug(f"--- bad --- inst:{insn}, ref: 0, dut: 1")
 
 
 def test_rvc_expand():
     rvc_expand(False)
 
 
-@pytest.mark.skipif(is_short_test(), reason="Ignore run long execution times test in short test mode.")
+@pytest.mark.toffee_tags(TAG_LONG_TIME_RUN)
 def test_rvc_expand_full():
     rvc_expand(True)
 
 
 # rvc test, processed by the decoder module
+@pytest.mark.toffee_tags(version="openxiangshan-kmh-97e37a2237-24092702 < openxiangshan-kmh-97e37a2237-24092703")
 def test_rvc_inst(decoder_fixture):
-    mlvp.info("###################### test_rvc_inst ##########################")
+    debug("###################### test_rvc_inst ##########################")
     decoder = decoder_fixture
     need_log_file   = True
     # insn_list_temp  = generate_rvc_instructions()
@@ -57,7 +57,7 @@ def test_rvc_inst(decoder_fixture):
 
 # randomly generate instructions for testing
 def test_rvi_inst(decoder_fixture):
-    mlvp.info("###################### test_rvi_inst ##########################")
+    debug("###################### test_rvi_inst ##########################")
     decoder = decoder_fixture
     need_log_file   = True
     insn_list_temp  = generate_random_32bits(100)
@@ -67,7 +67,7 @@ def test_rvi_inst(decoder_fixture):
 
 # testing of V extension instructions, which are not actually used
 def test_rv_custom_inst(decoder_fixture):
-    mlvp.info("###################### test_rv_custom_inst ##########################")
+    debug("###################### test_rv_custom_inst ##########################")
     decoder = decoder_fixture
     need_log_file   = True
     custom_v_opcode   = 0b1010111

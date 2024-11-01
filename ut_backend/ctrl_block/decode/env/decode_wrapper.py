@@ -1,16 +1,16 @@
 from dut.predecode.UT_PreDecode import *
 from dut.decodestage.UT_DecodeStage import *
-import mlvp
+import toffee
 import os
 import pytest
 import ctypes
 import datetime
 from comm import get_out_dir
-from mlvp.reporter import set_line_coverage
+from toffee_test.reporter import set_line_coverage
 from dut.rvcexpander.UT_RVCExpander import *
 
-import mlvp.funcov as fc
-from mlvp.reporter import set_func_coverage
+import toffee.funcov as fc
+from toffee_test.reporter import set_func_coverage
 
 g = fc.CovGroup("Group X")
 
@@ -18,15 +18,15 @@ def init_function_coverage(g):
 # Add decoder module test point content: ToDO
     pass
 
-mlvp.setup_logging(mlvp.ERROR)
+toffee.setup_logging(toffee.ERROR)
 
 
-class PreDecodeWrapper(mlvp.Bundle):
+class PreDecodeWrapper(toffee.Bundle):
     def __init__(self, dut: DUTPreDecode):
         super().__init__()
         self.dut = dut
-        self.input_instrution = mlvp.Bundle.from_prefix("io_in_bits_", dut)
-        self.output_instrution = mlvp.Bundle.from_prefix("io_out_", dut)
+        self.input_instrution = toffee.Bundle.from_prefix("io_in_bits_", dut)
+        self.output_instrution = toffee.Bundle.from_prefix("io_out_", dut)
         self.bind(dut)
 
     def predecode(self, instr, need_step=1):
@@ -42,13 +42,13 @@ class PreDecodeWrapper(mlvp.Bundle):
         return predecoded_inst
 
 
-class DecodeWrapper(mlvp.Bundle):
+class DecodeWrapper(toffee.Bundle):
     def __init__(self, dut: DUTDecodeStage):
         super().__init__()
         self.dut = dut
         for i in range(6):
-            setattr(self, f"in_data_{i}", mlvp.Bundle.from_prefix(f"io_in_{i}_", dut))
-            setattr(self, f"out_data_{i}", mlvp.Bundle.from_prefix(f"io_out_{i}_", dut))
+            setattr(self, f"in_data_{i}", toffee.Bundle.from_prefix(f"io_in_{i}_", dut))
+            setattr(self, f"out_data_{i}", toffee.Bundle.from_prefix(f"io_out_{i}_", dut))
         self.input_inst = [getattr(self, f"in_data_{i}") for i in range(6)]
         self.output_instrution = [getattr(self, f"out_data_{i}") for i in range(6)]
         self.bind(dut)
