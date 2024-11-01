@@ -11,6 +11,7 @@
 #
 # See the Mulan PSL v2 for more details.
 #**************************************************************************************/
+
 import os
 import time
 import base64
@@ -55,6 +56,14 @@ def get_out_dir(subdir="", cfg=None):
 def get_rtl_dir(subdir="", cfg=None):
     cfg = get_config(cfg)
     return get_abs_path(cfg.rtl.cache_dir, subdir, cfg)
+
+
+def get_rtl_lnk_version(cfg=None):
+    lnk = os.path.join(get_rtl_dir(cfg=cfg), "rtl")
+    assert os.path.exists(lnk), f"rtl link {lnk} not found"
+    assert os.path.islink(lnk), f"{lnk} is not a link, please check"
+    version = os.readlink(lnk).replace("/rtl", "").split("/")[-1].strip()
+    return version
 
 
 def time_format(seconds=None, fmt="%H-%M-%S"):
@@ -139,12 +148,3 @@ def download_rtl(base_url, out_dir, version="latest"):
         assert os.system(f"wget {base_url} -P {out_dir}") == 0, "Download RTL failed"
         use_rtl(base_url.split("/")[-1], out_dir)
     return True
-
-
-def is_full_test():
-    cfg = get_config()
-    return cfg.test.test_model == "full_test"
-
-
-def is_short_test():
-    return not is_full_test()

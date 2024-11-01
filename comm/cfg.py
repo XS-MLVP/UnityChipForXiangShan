@@ -3,12 +3,15 @@
 from .logger import debug
 import yaml
 import os
+import ast
 import pytest
+
 
 global_cfg = None
 
+
 class CfgObject:
-    freeze = False
+    _freeze = False
     def __init__(self, data: dict) -> None:
         if data:
             for key, value in data.items():
@@ -19,19 +22,19 @@ class CfgObject:
                     super().__setattr__(key, value)
 
     def freeze(self):
-        self.freeze = True
+        self._freeze = True
         for _, value in self.__dict__.items():
             if isinstance(value, CfgObject):
                 value.freeze()
 
     def unfreeze(self):
-        self.freeze = False
+        self._freeze = False
         for _, value in self.__dict__.items():
             if isinstance(value, CfgObject):
                 value.unfreeze()
 
     def __setattr__(self, name, value):
-        if self.freeze and name != "freeze":
+        if self._freeze and name != "_freeze":
             raise AttributeError("Cannot set attribute %s in freeze mode" % name)
         super().__setattr__(name, value)
 
@@ -54,6 +57,8 @@ def get_config(cfg=None):
     global global_cfg
     if global_cfg is not None:
         return global_cfg
+    if not hasattr(pytest, "global_unitychip_cfg"):
+        return None
     cfg_str = pytest.global_unitychip_cfg
     global_cfg = cfg_from_str(cfg_str)
     global_cfg.freeze()
@@ -95,7 +100,12 @@ def init_cfg(cfg_file=None, args=[], cfg_str_data=None):
                 if k not in tmp_cfg:
                     debug(f"Key {key} not found in config, ignore")
                 else:
-                    tmp_cfg[k] = type(tmp_cfg[k])(value)
+                    try:
+                        tmp_value = ast.literal_eval(value)
+                    except Exception as e:
+                        assert False, f"Invalid value for {key}: {value}, error: {e}"
+                    assert type(tmp_cfg[k]) == type(tmp_value), f"Type mismatch for {key}: {type(tmp_cfg[k])} != {type(tmp_value)}"
+                    tmp_cfg[k] = tmp_value
     return CfgObject(cfg)
 
 

@@ -2,7 +2,7 @@
 
 from logging import getLogger, DEBUG, INFO, WARNING, ERROR, basicConfig
 
-FORMAT = '[%(asctime)s,%(pathname)s,%(lineno)s,%(levelname)s] %(message)s'
+FORMAT = '[%(asctime)s,%(pathname)s:%(lineno)s,%(levelname)s] %(message)s'
 basicConfig(format=FORMAT)
 
 
@@ -10,6 +10,8 @@ log = getLogger("UnityChip")
 
 
 def init_log(cfg):
+    if not cfg:
+        return
     level = cfg.log.level
     log.setLevel({
         "debug": DEBUG,
