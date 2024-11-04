@@ -40,10 +40,10 @@ make all
 1. 生成测试报告（测试报告位于out目录）
 1. 更新统计数据（可通过[本地展示文档](#如何本地展示文档)查看统计结果）
 
-*默认情况下，会skip过于耗时的测试，可通过设置环境变量`XS_FULL_TEST=1`运行所有用例:
+*默认配置下，会skip过于耗时的测试，可通过设置环境变量`CFG=configs/noskip.yaml`运行所有用例:
 
 ```bash
-make all XS_FULL_TEST=1
+make CFG=configs/noskip.yaml
 ```
 
 #### 如何本地展示文档

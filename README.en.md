@@ -41,10 +41,10 @@ The above commands will automatically perform the following operations:
 1. Update statistical data (you can view the statistical results through [Local Documentation Display](#how-to-display-documents-locally)).
 
 
-*By default, tests that are too time-consuming will be skipped. You can run all test cases by setting the environment variable `XS_FULL_TEST=1`， eg:
+*By default, tests that are too time-consuming will be skipped. You can run all test cases by setting `CFG=configs/noskip.yaml`， eg:
 
 ```bash
-make all XS_FULL_TEST=1
+make all CFG=configs/noskip.yaml
 ```
 
 #### How to Display Documents Locally
