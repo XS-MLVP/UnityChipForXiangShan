@@ -21,7 +21,7 @@ def main():
             break
     if agrs.config:
         if not os.path.exists(agrs.config):
-            error("config file not found:", agrs.config)
+            error("config file not found: %s", agrs.config)
             return
     cfg = init_cfg(agrs.config, cfg_value)
     init(cfg)
