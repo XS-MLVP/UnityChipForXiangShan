@@ -16,10 +16,10 @@ clean_dut:
 	cd dut && ls | grep -v __init__.py | xargs rm -rf
 
 test_all:
-	python3 run.py --config $(CFG) $(KV) -- --toffee-report --report-dir=out -vs ut_*/ $(args)
+	python3 run.py --config $(CFG) $(KV) -- --toffee-report -vs ut_*/ $(args)
 
 test:
-	python3 run.py --config $(CFG) $(KV) -- --toffee-report --report-dir=out -vs $(target) $(args)
+	python3 run.py --config $(CFG) $(KV) -- --toffee-report -vs $(target) $(args)
 
 dut:
 	$(MAKE) -C scripts -f Makefile.build_ut_$(target) args=$(args)
