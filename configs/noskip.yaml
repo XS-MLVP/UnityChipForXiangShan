@@ -1,0 +1,5 @@
+
+
+test:
+  # Skip tags, all test cases with these tags will be skipped
+  skip-tags: []
