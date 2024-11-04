@@ -1,5 +1,5 @@
 # test default config
-# config load sequence: default.yaml -> ENV args -> user assigned *.yaml -> command line args
+# config load sequence: _default.yaml -> user assigned *.yaml -> command line args
 
 rtl:
   base-url: https://raw.githubusercontent.com/XS-MLVP/UnityChipXiangShanRTLs/refs/heads/main/README.md
@@ -15,9 +15,22 @@ test:
 
 output:
   out-dir: "../out"
+
+report:
   report-dir: "report"
-  log-dir: "log"
+  report-name: "%{host}-%{pid}-%{time}/index.html"
+  information:
+    title: "XiangShan KMH Test Report"
+    user:
+      name: "User"
+      emial: "User@example.email.com"
+    line_grate: 90
+    meta:
+      Version: "1.0"
 
 log:
-  level: "info"
-  log-file: "log-%{node}-%{thread}-%{time}.txt"
+  root-level: "debug"
+  term-level: "info"
+  file-dir: "log"
+  file-name: "%{host}-%{pid}-%{time}.log"
+  file-level: "info"

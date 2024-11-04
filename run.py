@@ -4,7 +4,7 @@ import os
 import argparse
 import pytest
 from comm import init_cfg, cfg_as_str, get_rtl_lnk_version, error
-from comm import download_rtl, get_rtl_dir, init_log, init
+from comm import download_rtl, get_rtl_dir, init_log, init, new_report_name
 
 
 def main():
@@ -37,15 +37,19 @@ def main():
         cfg.rtl.version = link_verison # set current rtl version
     cfg.freeze()
     cfg_value = cfg_as_str(cfg)
+    # set report args
+    report_dir, report_name = new_report_name(cfg)
+    append_args.extend(["--report-dir", report_dir, "--report-name", report_name])
     # cache global config in pytest
     pytest.global_unitychip_cfg = cfg_value
     # set toffee config
-    pytest.toffee_current_version = cfg.rtl.version
-    pytest.toffee_skip_tags = cfg.test.skip_tags
-    pytest.toffee_run_tags = cfg.test.run_tags
-    pytest.toffee_skip_cases = cfg.test.skip_cases
-    pytest.toffee_run_cases = cfg.test.run_cases
+    pytest.toffee_tags_current_version = cfg.rtl.version
+    pytest.toffee_tags_skip_tags = cfg.test.skip_tags
+    pytest.toffee_tags_run_tags = cfg.test.run_tags
+    pytest.toffee_tags_skip_cases = cfg.test.skip_cases
+    pytest.toffee_tags_run_cases = cfg.test.run_cases
     pytest.toffee_ignore_exceptions = cfg.test.skip_exceptions
+    pytest.toffee_report_information = cfg.report.information.as_dict()
     pytest.main(append_args, plugins=[__import__(__name__)])
 
 
