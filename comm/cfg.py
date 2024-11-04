@@ -41,6 +41,8 @@ class CfgObject:
     def as_dict(self):
         data = {}
         for key, value in self.__dict__.items():
+            if key == "_freeze":
+                continue
             if isinstance(value, CfgObject):
                 data[key] = value.as_dict()
             else:
