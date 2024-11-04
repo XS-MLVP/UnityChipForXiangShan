@@ -36,7 +36,7 @@ def test_case_1():
 @pytest.mark.toffee_tags(
     tag: Optional[list, str]     = []    # 用例标签
     version: Optional[list, str] = [],   # 用例rtl版本需求
-    skip: callable               = None, # 自定义是否调过该用例，skip(tag, version, item): (skip, resion)
+    skip: callable               = None, # 自定义是否调过该用例，skip(tag, version, item): (skip, reason)
 )
 ```
 
