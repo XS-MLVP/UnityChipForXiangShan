@@ -1,27 +1,55 @@
 #coding=utf8
 
+import os
+import atexit
 from logging import getLogger, DEBUG, INFO, WARNING, ERROR, basicConfig
+
 
 FORMAT = '[%(asctime)s,%(pathname)s:%(lineno)s,%(levelname)s] %(message)s'
 basicConfig(format=FORMAT)
 
-
-log = getLogger("UnityChip")
-
-
-def init_log(cfg):
-    if not cfg:
-        return
-    level = cfg.log.level
-    log.setLevel({
-        "debug": DEBUG,
-        "info": INFO,
-        "warning": WARNING,
-        "error": ERROR
-    }.get(str(level).lower(), INFO))
-
+log = getLogger()
 
 debug = log.debug
 info = log.info
 warning = log.warning
 error = log.error
+
+def init_log(cfg):
+    if not cfg:
+        return
+    global debug, info, warning, error
+    level_map = {
+        "debug": DEBUG,
+        "info": INFO,
+        "warning": WARNING,
+        "error": ERROR
+    }
+    log.setLevel(level_map.get(cfg.log.root_level, INFO))
+    from .functions import get_log_dir
+    log_path = get_log_dir(cfg=cfg)
+    os.makedirs(log_path, exist_ok=True)
+    from .functions import time_format
+    log_file = cfg.log.file_name.replace("%{time}", time_format()).replace("%{pid}",
+                                                                           str(os.getpid())).replace("%{host}",
+                                                                                                     os.uname().nodename)
+    log_file = os.path.join(log_path, log_file)
+    from logging import FileHandler, Formatter, StreamHandler
+    ch = StreamHandler()
+    ch.setLevel(level_map.get(str(cfg.log.term_level).lower(), INFO))
+    fh = FileHandler(log_file)
+    fh.setLevel(level_map.get(str(cfg.log.file_level).lower(), INFO))
+    fh.setFormatter(Formatter(FORMAT))
+    for handler in log.handlers:
+        log.removeHandler(handler)
+    log.addHandler(ch)
+    log.addHandler(fh)
+    def close_fh():
+        fh.close()
+        log.removeHandler(fh)
+    atexit.register(lambda: close_fh())
+    debug = log.debug
+    info = log.info
+    warning = log.warning
+    error = log.error
+    return log
