@@ -26,8 +26,6 @@ git clone https://github.com/XS-MLVP/UnityChipForXiangShan.git
 ```bash
 cd UnityChipForXiangShan
 make rtl    # 该命下载最新的rtl代码，并解压至rtl目录，并创建软连接
-# 可通过target指定版本
-make rtl target=2024092701/openxiangshan-kmh-97e37a2237-24092701.tar.gz
 ```
 
 所有RTL下载包请在[UnityChipXiangShanRTLs](https://github.com/XS-MLVP/UnityChipXiangShanRTLs)中查看。
