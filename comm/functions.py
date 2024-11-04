@@ -48,6 +48,11 @@ def get_abs_path(path, sub, cfg):
         os.path.dirname(cfg.__file__), path, sub))
 
 
+def get_log_dir(subdir="", cfg=None):
+    cfg = get_config(cfg)
+    return get_abs_path(cfg.output.out_dir, os.path.join(cfg.log.file_dir, subdir), cfg)
+
+
 def get_out_dir(subdir="", cfg=None):
     cfg = get_config(cfg)
     return get_abs_path(cfg.output.out_dir, subdir, cfg)
@@ -66,7 +71,7 @@ def get_rtl_lnk_version(cfg=None):
     return version
 
 
-def time_format(seconds=None, fmt="%H-%M-%S"):
+def time_format(seconds=None, fmt="%Y%m%d-%H%M%S"):
     """
     Convert seconds to time format
     """
@@ -123,10 +128,13 @@ def download_rtl(base_url, out_dir, version="latest"):
                 return True
     if not base_url.endswith(".tar.gz"):
         resp = requests.get(base_url).content.decode('utf-8')
+        all_keys = []
         all_urls = {}
         url = None
         for u in re.findall(r'http[s]?://\S+?\.tar\.gz', resp):
-            all_urls[u.split("/")[-1].strip()] = u
+            key = u.split("/")[-1].strip()
+            all_keys.append(key)
+            all_urls[key] = u
             if version and version in u:
                 url = u
                 break
@@ -134,7 +142,7 @@ def download_rtl(base_url, out_dir, version="latest"):
             if version:
                 warning(f"version {version} not found in {all_urls.keys()}, download the first one")
             assert len(all_urls) > 0, "No download url found (resp: %s)" % resp
-            file_to_download = sorted(all_urls.keys())[0]
+            file_to_download = all_keys[0] # find the latest version
             for f in os.listdir(out_dir):
                 if file_to_download in f and "tar.gz" in f:
                     debug("find %s in %s, ignore download", f, out_dir)
@@ -148,3 +156,13 @@ def download_rtl(base_url, out_dir, version="latest"):
         assert os.system(f"wget {base_url} -P {out_dir}") == 0, "Download RTL failed"
         use_rtl(base_url.split("/")[-1], out_dir)
     return True
+
+
+def new_report_name(cfg=None):
+    cfg = get_config(cfg)
+    report_dir = os.path.join(get_out_dir(cfg=cfg), cfg.report.report_dir)
+    report_name = str(cfg.report.report_name).replace("%{time}", time_format()).replace("%{pid}",
+                                                                           str(os.getpid())).replace("%{host}",
+                                                                                                     os.uname().nodename)
+    os.makedirs(report_dir, exist_ok=True)
+    return report_dir, report_name
