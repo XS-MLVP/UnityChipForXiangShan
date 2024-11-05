@@ -12,9 +12,8 @@ weight: 14
 make test_all
 # 执行指定目录下的test case
 make test target=<dir>
-# 例如：
-# 执行ut_backend/ut_decode目录中所有的test case
-make test target=ut_backend/ut_decode
+# 例如执行ut_backend/ctrl_block/decode目录中所有的test case
+make test target=ut_backend/ctrl_block/decode
 ```
 
 运行完成后，在out目录会生成html版本的测试报告，可通过浏览器直接打开查看（VS Code IDE建议安装`Open In Default Browser`插件）。
