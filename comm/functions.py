@@ -196,7 +196,8 @@ def build_dut(duts, cfg):
         debug(f"Build {d}")
         try:
             module = importlib.import_module(f"scripts.{d}")
-            module.build(cfg)
+            if not module.build(cfg):
+                warning(f"Failed to build {d}")
         except Exception as e:
             warning(f"Failed to build {d}, error: {e}\n{traceback.format_exc()}")
 
