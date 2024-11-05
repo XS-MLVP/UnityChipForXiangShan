@@ -3,15 +3,16 @@
 import os
 import argparse
 import pytest
-from comm import init_cfg, cfg_as_str, get_rtl_lnk_version, error
+from comm import init_cfg, cfg_as_str, get_rtl_lnk_version, error, build_dut
 from comm import download_rtl, get_rtl_dir, init_log, init, new_report_name
 
 
 def main():
     parser = argparse.ArgumentParser(description="Run pytest")
     parser.add_argument("--config", type=str, help="config file", default=None)
+    parser.add_argument("-b", "--build", type=str, help="duts to buld, eg: -b dut1,dut2; -b dut*", default="")
     parser.add_argument("--download-rtl", action="store_true", help="only download rtl")
-    agrs, append_args = parser.parse_known_args()
+    args, append_args = parser.parse_known_args()
     cfg_value = []
     for a in append_args.copy():
         key = append_args.pop(0)
@@ -19,13 +20,13 @@ def main():
             cfg_value.append(key)
         if a.startswith("--"):
             break
-    if agrs.config:
-        if not os.path.exists(agrs.config):
-            error("config file not found: %s", agrs.config)
+    if args.config:
+        if not os.path.exists(args.config):
+            error("config file not found: %s", args.config)
             return
-    cfg = init_cfg(agrs.config, cfg_value)
+    cfg = init_cfg(args.config, cfg_value)
     init(cfg)
-    if agrs.download_rtl:
+    if args.download_rtl:
         init_log(cfg)
         download_rtl(cfg.rtl.base_url, get_rtl_dir(cfg=cfg), cfg.rtl.version)
         return
@@ -37,6 +38,10 @@ def main():
         cfg.rtl.version = link_verison # set current rtl version
     cfg.freeze()
     cfg_value = cfg_as_str(cfg)
+    if args.build:
+        init_log(cfg)
+        build_dut(args.build, cfg)
+        return
     # set report args
     report_dir, report_name = new_report_name(cfg)
     append_args.extend(["--report-dir", report_dir, "--report-name", report_name])

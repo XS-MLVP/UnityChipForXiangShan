@@ -18,6 +18,10 @@ import base64
 import re
 import tarfile
 import requests
+import subprocess
+import fnmatch
+import importlib
+import traceback
 from .logger import warning, debug
 from .cfg import get_config
 
@@ -69,6 +73,17 @@ def get_rtl_lnk_version(cfg=None):
     assert os.path.islink(lnk), f"{lnk} is not a link, please check"
     version = os.readlink(lnk).replace("/rtl", "").split("/")[-1].strip()
     return version
+
+
+def get_root_dir(subdir=""):
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), "../", subdir))
+
+
+def is_all_file_exist(files_to_check, dir):
+    for f in files_to_check:
+        if not os.path.exists(os.path.join(dir, f)):
+            return f
+    return True
 
 
 def time_format(seconds=None, fmt="%Y%m%d-%H%M%S"):
@@ -158,6 +173,31 @@ def download_rtl(base_url, out_dir, version="latest"):
     return True
 
 
+def build_dut(duts, cfg):
+    target_duts = [d.strip() for d in duts.split(",")]
+    if len(target_duts) == 0:
+        return
+    build_modules = [f.replace(".py", "") for f in 
+                     os.listdir(get_root_dir("scripts")) if f.startswith("build_") and f.endswith(".py")]
+    dut_to_build = []
+    for d in target_duts:
+        if "*" in d or "?" in d:
+            dut_to_build.extend(fnmatch.filter(build_modules, d))
+        elif d in build_modules:
+            dut_to_build.append(d)
+    dut_to_build = list(set(dut_to_build))
+    if len(dut_to_build) == 0:
+        warning(f"No dut to build for: {duts}")
+        return
+    for d in dut_to_build:
+        debug(f"Build {d}")
+        try:
+            module = importlib.import_module(f"scripts.{d}")
+            module.build(cfg)
+        except Exception as e:
+            warning(f"Failed to build {d}, error: {e}\n{traceback.format_exc()}")
+ 
+
 def new_report_name(cfg=None):
     cfg = get_config(cfg)
     report_dir = os.path.join(get_out_dir(cfg=cfg), cfg.report.report_dir)
@@ -166,3 +206,20 @@ def new_report_name(cfg=None):
                                                                                                      os.uname().nodename)
     os.makedirs(report_dir, exist_ok=True)
     return report_dir, report_name
+
+
+def exe_cmd(cmd, no_log=False):
+    if isinstance(cmd, list):
+        cmd = " ".join(cmd)
+    if no_log:
+        result = subprocess.run(
+            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        stdout = result.stdout.decode("utf-8")
+        stderr = result.stderr.decode("utf-8")
+    else:
+        result = subprocess.run(cmd, shell=True)
+        stdout = ""
+        stderr = ""
+    success = result.returncode == 0
+    return success, stdout, stderr

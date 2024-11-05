@@ -37,6 +37,7 @@ def init_log(cfg):
     from logging import FileHandler, Formatter, StreamHandler
     ch = StreamHandler()
     ch.setLevel(level_map.get(str(cfg.log.term_level).lower(), INFO))
+    ch.setFormatter(Formatter(FORMAT))
     fh = FileHandler(log_file)
     fh.setLevel(level_map.get(str(cfg.log.file_level).lower(), INFO))
     fh.setFormatter(Formatter(FORMAT))

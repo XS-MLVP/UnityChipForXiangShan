@@ -1,16 +1,18 @@
-from dut.predecode.UT_PreDecode import *
-from dut.decodestage.UT_DecodeStage import *
 import toffee
 import os
 import pytest
 import ctypes
 import datetime
-from comm import get_out_dir
-from toffee_test.reporter import set_line_coverage
+import toffee.funcov as fc
+
+from dut.predecode.UT_PreDecode import *
+from dut.decodestage.UT_DecodeStage import *
+
+from comm import get_out_dir, get_root_dir, debug
 from dut.rvcexpander.UT_RVCExpander import *
 
-import toffee.funcov as fc
 from toffee_test.reporter import set_func_coverage
+from toffee_test.reporter import set_line_coverage
 
 g = fc.CovGroup("Group X")
 
@@ -225,7 +227,7 @@ def decoder_fixture(request):
     coverage_file = get_out_dir("decoder/decode_%s.dat"%func_name)
     if not os.path.exists(coverage_file):
         raise FileNotFoundError(f"File not found: {coverage_file}")
-    set_line_coverage(request, coverage_file)
+    set_line_coverage(request, coverage_file, get_root_dir("scripts/backend_ctrlblock_decode"))
     set_func_coverage(request, g)
     g.clear()
 
@@ -236,9 +238,9 @@ def comapre_result(ref_value_list, dut_value_list, num):
     else:
         for i in range(num):
             if ref_value_list[i][1] != dut_value_list[i][1]:
-                mlvp.info("================================")
-                mlvp.info(ref_value_list[i])
-                mlvp.info(dut_value_list[i])
+                debug("================================")
+                debug(ref_value_list[i])
+                debug(dut_value_list[i])
 
 log_all_info_file = None
 log_err_info_file = None
@@ -277,13 +279,13 @@ def write_all_info_to_file(info):
     if log_all_info_file is not None:
         log_all_info_file.write(info + "\n")
     else:
-        mlvp.info("remember open_log_file , close_log_file")
+        debug("remember open_log_file , close_log_file")
 
 def write_err_info_to_file(info):
     if log_err_info_file is not None:
         log_err_info_file.write(info + "\n")
     else:
-        mlvp.info("remember open_log_file , close_log_file")
+        debug("remember open_log_file , close_log_file")
 
 
 # Write the comparison results to a file
