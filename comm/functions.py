@@ -23,7 +23,7 @@ import subprocess
 import fnmatch
 import importlib
 import traceback
-from .logger import warning, debug
+from .logger import warning, debug, info
 from .cfg import get_config
 
 
@@ -198,7 +198,9 @@ def build_dut(duts, cfg):
         try:
             module = importlib.import_module(f"scripts.{d}")
             if not module.build(cfg):
-                warning(f"Failed to build {d}")
+                warning(f"Build scripts/{d}.py failed")
+            else:
+                info(f"Build scripts/{d}.py success")
         except Exception as e:
             warning(f"Failed to build {d}, error: {e}\n{traceback.format_exc()}")
 

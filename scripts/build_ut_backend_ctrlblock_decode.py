@@ -49,7 +49,6 @@ def build(cfg):
 		info("Building disasm")
 		s, _, _ = exe_cmd("make -C %s" % get_root_dir("tools/disasm"))
 		assert s, "Failed to build disasm"
-	info("Build backend_ctrlblock_decode done")
 	return True
 
 
