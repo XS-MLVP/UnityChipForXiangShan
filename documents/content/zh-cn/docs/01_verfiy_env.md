@@ -7,7 +7,7 @@ weight: 13
 
 #### 基础环境需求
 
-本项目基于`Python`编程语言进行UT验证，采用的工具和测试框架为[picker](https://github.com/XS-MLVP/picker)和[mlvp](https://github.com/XS-MLVP/mlvp)，环境需求如下：
+本项目基于`Python`编程语言进行UT验证，采用的工具和测试框架为[toffee](https://github.com/XS-MLVP/toffee)和[mlvp](https://github.com/XS-MLVP/mlvp)，环境需求如下：
 
 1. Linux操作系统。建议WSL2下安装Ubuntu22.04。
 1. Python。建议Python3.11。
