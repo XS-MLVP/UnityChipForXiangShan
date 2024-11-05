@@ -12,11 +12,13 @@ weight: 13
 1. Linux操作系统。建议WSL2下安装Ubuntu22.04。
 1. Python。建议Python3.11。
 1. picker。按照[快速开始](https://open-verify.cc/mlvp/docs/quick-start/installer/)中的提示安装最新版本。
-1. mlvp。可通过`pip3 install mlvp@git+https://github.com/XS-MLVP/mlvp`安装最新版本。
+
 
 环境配置完成后，clone仓库：
 ```bash
 git clone https://github.com/XS-MLVP/UnityChipForXiangShan.git
+cd UnityChipForXiangShan
+pip3 install -r requirements.txt # 安装python依赖
 ```
 
 #### 下载RTL代码：
@@ -24,7 +26,6 @@ git clone https://github.com/XS-MLVP/UnityChipForXiangShan.git
 默认从仓库[https://github.com/XS-MLVP/UnityChipXiangShanRTLs](https://github.com/XS-MLVP/UnityChipXiangShanRTLs)中下载。用户也可以自行按照XiangShan文档编译生成RTL。
 
 ```bash
-cd UnityChipForXiangShan
 make rtl    # 该命下载最新的rtl代码，并解压至rtl目录，并创建软连接
 ```
 
@@ -35,15 +36,13 @@ make rtl    # 该命下载最新的rtl代码，并解压至rtl目录，并创建
 该过程的目的是将RTL通过picker工具打包为Python模块。可以通过make命令指定被打包DUT，也可以一次性打包所有DUT。
 
 ```bash
-# 调用scripts目录中的Makefile.build_ut_<name>，创建待验证的Python版DUT
-make dut target=<name>
+# 调用scripts目录中的build_ut_<name>.py中的build方法，创建待验证的Python版DUT
+make dut DUTS=<name>  # DUTS的值如果有多个，需要用逗号隔开，支持通配符。DUTS默认值为 "*"，编译所有DUT
 # 例如：
-make dut target=backend_ctrlblock_decode
-# 调用scripts目录中所有的Makefile.build_ut_*文件，创建所有DUT。
-make dut_all
+make dut DUTS=backend_ctrlblock_decode
 ```
 
-以`make dut target=backend_ctrlblock_decode`为例，命令执行完成后，会在dut目录下生成对应的Python包：
+以`make dut DUTS=backend_ctrlblock_decode`为例，命令执行完成后，会在dut目录下生成对应的Python包：
 
 ```
 dut/
