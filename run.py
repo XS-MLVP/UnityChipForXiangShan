@@ -57,7 +57,7 @@ def main():
         return
     # set report args
     report_dir, report_name = new_report_name(cfg)
-    append_args.extend(["--report-dir", report_dir, "--report-name", report_name])
+    append_args.extend(["--report-dir", report_dir, "--report-name", report_name, "--report-dump-json"])
     # cache global config in pytest
     pytest.global_unitychip_cfg = cfg_value
     # set toffee config
