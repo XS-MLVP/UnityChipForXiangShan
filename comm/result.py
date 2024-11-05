@@ -17,7 +17,7 @@ import os
 import json
 
 
-def process_result(report_dir, report_name, cfg):
+def process_doc_result(report_dir, report_name, cfg):
     toffee_result = os.path.join(report_dir, os.path.dirname(report_name), "toffee_report.json")
     assert os.path.exists(toffee_result), f"{toffee_result} not found, please check the toffee report"
     report_data = json.loads(open(toffee_result).read())
