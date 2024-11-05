@@ -17,7 +17,7 @@ import os
 import argparse
 import pytest
 from comm import init_cfg, cfg_as_str, get_rtl_lnk_version, error, build_dut
-from comm import download_rtl, get_rtl_dir, init_log, init, new_report_name
+from comm import download_rtl, get_rtl_dir, init_log, init, new_report_name, process_result
 
 
 def main():
@@ -49,6 +49,8 @@ def main():
         assert link_verison == cfg.rtl.version, f"RTL link version ({link_verison}) not equal to config version ({cfg.rtl.version})"
     else:
         cfg.rtl.version = link_verison # set current rtl version
+    report_dir, report_name = new_report_name(cfg)
+    cfg.report.report_name = report_name
     cfg.freeze()
     cfg_value = cfg_as_str(cfg)
     if args.build:
@@ -56,7 +58,6 @@ def main():
         build_dut(args.build, cfg)
         return
     # set report args
-    report_dir, report_name = new_report_name(cfg)
     append_args.extend(["--report-dir", report_dir, "--report-name", report_name, "--report-dump-json"])
     # cache global config in pytest
     pytest.global_unitychip_cfg = cfg_value
@@ -69,6 +70,7 @@ def main():
     pytest.toffee_ignore_exceptions = cfg.test.skip_exceptions
     pytest.toffee_report_information = cfg.report.information.as_dict()
     pytest.main(append_args, plugins=[__import__(__name__)])
+    process_result(report_dir, report_name, cfg)
 
 
 if __name__ == "__main__":

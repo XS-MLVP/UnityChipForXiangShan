@@ -74,3 +74,10 @@ log:
   file-name: "%{host}-%{pid}-%{time}.log"
   # File log level
   file-level: "info"
+
+# Result configuration
+result:
+  # Target duts and their structure
+  dutree: "dutree/xiangshan-kmh.yaml"
+  # Result path, relative to the current configuration file path
+  result-path: "../documents/static/data/ut_data_progress.json"

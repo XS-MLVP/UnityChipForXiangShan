@@ -13,16 +13,15 @@
 #**************************************************************************************/
 
 
-from .functions import *
-from .cfg import *
-from .logger import *
-from .constants import *
-from .result import *
+import os
+import json
 
 
-def init(cfg=None):
-    if not cfg:
-        cfg = get_config()
-    init_log(cfg)
-
-init()
+def process_result(report_dir, report_name, cfg):
+    toffee_result = os.path.join(report_dir, os.path.dirname(report_name), "toffee_report.json")
+    assert os.path.exists(toffee_result), f"{toffee_result} not found, please check the toffee report"
+    report_data = json.loads(open(toffee_result).read())
+    # 0. get all the test cases
+    # 1. get all functions coverage
+    # 2. get all lines coverage
+    # 3. save result to docutment
