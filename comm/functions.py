@@ -178,10 +178,12 @@ def build_dut(duts, cfg):
     target_duts = [d.strip() for d in duts.split(",")]
     if len(target_duts) == 0:
         return
+    prefix = "build_ut_"
     build_modules = [f.replace(".py", "") for f in 
-                     os.listdir(get_root_dir("scripts")) if f.startswith("build_") and f.endswith(".py")]
+                     os.listdir(get_root_dir("scripts")) if f.startswith(prefix) and f.endswith(".py")]
     dut_to_build = []
     for d in target_duts:
+        d = prefix + d
         if "*" in d or "?" in d:
             dut_to_build.extend(fnmatch.filter(build_modules, d))
         elif d in build_modules:
@@ -197,7 +199,7 @@ def build_dut(duts, cfg):
             module.build(cfg)
         except Exception as e:
             warning(f"Failed to build {d}, error: {e}\n{traceback.format_exc()}")
- 
+
 
 def new_report_name(cfg=None):
     cfg = get_config(cfg)
