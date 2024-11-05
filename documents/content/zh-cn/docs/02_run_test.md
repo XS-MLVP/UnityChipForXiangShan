@@ -5,7 +5,7 @@ linkTitle: 运行测试
 weight: 14
 ---
 
-本项目基于mlvp验证框架进行验证（mlvp基于Pytest测试框架）。运算测试时，测试框架自动搜索所有以`test_*.py`文件，并自动执行其中所有以`test_`开头的测试用例（Test Case）。
+本项目基于toffee验证框架进行验证（toffee基于Pytest测试框架）。运算测试时，测试框架自动搜索所有以`test_*.py`文件，并自动执行其中所有以`test_`开头的测试用例（Test Case）。
 
 ```bash
 # 执行所有ut_*目录中的test case
