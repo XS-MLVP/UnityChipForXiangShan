@@ -47,6 +47,7 @@ def merge_dict(dict1, dict2):
 
 
 def get_abs_path(path, sub, cfg):
+    path = path.replace("%{root}", get_root_dir())
     if path.startswith("/"):
         return os.path.join(path, sub)
     return os.path.abspath(os.path.join(

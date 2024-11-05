@@ -22,7 +22,7 @@ rtl:
   # RTL version to download e.g., openxiangshan-kmh-97e37a2237-24092701
   version: latest
   # Directory to store RTL, relative to the current configuration file path
-  cache-dir: "../rtl"
+  cache-dir: "%{root}/rtl"
 
 # Test case configuration (tags and cases support wildcards)
 test:
@@ -40,7 +40,7 @@ test:
 # Output configuration
 output:
   # Output directory, relative to the current configuration file path
-  out-dir: "../out"
+  out-dir: "%{root}/out"
 
 # Test report configuration
 report:
@@ -68,7 +68,7 @@ log:
   root-level: "debug"
   # Terminal log level
   term-level: "info"
-  # Directory to store log files
+  # Directory to store log files, relative to the outout.out-dir path
   file-dir: "log"
   # Log file name, supports variable substitution: %{host} hostname, %{pid} process ID, %{time} current time
   file-name: "%{host}-%{pid}-%{time}.log"
@@ -82,6 +82,6 @@ doc-result:
   # Process result or not
   disable: False
   # Target duts and their structure
-  dutree: "dutree/xiangshan-kmh.yaml"
+  dutree: "%{root}/configs/dutree/xiangshan-kmh.yaml"
   # Result path, relative to the current configuration file path
-  save-path: "../documents/static/data/ut_data_progress.json"
+  save-path: "%{root}/documents/static/data/ut_data_progress.json"
