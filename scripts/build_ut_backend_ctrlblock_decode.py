@@ -51,3 +51,7 @@ def build(cfg):
 		assert s, "Failed to build disasm"
 	info("Build backend_ctrlblock_decode done")
 	return True
+
+
+def line_coverage_files(cfg):
+	return ["rtl/PreDecode.sv", "rtl/DecodeStage.sv"]

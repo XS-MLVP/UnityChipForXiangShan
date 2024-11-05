@@ -18,3 +18,7 @@ import os
 
 def build(cfg):
     return False
+
+
+def line_coverage_files(cfg):
+	return []
