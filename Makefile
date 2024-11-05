@@ -5,7 +5,7 @@ export ENABLE_XINFO := 0
 export CFG := ""
 export DUTS := "*"
 
-all: dut test_all
+all: rtl dut test_all
 
 clean:
 	rm -rf out/*
