@@ -205,3 +205,8 @@ children:
 
 # 在doc中，需要作为一个整体进行统计的模块
 dut_block: ["bpu", "rename", "dispatch_queue", "scheduler", "exu_block", "lsq", "v_mem"]
+
+# 显示配置信息
+confg:
+  # DUT地图默认点亮case数最小值
+  default_light_min: 10
