@@ -217,6 +217,8 @@ def update_dut_tree_node_meta(tree_data):
                 meta["functions"]["cover"] += child_meta["functions"]["cover"]
                 meta["lines"]["total"] += child_meta["lines"]["total"]
                 meta["lines"]["cover"] += child_meta["lines"]["cover"]
+                meta["lines"]["text"] = "%d/%d (%.2f %%)" % (meta["lines"]["cover"], meta["lines"]["total"],
+                                                             float(meta["lines"]["cover"])/meta["lines"]["total"]*100) if meta["lines"]["total"] > 0 else "0/0 (0.00 %)"
                 meta["value"] += child_meta["value"]
             node["meta"] = meta
             node["value"] = node["meta"]["value"]

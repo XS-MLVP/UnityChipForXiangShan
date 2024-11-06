@@ -46,6 +46,16 @@ function show_meta_chart(chart_id, data_url) {
 
     option && utChart.setOption(option);
     window.addEventListener('resize', function () { utChart.resize(); });
+
+    // set em data
+    $("#em_id_report_cases_toal").text(graph_data["tree"]["meta"]["cases"]["total"]);
+    $("#em_id_report_cases_pass").text(graph_data["tree"]["meta"]["cases"]["pass"]);
+    $("#em_id_report_cases_fail").text(graph_data["tree"]["meta"]["cases"]["fail"]);
+    $("#em_id_report_cases_skip").text(graph_data["tree"]["meta"]["cases"]["skip"]);
+    $("#em_id_report_function_total").text(graph_data["tree"]["meta"]["functions"]["total"]);
+    $("#em_id_report_function_cover").text(graph_data["tree"]["meta"]["functions"]["cover"]);
+    $("#em_id_report_line_coverage").text(graph_data["tree"]["meta"]["lines"]["text"]);
+    $("#em_id_report_date").text(graph_data["extend"]["time"]);
   });
 }
 

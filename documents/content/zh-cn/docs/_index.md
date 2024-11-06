@@ -11,13 +11,40 @@ weight: 10
 
 香山昆明湖架构各个模块验证情况如上图中所示。总统计数据如下：
 
-1. 总测试用例数（Total Cases）<em>xx</em>;
-1. 测试用例通过数（Passed Cases）<em>xx</em>;
-1. 测试用例未过数（Failed Cases）<em>xx</em>;
-1. 测试用例跳过数（Skipped Cases）<em>xx</em>;
-1. 总功能覆盖点数（Function Coverage）<em>xx</em>;
-1. 覆盖点已覆盖数（Coverage Functions）<em>xx</em>;
-1. 总代码行覆盖率（Line Coverage Rate）<em>xx</em>;
+<table>
+    <ol>
+    <tr>
+        <td><li>总测试用例数（Total Cases）</td>
+        <td  style="text-align: right; font-weight: bold;"><em id="em_id_report_cases_toal">-</em></li></td>
+    </tr>
+    <tr>
+        <td><li>测试用例通过数（Passed Cases）</td>
+        <td  style="text-align: right; font-weight: bold;"><em id="em_id_report_cases_pass">-</em></li></td>
+    </tr>
+    <tr>
+        <td><li>测试用例未过数（Failed Cases）</td>
+        <td  style="text-align: right; font-weight: bold;"><em id="em_id_report_cases_fail">-</em></li></td>
+    </tr>
+    <tr>
+        <td><li>测试用例跳过数（Skipped Cases）</td>
+        <td  style="text-align: right; font-weight: bold;"><em id="em_id_report_cases_skip">-</em></li></td>
+    </tr>
+    <tr>
+        <td><li>总功能覆盖点数（Function Coverage）</td>
+        <td  style="text-align: right; font-weight: bold;"><em id="em_id_report_function_total">-</em></li></td>
+    </tr>
+    <tr>
+        <td><li>覆盖点已覆盖数（Coverage Functions）</td>
+        <td  style="text-align: right; font-weight: bold;"><em id="em_id_report_function_cover">-</em></li></td>
+    </tr>
+    <tr>
+        <td><li>总代码行覆盖率（Line Coverage Rate）</td>
+        <td  style="text-align: right;"><em id="em_id_report_line_coverage">-</em></li></td>
+    </tr>
+    </ol>
+</table>
+
+*总代码行会随着DUT的增加而不断增加，因此：总代码行覆盖率不是最终覆盖率
 
 其他内容快捷连接：
 
@@ -32,5 +59,5 @@ weight: 10
 
 
 <div style="text-align: center; width: 100%;">
-数据自动更新日期：<em>xx</em>;
+数据自动更新日期：<em id="em_id_report_date">1970-01-01 00:00:00</em>
 </div>
