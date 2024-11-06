@@ -30,6 +30,7 @@ def process_doc_result(report_dir, report_name, cfg):
     toffee_result = os.path.join(report_dir, os.path.dirname(report_name), "toffee_report.json")
     assert os.path.exists(toffee_result), f"{toffee_result} not found, please check the toffee report"
     report_data = json.loads(open(toffee_result).read())
+    extend_info["raw_report"] = report_data
     # 0. load dut tree
     tree_yaml = get_abs_path(cfg.doc_result.dutree, "", cfg)
     # 1. get all the test cases
