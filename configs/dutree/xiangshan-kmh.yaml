@@ -1,0 +1,207 @@
+#coding=utf8
+#***************************************************************************************
+# This project is licensed under Mulan PSL v2.
+# You can use this software according to the terms and conditions of the Mulan PSL v2.
+# You may obtain a copy of Mulan PSL v2 at:
+#          http://license.coscl.org.cn/MulanPSL2
+#
+# THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS WITHOUT WARRANTIES OF ANY KIND
+# EITHER EXPRESS OR IMPLIED INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT
+# MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+#
+# See the Mulan PSL v2 for more details.
+#**************************************************************************************/
+
+
+name: "kmh_dut"
+desc: "所有昆明湖DUT"
+children:
+  - name: "frontend"
+    desc: "前端模块"
+    children:
+      - name: "bpu"
+        desc: "分子预测器 (Branch Prediction Unit)"
+        children:
+          - name: "ftb"
+            desc: "分支目标缓冲器 (Fetch Target Buffer)"
+          - name: "uftb"
+            desc: "微操作分支目标缓冲器 (Micro-Op Fetch Target Buffer)"
+          - name: "ittage"
+            desc: "分支目标缓冲器 (Instruction Tagged Target Buffer)"
+          - name: "tagesc"
+            desc: "分支目标缓冲器+SC预测器 (TAGE-SC)"
+          - name: "ras"
+            desc: "返回地址堆栈 (Return Address Stack)"
+      - name: "ftq"
+        desc: "前端指令队列 (Fetch To Queue)"
+        priority: critical
+      - name: "ibuffer"
+        desc: "指令缓冲器 (Instruction Buffer)"
+        priority: high
+      - name: "icache"
+        desc: "指令缓存 (Instruction Cache)"
+        priority: high
+      - name: "ifu"
+        desc: "指令单元 (Instruction Fetch Unit)"
+      - name: "instr_uncache"
+        priority: high
+        desc: "指令非缓存"
+      - name: "itlb"
+        desc: "指令TLB"
+      - name: "pmp"
+        desc: "物理内存保护"
+  - name: "backend"
+    desc: "后端模块"
+    children:
+      - name: "ctrl_block"
+        desc: "控制单元"
+        children:
+          - name: "decode"
+            desc: "解码"
+          - name: "rename"
+            desc: "重命名"
+            children:
+              - name: "rename_table"
+                desc: "重命名表"
+              - name: "freelist"
+                desc: "空闲寄存器列表"
+                children:
+                  - name: "int"
+                    desc: "整数寄存器"
+                  - name: "float"
+                    desc: "浮点寄存器"
+                  - name: "vtype"
+                    desc: "向量寄存器"
+          - name: "dispatch"
+            desc: "调度"
+          - name: "dispatch_queue"
+            desc: "调度队列"
+            children:
+              - name: "int"
+                desc: "整数调度队列"
+              - name: "float"
+                desc: "浮点调度队列"
+              - name: "mem"
+                desc: "内存调度队列"
+              - name: "vector_float"
+                desc: "向量浮点调度队列"
+          - name: "mem_ctrl"
+            desc: "内存控制"
+          - name: "redirect_gen"
+            desc: "重定向生成"
+            priority: high
+          - name: "rob"
+            desc: "重排序缓冲器"
+            priority: critical
+          - name: "pc_gpa_mem"
+            desc: "PC-GPA映射"
+      - name: "data_path"
+        desc: "数据通路"
+        priority: high
+      - name: "scheduler"
+        desc: "调度器"
+        priority: high
+        children:
+        - name: "int"
+          desc: "整数调度器"
+        - name: "float"
+          desc: "浮点调度器"
+        - name: "mem"
+          desc: "内存调度器"
+        - name: "vector_float"
+          desc: "向量浮点调度器"
+      - name: "exu_block"
+        desc: "执行单元"
+        children:
+        - name: "float"
+          desc: "浮点执行单元"
+        - name: "int"
+          desc: "整数执行单元"
+          children:
+            - name: "csr"
+              desc: "CSR执行单元"
+              priority: critical
+            - name: "other"
+              desc: "其他执行单元"
+        - name: "vector_float"
+          desc: "向量浮点执行单元"
+          priority: critical
+      - name: "og2_for_vector"
+        desc: "向量浮点执行单元"
+        priority: critical
+      - name: "pc_target_mem"
+        desc: "PC目标映射"
+      - name: "wb_data_path"
+        desc: "写回数据通路"
+        priority: high
+      - name: "wb_fu_busy_table"
+        desc: "写回执行单元繁忙表"
+        priority: high
+      - name: "bypass_network"
+        desc: "旁路网络"
+        priority: high
+  - name: "mem_block"
+    desc: "内存模块"
+    children:
+      - name: "lsq"
+        desc: "Load/Store队列"
+        priority: critical
+        children:
+          - name: "load_queue"
+            desc: "Load队列"
+          - name: "store_queue"
+            desc: "Store队列"
+            children:
+              - name: "virtual_load_queue"
+                desc: "虚拟Load队列"
+              - name: "raw_rar_queue"
+                desc: "RAW/RAR队列"
+              - name: "uncache_queue"
+                desc: "非缓存队列"
+              - name: "exception_queue"
+                desc: "异常队列"
+          - name: "store_queue"
+            desc: "Store队列"
+      - name: "dtlb"
+        desc: "数据TLB"
+        priority: critical
+      - name: "load_store_unit"
+        desc: "Load/Store单元"
+        priority: critical
+      - name: "dcache"
+        desc: "数据缓存"
+        priority: critical
+      - name: "pmp"
+        desc: "物理内存保护"
+      - name: "prefetcher"
+        desc: "预取器"
+      - name: "v_mem"
+        desc: "向量内存"
+        priority: critical
+        children:
+          - name: "vl_split"
+            desc: "向量长度分割"
+          - name: "v_segment_unit"
+            desc: "向量段单元"
+          - name: "vl_merger_buffer"
+            desc: "向量长度合并缓冲器"
+          - name: "vs_merge_buffer"
+            desc: "向量段合并缓冲器"
+      - name: "ptw"
+        desc: "页表Walker"
+      - name: "uncache"
+        desc: "非缓存"
+      - name: "sbuffer"
+        desc: "S缓存"
+  - name: "misc"
+    desc: "其他模块"
+    children:
+        - name: "l2_cache"
+          desc: "L2缓存"
+          priority: critical
+        - name: "mmio"
+          desc: "内存映射IO"
+          priority: high
+
+# 在doc中，需要作为一个整体进行统计的模块
+dut_block: ["bpu", "rename", "dispatch_queue", "scheduler", "exu_block", "lsq", "v_mem"]
