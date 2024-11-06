@@ -48,10 +48,14 @@ def merge_dict(dict1, dict2):
 
 def get_abs_path(path, sub, cfg):
     path = path.replace("%{root}", get_root_dir())
+    ret_path = ""
     if path.startswith("/"):
-        return os.path.join(path, sub)
-    return os.path.abspath(os.path.join(
-        os.path.dirname(cfg.__file__), path, sub))
+        ret_path = os.path.join(path, sub)
+    else:
+        ret_path = os.path.abspath(os.path.join(os.path.dirname(cfg.__file__), path, sub))
+    if ret_path.endswith("/"):
+        ret_path = ret_path[:-1]
+    return ret_path
 
 
 def get_log_dir(subdir="", cfg=None):
