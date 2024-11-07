@@ -144,8 +144,3 @@ function show_datatree_chart(chart_id, data_url) {
   });
   option && utChart.setOption(option);
 }
-
-
-document.addEventListener('DOMContentLoaded', function() {
-  show_datatree_chart("datatree_chart", "../../data/ut_data_progress.json");
-});

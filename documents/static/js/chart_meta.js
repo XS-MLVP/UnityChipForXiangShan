@@ -58,10 +58,3 @@ function show_meta_chart(chart_id, data_url) {
     $("#em_id_report_date").text(graph_data["extend"]["time"]);
   });
 }
-
-
-document.addEventListener('DOMContentLoaded', function() {
-  var meta_chart_id = "meta_chart";
-  var meta_data_url = "../data/ut_data_progress.json";
-  show_meta_chart(meta_chart_id, meta_data_url);
-});

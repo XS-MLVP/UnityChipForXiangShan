@@ -1,0 +1,27 @@
+
+<label>{{.Get "label"}}</label>
+<select id="{{.Get "id"}}urlSelect" onchange="updateLink()" style="border: 0px">
+    {{ $baseurl := .Get "baseurl" }}
+    {{ $files := readDir "static/data/reports" }}
+    {{ $folders := where $files "IsDir" true }}
+    {{ $sortedFolders := sort $folders "Name" "desc" }}
+    {{ range $index, $folder := $sortedFolders }}
+    <option value="{{.Name}}" data-url="{{$baseurl}}/{{.Name | relURL }}"  {{ if eq $index 0 }}selected{{ end }}>{{.Name}}</option>
+    {{ end }}
+</select>
+<a id="{{.Get "id"}}goLink" href="#" target=“_blank“>{{.Get "detail"}}</a>
+
+<script>
+function updateLink() {
+    var select = document.getElementById("{{.Get "id"}}urlSelect");
+    var goLink = document.getElementById("{{.Get "id"}}goLink");
+    var url = select.options[select.selectedIndex].getAttribute("data-url");
+    goLink.href = url;
+    {{if .Get "onchange"}}
+    window[{{ .Get "onchange" }}](url + "/ut_data_progress.json");
+    {{end}}
+}
+document.addEventListener('DOMContentLoaded', function() {
+    updateLink()
+});
+</script>

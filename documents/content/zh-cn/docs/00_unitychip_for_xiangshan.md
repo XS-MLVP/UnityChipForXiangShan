@@ -5,14 +5,26 @@ linkTitle: 目标验证单元
 weight: 12
 ---
 
-<div id="datatree_chart" style="width: 90%;height:800px;"></div>
 <script src="../../js/echarts.min.js"></script>
 <script src="../../js/chart_datatree.js"></script>
+<script>
+function update_dut_charts(data_url){
+    show_datatree_chart("datatree_chart", data_url)
+}
+</script>
+
 <br>
 
-上图共有<em>75</em>个模块，默认情况下模块为灰色，当模块中的测试用例数大于10时，该模块被完全点亮。目前已经完全点亮的模块为<em>x</em>个，点亮中的模块有<em>y</em>个，待点亮的模块有<em>z</em>个。
+<div id="datatree_chart" style="width: 90%;height:800px;"></div>
+<div style="text-align: center; width: 100%;">
+{{<list-report  baseurl="../../data/reports" label="当前版本：" detail="查看测试报告" id="dut" onchange="update_dut_charts">}}
+</div>
+<br>
 
-#### 通用处理器模块介绍
+
+上图共有<em>-</em>个模块，默认情况下模块为灰色，当模块中的测试用例数大于-时，该模块被完全点亮。目前已经完全点亮的模块为<em>-</em>个，点亮中的模块有<em>-</em>个，待点亮的模块有<em>-</em>个。
+
+#### 通用处理器模块简介
 
 高性能处理器是现代计算设备的核心，它们通常由三个主要部分组成：前端、后端和访存系统。这些部分协同工作，以确保处理器能够高效地执行复杂的计算任务。
 
@@ -23,15 +35,3 @@ weight: 12
 - **访存**：访存系统是处理器与内存之间交互的桥梁。它包括了数据缓存、内存控制器和高速缓存一致性协议。数据缓存用于存储处理器频繁访问的数据，以减少对主内存的访问次数。内存控制器负责管理处理器与内存之间的数据传输。高速缓存一致性协议确保在多处理器系统中，所有处理器看到的内存状态是一致的。
 
 高性能处理器的设计需要在这三个部分之间找到平衡，以实现最佳的性能。这通常涉及到复杂的微架构设计，以及对处理器流水线的优化。
-
-##### 香山昆明湖UT划分
-
-- **前端**：
-  - BPU
-    - RAS
-      - XX
-- **后端**：
-
-- **访存**：
-
-- **其他**：

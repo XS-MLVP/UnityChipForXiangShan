@@ -5,9 +5,20 @@ linkTitle: 进度概述
 weight: 10
 ---
 
-<div id="meta_chart" style="width: 100%;height:400px;"></div>
 <script src="../js/echarts.min.js"></script>
 <script src="../js/chart_meta.js"></script>
+<script>
+function update_charts(data_url){
+    show_meta_chart("meta_chart", data_url)
+}
+</script>
+
+<div id="meta_chart" style="width: 100%;height:400px;"></div>
+<div style="text-align: center; width: 100%;">
+{{<list-report  baseurl="../data/reports" label="当前版本：" detail="查看测试报告" id="index" onchange="update_charts">}}
+</div>
+<br>
+
 
 香山昆明湖架构各个模块验证情况如上图中所示。总统计数据如下：
 

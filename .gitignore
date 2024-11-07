@@ -12,6 +12,8 @@ documents/public/
 documents/resources/_gen/
 rtl/*
 !rtl/README.md
+documents/static/data/*
+!documents/static/data/README.txt
 
 # C extensions
 *.so
