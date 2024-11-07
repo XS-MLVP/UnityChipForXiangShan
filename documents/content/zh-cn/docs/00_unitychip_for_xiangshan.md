@@ -22,7 +22,7 @@ function update_dut_charts(data_url){
 <br>
 
 
-上图共有<em>-</em>个模块，默认情况下模块为灰色，当模块中的测试用例数大于-时，该模块被完全点亮。目前已经完全点亮的模块为<em>-</em>个，点亮中的模块有<em>-</em>个，待点亮的模块有<em>-</em>个。
+上图共有<em id="em_id_report_dut_total">-</em>个模块，默认情况下模块为灰色，当模块中的测试用例数大于<em id="em_id_report_dut_min_light">-</em>时，该模块被完全点亮。目前已经完全点亮的模块为<em  id="em_id_report_dut_lighted">-</em>个，待点亮的模块有<em  id="em_id_report_dut_lighted_no">-</em>个。
 
 #### 通用处理器模块简介
 
