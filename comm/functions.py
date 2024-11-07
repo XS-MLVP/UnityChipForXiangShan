@@ -23,6 +23,7 @@ import subprocess
 import fnmatch
 import importlib
 import traceback
+import copy
 from .logger import warning, debug, info
 from .cfg import get_config
 
@@ -226,12 +227,20 @@ def replace_default_vars(input_str, cfg):
 
 
 def replace_default_vars_in_dict(input_dict, cfg):
-    for k, v in input_dict.items():
-        if isinstance(v, str) and "%{" in v:
-            input_dict[k] = replace_default_vars(v, cfg)
-        elif isinstance(v, dict):
-            input_dict[k] = replace_default_vars_in_dict(v, cfg)
-    return input_dict
+    data = copy.deepcopy(input_dict)
+    def _replace_default_vars(target_dict, data_ref):
+        for k, v in target_dict.items():
+            if isinstance(k, str) and "%{" in k:
+                del data_ref[k]
+                k = replace_default_vars(k, cfg)
+                data_ref[k] = v
+            if isinstance(v, str) and "%{" in v:
+                v = replace_default_vars(v, cfg)
+                data_ref[k] = v
+            elif isinstance(v, dict):
+                _replace_default_vars(v, data_ref[k])
+    _replace_default_vars(input_dict, data)
+    return data
 
 
 def get_report_dir(cfg=None):
