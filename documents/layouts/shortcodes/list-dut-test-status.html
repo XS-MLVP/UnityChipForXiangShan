@@ -1,0 +1,136 @@
+
+<style>
+.div-dut-test-report {
+    all:none;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+    width: 100%;
+    margin: 0 auto;
+}
+.div-dut-test-report tbody {
+    --bs-table-striped-bg: white;
+}
+.div-dut-test-report .td-name {
+    text-align: left;
+}
+.div-dut-test-report .td-index {
+    text-align: center;
+}
+.div-dut-test-report table {
+    width: 90%;
+    margin: 0 auto;
+}
+.div-dut-test-report td {
+    text-align: right;
+}
+.div-dut-test-report th {
+    text-align: right;
+}
+.div-dut-test-report tr {
+    border-bottom: 1px solid #ddd;
+}
+.em-red {
+    color: yellow;
+    font-weight: bold;
+    background-color: rgb(247, 36, 152);
+    border-radius: 2px;
+}
+.em-orange {
+    color: white;
+    font-weight: bold;
+    background-color: orange;
+    border-radius: 2px;
+}
+.em-green {
+    font-weight: bold;
+    color: yellow;
+    background-color: green;
+    border-radius: 2px;
+}
+</style>
+
+<div class="div-dut-test-report">
+<table id="dut-test-items" align="center" class="td-initial">
+  <tbody align="center">
+    <tr>
+        <th class="td-index">Index</th>
+        <th class="td-name">Name</th>
+        <th>Document</th>
+        <th>&nbsp;&nbsp;Cases</th>
+        <th>&nbsp;&nbsp;&nbsp;Fail</th>
+        <th>&nbsp;&nbsp;&nbsp;SKip</th>
+        <th>CsRate (%)</th>
+        <th>Checks
+        <th>CkRate (%)</th>
+        <th>Lines</th>
+        <th>CvRate (%)</th>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<script>
+function updateDUTestStatus(data_url){
+    $.getJSON(data_url, function (data) {
+        var prefix = data.tree.meta.paths;
+        var index = 1;
+        function calcRateColor(rate){
+            var color = "";
+            if(rate < 50){
+                color = "red";
+            } else if(rate < 85){
+                color = "orange";
+            } else {
+                color = "green";
+            }
+            return "<em class=\"em-"+color+"\">" + rate + "</em>";
+        }
+        function calcRate(a, b){
+            if(b === 0){
+                return 0;
+            }
+            return calcRateColor((a / b * 100).toFixed(2));
+        }
+        function redItem(item){
+            if (item > 0) {
+                return "<em class=\"em-red\">" + item + "</em>";
+            }
+            return item;
+        }
+        function getDocUrl(url){
+            if(url){
+                return "<a href=\"" + url + "\" target=\"_blank\">Detail</a>";
+            }
+            return "-";
+        }
+        function traverse(node) {
+            if (!node.children || node.children.length === 0) {
+                var meta = node.meta
+                $("#dut-test-items").html($("#dut-test-items").html() + 
+                    "<tr><td class=\"td-index\">" + index + "</td>" +
+                    "<td class=\"td-name\">" + meta.paths.replace(prefix + "/",
+                        "").replaceAll("/", ".") + "</td>" +
+                    "<td>" + getDocUrl(meta.doc_url) + "</td>" +
+                    "<td>" + meta.cases.pass + "/" + meta.cases.total + "</td>" +
+                    "<td>" + redItem(meta.cases.fail) + "</td>" +
+                    "<td>" + meta.cases.skip + "</td>" +
+                    "<td>" + calcRate(meta.cases.pass, meta.cases.total) + "</td>" +
+                    "<td>" + meta.functions.cover + "/" +meta.functions.total + "</td>" +
+                    "<td>" + calcRate(meta.functions.cover, meta.functions.total) + "</td>" +
+                    "<td>" + meta.lines.cover + "/" +meta.lines.total + "</td>" +
+                    "<td>" + calcRate(meta.lines.cover, meta.lines.total) + "</td>" +
+                    "</tr>"
+                );
+                index++;
+            } else {
+                $.each(node.children, function(index, child) {
+                    traverse(child);
+                });
+            }
+        }
+        traverse(data.tree);
+    });
+}
+</script>

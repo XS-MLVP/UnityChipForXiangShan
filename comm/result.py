@@ -196,9 +196,9 @@ node_default_meta_data = {
     "functions": {"total": 0, "cover": 0},
     "lines":     {"total": 0, "cover": 0},
     "paths":     "",
-    "value":     1,
     "light":     False,
     "light_count": 0,
+    "doc_url":   "",
 }
 
 
@@ -214,6 +214,7 @@ def update_dut_tree_node_meta(tree_data):
         if "children" in node:
             meta = copy.deepcopy(node_default_meta_data)
             meta["paths"] = parent_name + "/" + node["name"]
+            value = 0
             for child in node["children"]:
                 child_meta = _update_node_meta(child, meta["paths"])
                 meta["cases"]["total"] += child_meta["cases"]["total"]
@@ -226,10 +227,10 @@ def update_dut_tree_node_meta(tree_data):
                 meta["lines"]["cover"] += child_meta["lines"]["cover"]
                 meta["lines"]["text"] = "%d/%d (%.2f %%)" % (meta["lines"]["cover"], meta["lines"]["total"],
                                                              float(meta["lines"]["cover"])/meta["lines"]["total"]*100) if meta["lines"]["total"] > 0 else "0/0 (0.00 %)"
-                meta["value"] += child_meta["value"]
                 meta["light_count"] += child_meta["light_count"]
+                value += child.get("value", 1)
             node["meta"] = meta
-            node["value"] = node["meta"]["value"]
+            node["value"] = value
         else:
             node["meta"]["paths"] = parent_name + "/" + node["name"]
             node["meta"]["light_count"] = 1 if node["meta"]["light"] else 0
@@ -244,7 +245,7 @@ def init_dut_tree(tree_data):
             meta = copy.deepcopy(node_default_meta_data)
             meta.update(node.get("meta",{}))
             node["meta"] = meta
-            node["value"] = node["meta"]["value"]
+            node["value"] = 1
             node.update(copy.deepcopy(node_defaut_extern))
         else:
             for child in node["children"]:
@@ -287,7 +288,6 @@ class DutTree(object):
                 warning("Path not found: %s, please check your dut module struct" % path)
                 continue
             leaf_map[path]["meta"] = {**leaf_map[path]["meta"], **meta}
-            leaf_map[path]["value"] = leaf_map[path]["meta"]["value"]
             total = leaf_map[path]["meta"]["cases"]["total"]
             if total > 0:
                 leaf_map[path]["itemStyle"]["colorAlpha"] = min(1.0, float(total)/10.0)

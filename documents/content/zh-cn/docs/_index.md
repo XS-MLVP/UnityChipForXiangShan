@@ -10,6 +10,7 @@ weight: 10
 <script>
 function update_charts(data_url){
     show_meta_chart("meta_chart", data_url)
+    updateDUTestStatus(data_url)
 }
 </script>
 
@@ -21,41 +22,35 @@ function update_charts(data_url){
 
 
 香山昆明湖架构各个模块验证情况如上图中所示。总统计数据如下：
-
 <table>
     <ol>
     <tr>
-        <td><li>总测试用例数（Total Cases）</td>
-        <td  style="text-align: right; font-weight: bold;"><em id="em_id_report_cases_toal">-</em></li></td>
+        <td>总测试用例数（Total Cases）：</td>
+        <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_cases_toal">-</em></td>
+        <td>测试用例通过数（Passed Cases）：</td>
+        <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_cases_pass">-</em></td>
     </tr>
     <tr>
-        <td><li>测试用例通过数（Passed Cases）</td>
-        <td  style="text-align: right; font-weight: bold;"><em id="em_id_report_cases_pass">-</em></li></td>
+        <td>测试用例未过数（Failed Cases）：</td>
+        <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_cases_fail">-</em></td>
+        <td>测试用例跳过数（Skipped Cases）：</td>
+        <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_cases_skip">-</em></td>
     </tr>
     <tr>
-        <td><li>测试用例未过数（Failed Cases）</td>
-        <td  style="text-align: right; font-weight: bold;"><em id="em_id_report_cases_fail">-</em></li></td>
+        <td>总功能覆盖点数（Function Coverage）：</td>
+        <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_function_total">-</em></td>
+        <td>覆盖点已覆盖数（Coverage Functions）：</td>
+        <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_function_cover">-</em></td>
     </tr>
     <tr>
-        <td><li>测试用例跳过数（Skipped Cases）</td>
-        <td  style="text-align: right; font-weight: bold;"><em id="em_id_report_cases_skip">-</em></li></td>
-    </tr>
-    <tr>
-        <td><li>总功能覆盖点数（Function Coverage）</td>
-        <td  style="text-align: right; font-weight: bold;"><em id="em_id_report_function_total">-</em></li></td>
-    </tr>
-    <tr>
-        <td><li>覆盖点已覆盖数（Coverage Functions）</td>
-        <td  style="text-align: right; font-weight: bold;"><em id="em_id_report_function_cover">-</em></li></td>
-    </tr>
-    <tr>
-        <td><li>总代码行覆盖率（Line Coverage Rate）</td>
-        <td  style="text-align: right;"><em id="em_id_report_line_coverage">-</em></li></td>
+        <td>总代码行覆盖率（Line Coverage Rate）：</td>
+        <td  style="text-align: left;"><em id="em_id_report_line_coverage">-</em></td>
     </tr>
     </ol>
 </table>
 
 *总代码行会随着DUT的增加而不断增加，因此：总代码行覆盖率不是最终覆盖率
+
 
 其他内容快捷连接：
 
@@ -66,9 +61,16 @@ function update_charts(data_url){
 - **[正在进行的任务列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/task)**
 - **[已完成的任务列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/taskdone)**
 
-注：本项目中的统计信息根据commit等数据自动更新，参与者可以提交issue（写明任务内容，预计完成时间等）同步正在进行的任务。
+<br>
+<div style="text-align: center; width: 100%;">
+<h4>香山昆明湖的每个DUT验证进展</h4>
+</div>
+<br>
 
+{{<list-dut-test-status>}}
 
 <div style="text-align: center; width: 100%;">
+<br>
+注：本项目中的统计信息根据commit等数据自动更新，参与者可以提交issue（写明任务内容，预计完成时间等）同步正在进行的任务。<br>
 数据自动更新日期：<em id="em_id_report_date">1970-01-01 00:00:00</em>
 </div>

@@ -28,6 +28,8 @@ children:
             desc: "微操作分支目标缓冲器 (Micro-Op Fetch Target Buffer)"
           - name: "ittage"
             desc: "分支目标缓冲器 (Instruction Tagged Target Buffer)"
+            meta:
+              doc_url: "https://open-verify.cc/xs-bpu/docs/modules/04_ittage"
           - name: "tagesc"
             desc: "分支目标缓冲器+SC预测器 (TAGE-SC)"
           - name: "ras"
