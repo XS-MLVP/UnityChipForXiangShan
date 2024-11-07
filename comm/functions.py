@@ -317,5 +317,5 @@ def get_git_url_with_commit():
     url = get_git_remote_url()
     commit = get_git_commit()
     if url != "none" and commit != "none":
-        return f"{url}/commit/{commit}" + " (dirty)" if is_git_dirty() else ""
+        return f"{url}/commit/{commit}" + (" (dirty)" if is_git_dirty() else "")
     return "none"
