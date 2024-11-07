@@ -47,7 +47,7 @@ def merge_dict(dict1, dict2):
 
 
 def get_abs_path(path, sub, cfg):
-    path = path.replace("%{root}", get_root_dir())
+    path = replace_default_vars(path, cfg)
     ret_path = ""
     if path.startswith("/"):
         ret_path = os.path.join(path, sub)
@@ -209,12 +209,40 @@ def build_dut(duts, cfg):
             warning(f"Failed to build {d}, error: {e}\n{traceback.format_exc()}")
 
 
+def replace_default_vars(input_str, cfg):
+    if "%{time}" in input_str:
+        input_str = input_str.replace("%{time}", time_format(fmt="%Y%m%d%H%M%S"))
+    if "%{pid}" in input_str:
+        input_str = input_str.replace("%{pid}", str(os.getpid()))
+    if "%{host}" in input_str:
+        input_str = input_str.replace("%{host}", os.uname().nodename)
+    if "%{root}" in input_str:
+        input_str = input_str.replace("%{root}", get_root_dir())
+    if "%{gitag}" in input_str:
+        input_str = input_str.replace("%{gitag}", get_git_tag())
+    if "%{giturl}" in input_str:
+        input_str = input_str.replace("%{giturl}", get_git_url_with_commit())
+    return input_str
+
+
+def replace_default_vars_in_dict(input_dict, cfg):
+    for k, v in input_dict.items():
+        if isinstance(v, str) and "%{" in v:
+            input_dict[k] = replace_default_vars(v, cfg)
+        elif isinstance(v, dict):
+            input_dict[k] = replace_default_vars_in_dict(v, cfg)
+    return input_dict
+
+
+def get_report_dir(cfg=None):
+    cfg = get_config(cfg)
+    return os.path.join(get_out_dir(cfg=cfg), cfg.report.report_dir)
+
+
 def new_report_name(cfg=None):
     cfg = get_config(cfg)
-    report_dir = os.path.join(get_out_dir(cfg=cfg), cfg.report.report_dir)
-    report_name = str(cfg.report.report_name).replace("%{time}", time_format()).replace("%{pid}",
-                                                                           str(os.getpid())).replace("%{host}",
-                                                                                                     os.uname().nodename)
+    report_dir = get_report_dir(cfg=cfg)
+    report_name = replace_default_vars(str(cfg.report.report_name), cfg)
     os.makedirs(report_dir, exist_ok=True)
     return report_dir, report_name
 
@@ -234,3 +262,51 @@ def exe_cmd(cmd, no_log=False):
         stderr = ""
     success = result.returncode == 0
     return success, stdout, stderr
+
+
+def get_git_commit():
+    try:
+        commit = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode("utf-8")
+        return commit
+    except subprocess.CalledProcessError as e:
+        warning(f"Error getting git commit: {e}")
+        return "none"
+
+
+def is_git_dirty():
+    try:
+        status = subprocess.check_output(["git", "status", "--porcelain"]).strip().decode("utf-8")
+        return len(status) > 0
+    except subprocess.CalledProcessError as e:
+        warning(f"Error checking if git is dirty: {e}")
+        return False
+
+
+def get_git_branch():
+    try:
+        branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip().decode("utf-8")
+        return branch
+    except subprocess.CalledProcessError as e:
+        warning(f"Error getting git branch: {e}")
+        return "none"
+
+
+def get_git_tag():
+    return get_git_branch() + "-" + get_git_commit() + ("-dirty" if is_git_dirty() else "")
+
+
+
+def get_git_remote_url():
+    try:
+        url = subprocess.check_output(["git", "config", "--get", "remote.origin.url"]).strip().decode("utf-8")
+        return url
+    except subprocess.CalledProcessError as e:
+        return "none"
+
+
+def get_git_url_with_commit():
+    url = get_git_remote_url()
+    commit = get_git_commit()
+    if url != "none" and commit != "none":
+        return f"{url}/commit/{commit}" + " (dirty)" if is_git_dirty() else ""
+    return "none"

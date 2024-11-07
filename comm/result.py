@@ -25,7 +25,7 @@ from .logger import warning
 def process_doc_result(report_dir, report_name, cfg):
     if cfg.doc_result.disable:
         return
-    from .functions import get_abs_path, time_format
+    from .functions import get_abs_path, time_format, get_report_dir
     extend_info = {"time": time_format(fmt="%Y-%m-%d %H:%M:%S")}
     toffee_result = os.path.join(report_dir, os.path.dirname(report_name), "toffee_report.json")
     assert os.path.exists(toffee_result), f"{toffee_result} not found, please check the toffee report"
@@ -77,10 +77,16 @@ def process_doc_result(report_dir, report_name, cfg):
         leaf_meta[path]["lines"]["cover"] += line_hint
     # 4. save result to docutment
     dut_tree.update_leaf_meta(leaf_meta)
-    result = dut_tree.export_echart_jsondata(dut_data["dut_block"])
+    result = dut_tree.export_echart_jsondata(dut_data.get("dut_block", []))
     result["extend"] = extend_info
-    with open(get_abs_path(cfg.doc_result.save_path, "", cfg), "w+") as file:
+    result["config"] = dut_data.get("config",{})
+    result_file = os.path.join(os.path.dirname(toffee_result), cfg.doc_result.result_name)
+    with open(result_file, "w+") as file:
         json.dump(result, file, indent=4)
+    # 5. link report dir to doc report dir
+    link_path = get_abs_path(cfg.doc_result.report_link, "", cfg)
+    if not os.path.exists(link_path):
+        os.symlink(report_dir, link_path, target_is_directory=True)
 
 
 def search_line_coverage(lc_files, target_dir, path, extend_info):
@@ -192,6 +198,7 @@ node_default_meta_data = {
     "paths":     "",
     "value":     1,
     "light":     False,
+    "light_count": 0,
 }
 
 
@@ -220,10 +227,13 @@ def update_dut_tree_node_meta(tree_data):
                 meta["lines"]["text"] = "%d/%d (%.2f %%)" % (meta["lines"]["cover"], meta["lines"]["total"],
                                                              float(meta["lines"]["cover"])/meta["lines"]["total"]*100) if meta["lines"]["total"] > 0 else "0/0 (0.00 %)"
                 meta["value"] += child_meta["value"]
+                meta["light_count"] += child_meta["light_count"]
+            meta.update(node.get("meta",{}))
             node["meta"] = meta
             node["value"] = node["meta"]["value"]
         else:
             node["meta"]["paths"] = parent_name + "/" + node["name"]
+            node["meta"]["light_count"] = 1 if node["meta"]["light"] else 0
         return node["meta"]
     _update_node_meta(tree_data, "")
     return tree_data
@@ -232,7 +242,9 @@ def update_dut_tree_node_meta(tree_data):
 def init_dut_tree(tree_data):
     def _append_meta_to_leaf(node):
         if "children" not in node:
-            node["meta"] = copy.deepcopy(node_default_meta_data)
+            meta = copy.deepcopy(node_default_meta_data)
+            meta.update(node.get("meta",{}))
+            node["meta"] = meta
             node["value"] = node["meta"]["value"]
             node.update(copy.deepcopy(node_defaut_extern))
         else:
