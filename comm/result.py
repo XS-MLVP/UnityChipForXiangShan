@@ -25,7 +25,7 @@ from .logger import warning
 def process_doc_result(report_dir, report_name, cfg):
     if cfg.doc_result.disable:
         return
-    from .functions import get_abs_path, time_format, get_report_dir
+    from .functions import get_abs_path, time_format
     extend_info = {"time": time_format(fmt="%Y-%m-%d %H:%M:%S")}
     toffee_result = os.path.join(report_dir, os.path.dirname(report_name), "toffee_report.json")
     assert os.path.exists(toffee_result), f"{toffee_result} not found, please check the toffee report"
@@ -228,7 +228,6 @@ def update_dut_tree_node_meta(tree_data):
                                                              float(meta["lines"]["cover"])/meta["lines"]["total"]*100) if meta["lines"]["total"] > 0 else "0/0 (0.00 %)"
                 meta["value"] += child_meta["value"]
                 meta["light_count"] += child_meta["light_count"]
-            meta.update(node.get("meta",{}))
             node["meta"] = meta
             node["value"] = node["meta"]["value"]
         else:
