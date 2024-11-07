@@ -16,7 +16,7 @@
 import os
 import argparse
 import pytest
-from comm import init_cfg, cfg_as_str, get_rtl_lnk_version, error, build_dut
+from comm import init_cfg, cfg_as_str, get_rtl_lnk_version, error, build_dut, replace_default_vars_in_dict
 from comm import download_rtl, get_rtl_dir, init_log, init, new_report_name, process_doc_result
 
 
@@ -68,7 +68,7 @@ def main():
     pytest.toffee_tags_skip_cases = cfg.test.skip_cases
     pytest.toffee_tags_run_cases = cfg.test.run_cases
     pytest.toffee_ignore_exceptions = cfg.test.skip_exceptions
-    pytest.toffee_report_information = cfg.report.information.as_dict()
+    pytest.toffee_report_information = replace_default_vars_in_dict(cfg.report.information.as_dict(), cfg=cfg)
     pytest.main(append_args, plugins=[__import__(__name__)])
     process_doc_result(report_dir, report_name, cfg)
 

@@ -47,7 +47,7 @@ report:
   # Report generation directory, relative to output.out-dir
   report-dir: "report"
   # Report name, supports variable substitution: %{host} hostname, %{pid} process ID, %{time} current time
-  report-name: "%{host}-%{pid}-%{time}/index.html"
+  report-name: "%{time}-%{gitag}/index.html"
   # Report content
   information:
     # Report title
@@ -60,7 +60,7 @@ report:
     line_grate: 99
     # Other information to display, key is the title, value is the content
     meta:
-      Version: "1.0"
+      Version: "%{giturl}"
 
 # Log configuration
 log:
@@ -84,4 +84,5 @@ doc-result:
   # Target duts and their structure
   dutree: "%{root}/configs/dutree/xiangshan-kmh.yaml"
   # Result path, relative to the current configuration file path
-  save-path: "%{root}/documents/static/data/ut_data_progress.json"
+  result-name: "ut_data_progress.json"
+  report-link: "%{root}/documents/static/data/reports"

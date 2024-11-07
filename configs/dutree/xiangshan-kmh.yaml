@@ -207,6 +207,6 @@ children:
 dut_block: ["bpu", "rename", "dispatch_queue", "scheduler", "exu_block", "lsq", "v_mem"]
 
 # 显示配置信息
-confg:
+config:
   # DUT地图默认点亮case数最小值
   default_light_min: 10
