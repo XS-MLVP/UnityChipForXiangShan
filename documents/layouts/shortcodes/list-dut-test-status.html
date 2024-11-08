@@ -49,7 +49,32 @@
     background-color: green;
     border-radius: 2px;
 }
+.modal-linecov {
+    display: none; /* 默认隐藏 */
+    position: absolute; /* 使用绝对定位 */
+    z-index: 1;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.4);
+}
+.modal-content {
+    background-color: #fefefe;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 300px;
+    position: absolute;
+}
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
 </style>
+
+<div id="line-file-modal" class="modal-linecov">
+    <div class="modal-content" id="linecov-text">
+    </div>
+</div>
 
 <div class="div-dut-test-report">
 <table id="dut-test-items" align="center" class="td-initial">
@@ -57,6 +82,19 @@
 </div>
 
 <script>
+function closeLineCovModal() {
+    $("#line-file-modal").hide();
+}
+
+$(window).click(function(event) {
+    var modal = $("#line-file-modal");
+    if (! modal.is(":hidden")) {
+        if (! $(event.target).closest(".modal-content").length){
+            closeLineCovModal();
+        }
+    }
+});
+
 function updateDUTestStatus(data_url){
     $.getJSON(data_url, function (data) {
         $("#dut-test-items").html(
@@ -106,6 +144,49 @@ function updateDUTestStatus(data_url){
             }
             return "-";
         }
+        function getLinFileUrl(paths){
+            var txt = ""
+            var meta = data.extend[paths]
+            if (!meta) return txt;
+            meta.target_line_coverage_files.forEach(f=> {
+                var url = null;
+                if(!f.includes("not found")){
+                    meta.matched_line_coverage_files.forEach(u=> {
+                        if(u[0].includes(f)){
+                            var base_url = data_url.split("/").slice(0, -1).join("/");
+                            txt += "<li><a href=\"" + base_url + u[0] + "\" target=\"_blank\">" + f + "</a> <em style=\"float: right;\"> ("
+                                +u[1]+"/"+u[2]+")<em> </li>";
+                        }else{
+                            console.log("not found: " + f + " in " + u);
+                        }
+                    });
+                }else{
+                    txt += "<li>" + f + "</li>";
+                }
+            });
+            return $("#linecov-text").html(txt);
+        }
+        function openLineCovModal(event, paths) {
+            event.preventDefault();
+            event.stopPropagation();
+            closeLineCovModal();
+            getLinFileUrl(paths);
+            var modal = $("#line-file-modal")
+            var text = $("#linecov-text")
+            modal.css({
+                left: event.pageX - text.width()/2 + "px",
+                top: event.pageY - text.height()/2 + "px"
+            });
+            modal.show();
+        }
+        window.openLineCovModal = openLineCovModal;
+        function getLineCovUrl(paths, hints, total){
+            var text = hints + "/" + total;
+            if(total > 0){
+                return "<a href=\"\" onclick=\"openLineCovModal(event, '" + paths + "')\">" + text + "</a>";
+            }
+            return text;
+        }
         function traverse(node) {
             if (!node.children || node.children.length === 0) {
                 var meta = node.meta
@@ -120,7 +201,7 @@ function updateDUTestStatus(data_url){
                     "<td>" + calcRate(meta.cases.pass, meta.cases.total) + "</td>" +
                     "<td>" + meta.functions.cover + "/" +meta.functions.total + "</td>" +
                     "<td>" + calcRate(meta.functions.cover, meta.functions.total) + "</td>" +
-                    "<td>" + meta.lines.cover + "/" +meta.lines.total + "</td>" +
+                    "<td>" + getLineCovUrl(meta.paths, meta.lines.cover, meta.lines.total) + "</td>" +
                     "<td>" + calcRate(meta.lines.cover, meta.lines.total) + "</td>" +
                     "</tr>"
                 );
