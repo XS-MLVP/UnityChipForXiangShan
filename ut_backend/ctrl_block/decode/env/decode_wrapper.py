@@ -8,13 +8,13 @@ import toffee.funcov as fc
 from dut.predecode.UT_PreDecode import *
 from dut.decodestage.UT_DecodeStage import *
 
-from comm import get_out_dir, get_root_dir, debug
+from comm import get_out_dir, get_root_dir, debug, UT_FCOV
 from dut.rvcexpander.UT_RVCExpander import *
 
 from toffee_test.reporter import set_func_coverage
 from toffee_test.reporter import set_line_coverage
 
-g = fc.CovGroup("Group X")
+g = fc.CovGroup(UT_FCOV("INT", parent=-2))
 
 def init_function_coverage(g):
 # Add decoder module test point content: ToDO

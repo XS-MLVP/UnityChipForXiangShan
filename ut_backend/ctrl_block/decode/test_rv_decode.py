@@ -53,6 +53,7 @@ def test_rvc_inst(decoder_fixture):
     insn_list_temp  = generate_random_32bits(1)
     ref_lists       = convert_reference_format(insn_list_temp, True, libdisasm.disasm, libdisasm.disasm_free_mem)
     decode_run(decoder, ref_lists, need_log_file,"test_rvc_inst")
+    g.add_cover_point(decoder, {"fast_check_RVC_ramdom": lambda _: True}, name="RVC").sample()
 
 
 # randomly generate instructions for testing
@@ -63,6 +64,7 @@ def test_rvi_inst(decoder_fixture):
     insn_list_temp  = generate_random_32bits(100)
     ref_lists       = convert_reference_format(insn_list_temp, True, libdisasm.disasm, libdisasm.disasm_free_mem)
     decode_run(decoder, ref_lists, need_log_file,"test_rvi_inst")
+    g.add_cover_point(decoder, {"fast_check_random_32bit_int": lambda _: True}, name="RVI").sample()
 
 
 # testing of V extension instructions, which are not actually used
@@ -74,3 +76,4 @@ def test_rv_custom_inst(decoder_fixture):
     insn_list_temp  = generate_OP_V_insn(100)
     ref_lists       = convert_reference_format(insn_list_temp, True, libdisasm.disasm_custom_insn, libdisasm.disasm_free_mem, custom_v_opcode)
     decode_run(decoder, ref_lists, need_log_file,"test_rv_custom_inst")
+    g.add_cover_point(decoder, {"fast_check_OP_V_insn": lambda _: True}, name="RVI_Costom").sample()

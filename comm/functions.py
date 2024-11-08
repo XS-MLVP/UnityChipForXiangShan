@@ -24,6 +24,7 @@ import fnmatch
 import importlib
 import traceback
 import copy
+import inspect
 from .logger import warning, debug, info
 from .cfg import get_config
 
@@ -319,3 +320,15 @@ def get_git_url_with_commit():
     if url != "none" and commit != "none":
         return f"{url}/commit/{commit}" + (" (dirty)" if is_git_dirty() else "")
     return "none"
+
+
+def UT_FCOV(group, ignore_prefix="ut_", parent=-1):
+    frame = inspect.currentframe()
+    caller_frame = frame.f_back
+    caller_module = inspect.getmodule(caller_frame)
+    if caller_module:
+        gname = ".".join(caller_module.__name__.split(".")[:parent]) + "." + group
+        if gname.startswith(ignore_prefix):
+            gname = gname[len(ignore_prefix):]
+        return gname
+    return "unknown." + group

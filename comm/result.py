@@ -117,7 +117,7 @@ def search_line_coverage(lc_files, target_dir, path, extend_info):
                     target_file.append(file)
                     find = True
             if not find:
-                warning(f"target line coverage file '{f}' not found for: {path}")
+                warning(f"target line coverage file '{f}' not found for: {path[1:].replace('/', '.')}")
             else:
                 matched = True
         extend_info[path]["target_line_coverage_files"].append(f if matched else f + " (not found)")
@@ -172,7 +172,7 @@ def get_leaf_path_by_group(leaf_meta, group_name, dut_data, prefix):
     path = "/%s/" % dut_data["name"] + path
     for p in leaf_meta.keys():
         if path.startswith(p):
-            return
+            return p
     warning("DUT path not found: %s, please check your function coverage group name format" % path)
     return None
 
