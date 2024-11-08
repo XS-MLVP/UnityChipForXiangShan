@@ -121,7 +121,6 @@ def search_line_coverage(lc_files, target_dir, path, extend_info):
             else:
                 matched = True
         extend_info[path]["target_line_coverage_files"].append(f if matched else f + " (not found)")
-    extend_info[path]["matched_line_coverage_files"] = target_file
     # search line coverage in html files
     line_hint = 0
     line_total = 0
@@ -142,7 +141,8 @@ def search_line_coverage(lc_files, target_dir, path, extend_info):
             warning(f"Failed to get line coverage from {f}")
             line_total = 0
             line_hint = 0
-            continue
+        extend_info[path]["matched_line_coverage_files"].append((f.replace(os.path.abspath(
+            os.path.join(target_dir, "..")), ""), line_hint, line_total))
     return line_hint, line_total
 
 
