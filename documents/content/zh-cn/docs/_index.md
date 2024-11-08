@@ -29,22 +29,32 @@ function update_charts(data_url){
         <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_cases_toal">-</em></td>
         <td>测试用例通过数（Passed Cases）：</td>
         <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_cases_pass">-</em></td>
+        <td>测试用例通过率（Passed Rate）：</td>
+        <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_cases_prate">-</em></td>
     </tr>
     <tr>
         <td>测试用例未过数（Failed Cases）：</td>
         <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_cases_fail">-</em></td>
         <td>测试用例跳过数（Skipped Cases）：</td>
         <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_cases_skip">-</em></td>
+        <td>测试用例调过率（Skip Rate）：</td>
+        <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_cases_srate">-</em></td>
     </tr>
     <tr>
         <td>总功能覆盖点数（Function Coverage）：</td>
         <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_function_total">-</em></td>
-        <td>覆盖点已覆盖数（Coverage Functions）：</td>
+        <td>覆盖点已覆盖数（Covered Functions）：</td>
         <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_function_cover">-</em></td>
+        <td>覆盖点已覆盖率（Covered Rate）：</td>
+        <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_function_rate">-</em></td>
     </tr>
     <tr>
-        <td>总代码行覆盖率（Line Coverage Rate）：</td>
-        <td  style="text-align: left;"><em id="em_id_report_line_coverage">-</em></td>
+        <td>总代码行覆盖率（Total Lines）：</td>
+        <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_line_total">-</em></td>
+        <td>总代码行覆盖数（Covered Lines）：</td>
+        <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_line_cover">-</em></td>
+        <td>总代码行覆盖率（Covered Rate）：</td>
+        <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_line_rate">-</em></td>
     </tr>
     </ol>
 </table>
@@ -63,7 +73,7 @@ function update_charts(data_url){
 
 <br>
 <div style="text-align: center; width: 100%;">
-<h4>香山昆明湖的每个DUT验证进展</h4>
+<h4>香山昆明湖DUT验证进展</h4>
 </div>
 <br>
 

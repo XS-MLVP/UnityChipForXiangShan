@@ -117,11 +117,11 @@ function updateDUTestStatus(data_url){
         var index = 1;
         function calcRateColor(rate){
             var color = "";
-            if(rate < 50){
+            if(rate < data.config.rate_low){
                 color = "red";
-            } else if(rate < 85){
+            } else if(rate < data.config.rate_middle){
                 color = "orange";
-            } else {
+            } else if(rate > data.config.rate_high){
                 color = "green";
             }
             return "<em class=\"em-"+color+"\">" + rate + "</em>";
