@@ -53,27 +53,28 @@
 
 <div class="div-dut-test-report">
 <table id="dut-test-items" align="center" class="td-initial">
-  <tbody align="center">
-    <tr>
-        <th class="td-index">Index</th>
-        <th class="td-name">Name</th>
-        <th>Document</th>
-        <th>&nbsp;&nbsp;Cases</th>
-        <th>&nbsp;&nbsp;&nbsp;Fail</th>
-        <th>&nbsp;&nbsp;&nbsp;SKip</th>
-        <th>CsRate (%)</th>
-        <th>Checks
-        <th>CkRate (%)</th>
-        <th>Lines</th>
-        <th>CvRate (%)</th>
-    </tr>
-  </tbody>
 </table>
 </div>
 
 <script>
 function updateDUTestStatus(data_url){
     $.getJSON(data_url, function (data) {
+        $("#dut-test-items").html(
+"            <tbody align=\"center\">\
+    <tr>\
+        <th class=\"td-index\">Index</th>\
+        <th class=\"td-name\">Name</th>\
+        <th>Document</th>\
+        <th>&nbsp;&nbsp;Cases</th>\
+        <th>&nbsp;&nbsp;&nbsp;Fail</th>\
+        <th>&nbsp;&nbsp;&nbsp;SKip</th>\
+        <th>CsRate (%)</th>\
+        <th>Checks\
+        <th>CkRate (%)</th>\
+        <th>Lines</th>\
+        <th>CvRate (%)</th>\
+    </tr>\
+  </tbody>");
         var prefix = data.tree.meta.paths;
         var index = 1;
         function calcRateColor(rate){
