@@ -212,3 +212,6 @@ dut_block: ["bpu", "rename", "dispatch_queue", "scheduler", "exu_block", "lsq", 
 config:
   # DUT地图默认点亮case数最小值
   default_light_min: 10
+  rate_low: 50
+  rate_middle: 80
+  rate_high: 90
