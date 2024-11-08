@@ -8,7 +8,7 @@ import toffee.funcov as fc
 from dut.predecode.UT_PreDecode import *
 from dut.decodestage.UT_DecodeStage import *
 
-from comm import get_out_dir, get_root_dir, debug, UT_FCOV
+from comm import get_out_dir, get_root_dir, debug, UT_FCOV, get_file_logger
 from dut.rvcexpander.UT_RVCExpander import *
 
 from toffee_test.reporter import set_func_coverage
@@ -258,32 +258,28 @@ def open_log_file(name):
     else:
         filename_all = output_dir + f"_all_{current_time}.txt"
         filename_err = output_dir + f"_err_{current_time}.txt"
-
-    log_all_info_file   = open(filename_all, 'w')
-    log_all_info_file.close()
-    log_all_info_file   = open(filename_all, 'a')
-
-    log_err_info_file   = open(filename_err, 'w')
-    log_err_info_file.close()
-    log_err_info_file   = open(filename_err, 'a')
+    log_all_info_file = get_file_logger(filename_all, format=None)
+    log_err_info_file = get_file_logger(filename_err, format=None)
 
 
 def close_log_file():
+    global log_all_info_file
+    global log_err_info_file
     if log_all_info_file is not None:
-        log_all_info_file.close()
+        log_all_info_file = None
     if log_err_info_file is not None:
-        log_err_info_file.close()
+        log_err_info_file = None
 
 
 def write_all_info_to_file(info):
     if log_all_info_file is not None:
-        log_all_info_file.write(info + "\n")
+        log_all_info_file.info(info)
     else:
         debug("remember open_log_file , close_log_file")
 
 def write_err_info_to_file(info):
     if log_err_info_file is not None:
-        log_err_info_file.write(info + "\n")
+        log_err_info_file.info(info)
     else:
         debug("remember open_log_file , close_log_file")
 
