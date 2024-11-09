@@ -15,10 +15,126 @@
 
 import os
 
+__all__ = ["build", "line_coverage_files"]
 
-def build(cfg):
-    return False
+from toffee_test.markers import match_version
+
+from comm import CfgObject, get_rtl_dir, error, info, get_root_dir, exe_cmd, warning
 
 
-def line_coverage_files(cfg):
-	return []
+def get_rlt_dependencies(top_module: str, cfg: CfgObject) -> list[str]:
+    """There is only single module and module's name is file's name"""
+    import re
+    from glob import iglob
+
+    some_verilog_keywords = {
+        'for', 'real', 'initial', 'input', 'endcase', 'typedef', 'primitive', 'always_comb', 'always_latch', 'negedge',
+        'repeat', 'while', 'endfunction', 'int', 'output', 'wire', 'logic', 'reg', 'assign', 'function', 'case',
+        'always_ff', 'if', 'posedge', 'table', 'end', 'task', 'forever', 'enum', 'endtask', 'module', 'localparam',
+        'timescale', 'endprimitive', 'else', 'endtable', 'always', 'parameter', 'time', 'endmodule', 'begin',
+        "and", "or", "not", "xor"
+    }
+
+    modulename_pattern = re.compile(r"\bmodule\s+(\w+)\b")
+    instance_pattern = re.compile(r"\b(\w+)\s+(?!module)(\w+)\s*\(")
+    module_path_map = {}
+
+    def parser_verilog_file(path: str) -> tuple[set, set]:
+        _module_set = set()
+        _inst_set = set()
+        def remove_inline_comments(s: str) -> str:
+            # Remove the line comment first
+            s = re.sub(r"//.*$", "", s)
+            # Then remove the block comment
+            return re.sub(r'/\*.*?\*/', "", s)
+
+        def parse_line(line_text: str):
+            _line = remove_inline_comments(line_text)
+
+            # Extract names of declared modules
+            module_matches = modulename_pattern.finditer(_line)
+            for match in module_matches:
+                _name = match.group(1)
+                _module_set.add(_name)
+
+            # Extract names of instanced modules
+            instance_matches = instance_pattern.finditer(_line)
+            for match in instance_matches:
+                _name = match.group(1)
+                if (_name not in some_verilog_keywords) and (_name not in _module_set):
+                    _inst_set.add(_name)
+
+        """Code Begin Here"""
+        block_comment_depth = 0
+        pending_line = ''
+
+        with open(path, "r") as file:
+            while True:
+                chunk = file.read(32768)
+                if not chunk:
+                    break
+
+                lines = ("".join((pending_line, chunk))).split("\n")
+                if lines:
+                    pending_line = lines.pop()
+
+                for line in lines:
+                    # for block comment
+                    start_pos = line.find("/*")
+                    end_pos = line.find("*/")
+                    while start_pos != -1 or end_pos != -1:
+                        # if '/*' appears before '*/', increase depth
+                        if start_pos != -1 and (end_pos == -1 or start_pos < end_pos):
+                            block_comment_depth += 1
+                            line = " ".join((line[:start_pos], line[start_pos + 2:]))
+                        # if '*/' appears before '/*', decrease depth
+                        elif end_pos != -1:
+                            block_comment_depth -= 1
+                            line = " ".join((line[:end_pos], line[end_pos + 2:]))
+                        start_pos = line.find("/*")
+                        end_pos = line.find("*/")
+
+                    # skip if content of current line is in block comment
+                    if block_comment_depth > 0:
+                        continue
+                    parse_line(line)
+        if pending_line:
+            parse_line(pending_line)
+        return _module_set, _inst_set
+    def get_rtl_dep(top_module_name: str, cfg: CfgObject) -> None:
+        # Walk through the rtl dir
+        rtl_dir = os.path.join(str(get_rtl_dir(cfg=cfg)), cfg.rtl.version)
+
+        for path in iglob(f"**/{top_module_name}.*v", root_dir=rtl_dir, recursive=True):
+            path = os.path.join(rtl_dir, path)
+            module_set, inst_set = parser_verilog_file(path)
+            for _name in module_set:
+                module_path_map[_name] = path
+            module_set.clear()
+            for _name in inst_set:
+                get_rtl_dep(_name, cfg=cfg)
+    get_rtl_dep(top_module, cfg=cfg)
+    return list(module_path_map.values())
+
+def build(cfg: CfgObject):
+    from tempfile import NamedTemporaryFile
+    if not match_version(cfg.rtl.version, ["openxiangshan-kmh-97e37a2237-24092701"]):
+        error(f"frontend_bpu_tagesc: Unsupported RTL version {cfg.rtl.version}")
+        return False
+    rtl_files = get_rlt_dependencies("Tage_SC", cfg=cfg)
+    assert rtl_files, "Cannot find RTL files of Frontend.BPU.TageSC"
+
+    # build Tage_SC
+    if not os.path.exists(get_root_dir("dut/tage_sc")):
+        info("Exporting Tage_SC.sv")
+        with NamedTemporaryFile("w+", encoding="utf-8", suffix=".txt") as filelist:
+            filelist.write("\n".join(rtl_files))
+            filelist.flush()
+            s, _, err = exe_cmd(f"picker export --cp_lib false {rtl_files[0]} --fs {filelist.name} "
+                                f" --lang python --tdir {get_root_dir('dut/tage_sc')} -w Tage_SC.fst -c")
+        assert s, err
+    return True
+
+
+def line_coverage_files(cfg: CfgObject):
+    return ["Tage_SC.v"]
