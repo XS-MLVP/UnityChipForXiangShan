@@ -1,5 +1,5 @@
-#coding=utf8
-#***************************************************************************************
+# coding=utf8
+# ***************************************************************************************
 # This project is licensed under Mulan PSL v2.
 # You can use this software according to the terms and conditions of the Mulan PSL v2.
 # You may obtain a copy of Mulan PSL v2 at:
@@ -10,20 +10,24 @@
 # MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 #
 # See the Mulan PSL v2 for more details.
-#**************************************************************************************/
+# **************************************************************************************/
 
 
 import os
 
 __all__ = ["build", "line_coverage_files"]
 
-from toffee_test.markers import match_version
-
-from comm import CfgObject, get_rtl_dir, error, info, get_root_dir, exe_cmd, warning
+from comm import CfgObject
 
 
-def get_rlt_dependencies(top_module: str, cfg: CfgObject) -> list[str]:
-    """There is only single module and module's name is file's name"""
+def get_rtl_dependencies(top_module: str, cfg: CfgObject) -> list[str]:
+    """
+    Get the file path of all modules that `top_module` depends on and
+    the first element of the list is the path of `top_module`.
+
+    This function works only when there is **only on module** in the file
+    and the **file name is the module name**.
+    """
     import re
     from glob import iglob
 
@@ -42,13 +46,14 @@ def get_rlt_dependencies(top_module: str, cfg: CfgObject) -> list[str]:
     def parser_verilog_file(path: str) -> tuple[set, set]:
         _module_set = set()
         _inst_set = set()
+
         def remove_inline_comments(s: str) -> str:
             # Remove the line comment first
             s = re.sub(r"//.*$", "", s)
             # Then remove the block comment
             return re.sub(r'/\*.*?\*/', "", s)
 
-        def parse_line(line_text: str):
+        def parse_line(line_text: str) -> None:
             _line = remove_inline_comments(line_text)
 
             # Extract names of declared modules
@@ -101,7 +106,9 @@ def get_rlt_dependencies(top_module: str, cfg: CfgObject) -> list[str]:
         if pending_line:
             parse_line(pending_line)
         return _module_set, _inst_set
-    def get_rtl_dep(top_module_name: str, cfg: CfgObject) -> None:
+
+    def get_rtl_dep(top_module_name: str) -> None:
+        from comm import get_rtl_dir
         # Walk through the rtl dir
         rtl_dir = os.path.join(str(get_rtl_dir(cfg=cfg)), cfg.rtl.version)
 
@@ -112,26 +119,35 @@ def get_rlt_dependencies(top_module: str, cfg: CfgObject) -> list[str]:
                 module_path_map[_name] = path
             module_set.clear()
             for _name in inst_set:
-                get_rtl_dep(_name, cfg=cfg)
-    get_rtl_dep(top_module, cfg=cfg)
+                get_rtl_dep(_name)
+
+    get_rtl_dep(top_module)
     return list(module_path_map.values())
+
 
 def build(cfg: CfgObject):
     from tempfile import NamedTemporaryFile
+    from toffee_test.markers import match_version
+    from comm import error, info, get_root_dir, exe_cmd
+    # check version
     if not match_version(cfg.rtl.version, ["openxiangshan-kmh-97e37a2237-24092701"]):
         error(f"frontend_bpu_tagesc: Unsupported RTL version {cfg.rtl.version}")
         return False
-    rtl_files = get_rlt_dependencies("Tage_SC", cfg=cfg)
+    # find source files for Tage_SC
+    rtl_files = get_rtl_dependencies("Tage_SC", cfg=cfg)
     assert rtl_files, "Cannot find RTL files of Frontend.BPU.TageSC"
 
-    # build Tage_SC
+    internal_signals_path = os.path.join(get_root_dir("ut_frontend/bpu/tagesc/internal.yaml"))
+    assert os.path.exists(internal_signals_path), "Cannot find internal signal files"
+
+    # export Tage_SC.sv
     if not os.path.exists(get_root_dir("dut/tage_sc")):
         info("Exporting Tage_SC.sv")
         with NamedTemporaryFile("w+", encoding="utf-8", suffix=".txt") as filelist:
             filelist.write("\n".join(rtl_files))
             filelist.flush()
-            s, _, err = exe_cmd(f"picker export --cp_lib false {rtl_files[0]} --fs {filelist.name} "
-                                f" --lang python --tdir {get_root_dir('dut/tage_sc')} -w Tage_SC.fst -c")
+            s, _, err = exe_cmd(f"picker export {rtl_files[0]} --fs {filelist.name} --lang python --tdir "
+                                f"{get_root_dir('dut/tage_sc')} -w Tage_SC.fst -c --internal={internal_signals_path}")
         assert s, err
     return True
 
