@@ -1,5 +1,6 @@
 import random
 
+import pytest
 import toffee
 import toffee_test
 
@@ -12,6 +13,7 @@ from ..env.tage_sc_env import TageSCEnv
 
 
 @toffee_test.testcase
+@pytest.mark.toffee_tags("LONG_TIME_RUN")
 async def test_random(tage_sc_env: TageSCEnv):
     random.seed(0x1145141)
     fgh = TageSCFakeGlobalHistory()
