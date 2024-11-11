@@ -25,7 +25,7 @@ def get_rtl_dependencies(top_module: str, cfg: CfgObject) -> list[str]:
     Get the file path of all modules that `top_module` depends on and
     the first element of the list is the path of `top_module`.
 
-    This function works only when there is **only on module** in the file
+    This function works only when there is **only one module** in the file
     and the **file name is the module name**.
     """
     import re

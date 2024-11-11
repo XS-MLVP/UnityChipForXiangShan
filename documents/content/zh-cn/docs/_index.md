@@ -37,7 +37,7 @@ function update_charts(data_url){
         <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_cases_fail">-</em></td>
         <td>测试用例跳过数（Skipped Cases）：</td>
         <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_cases_skip">-</em></td>
-        <td>测试用例调过率（Skip Rate）：</td>
+        <td>测试用例跳过率（Skip Rate）：</td>
         <td  style="text-align: left; font-weight: bold;"><em id="em_id_report_cases_srate">-</em></td>
     </tr>
     <tr>
