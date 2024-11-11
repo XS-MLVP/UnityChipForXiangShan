@@ -10,7 +10,7 @@
    sudo apt-get install -y nodejs
    ```
 
-2. Install [Hugo](https://gohugo.io/getting-started/installing/) (version 0.110.0 or above)
+2. Install [Hugo](https://gohugo.io/getting-started/installing/) (version 0.124.1 or above)
    ```bash
    sudo pip3 install hugo
    ```
@@ -31,7 +31,7 @@
 
 ### View Documents
 
-In the documents dir, execlute the flow command:
+In the documents dir, execute the flow command:
 
 ```bash
 hugo server
