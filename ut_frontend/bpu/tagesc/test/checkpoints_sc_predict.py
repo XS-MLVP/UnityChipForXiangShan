@@ -2,6 +2,7 @@ from toffee.funcov import CovGroup
 
 __all__ = ["get_coverage_group_of_sc_predict"]
 
+from comm import UT_FCOV
 from dut.tage_sc.UT_Tage_SC import DUTTage_SC
 
 
@@ -48,7 +49,7 @@ def is_tage_taken_from_tn(way: int, use_sc_excp: int):
 def get_coverage_group_of_sc_predict(dut: DUTTage_SC) -> CovGroup:
     slot_name = ["br_slot_0", "tail_slot"]
 
-    g = CovGroup("SC Predict")
+    g = CovGroup(UT_FCOV("UT_Tage_SC", "UnityChipForXiangShan.ut_", parent=-1))
 
     # Calculate TotalSum in SC predict
     g.add_watch_point(

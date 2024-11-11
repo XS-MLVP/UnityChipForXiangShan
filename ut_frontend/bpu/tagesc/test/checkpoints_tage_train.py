@@ -1,5 +1,6 @@
 from toffee.funcov import CovGroup
 
+from comm import UT_FCOV
 from dut.tage_sc.UT_Tage_SC import DUTTage_SC
 from ..util.meta_parser import MetaParser
 
@@ -112,7 +113,7 @@ def is_update_always_taken(way: int):
 
 
 def get_coverage_group_of_tage_train(dut: DUTTage_SC) -> CovGroup:
-    g = CovGroup("Tage Train")
+    g = CovGroup(UT_FCOV("UT_Tage_SC", "UnityChipForXiangShan.ut_", parent=-1))
 
     # T0 up/down saturing update
     for up_or_down in range(2):

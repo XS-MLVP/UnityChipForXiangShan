@@ -1,5 +1,6 @@
 from toffee.funcov import CovGroup
 
+from comm import UT_FCOV
 from dut.tage_sc.UT_Tage_SC import DUTTage_SC
 
 __all__ = ["get_coverage_group_of_tage_predict"]
@@ -82,7 +83,7 @@ def is_all_slots_use_same_unconf_provider_and_both(use_alt: int):
 def get_coverage_group_of_tage_predict(dut: DUTTage_SC) -> CovGroup:
     slot_name = ["br_slot_0", "tail_slot"]
 
-    group = CovGroup("TAGE Predict", True)
+    group = CovGroup(UT_FCOV("UT_Tage_SC", "UnityChipForXiangShan.ut_", parent=-1))
 
     # Tn is provider
     group.add_watch_point(dut, {

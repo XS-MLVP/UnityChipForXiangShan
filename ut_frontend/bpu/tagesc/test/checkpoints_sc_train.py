@@ -1,5 +1,6 @@
 from toffee.funcov import CovGroup
 
+from comm import UT_FCOV
 from dut.tage_sc.UT_Tage_SC import DUTTage_SC
 from ..util.meta_parser import MetaParser
 
@@ -61,7 +62,7 @@ slot_name = ["br_slot_0", "tail_slot"]
 
 
 def get_coverage_group_of_sc_train(dut: DUTTage_SC) -> CovGroup:
-    g = CovGroup("SC Train")
+    g = CovGroup(UT_FCOV("UT_Tage_SC", "UnityChipForXiangShan.ut_", parent=-1))
     for up_or_down in range(2):
         s = "Up Saturing" if up_or_down else "Down Saturing"
         # ctr up/down saturing update
