@@ -12,5 +12,16 @@
 # See the Mulan PSL v2 for more details.
 #**************************************************************************************/
 
+# Predefined tags for test cases
+TAG_LONG_TIME_RUN = "LONG_TIME_RUN"
+TAG_SMOKE         = "SMOKE"
+TAG_REGRESSION    = "REGRESSION"
+TAG_PERFORMANCE   = "PERFORMANCE"
+TAG_STABILITY     = "STABILITY"
+TAG_SECURITY      = "SECURITY"
+TAG_COMPATIBILITY = "COMPATIBILITY"
+TAG_OTHER         = "OTHER"
+TAG_CI            = "CI"
+TAG_DEBUG         = "DEBUG"
+TAG_DEMO          = "DEMO"
 
-TAG_LONG_TIME_RUN="LONG_TIME_RUN"
