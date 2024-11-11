@@ -321,8 +321,11 @@ async def tage_sc_dut(toffee_request: ToffeeRequest):
     toffee.start_clock(dut)
     yield dut
 
-    cur_loop = asyncio.get_running_loop()
+    cur_loop = asyncio.get_event_loop()
     for task in asyncio.all_tasks(cur_loop):
         if task.get_name() == "__clock_loop":
             task.cancel()
-            break
+            try:
+                await task
+            except asyncio.CancelledError:
+                break
