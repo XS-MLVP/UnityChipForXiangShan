@@ -1,6 +1,6 @@
 import contextlib
 
-from dut.tage_sc.UT_Tage_SC.xspcomm import XData
+from xspcomm import XData
 
 __all__ = ['MetaParser']
 

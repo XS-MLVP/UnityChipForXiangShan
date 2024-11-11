@@ -147,7 +147,7 @@ def build(cfg: CfgObject):
         with NamedTemporaryFile("w+", encoding="utf-8", suffix=".txt") as filelist:
             filelist.write("\n".join(rtl_files))
             filelist.flush()
-            s, _, err = exe_cmd(f"picker export {rtl_files[0]} --fs {filelist.name} --lang python --tdir "
+            s, _, err = exe_cmd(f"picker export --cp_lib false {rtl_files[0]} --fs {filelist.name} --lang python --tdir "
                                 f"{get_root_dir('dut/tage_sc')} -w Tage_SC.fst -c --internal={internal_signals_path}")
         assert s, err
     return True
