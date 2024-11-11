@@ -40,7 +40,7 @@ def process_doc_result(report_dir, report_name, cfg):
     for case in report_data["tests"]:
         case_path = case["phases"][0]["report"].split(" ")[1].split("::")[0].replace("'", "")
         case_status = case["status"]
-        path = parse_dut_path(case_path, dut_data, "ut_")
+        path = dut_tree.leaf_path_match(parse_dut_path(case_path, dut_data, "ut_"))
         if path not in leaf_meta:
             leaf_meta[path] = copy.deepcopy(node_default_meta_data)
         leaf_meta[path]["cases"]["total"] += 1
@@ -292,6 +292,21 @@ class DutTree(object):
             if total > 0:
                 leaf_map[path]["itemStyle"]["colorAlpha"] = min(1.0, float(total)/10.0)
                 leaf_map[path]["meta"]["light"] = total >= 10
+
+    def leaf_path_match(self, path):
+        def _leaf_path_match(node, path):
+            if "children" in node:
+                for child in node["children"]:
+                    result = _leaf_path_match(child, path)
+                    if result:
+                        return result
+            if node["meta"]["paths"] in path:
+                return node["meta"]["paths"]
+            return None
+        tpath = _leaf_path_match(self.tree, path)
+        if tpath is None:
+            warning("leaf path not found: %s, please check your dut module struct" % path)
+        return tpath
 
     def export_nodes_as_list(self, node_names=[], update=True):
         if update:

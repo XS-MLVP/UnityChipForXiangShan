@@ -65,7 +65,6 @@ title = "万众一芯之香山处理器"
 languageName ="English"
 weight = 2
 title = "UnityChip Verification for XiangShan"
-description = "Quickly join the open verification platform trial"
 contentDir = "content/en"
 
 [markup]
