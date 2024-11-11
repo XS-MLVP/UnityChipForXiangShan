@@ -309,6 +309,7 @@ async def test_always_taken(tage_sc_dut: DUTTage_SC):
 
 @toffee_test.fixture
 async def tage_sc_dut(toffee_request: ToffeeRequest):
+    import asyncio
     dut = toffee_request.create_dut(DUTTage_SC, "clock")
 
     toffee_request.add_cov_groups([
@@ -318,4 +319,10 @@ async def tage_sc_dut(toffee_request: ToffeeRequest):
         get_coverage_group_of_sc_train(dut),
     ])
     toffee.start_clock(dut)
-    return dut
+    yield dut
+
+    cur_loop = asyncio.get_running_loop()
+    for task in asyncio.all_tasks(cur_loop):
+        if task.get_name() == "__clock_loop":
+            task.cancel()
+            break

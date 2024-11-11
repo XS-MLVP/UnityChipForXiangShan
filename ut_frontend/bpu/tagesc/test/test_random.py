@@ -35,6 +35,7 @@ async def test_random(tage_sc_env: TageSCEnv):
 
 @toffee_test.fixture
 async def tage_sc_env(toffee_request: toffee_test.ToffeeRequest):
+    import asyncio
     dut = toffee_request.create_dut(DUTTage_SC, "clock")
     toffee_request.add_cov_groups([
         get_coverage_group_of_tage_predict(dut),
@@ -42,4 +43,9 @@ async def tage_sc_env(toffee_request: toffee_test.ToffeeRequest):
         get_coverage_group_of_sc_predict(dut),
     ])
     toffee.start_clock(dut)
-    return TageSCEnv(dut)
+    yield TageSCEnv(dut)
+    cur_loop = asyncio.get_running_loop()
+    for task in asyncio.all_tasks(cur_loop):
+        if task.get_name() == "__clock_loop":
+            task.cancel()
+            break
