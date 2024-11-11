@@ -187,6 +187,27 @@ function updateDUTestStatus(data_url){
             }
             return text;
         }
+        function getCaseUrl(paths, pass, total){
+            if (total < 1){
+                return "0/0";
+            }
+            var url = data_url.split("/").slice(0, -1).join("/") + "?";
+            var K = "K=details,file,,,span," + paths.split("/").slice(2, -1).join("/");
+            return "<a href=\""+ url + K +"\" target=\"_blank\">" + pass + "/" + total + "</a>";
+        }
+        function getCaseFailSkipUrl(paths, fail, skip){
+            if (fail < 1){
+                if(skip){
+                    return "0"
+                }
+                return redItem(fail);
+            }
+            var url = data_url.split("/").slice(0, -1).join("/") + "?";
+            var key = skip ? "skipped" : "failed";
+            var K = "K=details,file,span,"+key+",span," + paths.split("/").slice(2, -1).join("/");
+            var text = skip? fail: redItem(fail);
+            return "<a href=\""+ url + K +"\" target=\"_blank\">" + text + "</a>";
+        }
         function traverse(node) {
             if (!node.children || node.children.length === 0) {
                 var meta = node.meta
@@ -195,9 +216,9 @@ function updateDUTestStatus(data_url){
                     "<td class=\"td-name\">" + meta.paths.replace(prefix + "/",
                         "").replaceAll("/", ".") + "</td>" +
                     "<td>" + getDocUrl(meta.doc_url) + "</td>" +
-                    "<td>" + meta.cases.pass + "/" + meta.cases.total + "</td>" +
-                    "<td>" + redItem(meta.cases.fail) + "</td>" +
-                    "<td>" + meta.cases.skip + "</td>" +
+                    "<td>" + getCaseUrl(meta.paths, meta.cases.pass, meta.cases.total) + "</td>" +
+                    "<td>" + getCaseFailSkipUrl(meta.paths, meta.cases.fail, false) + "</td>" +
+                    "<td>" + getCaseFailSkipUrl(meta.paths, meta.cases.skip, true) + "</td>" +
                     "<td>" + calcRate(meta.cases.pass, meta.cases.total) + "</td>" +
                     "<td>" + meta.functions.cover + "/" +meta.functions.total + "</td>" +
                     "<td>" + calcRate(meta.functions.cover, meta.functions.total) + "</td>" +
