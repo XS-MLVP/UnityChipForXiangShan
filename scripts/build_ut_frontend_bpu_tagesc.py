@@ -30,6 +30,7 @@ def get_rtl_dependencies(top_module: str, cfg: CfgObject) -> list[str]:
     """
     import re
     from glob import iglob
+    from collections import OrderedDict
 
     some_verilog_keywords = {
         'for', 'real', 'initial', 'input', 'endcase', 'typedef', 'primitive', 'always_comb', 'always_latch', 'negedge',
@@ -41,7 +42,7 @@ def get_rtl_dependencies(top_module: str, cfg: CfgObject) -> list[str]:
 
     modulename_pattern = re.compile(r"\bmodule\s+(\w+)\b")
     instance_pattern = re.compile(r"\b(\w+)\s+(?!module)(\w+)\s*\(")
-    module_path_map = {}
+    module_path_map = OrderedDict()
 
     def parser_verilog_file(path: str) -> tuple[set, set]:
         _module_set = set()
@@ -66,7 +67,7 @@ def get_rtl_dependencies(top_module: str, cfg: CfgObject) -> list[str]:
             instance_matches = instance_pattern.finditer(_line)
             for match in instance_matches:
                 _name = match.group(1)
-                if (_name not in some_verilog_keywords) and (_name not in _module_set):
+                if _name not in some_verilog_keywords:
                     _inst_set.add(_name)
 
         """Code Begin Here"""
