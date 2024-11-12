@@ -16,8 +16,9 @@
 import os
 import argparse
 import pytest
+import json
 from comm import init_cfg, cfg_as_str, get_rtl_lnk_version, error, build_dut, replace_default_vars_in_dict
-from comm import download_rtl, get_rtl_dir, init_log, init, new_report_name, process_doc_result
+from comm import download_rtl, get_rtl_dir, init_log, init, new_report_name, process_doc_result, base64_encode
 
 
 def main():
@@ -58,17 +59,18 @@ def main():
         build_dut(args.build, cfg)
         return
     # set report args
-    append_args.extend(["--report-dir", report_dir, "--report-name", report_name, "--report-dump-json"])
-    # cache global config in pytest
-    pytest.global_unitychip_cfg = cfg_value
-    # set toffee config
-    pytest.toffee_tags_current_version = cfg.rtl.version
-    pytest.toffee_tags_skip_tags = cfg.test.skip_tags
-    pytest.toffee_tags_run_tags = cfg.test.run_tags
-    pytest.toffee_tags_skip_cases = cfg.test.skip_cases
-    pytest.toffee_tags_run_cases = cfg.test.run_cases
-    pytest.toffee_ignore_exceptions = cfg.test.skip_exceptions
-    pytest.toffee_report_information = replace_default_vars_in_dict(cfg.report.information.as_dict(), cfg=cfg)
+    toffee_key_value = {
+        "toffee_tags_current_version" : cfg.rtl.version,
+        "toffee_tags_skip_tags"       : cfg.test.skip_tags,
+        "toffee_tags_run_tags"        : cfg.test.run_tags,
+        "toffee_tags_skip_cases"      : cfg.test.skip_cases,
+        "toffee_tags_run_cases"       : cfg.test.run_cases,
+        "toffee_ignore_exceptions"    : cfg.test.skip_exceptions,
+        "toffee_report_information"   : replace_default_vars_in_dict(cfg.report.information.as_dict(), cfg=cfg),
+        "global_unitychip_cfg"        : cfg_value,
+    }
+    append_args.extend(["--report-dir", report_dir, "--report-name", report_name,
+                        "--report-dump-json", "--custom-key-value", base64_encode(json.dumps(toffee_key_value))])
     pytest.main(append_args, plugins=[__import__(__name__)])
     process_doc_result(report_dir, report_name, cfg)
 
