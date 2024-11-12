@@ -120,7 +120,8 @@ def get_rtl_dependencies(top_module: str, cfg: CfgObject) -> list[str]:
                 module_path_map[_name] = path
             module_set.clear()
             for _name in inst_set:
-                get_rtl_dep(_name)
+                if _name not in module_path_map:
+                    get_rtl_dep(_name)
 
     get_rtl_dep(top_module)
     return list(module_path_map.values())
