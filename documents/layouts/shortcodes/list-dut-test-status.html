@@ -108,6 +108,7 @@ function updateDUTestStatus(data_url){
         <th>&nbsp;&nbsp;&nbsp;SKip</th>\
         <th>CsRate (%)</th>\
         <th>Checks\
+        <th>Fail\
         <th>CkRate (%)</th>\
         <th>Lines</th>\
         <th>CvRate (%)</th>\
@@ -208,6 +209,25 @@ function updateDUTestStatus(data_url){
             var text = skip? fail: redItem(fail);
             return "<a href=\""+ url + K +"\" target=\"_blank\">" + text + "</a>";
         }
+        function getFuncovUrl(paths, cover, total){
+            if (total < 1){
+                return "0/0";
+            }
+            var group_name = paths.split("/").slice(2, -1).join(".")
+            var url = data_url.split("/").slice(0, -1).join("/") + "?";
+            var K_case = "ShowFunCov=1&K=li,group_name,,,span," + group_name + "&K=ul,group_name,,,span,"+ group_name;
+            return "<a href=\""+ url + K_case +"\" target=\"_blank\">" + cover + "/" + total + "</a>";
+        }
+        function getFuncovFailUrl(paths, cover, total){
+            if (total == cover || total < 1){
+                return "0";
+            }
+            var group_name = paths.split("/").slice(2, -1).join(".")
+            var url = data_url.split("/").slice(0, -1).join("/") + "?";
+            var K_case = "ShowFunCov=1&K=li,group_name,,,span," + group_name + "&K=ul,group_name,,,span,"+ group_name;
+            var K_fail = K_case + "&K=li,point_name,,,span,Failed&K=ul,grou_name,,,ul,failed";
+            return "<a href=\""+ url + K_fail +"\" target=\"_blank\">" + redItem(total - cover) + "</a>";
+        }
         function traverse(node) {
             if (!node.children || node.children.length === 0) {
                 var meta = node.meta
@@ -220,7 +240,8 @@ function updateDUTestStatus(data_url){
                     "<td>" + getCaseFailSkipUrl(meta.paths, meta.cases.fail, false) + "</td>" +
                     "<td>" + getCaseFailSkipUrl(meta.paths, meta.cases.skip, true) + "</td>" +
                     "<td>" + calcRate(meta.cases.pass, meta.cases.total) + "</td>" +
-                    "<td>" + meta.functions.cover + "/" +meta.functions.total + "</td>" +
+                    "<td>" + getFuncovUrl(meta.paths, meta.functions.cover, meta.functions.total) + "</td>" +
+                    "<td>" + getFuncovFailUrl(meta.paths, meta.functions.cover, meta.functions.total) + "</td>" +
                     "<td>" + calcRate(meta.functions.cover, meta.functions.total) + "</td>" +
                     "<td>" + getLineCovUrl(meta.paths, meta.lines.cover, meta.lines.total) + "</td>" +
                     "<td>" + calcRate(meta.lines.cover, meta.lines.total) + "</td>" +
