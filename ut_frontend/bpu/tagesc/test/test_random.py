@@ -1,10 +1,9 @@
 import random
-
+import os
 import pytest
 import toffee
 import toffee_test
 
-from comm import TAG_LONG_TIME_RUN
 from dut.tage_sc.UT_Tage_SC import DUTTage_SC
 from .checkpoints_sc_predict import get_coverage_group_of_sc_predict
 from .checkpoints_tage_predict import get_coverage_group_of_tage_predict
@@ -13,16 +12,16 @@ from ..env.fake_global_history import TageSCFakeGlobalHistory
 from ..env.tage_sc_env import TageSCEnv
 
 
+@pytest.mark.parametrize("pc_bound", list(range(8)))
 @toffee_test.testcase
-@pytest.mark.toffee_tags(TAG_LONG_TIME_RUN)
-async def test_random(tage_sc_env: TageSCEnv):
-    random.seed(0x1145141)
+async def test_random(tage_sc_env: TageSCEnv, pc_bound: int):
+    random.seed(os.urandom(8))
     fgh = TageSCFakeGlobalHistory()
     env = tage_sc_env
     await env.reset_dut()
-    for _ in range(20000):
+    for _ in range(2500):
         taken = (random.randint(0, 1), random.randint(0, 1)) if _ > 0 else (0, 0)
-        pc = 0x80000003 + random.randint(0, 3)
+        pc = 0x80000003 + random.randint(0, pc_bound)
         async with toffee.Executor() as _exec:
             _exec(env.ctrl_agent.exec_activate())
             _exec(env.predict_agent.exec_predict(pc, fgh.value))
