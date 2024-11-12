@@ -72,11 +72,11 @@ def get_config(cfg=None):
     global global_cfg
     if global_cfg is not None:
         return global_cfg
-    if not hasattr(pytest, "global_unitychip_cfg"):
-        return None
-    cfg_str = pytest.global_unitychip_cfg
-    global_cfg = cfg_from_str(cfg_str)
-    global_cfg.freeze()
+    import pytest
+    cfg_str = getattr(pytest, "toffee_custom_key_value", {}).get("global_unitychip_cfg")
+    if cfg_str:
+        global_cfg = cfg_from_str(cfg_str)
+        global_cfg.freeze()
     return global_cfg
 
 
