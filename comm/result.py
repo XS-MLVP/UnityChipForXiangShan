@@ -54,7 +54,7 @@ def process_doc_result(report_dir, report_name, cfg):
             # find skip reason
             for phase in case["phases"]:
                 if phase["status"]["category"] == "skipped":
-                    leaf_meta[path]["cases"]["reason"] = parse_case_exception_reson(phase["call"])
+                    leaf_meta[path]["cases"]["reason"] = parse_case_exception_reson(phase.get("call", ""))
                     break
         if path not in extend_info:
             extend_info[path] = {"target_line_coverage_files": [],
@@ -181,7 +181,7 @@ def parse_case_exception_reson(call_info):
     match = re.search(r"excinfo=<ExceptionInfo\s+(.*?)\s+tblen=", call_info)
     if match:
         return match.group(1)
-    return ""
+    return "Unkown"
 
 
 def parse_dut_path(path, dut_tree, prefix):
