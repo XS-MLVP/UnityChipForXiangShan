@@ -1,7 +1,5 @@
 import toffee
 import toffee_test
-from toffee.triggers import ClockCycles
-from toffee_test import ToffeeRequest
 
 from dut.tage_sc.UT_Tage_SC import DUTTage_SC
 from .checkpoints_sc_predict import get_coverage_group_of_sc_predict
@@ -246,7 +244,7 @@ async def test_sc_total_sum_correctness(tage_sc_dut: DUTTage_SC):
             total_sum_attr = "Tage_SC_sumAboveThreshold_totalSum" + ("_1" if w else "")
             real_val_xdata = getattr(tage_sc_dut, total_sum_attr)
             expect_val = get_total_sum(sc_table_sum, update_tage_ctr[w].value)
-            await ClockCycles(tage_sc_dut, 1)
+            await tage_sc_dut.AStep(1)
             assert expect_val == real_val_xdata.S(), "TotalSum in train is not correct"
 
         async with toffee.Executor() as _exec:
@@ -265,7 +263,7 @@ async def test_sc_total_sum_correctness(tage_sc_dut: DUTTage_SC):
         expect_low = low_sc_sum + tage_centered
         real_high = getattr(tage_sc_dut, "Tage_SC_s2_totalSums_1" + _suffix)
         real_low = getattr(tage_sc_dut, "Tage_SC_s2_totalSums_0" + _suffix)
-        await ClockCycles(tage_sc_dut, 1)
+        await tage_sc_dut.AStep(1)
         assert expect_high == real_high.S() and expect_low == real_low.S(), "TotalSum in predict is not correct"
 
     async with toffee.Executor() as _exec:
@@ -308,7 +306,7 @@ async def test_always_taken(tage_sc_dut: DUTTage_SC):
 
 
 @toffee_test.fixture
-async def tage_sc_dut(toffee_request: ToffeeRequest):
+async def tage_sc_dut(toffee_request: toffee_test.ToffeeRequest):
     import asyncio
     dut = toffee_request.create_dut(DUTTage_SC, "clock")
 

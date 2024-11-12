@@ -4,6 +4,7 @@ import pytest
 import toffee
 import toffee_test
 
+from comm import TAG_LONG_TIME_RUN
 from dut.tage_sc.UT_Tage_SC import DUTTage_SC
 from .checkpoints_sc_predict import get_coverage_group_of_sc_predict
 from .checkpoints_tage_predict import get_coverage_group_of_tage_predict
@@ -13,7 +14,7 @@ from ..env.tage_sc_env import TageSCEnv
 
 
 @toffee_test.testcase
-@pytest.mark.toffee_tags("LONG_TIME_RUN")
+@pytest.mark.toffee_tags(TAG_LONG_TIME_RUN)
 async def test_random(tage_sc_env: TageSCEnv):
     random.seed(0x1145141)
     fgh = TageSCFakeGlobalHistory()
