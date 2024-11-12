@@ -13,8 +13,8 @@ from dut.rvcexpander.UT_RVCExpander import *
 def rvc_expand(full_inst):
     """
     Test the RVC expansion function
-    Parameters:
-        @full_inst: whether to use a full instruction set
+
+    @param full_inst: whether to use a full instruction set
     """
     if full_inst:
         ref_insts  = generate_rvc_instructions()
@@ -56,8 +56,8 @@ def test_rvc_expand_full():
 def test_rvc_inst(decoder_fixture):
     """
     Test the RVC instruction set, an example of the tag version in range.
-    Parameters:
-        @decoder_fixture: the fixture of the decoder
+
+    @param decoder_fixture: the fixture of the decoder
     """
     decoder = decoder_fixture
     need_log_file   = True
@@ -71,8 +71,8 @@ def test_rvc_inst(decoder_fixture):
 def test_rvi_inst(decoder_fixture):
     """
     Test the RVI instruction set. randomly generate instructions for testing
-    Parameters:
-        @decoder_fixture: the fixture of the decoder
+
+    @param decoder_fixture: the fixture of the decoder
     """
     decoder = decoder_fixture
     need_log_file   = True
@@ -85,8 +85,8 @@ def test_rvi_inst(decoder_fixture):
 def test_rv_custom_inst(decoder_fixture):
     """
     Test the custom instruction set. Testing of V extension instructions, which are not actually used
-    Parameters:
-        @decoder_fixture: the fixture of the decoder
+
+    @param decoder_fixture: the fixture of the decoder
     """
     decoder = decoder_fixture
     need_log_file   = True
