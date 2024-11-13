@@ -73,7 +73,7 @@ function update_charts(data_url){
 
 <br>
 <div style="text-align: center; width: 100%;">
-<h4>香山昆明湖DUT验证进展</h4>
+<h4 id="testmap">香山昆明湖DUT验证进展</h4>
 </div>
 <br>
 
