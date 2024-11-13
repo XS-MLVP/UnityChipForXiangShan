@@ -75,7 +75,9 @@ class DecodeWrapper(toffee.Bundle):
             self.input_inst[i].bits_ftqOffset.value                = 0
 
             for j in range(24):
-                setattr(self.dut, f'io_in_{i}_bits_exceptionVec_{j}', 0) 
+                p = getattr(self.dut, f'io_in_{i}_bits_exceptionVec_{j}', None)
+                if p:
+                    p.value = 0
 
         ########## set req ready signals from rename stage #######  
         self.dut.io_out_0_ready.value     = 0b1
@@ -146,7 +148,9 @@ class DecodeWrapper(toffee.Bundle):
         self.input_inst[i].bits_exceptionVec_2.value = instr_ex
 
         for j in range(24):
-            setattr(self.dut, f'io_in_{i}_bits_exceptionVec_{j}', 0)
+            p = getattr(self.dut, f'io_in_{i}_bits_exceptionVec_{j}', None)
+            if p:
+                p.value = 0
 
         self.input_inst[i].bits_trigger.value                  = 0
         self.input_inst[i].bits_preDecodeInfo_isRVC.value      = isRVC
