@@ -12,15 +12,12 @@
 # See the Mulan PSL v2 for more details.
 # **************************************************************************************/
 
+__all__ = ["build", "line_coverage_files"]
 
 import os
 
-__all__ = ["build", "line_coverage_files"]
 
-from comm import CfgObject
-
-
-def get_rtl_dependencies(top_module: str, cfg: CfgObject) -> list[str]:
+def get_rtl_dependencies(top_module, cfg):
     """
     Get the file path of all modules that `top_module` depends on and
     the first element of the list is the path of `top_module`.
@@ -40,15 +37,15 @@ def get_rtl_dependencies(top_module: str, cfg: CfgObject) -> list[str]:
         "and", "or", "not", "xor"
     }
 
-    modulename_pattern = re.compile(r"\bmodule\s+(\w+)\b")
+    module_pattern = re.compile(r"\bmodule\s+(\w+)\b")
     instance_pattern = re.compile(r"\b(\w+)\s+(?!module)(\w+)\s*\(")
     module_path_map = OrderedDict()
 
-    def parser_verilog_file(path: str) -> tuple[set, set]:
+    def parser_verilog_file(path):
         _module_set = set()
         _inst_set = set()
 
-        def remove_inline_comments(s: str) -> str:
+        def remove_inline_comments(s):
             # Remove the line comment first
             s = re.sub(r"//.*$", "", s)
             # Then remove the block comment
@@ -58,7 +55,7 @@ def get_rtl_dependencies(top_module: str, cfg: CfgObject) -> list[str]:
             _line = remove_inline_comments(line_text)
 
             # Extract names of declared modules
-            module_matches = modulename_pattern.finditer(_line)
+            module_matches = module_pattern.finditer(_line)
             for match in module_matches:
                 _name = match.group(1)
                 _module_set.add(_name)
@@ -108,13 +105,11 @@ def get_rtl_dependencies(top_module: str, cfg: CfgObject) -> list[str]:
             parse_line(pending_line)
         return _module_set, _inst_set
 
-    def get_rtl_dep(top_module_name: str) -> None:
+    def get_rtl_dep(top_module_name) -> None:
         from comm import get_rtl_dir
         # Walk through the rtl dir
-        rtl_dir = os.path.join(str(get_rtl_dir(cfg=cfg)), cfg.rtl.version)
-
-        for path in iglob(f"**/{top_module_name}.*v", root_dir=rtl_dir, recursive=True):
-            path = os.path.join(rtl_dir, path)
+        rtl_dir = os.path.join(str(get_rtl_dir(cfg=cfg)), cfg.rtl.version, f"**/{top_module_name}.*v")
+        for path in iglob(rtl_dir, recursive=True):
             module_set, inst_set = parser_verilog_file(path)
             for _name in module_set:
                 module_path_map[_name] = path
@@ -127,7 +122,7 @@ def get_rtl_dependencies(top_module: str, cfg: CfgObject) -> list[str]:
     return list(module_path_map.values())
 
 
-def build(cfg: CfgObject):
+def build(cfg):
     from tempfile import NamedTemporaryFile
     from toffee_test.markers import match_version
     from comm import error, info, get_root_dir, exe_cmd
@@ -148,11 +143,12 @@ def build(cfg: CfgObject):
         with NamedTemporaryFile("w+", encoding="utf-8", suffix=".txt") as filelist:
             filelist.write("\n".join(rtl_files))
             filelist.flush()
-            s, _, err = exe_cmd(f"picker export --cp_lib false {rtl_files[0]} --fs {filelist.name} --lang python --tdir "
-                                f"{get_root_dir('dut/tage_sc')} -w Tage_SC.fst -c --internal={internal_signals_path}")
+            s, _, err = exe_cmd(
+                f"picker export --cp_lib false {rtl_files[0]} --fs {filelist.name} --lang python --tdir "
+                f"{get_root_dir('dut/tage_sc')} -w Tage_SC.fst -c --internal={internal_signals_path}")
         assert s, err
     return True
 
 
-def line_coverage_files(cfg: CfgObject):
+def line_coverage_files(cfg):
     return ["Tage_SC.v"]
