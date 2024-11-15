@@ -14,3 +14,10 @@ libdisasm.disasm_custom_insn.argtypes = [ctypes.c_uint64, ctypes.c_uint64]
 libdisasm.disasm_custom_insn.restype = ctypes.c_void_p
 libdisasm.disasm_free_mem.argtypes = [ctypes.c_void_p]
 libdisasm.disasm_free_mem.restype = None
+
+
+def disasmbly(insn):
+    c_void_ptr = libdisasm.disasm(ctypes.c_uint64(insn))
+    insn_disasm = ctypes.cast(c_void_ptr, ctypes.c_char_p).value.decode('utf-8')
+    libdisasm.disasm_free_mem(c_void_ptr)
+    return insn_disasm

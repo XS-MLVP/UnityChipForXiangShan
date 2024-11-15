@@ -16,9 +16,9 @@
 import random
 
 
-def generate_rvc_instructions():
+def generate_rvc_instructions(start=0, end=65536):
     rvc_instructions = []
-    for i in range(65536):  # 2^16
+    for i in range(start, end):  # 2^16
         if (i & 0b11) != 0b11:
             rvc_instructions.append(i)
     return rvc_instructions
