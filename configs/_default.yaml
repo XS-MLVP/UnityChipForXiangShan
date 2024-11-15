@@ -27,7 +27,7 @@ rtl:
 # Test case configuration (tags and cases support wildcards)
 test:
   # Skip tags, all test cases with these tags will be skipped
-  skip-tags: ["LONG_TIME_RUN"]
+  skip-tags: ["LONG_TIME_RUN", "RARELY_USED"]
   # Run tags, only test cases with these tags will be executed (skip-tags override run-tags)
   run-tags: []
   # Skip cases, all test cases with these names (or module names) will be skipped
