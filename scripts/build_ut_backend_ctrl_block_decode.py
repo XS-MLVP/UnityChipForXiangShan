@@ -32,7 +32,7 @@ def build(cfg):
     # export RVCExpander.sv
     if not os.path.exists(get_root_dir("dut/rvcexpander")):
         info("Exporting RVCExpander.sv")
-        s, out, err = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/RVCExpander.sv", cfg=cfg)} --lang python --tdir {get_root_dir("dut/rvcexpander")}')
+        s, out, err = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/RVCExpander.sv", cfg=cfg)} --lang python --tdir {get_root_dir("dut/rvcexpander")} -w rvc.fst -c')
         assert s, "Failed to export RVCExpander.sv: %s\n%s" % (out, err)
     # export PreDecode.sv
     if not os.path.exists(get_root_dir("dut/predecode")):
