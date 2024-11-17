@@ -197,7 +197,22 @@ class Decode(toffee.Bundle):
                                      self.output_instrution[i].bits_firstUop.value))
                 num = num + 1
         return num, insts_result
-
+    
+    def Get_decode_checkpoint_illeagl_inst(self):
+        illegal = 0
+        for i in range(6):
+            if self.output_instrution[i].valid.value == 1 and self.output_instrution[i].bits_lastUop.value == 1:
+                if (self.output_instrution[i].bits_exceptionVec_2.value or self.output_instrution[i].bits_exceptionVec_22.value):
+                    illegal = 1
+        return illegal
+    
+    def Get_decode_checkpoint_complex_inst(self):
+        complex = 0
+        for i in range(6):
+            if self.output_instrution[i].valid.value == 1 and self.output_instrution[i].bits_lastUop.value == 1 and self.output_instrution[i].bits_firstUop.value != 1:
+                complex = 1
+        return complex
+                
 
 @pytest.fixture()
 def decoder(request):

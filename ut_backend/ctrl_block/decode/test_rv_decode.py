@@ -130,6 +130,7 @@ def test_rvi_inst(decoder):
     insn_list_temp  = generate_random_32bits(100)
     ref_lists       = convert_reference_format(insn_list_temp, True, libdisasm.disasm, libdisasm.disasm_free_mem)
     assert decode_run(decoder, ref_lists, need_log_file,"test_rvi_inst") == True, "RVI decode error"
+    g.add_cover_point(decoder, {"illegal_inst_triggers_an_exception": lambda _: decoder.Get_decode_checkpoint_illeagl_inst() != 0}, name="RVI_illegal_inst").sample()
     g.add_cover_point(decoder, {"fast_check_random_32bit_int": lambda _: True}, name="RVI").sample()
 
 
@@ -145,4 +146,5 @@ def test_rv_custom_inst(decoder):
     insn_list_temp  = generate_OP_V_insn(100)
     ref_lists       = convert_reference_format(insn_list_temp, True, libdisasm.disasm_custom_insn, libdisasm.disasm_free_mem, custom_v_opcode)
     assert decode_run(decoder, ref_lists, need_log_file,"test_rv_custom_inst") == True, "RVI decode error"
+    g.add_cover_point(decoder, {"input_data_contains_complex_insts": lambda _: decoder.Get_decode_checkpoint_complex_inst() != 0}, name="RVI_complex_inst").sample()
     g.add_cover_point(decoder, {"fast_check_OP_V_insn": lambda _: True}, name="RVI_Costom").sample()

@@ -39,10 +39,10 @@ make rtl    # 该命下载最新的rtl代码，并解压至rtl目录，并创建
 # 调用scripts目录中的build_ut_<name>.py中的build方法，创建待验证的Python版DUT
 make dut DUTS=<name>  # DUTS的值如果有多个，需要用逗号隔开，支持通配符。DUTS默认值为 "*"，编译所有DUT
 # 例如：
-make dut DUTS=backend_ctrlblock_decode
+make dut DUTS=backend_ctrl_block_decode
 ```
 
-以`make dut DUTS=backend_ctrlblock_decode`为例，命令执行完成后，会在dut目录下生成对应的Python包：
+以`make dut DUTS=backend_ctrl_block_decode`为例，命令执行完成后，会在dut目录下生成对应的Python包：
 
 ```
 dut/
