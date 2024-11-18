@@ -22,7 +22,7 @@ import toffee.funcov as fc
 from dut.predecode.UT_PreDecode import *
 from dut.decodestage.UT_DecodeStage import *
 
-from comm import get_out_dir, get_root_dir, debug, UT_FCOV, get_file_logger
+from comm import get_out_dir, get_root_dir, debug, UT_FCOV, get_file_logger, get_version_checker
 from dut.rvcexpander.UT_RVCExpander import *
 
 from toffee_test.reporter import set_func_coverage
@@ -30,6 +30,9 @@ from toffee_test.reporter import set_line_coverage
 
 # Set the toffe log level to ERROR
 toffee.setup_logging(toffee.ERROR)
+
+# Version check
+version_check = get_version_checker("openxiangshan-kmh-*")
 
 # Create a function coverage group: INT (Int instruction)
 g = fc.CovGroup(UT_FCOV("INT", parent=-2))
@@ -98,6 +101,7 @@ class RVCExpander(toffee.Bundle):
 
 @pytest.fixture()
 def rvc_expander(request):
+    version_check()
     fname = request.node.name
     wave_file = get_out_dir("decoder/rvc_expander_%s.fst" % fname)
     coverage_file = get_out_dir("decoder/rvc_expander_%s.dat" % fname)
