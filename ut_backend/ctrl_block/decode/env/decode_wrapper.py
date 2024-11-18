@@ -87,10 +87,12 @@ class RVCExpander(toffee.Bundle):
 
 @pytest.fixture()
 def rvc_expander(request):
-    coverage_file = get_out_dir("decoder/rvc_expander.dat")
+    fname = request.node.name
+    wave_file = get_out_dir("decoder/rvc_expander_%s.fst" % fname)
+    coverage_file = get_out_dir("decoder/rvc_expander_%s.dat" % fname)
     coverage_dir = os.path.dirname(coverage_file)
     os.makedirs(coverage_dir, exist_ok=True)
-    expander = RVCExpander(g, coverage_filename=coverage_file)
+    expander = RVCExpander(g, coverage_filename=coverage_file, waveform_filename=wave_file)
     expander.dut.io_in.AsImmWrite()
     init_rvc_expander_funcov(expander, g)
     yield expander
@@ -355,9 +357,7 @@ def instr_filter(insn_disasm_text):
 
 
 # Disassemble the instruction and send it to the rvc_expand module for decoding of compressed instructions
-def convert_reference_format(ref_insts, need_expand, disasm_func, disasm_free_func, disasm_arg = 0):
-    rvc_expand = DUTRVCExpander()
-    rvc_expand.io_in.AsImmWrite()
+def convert_reference_format(rvc_expander, ref_insts, need_expand, disasm_func, disasm_free_func, disasm_arg = 0):
     inst_list = []
     for insn in ref_insts:
         c_void_ptr = disasm_func(ctypes.c_uint64(insn), disasm_arg)
@@ -365,10 +365,7 @@ def convert_reference_format(ref_insts, need_expand, disasm_func, disasm_free_fu
         disasm_free_func(c_void_ptr)
 
         if need_expand == True:
-            rvc_expand.io_in.value = insn
-            rvc_expand.RefreshComb()
-            instr_ex    = rvc_expand.io_ill.value
-            instr_bits  = rvc_expand.io_out_bits.value
+            instr_bits, instr_ex = rvc_expander.expand(insn)
         else:
             instr_ex    = 0
             instr_bits  = insn
