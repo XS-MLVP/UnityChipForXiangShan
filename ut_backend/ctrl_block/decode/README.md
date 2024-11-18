@@ -17,10 +17,10 @@
 本测试基于disasm对 DUT 进行了封装。输入的DUT模块为 `ut.predecode`,`ut.decodestage` 和 `ut.rvcexpander` 三个模块。
 
 - **ut.rvcexpander**
-在 env 环境中，通过RVCExpander对DUT进行了封装，提供指令展开接口。
+对输入的指令进行展开，输入支持16位压缩指令和普通32指令。
 
 - **ut.predecode**
-[TBD]
+预解码阶段，[TBD]
 
 - **ut.decodestage**
 [TBD]
@@ -29,26 +29,18 @@
 依赖：
 - disasm 反汇编工具 （该工具位置为 tools.disasm）
 
-## 功能检查点
+## 功能检查
 
-本测试需要进行的功能点和检查点（checkpoint/coverpoint）如下（该部分建议以注释的形式写入funcov）：
+本测试需要进行的功能点和检查点（checkpoint/coverpoint）如下：
 
-|序号|涉及模块|功能描述|检查方法|检查点名称|
-|-|-|-|-|-|
-|1|rvcexpander|压缩指令展开|检查是否有非法判断|RVC_EXPAND_RET|
-|1|rvcexpander|压缩指令展开|检查所有正常指令是否都覆盖到|RVC_EXPAND_16B_RANGE|
-|2||           |检查所有非法指令是否都覆盖到|同上|
-|3|rvcexpander|常规指令展开|检查随机输入得指令，<br>每一位是否都被覆盖过<br>eg: ins[7] == 1|RVC_EXPAND_32B_BITS|
-|5|TBD|           |-|-|
+|序号|所属模块|功能描述|检查点描述|检查标识|检查项|
+|-|-|-|-|-|-|
+|1|rvcexpander|压缩指令展开|检查是否能判断非法指令|RVC_EXPAND_RET|ERROR：stat接口`ilegal==False`<br>SUCCE：stat接口`ilegal==True`|
+|2|||检查是否能展开所有正常指令，<br>发现所有非法指令|RVC_EXPAND_ALL_16B|RANGE[`start~end`]: 16位压缩指令共有 2^16种可能，<br>通过不同的start-end指定输入指令的<br>遍历范围，遍历该范围内的输入是否<br>是合法或非法指令（start，end由用例指定）|
+|3||常规指令展开|遍历所有32bit指令，<br>检查是否合法|RVC_EXPAND_ALL_32B|检查项同上|
+|4|||随机生成N条32位指令，<br>检查是否合法|RVC_EXPAND_RANDOM_32B|POS_{i}：为了保证随机指令足够多，判断随机<br>生成的指令中第i位是否为1(0 <= i < 32)|
+|5|TBD|||||
 
-检查点细分（Bins，一个检查点由多个bin组成，只有所有bin都触发，该检查点才算被覆盖）：
-- RVC_EXPAND_RET
-    - ERROR expander 得非法检查返回 0
-    - SUCCE expander 得非法检查返回 1
-- RVC_EXPAND_16B_RANGE
-    - RANGE[start-end] 16为指令公有 2^16种可能，需要start-end覆盖整个16bit的取值范围
-- RVC_EXPAND_32B_BITS
-    - POS_(0-31)
 
 ## Env提供的验证接口(API)
 
@@ -109,17 +101,19 @@ def rvc_expander(request) -> RVCExpander:
 #### 3.test_rv_decode.test_rvc_expand_16bit_full 对所有压缩指令进行展开检查
 |步骤|操作内容|预期结果|覆盖功能点|
 |-|-|-|-|
-|1|将16位指令的取值范围拆分为N个分段|-|[1->RVC_EXPAND_RET](), [2->RVC_EXPAND_16B_RANGE]()|
+|1|将16位指令的取值范围拆分为N个分段|-|[1->RVC_EXPAND_RET]()<br> [2->RVC_EXPAND_16B_RANGE]()|
 |2|遍历每个分段中的所有值，作为压缩指令|-|[2.RANGE]()|
 |3|通过RVCExpander.expand接口获取解码结果|-|-|
 ||通过disasm获取反汇编结果|||
 |4|检查两边的结果是否一致|所有指令是否非法指令判断结果一致|[1.SUCCE]()，[1.ERROR]()|
 
+#### 4.test_rv_decode.test_rvc_expand_32bit_full 对所有压缩指令进行展开检查
+同上，只是指令格式不一样
 
-#### 3.test_rv_decode.test_rvc_expand_32bit_randomN 随机对32位指令进行展开检查
+#### 5.test_rv_decode.test_rvc_expand_32bit_randomN 随机对32位指令进行展开检查
 |步骤|操作内容|预期结果|覆盖功能点|
 |-|-|-|-|
-|1|随机运行K次，每次随机生成N个32位指令|-|[1->RVC_EXPAND_RET](), [2->RVC_EXPAND_32B_BITS]()|
+|1|随机运行K次，每次随机生成N个32位指令|-|[1->RVC_EXPAND_RET]()<br>[2->RVC_EXPAND_RANDOM_32B]()|
 |2|遍历N个指令|-|[2.POS_i(0-32)]()|
 |3|通过RVCExpander.expand接口获取解码结果|-|-|
 ||通过disasm获取反汇编结果|||
@@ -140,12 +134,15 @@ decode
 
 ## 检查列表
 
-- [ ] 模块 README 包含[模板]()中提到的所有内容
-- [ ] Env提供的API不包含任何DUT引脚和时序信息（已对必要情况进行了说明）
-- [ ] 功能点（共有[ ]个）与[设计文档]()一致
-- [ ] 检查点（共有[ ]个）覆盖所有功能点
+- [ ] 本文档符合指定[模板]()要求
+- [ ] Env提供的API不包含任何DUT引脚和时序信息
+- [ ] Env的API保持稳定（共有[ X ]个）
+- [ ] Env中对所支持的RTL版本（支持版本[ X ]）进行了检查
+- [ ] 功能点（共有[ X ]个）与[设计文档]()一致
+- [ ] 检查点（共有[ X ]个）覆盖所有功能点
 - [ ] 检查点的输入不依赖任何DUT引脚，仅依赖Env的标准API
-- [ ] Env的API保持稳定（共有[ ]个）
-- [ ] 所有测试用例（共有[ ]个）都对功能检查点进行了反标
-- [ ] 对行覆盖率过滤需求进行了检查
-- [ ] Env中对所支持的RTL版本（支持版本[ ]）进行了检查
+- [ ] 所有测试用例（共有[ X ]个）都对功能检查点进行了反标
+- [ ] 所有测试用例都是通过 assert 进行的结果判断
+- [ ] 所有DUT或对应wrapper都是通过fixture创建
+- [ ] 创建DUT或对应wrapper的fixture进行了功能和代码行覆盖率统计
+- [ ] 设置代码行覆盖率时对过滤需求进行了检查

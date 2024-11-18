@@ -70,39 +70,48 @@ def test_rvc_expand_16bit_full(rvc_expander, start, end):
     #   When run to here, the range[start, end] is covered
     g.add_watch_point(rvc_expander, {
                                 "RANGE[%d-%d]"%(start, end): lambda _: True
-                          }, name = "RVC_EXPAND_16B_RANGE").sample()
+                          }, name = "RVC_EXPAND_ALL_16B").sample()
 
     # Reverse mark function to the check point
-    g.mark_function("RVC_EXPAND_16B_RANGE", test_rvc_expand_16bit_full, bin_name="RANGE[%d-%d]"%(start, end))
+    g.mark_function("RVC_EXPAND_ALL_16B", test_rvc_expand_16bit_full, bin_name="RANGE[%d-%d]"%(start, end))
     g.mark_function("RVC_EXPAND_RET", test_rvc_expand_16bit_full)
 
     # Drive the expander and check the result
     rvc_expand(rvc_expander, generate_rvc_instructions(start, end))
 
 
-N=100000
-K=10
+N=10
+T=1<<32
 @pytest.mark.toffee_tags([TAG_LONG_TIME_RUN, TAG_RARELY_USED])
-@pytest.mark.parametrize("N", [N for _ in range(K)])
-def test_rvc_expand_32bit_randomN(rvc_expander, N):
+@pytest.mark.parametrize("start,end",
+                         [(r*(T//N), (r+1)*(T//N) if r < N-1 else T) for r in range(N)])
+def test_rvc_expand_32bit_full(rvc_expander, start, end):
     """Test the RVC expand function with a full 32 bit instruction set
-    
+
     Description:
         Randomly generate N 32-bit instructions for each check, and repeat the process K times.
     """
-    # Add check point: RVC_EXPAND_32B_BITS to check instr bits.
-    def check_bits(i):
-        return lambda x: (x.stat()["instr"] & 1<<i) != 0
-    g.add_watch_point(rvc_expander, {"POS_%d"%i: check_bits(i) for i in range(32)}, 
-                      name = "RVC_EXPAND_32B_BITS")
+    # Add check point: RVC_EXPAND_ALL_32B to check instr bits.
+    g.add_watch_point(rvc_expander, {"RANGE[%d-%d]"%(start, end): lambda _: True},
+                      name = "RVC_EXPAND_ALL_32B")
     # Reverse mark function to the check point
+    g.mark_function("RVC_EXPAND_ALL_32B", test_rvc_expand_32bit_full)
+    g.mark_function("RVC_EXPAND_RET", test_rvc_expand_32bit_full)
+    # Drive the expander and check the result
+    rvc_expand(rvc_expander, list([_ for _ in range(start, end)]))
+
+
+def test_rvc_expand_32bit_randomN(rvc_expander):
+    """Test the RVC expand function with a random 32 bit instruction set
+
+    Description:
+        Randomly generate 32-bit instructions for testing
+    """
     g.mark_function("RVC_EXPAND_32B_BITS", test_rvc_expand_32bit_randomN)
     g.mark_function("RVC_EXPAND_RET", test_rvc_expand_32bit_randomN)
-    # Drive the expander and check the result
-    rvc_expand(rvc_expander, generate_random_32bits(N))
+    rvc_expand(rvc_expander, generate_random_32bits(100))
 
 
-@pytest.mark.toffee_tags(version="openxiangshan-kmh-97e37a2237-24092701 < openxiangshan-kmh-97e37a2237-24092703")
 def test_rvc_inst(decoder, rvc_expander):
     """
     Test the RVC instruction set, an example of the tag version in range.

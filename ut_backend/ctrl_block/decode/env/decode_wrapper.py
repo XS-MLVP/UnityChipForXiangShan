@@ -49,11 +49,22 @@ def init_rvc_expander_funcov(expander, g: fc.CovGroup):
     # 2. Add point RVC_EXPAND_16B_RANGE to check expander input range
     #   - bin RANGE[start-end]. The instruction is in the range of the compressed instruction set
     # This check point is added in case 'test_rv_decode.test_rvc_expand_16bit_full' dynamically, see the test case for details
-    
+
+    # 3. Add point RVC_EXPAND_32B_RANGE to check expander input range
+    #   - bin RANGE[start-end]. The instruction is in the range of the 32bit instruction set
+    # This check point is added in case 'test_rv_decode.test_rvc_expand_32bit_full' dynamically, see the test case for details
+
     # 3. Add point RVC_EXPAND_32B_BITS to check expander function coverage
     #   - bin BITS[0-31]. The instruction is expanded to the corresponding 32-bit instruction
-    # This check point is added in case 'test_rv_decode.test_rvc_expand_32bit_randomN' dynamically, see the test case for details
-    
+    def _check_pos(i):
+        def check(expander):
+            return expander.stat()["instr"] & (1<<i) != 0
+        return check
+    g.add_watch_point(expander, {
+                                  "POS_%d"%i: _check_pos(i)
+                                   for i in range(32)
+                                },
+                      name="RVC_EXPAND_32B_BITS")
     # The End
     return None
 
