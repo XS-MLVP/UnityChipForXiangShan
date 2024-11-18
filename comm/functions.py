@@ -327,7 +327,8 @@ def UT_FCOV(group, ignore_prefix="ut_", parent=-1):
     caller_frame = frame.f_back
     caller_module = inspect.getmodule(caller_frame)
     if caller_module:
-        gname = ".".join(caller_module.__name__.split(".")[:parent]) + "." + group
+        gname = ".".join(caller_module.__name__.split("UnityChipForXiangShan."
+                                                      )[-1].split(".")[:parent]) + "." + group
         if gname.startswith(ignore_prefix):
             gname = gname[len(ignore_prefix):]
         return gname
