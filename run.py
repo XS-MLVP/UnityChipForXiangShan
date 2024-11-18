@@ -17,7 +17,7 @@ import os
 import argparse
 import pytest
 import json
-from comm import init_cfg, cfg_as_str, get_rtl_lnk_version, error, build_dut, replace_default_vars_in_dict
+from comm import init_cfg, cfg_as_str, get_rtl_lnk_version, error, build_dut, replace_default_vars_in_dict, remove_version_tag
 from comm import download_rtl, get_rtl_dir, init_log, init, new_report_name, process_doc_result, base64_encode
 
 
@@ -50,6 +50,7 @@ def main():
         assert link_verison == cfg.rtl.version, f"RTL link version ({link_verison}) not equal to config version ({cfg.rtl.version})"
     else:
         cfg.rtl.version = link_verison # set current rtl version
+    cfg.rtl.version = remove_version_tag(cfg.rtl.version)
     report_dir, report_name = new_report_name(cfg)
     cfg.report.report_name = report_name
     cfg.freeze()
