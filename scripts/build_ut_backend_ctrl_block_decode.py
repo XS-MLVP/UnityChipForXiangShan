@@ -30,19 +30,19 @@ def build(cfg):
     assert f is True, f"File {f} not found"
     # build
     # export RVCExpander.sv
-    if not os.path.exists(get_root_dir("dut/rvcexpander")):
+    if not os.path.exists(get_root_dir("dut/RVCExpander")):
         info("Exporting RVCExpander.sv")
-        s, out, err = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/RVCExpander.sv", cfg=cfg)} --lang python --tdir {get_root_dir("dut/rvcexpander")} -w rvc.fst -c')
+        s, out, err = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/RVCExpander.sv", cfg=cfg)} --lang python --tdir {get_root_dir("dut")}/ -w rvc.fst -c')
         assert s, "Failed to export RVCExpander.sv: %s\n%s" % (out, err)
     # export PreDecode.sv
-    if not os.path.exists(get_root_dir("dut/predecode")):
+    if not os.path.exists(get_root_dir("dut/PreDecode")):
         info("Exporting PreDecode.sv")
-        s, _, _ = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/PreDecode.sv", cfg=cfg)} --lang python --tdir {get_root_dir("dut/predecode")} -w predecode.fst -c')
+        s, _, _ = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/PreDecode.sv", cfg=cfg)} --lang python --tdir {get_root_dir("dut")}/ -w predecode.fst -c')
         assert s, "Failed to export PreDecode.sv"
     # export DecodeStage.sv
-    if not os.path.exists(get_root_dir("dut/decodestage")):
+    if not os.path.exists(get_root_dir("dut/DecodeStage")):
         info("Exporting DecodeStage.sv")
-        s, _, _ = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/DecodeStage.sv", cfg=cfg)} --fs {get_root_dir("scripts/backend_ctrlblock_decode/rtl_files.f")} --lang python --tdir {get_root_dir("dut/decodestage")}  -w decode.fst -c')
+        s, _, _ = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/DecodeStage.sv", cfg=cfg)} --fs {get_root_dir("scripts/backend_ctrlblock_decode/rtl_files.f")} --lang python --tdir {get_root_dir("dut")}/ -w decode.fst -c')
         assert s, "Failed to export DecodeStage.sv"
     # build disasm
     if not os.path.exists(get_root_dir("tools/disasm/build")):

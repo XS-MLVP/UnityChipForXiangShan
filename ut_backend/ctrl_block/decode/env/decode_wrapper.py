@@ -19,11 +19,11 @@ import ctypes
 import datetime
 import toffee.funcov as fc
 
-from dut.predecode.UT_PreDecode import *
-from dut.decodestage.UT_DecodeStage import *
+from dut.PreDecode import *
+from dut.DecodeStage import *
 
 from comm import get_out_dir, get_root_dir, debug, UT_FCOV, get_file_logger, get_version_checker
-from dut.rvcexpander.UT_RVCExpander import *
+from dut.RVCExpander import *
 
 from toffee_test.reporter import set_func_coverage
 from toffee_test.reporter import set_line_coverage
