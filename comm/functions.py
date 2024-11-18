@@ -333,3 +333,22 @@ def UT_FCOV(group, ignore_prefix="ut_", parent=-1):
             gname = gname[len(ignore_prefix):]
         return gname
     return "unknown." + group
+
+
+def remove_version_tag(version_str, split_char="-", tag_pos=-2):
+    if split_char in version_str:
+        vlist = version_str.split(split_char)
+        vlist.pop(tag_pos) # name-tag-number => name-tag
+        return split_char.join(vlist)
+    return version_str
+
+
+def get_version_checker(target_version):
+    from toffee_test.markers import match_version
+    version = get_config().rtl.version
+    if not match_version(version, target_version):
+        def _fail():
+            import pytest
+            return pytest.skip(f"Unsupported RTL version {version}, need: {target_version}")
+        return _fail
+    return lambda: None
