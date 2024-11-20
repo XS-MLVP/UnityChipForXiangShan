@@ -2,7 +2,7 @@ from toffee.env import Env
 from toffee.triggers import ClockCycles, Value
 
 
-from dut.tage_sc.UT_Tage_SC import DUTTage_SC
+from dut.Tage_SC import DUTTage_SC
 from ..agent import PredictAgent, TrainAgent, ControlAgent
 from ..bundle import BranchPredictReq, BranchPredictionResp, UpdateBundle, CtrlBundle, PipelineBundle
 

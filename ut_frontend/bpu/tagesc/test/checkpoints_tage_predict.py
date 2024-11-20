@@ -1,7 +1,7 @@
 from toffee.funcov import CovGroup
 
 from comm import UT_FCOV
-from dut.tage_sc.UT_Tage_SC import DUTTage_SC
+from dut.Tage_SC import DUTTage_SC
 
 __all__ = ["get_coverage_group_of_tage_predict"]
 

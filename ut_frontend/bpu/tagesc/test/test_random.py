@@ -4,7 +4,7 @@ import pytest
 import toffee
 import toffee_test
 
-from dut.tage_sc.UT_Tage_SC import DUTTage_SC
+from dut.Tage_SC import DUTTage_SC
 from .checkpoints_sc_predict import get_coverage_group_of_sc_predict
 from .checkpoints_tage_predict import get_coverage_group_of_tage_predict
 from .checkpoints_tage_train import get_coverage_group_of_tage_train

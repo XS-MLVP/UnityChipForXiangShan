@@ -3,7 +3,7 @@ from toffee.funcov import CovGroup
 __all__ = ["get_coverage_group_of_sc_predict"]
 
 from comm import UT_FCOV
-from dut.tage_sc.UT_Tage_SC import DUTTage_SC
+from dut.Tage_SC import DUTTage_SC
 
 
 def is_calculate_predict_total_sum(way: int):

@@ -108,7 +108,7 @@ def get_rtl_dependencies(top_module, cfg):
     def get_rtl_dep(top_module_name) -> None:
         from comm import get_rtl_dir
         # Walk through the rtl dir
-        rtl_dir = os.path.join(str(get_rtl_dir(cfg=cfg)), cfg.rtl.version, f"**/{top_module_name}.*v")
+        rtl_dir = os.path.join(str(get_rtl_dir(cfg=cfg)), f"**/{top_module_name}.*v")
         for path in iglob(rtl_dir, recursive=True):
             module_set, inst_set = parser_verilog_file(path)
             for _name in module_set:
@@ -127,7 +127,7 @@ def build(cfg):
     from toffee_test.markers import match_version
     from comm import error, info, get_root_dir, exe_cmd
     # check version
-    if not match_version(cfg.rtl.version, ["openxiangshan-kmh-97e37a2237-24092701"]):
+    if not match_version(cfg.rtl.version, "openxiangshan-kmh-24092701+"):
         error(f"frontend_bpu_tagesc: Unsupported RTL version {cfg.rtl.version}")
         return False
     # find source files for Tage_SC
@@ -138,14 +138,14 @@ def build(cfg):
     assert os.path.exists(internal_signals_path), "Cannot find internal signal files"
 
     # export Tage_SC.sv
-    if not os.path.exists(get_root_dir("dut/tage_sc")):
+    if not os.path.exists(get_root_dir("dut/Tage_SC")):
         info("Exporting Tage_SC.sv")
         with NamedTemporaryFile("w+", encoding="utf-8", suffix=".txt") as filelist:
             filelist.write("\n".join(rtl_files))
             filelist.flush()
             s, _, err = exe_cmd(
                 f"picker export --cp_lib false {rtl_files[0]} --fs {filelist.name} --lang python --tdir "
-                f"{get_root_dir('dut/tage_sc')} -w Tage_SC.fst -c --internal={internal_signals_path}")
+                f"{get_root_dir('dut')}/ -w Tage_SC.fst -c --internal={internal_signals_path}")
         assert s, err
     return True
 
