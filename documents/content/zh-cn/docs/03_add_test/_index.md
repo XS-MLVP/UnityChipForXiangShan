@@ -9,8 +9,8 @@ weight: 15
 添加一个全新的DUT测试用例，需要完成以下三部分内容：
 
 1. **添加编译脚本**： 在`scripts`目录下编写对应的`rtl`到`python`的编译`python`文件（例如build_ut_**backend_ctrlblock_decode**.py，必须以`build_ut_`开头）以及对应的目录（目录中包含必要的输入文件，例如`rtl`的`filelist`，需要导出的内部信号等）。所添加的python文件需要实现两个函数：`build(cfg): bool` 和 `line_coverage_files(cfg): list[str]`。`build`函数用来编译DUT，`line_coverage_files`用来指定该DUT需要查看哪些文件的行覆盖率。
-1. **添加测试用例**： 在对应的`ut_*`目录中创建对应的`python`模块（例如`ut_backend/ctrl_block/decode`）,在该模块中需要包含以`test_*.py`的测试用例。需要添加的DUT可参考[香山昆明湖DUT验证进展](/docs/#testmap)或者`configs/dutree/xiangshan-kmh.yaml`中的层级进行添加，以确保收集测试结果时能与层级图对应。测试用例的编写方法请参考[Pytest官方文档](https://docs.pytest.org/en/stable/)。如果添加的信息在配置文件中未列出，可自行修改配置文件。
 1. **添加依赖模块**： 如果有需要的话，可以在`tools、comm`等模块中添加该DUT测试需要的基础工具。如果该工具不够通用请添加到对应的`ut_`模块中，且不能以`test_`前缀进行命名（例如参考模型可以是`ut_backend/ctrl_block/decode/reference.py`）。
+1. **添加测试用例**： 在对应的`ut_*`目录中创建对应的`python`模块（例如`ut_backend/ctrl_block/decode`）,在该模块中需要包含以`test_*.py`的测试用例。需要添加的DUT可参考[香山昆明湖DUT验证进展](/docs/#testmap)或者`configs/dutree/xiangshan-kmh.yaml`中的层级进行添加，以确保收集测试结果时能与层级图对应。测试用例的编写方法请参考[Pytest官方文档](https://docs.pytest.org/en/stable/)。如果添加的信息在配置文件中未列出，可自行修改配置文件。
 1. **添加说明**: 在添加的模块顶层文件夹中，添加`README.md`说明。
 
 如果是在已有的DUT测试中增加内容，按原有目录结构添加即可。

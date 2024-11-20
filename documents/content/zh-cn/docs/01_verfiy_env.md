@@ -7,7 +7,7 @@ weight: 13
 
 #### 基础环境需求
 
-本项目基于`Python`编程语言进行UT验证，采用的工具和测试框架为[toffee](https://github.com/XS-MLVP/toffee)和[mlvp](https://github.com/XS-MLVP/mlvp)，环境需求如下：
+本项目基于`Python`编程语言进行UT验证，采用的工具和测试框架为[picker](https://github.com/XS-MLVP/picker)和[toffe](https://github.com/XS-MLVP/toffe)，环境需求如下：
 
 1. Linux操作系统。建议WSL2下安装Ubuntu22.04。
 1. Python。建议Python3.11。
@@ -18,7 +18,7 @@ weight: 13
 ```bash
 git clone https://github.com/XS-MLVP/UnityChipForXiangShan.git
 cd UnityChipForXiangShan
-pip3 install -r requirements.txt # 安装python依赖
+pip3 install -r requirements.txt # 安装python依赖（例如 toffe）
 ```
 
 #### 下载RTL代码：
@@ -30,6 +30,15 @@ make rtl    # 该命下载最新的rtl代码，并解压至rtl目录，并创建
 ```
 
 所有RTL下载包请在[UnityChipXiangShanRTLs](https://github.com/XS-MLVP/UnityChipXiangShanRTLs)中查看。
+
+RTL压缩包的命名规范为：`名称-微架构-Git标记-日期编号.tar.gz`，例如`openxiangshan-kmh-97e37a2237-24092701.tar.gz`。在使用时，仓库代码会过滤掉git标记和后缀，例如通过 cfg.rtl.version 访问到的版本号为：`openxiangshan-kmh-24092701`。压缩包内的目录结构为：
+
+```bash
+openxiangshan-kmh-97e37a2237-24092701.tar.gz
+└── rtl           # 目录
+    |-- *.sv      # 所有sv文件
+    `-- *.v       # 所有v文件
+```
 
 #### 编译DUT
 
@@ -47,13 +56,13 @@ make dut DUTS=backend_ctrl_block_decode
 ```
 dut/
 ├── __init__.py
-├── decodestage
-├── predecode
-└── rvcexpander
+├── DecodeStage
+├── Predecode
+└── RVCExpander
 ```
 
 完成转换后，在测试用例代码中可以import对应的DUT，例如：
 ```python
-from dut.predecode.UT_PreDecode import DUTPreDecode
+from dut.PreDecode import DUTPreDecode
 dut = DUTPreDecode()
 ```

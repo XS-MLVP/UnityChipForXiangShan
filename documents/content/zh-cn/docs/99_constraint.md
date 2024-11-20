@@ -1,8 +1,8 @@
 ---
 title: 基本规范
 linkTitle: 基本规范
-#menu: {main: {weight: 20}}
-weight: 19
+#menu: {main: {weight: 99}}
+weight: 99
 ---
 
 为了方便将所有人的贡献集合在一起，需要在编码、环境、文档编写等方面采用相同的“规范”。
