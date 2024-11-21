@@ -352,3 +352,17 @@ def get_version_checker(target_version):
             return pytest.skip(f"Unsupported RTL version {version}, need: {target_version}")
         return _fail
     return lambda: None
+
+
+def module_name_with(names, prefix=None):
+    caller_module = inspect.getmodule(inspect.currentframe().f_back)
+    assert caller_module, "Failed to get caller module"
+    mname = caller_module.__name__
+    if prefix:
+        mname = os.path.normpath(os.path.join(mname.replace(".", "/"),
+                                              prefix)).replace("/", ".")
+    if isinstance(names, str):
+        return mname + "." + names
+    elif isinstance(names, list):
+        return [mname + "." + n for n in names]
+    raise ValueError("Invalid names type")
