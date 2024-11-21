@@ -15,7 +15,11 @@
 function updateLink() {
     var select = document.getElementById("{{.Get "id"}}urlSelect");
     var goLink = document.getElementById("{{.Get "id"}}goLink");
-    var url = select.options[select.selectedIndex].getAttribute("data-url");
+    var opt = select.options[select.selectedIndex];
+    if(!opt){
+        return
+    }
+    var url = opt.getAttribute("data-url");
     goLink.href = url;
     {{if .Get "onchange"}}
     window[{{ .Get "onchange" }}](url + "/ut_data_progress.json");
