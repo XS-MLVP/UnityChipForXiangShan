@@ -74,7 +74,6 @@ def test_rvc_expand_16bit_full(rvc_expander, start, end):
 
     # Reverse mark function to the check point
     g.mark_function("RVC_EXPAND_ALL_16B", test_rvc_expand_16bit_full, bin_name="RANGE[%d-%d]"%(start, end))
-    g.mark_function("RVC_EXPAND_RET", test_rvc_expand_16bit_full)
 
     # Drive the expander and check the result
     rvc_expand(rvc_expander, generate_rvc_instructions(start, end))
@@ -96,7 +95,6 @@ def test_rvc_expand_32bit_full(rvc_expander, start, end):
                       name = "RVC_EXPAND_ALL_32B")
     # Reverse mark function to the check point
     g.mark_function("RVC_EXPAND_ALL_32B", test_rvc_expand_32bit_full)
-    g.mark_function("RVC_EXPAND_RET", test_rvc_expand_32bit_full)
     # Drive the expander and check the result
     rvc_expand(rvc_expander, list([_ for _ in range(start, end)]))
 
@@ -108,8 +106,6 @@ def test_rvc_expand_32bit_randomN(rvc_expander):
     Description:
         Randomly generate 32-bit instructions for testing
     """
-    g.mark_function("RVC_EXPAND_32B_BITS", test_rvc_expand_32bit_randomN)
-    g.mark_function("RVC_EXPAND_RET", test_rvc_expand_32bit_randomN)
     rvc_expand(rvc_expander, generate_random_32bits(100))
 
 

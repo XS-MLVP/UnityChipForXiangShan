@@ -22,7 +22,7 @@ import toffee.funcov as fc
 from dut.PreDecode import *
 from dut.DecodeStage import *
 
-from comm import get_out_dir, get_root_dir, debug, UT_FCOV, get_file_logger, get_version_checker
+from comm import get_out_dir, get_root_dir, debug, UT_FCOV, get_file_logger, get_version_checker, module_name_with
 from dut.RVCExpander import *
 
 from toffee_test.reporter import set_func_coverage
@@ -57,7 +57,7 @@ def init_rvc_expander_funcov(expander, g: fc.CovGroup):
     #   - bin RANGE[start-end]. The instruction is in the range of the 32bit instruction set
     # This check point is added in case 'test_rv_decode.test_rvc_expand_32bit_full' dynamically, see the test case for details
 
-    # 3. Add point RVC_EXPAND_32B_BITS to check expander function coverage
+    # 4. Add point RVC_EXPAND_32B_BITS to check expander function coverage
     #   - bin BITS[0-31]. The instruction is expanded to the corresponding 32-bit instruction
     def _check_pos(i):
         def check(expander):
@@ -68,6 +68,19 @@ def init_rvc_expander_funcov(expander, g: fc.CovGroup):
                                    for i in range(32)
                                 },
                       name="RVC_EXPAND_32B_BITS")
+
+    # 5. Reverse mark function coverage to the check point
+    def _M(name):
+        # get the module name
+        return module_name_with(name, "../../test_rv_decode")
+
+    #  - mark RVC_EXPAND_RET
+    g.mark_function("RVC_EXPAND_RET",     _M(["test_rvc_expand_16bit_full",
+                                              "test_rvc_expand_32bit_full",
+                                              "test_rvc_expand_32bit_randomN"]))
+    #  - mark RVC_EXPAND_16B_RANGE
+    g.mark_function("RVC_EXPAND_32B_BITS", _M("test_rvc_expand_32bit_randomN"))
+
     # The End
     return None
 
