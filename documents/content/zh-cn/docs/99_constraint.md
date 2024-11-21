@@ -1,6 +1,6 @@
 ---
-title: 基本规范
-linkTitle: 基本规范
+title: 必要规范
+linkTitle: 必要规范
 #menu: {main: {weight: 99}}
 weight: 99
 ---
