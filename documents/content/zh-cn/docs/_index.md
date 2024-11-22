@@ -81,6 +81,6 @@ function update_charts(data_url){
 
 <div style="text-align: center; width: 100%;">
 <br>
-注：本项目中的统计信息根据commit等数据自动更新，参与者可以提交issue（写明任务内容，预计完成时间等）同步正在进行的任务。<br>
+注：本文档中的统计信息根据测试结果自动生成<br>
 数据自动更新日期：<em id="em_id_report_date">1970-01-01 00:00:00</em>
 </div>

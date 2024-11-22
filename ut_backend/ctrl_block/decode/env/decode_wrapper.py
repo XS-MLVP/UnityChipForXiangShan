@@ -35,7 +35,7 @@ toffee.setup_logging(toffee.ERROR)
 version_check = get_version_checker("openxiangshan-kmh-*")
 
 # Create a function coverage group: INT (Int instruction)
-g = fc.CovGroup(UT_FCOV("INT", parent=-2))
+g = fc.CovGroup(UT_FCOV("../../INT"))
 
 
 def init_rvc_expander_funcov(expander, g: fc.CovGroup):

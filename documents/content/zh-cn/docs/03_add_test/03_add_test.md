@@ -51,6 +51,71 @@ def test_<name>(a: type_a, b: type_b):
 为了方便测试用例管理，可通过toffee-test提供的`@pytest.mark.toffee_tags`标签功能，请参考[此处]()。
 
 
-## 检查点反标
+## 参考用例
 
-TBD
+如果很多测试用例（Test）具有相同的操作，该公共操作部分可以提炼成一个通用函数。以RVCExpander验证为例，可以把压缩指令的展开与参考模型（disasm）的对比封装成以下函数：
+
+```python
+def rvc_expand(rvc_expander, ref_insts):
+    """compare the RVC expand result with the reference
+
+    Args:
+        rvc_expander (warpper): the fixture of the RVC expander
+        ref_insts (list[int]]): the reference instruction list
+    """
+    find_error = 0
+    for insn in ref_insts:
+        insn_disasm = disasmbly(insn)
+        _, instr_ex = rvc_expander.expand(insn)
+        if (insn_disasm == "unknown") and  (instr_ex == 0):
+            debug(f"find bad inst:{insn}, ref: 1, dut: 0")
+            find_error +=1
+        elif (insn_disasm != "unknown") and  (instr_ex == 1):
+            debug(f"find bad inst:{insn}, ref: 0, dut: 1")
+            find_error +=1
+    assert 0 == find_error, "RVC expand error (%d errros)" % find_error
+```
+
+在上述公共部分中有 assert，因此调用该函数的Test也能提过该 assert 判断运行结果是否提过。
+
+在测试用例的开发过程中，通常存在大量的调试工作，为了让验证环境快速就位，需要编写一些“冒烟测试”进行调试。RVCExpander展开16位压缩指令的冒烟测试如下：
+
+```python
+@pytest.mark.toffee_tags(TAG_SMOKE)
+def test_rvc_expand_16bit_smoke(rvc_expander):
+    """Test the RVC expand function with 1 compressed instruction"""
+    rvc_expand(rvc_expander, generate_rvc_instructions(start=100, end=101))
+```
+
+为了方便进行管理，上述测试用例通过`toffee_tags`标记上了SMOKE标签。它的输入参数为`rvc_expander`，则在在运行时，会自动调用对应同名的`fixture`进行该参数的填充。
+
+
+
+RVCExpander展开16位压缩指令的测试目标是对2^16所有压缩指令进行遍历，检测所有情况是否都与参考模型disasm一致。在实现上，如果仅仅用一个Test进行遍历，则需要耗费大量时间，为此我们可以利用PyTest提供的`parametrize`对test进行参数化配置，然后通过`pytest-xdist`插件并行执行：
+
+```python
+N = 10
+T = 1<<16
+@pytest.mark.toffee_tags(TAG_LONG_TIME_RUN)
+@pytest.mark.parametrize("start,end",
+                         [(r*(T//N), (r+1)*(T//N) if r < N-1 else T) for r in range(N)])
+def test_rvc_expand_16bit_full(rvc_expander, start, end):
+    """Test the RVC expand function with a full compressed instruction set
+
+    Description:
+        Perform an expand check on 16-bit compressed instructions within the range from 'start' to 'end'.
+    """
+    # Add check point: RVC_EXPAND_RANGE to check expander input range.
+    #   When run to here, the range[start, end] is covered
+    g.add_watch_point(rvc_expander, {
+                                "RANGE[%d-%d]"%(start, end): lambda _: True
+                          }, name = "RVC_EXPAND_ALL_16B").sample()
+
+    # Reverse mark function to the check point
+    g.mark_function("RVC_EXPAND_ALL_16B", test_rvc_expand_16bit_full, bin_name="RANGE[%d-%d]"%(start, end))
+
+    # Drive the expander and check the result
+    rvc_expand(rvc_expander, generate_rvc_instructions(start, end))
+```
+
+在上述用例中定义了参数化参数`start`, `end`，用来指定压缩指令的开始值和结束值，然后通过装饰器`@pytest.mark.parametrize`对他们进行分组赋值。变量N可以指定将目标数据进行分组的组数，默认设置为10组。在运行时用例`test_rvc_expand_16bit_full`会展开为`test_rvc_expand_16bit_full[0-6553]`至`test_rvc_expand_16bit_full[58977-65536]`10个测试用例运行。

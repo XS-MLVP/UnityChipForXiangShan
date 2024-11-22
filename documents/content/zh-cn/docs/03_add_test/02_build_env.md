@@ -54,7 +54,7 @@ class RVCExpander(toffee.Bundle):
 
 #### 2. 定义功能覆盖率
 
-尽可能的在Env中定义好功能覆盖率，如果有必要也可以在测试用例中定义覆盖率。
+尽可能的在Env中定义好功能覆盖率，如果有必要也可以在测试用例中定义覆盖率。toffee功能覆盖率的定义请参考[此处的文档]()。为了完善功能检查点和测试用例之间的对应关系，功能覆盖率定义完成后，需要在适合的位置进行检查点和测试用例的对应关系（测试点反标）。
 
 ```python
 import toffee.funcov as fc
@@ -70,9 +70,19 @@ def init_rvc_expander_funcov(expander, g: fc.CovGroup):
                                 "SUCCE": lambda x: x.stat()["ilegal"] != False,
                           }, name = "RVC_EXPAND_RET")
     ...
+    # 5. Reverse mark function coverage to the check point
+    def _M(name):
+        # get the module name
+        return module_name_with(name, "../../test_rv_decode")
+
+    #  - mark RVC_EXPAND_RET
+    g.mark_function("RVC_EXPAND_RET",     _M(["test_rvc_expand_16bit_full",
+                                              "test_rvc_expand_32bit_full",
+                                              "test_rvc_expand_32bit_randomN"]), bin_name=["ERROR", "SUCCE"])
+    ...
 ```
 
-在上述代码中添加了名为`RVC_EXPAND_RET`的功能检查点来检查`RVCExpander`模块是否具有返回非法指令的能力。需要满足`ERROR`和`SUCCE`两个条件，即`stat()`中的`ileage`需要有`True`也需要有`False`值。toffee中覆盖率的使用方法请参考其[使用文档]()。
+在上述代码中添加了名为`RVC_EXPAND_RET`的功能检查点来检查`RVCExpander`模块是否具有返回非法指令的能力。需要满足`ERROR`和`SUCCE`两个条件，即`stat()`中的`ileage`需要有`True`也需要有`False`值。在定义完检查点后，通过`mark_function`方法，对会覆盖到该检查的测试用例进行了标记。
 
 
 #### 3. 定义必要fixture
