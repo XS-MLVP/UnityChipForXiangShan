@@ -77,9 +77,9 @@ def init_rvc_expander_funcov(expander, g: fc.CovGroup):
     #  - mark RVC_EXPAND_RET
     g.mark_function("RVC_EXPAND_RET",     _M(["test_rvc_expand_16bit_full",
                                               "test_rvc_expand_32bit_full",
-                                              "test_rvc_expand_32bit_randomN"]))
+                                              "test_rvc_expand_32bit_randomN"]), bin_name=["ERROR", "SUCCE"])
     #  - mark RVC_EXPAND_16B_RANGE
-    g.mark_function("RVC_EXPAND_32B_BITS", _M("test_rvc_expand_32bit_randomN"))
+    g.mark_function("RVC_EXPAND_32B_BITS", _M("test_rvc_expand_32bit_randomN"), bin_name=["POS_*"], raise_error=False)
 
     # The End
     return None
