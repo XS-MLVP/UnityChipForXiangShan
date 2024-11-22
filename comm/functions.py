@@ -322,17 +322,18 @@ def get_git_url_with_commit():
     return "none"
 
 
-def UT_FCOV(group, ignore_prefix="ut_", parent=-1):
+def UT_FCOV(group, ignore_prefix="ut_"):
     frame = inspect.currentframe()
     caller_frame = frame.f_back
     caller_module = inspect.getmodule(caller_frame)
     if caller_module:
-        gname = ".".join(caller_module.__name__.split("UnityChipForXiangShan."
-                                                      )[-1].split(".")[:parent]) + "." + group
+        gname = "/".join(caller_module.__name__.split("UnityChipForXiangShan."
+                                                      )[-1].split("."))
+        gname = os.path.normpath(os.path.join(gname, group)).replace("/", ".")
         if gname.startswith(ignore_prefix):
             gname = gname[len(ignore_prefix):]
         return gname
-    return "unknown." + group
+    return "unknown." + os.path.normpath(group)
 
 
 def remove_version_tag(version_str, split_char="-", tag_pos=-2):

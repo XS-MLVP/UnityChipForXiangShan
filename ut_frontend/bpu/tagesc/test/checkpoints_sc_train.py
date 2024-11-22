@@ -62,7 +62,7 @@ slot_name = ["br_slot_0", "tail_slot"]
 
 
 def get_coverage_group_of_sc_train(dut: DUTTage_SC) -> CovGroup:
-    g = CovGroup(UT_FCOV("UT_Tage_SC", "UnityChipForXiangShan.ut_", parent=-1))
+    g = CovGroup(UT_FCOV("../UT_Tage_SC"))
     for up_or_down in range(2):
         s = "Up Saturing" if up_or_down else "Down Saturing"
         # ctr up/down saturing update

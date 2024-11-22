@@ -83,7 +83,7 @@ def is_all_slots_use_same_unconf_provider_and_both(use_alt: int):
 def get_coverage_group_of_tage_predict(dut: DUTTage_SC) -> CovGroup:
     slot_name = ["br_slot_0", "tail_slot"]
 
-    group = CovGroup(UT_FCOV("UT_Tage_SC", "UnityChipForXiangShan.ut_", parent=-1))
+    group = CovGroup(UT_FCOV("../UT_Tage_SC"))
 
     # Tn is provider
     group.add_watch_point(dut, {

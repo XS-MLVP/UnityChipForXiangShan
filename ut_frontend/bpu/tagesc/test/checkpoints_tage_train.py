@@ -113,7 +113,7 @@ def is_update_always_taken(way: int):
 
 
 def get_coverage_group_of_tage_train(dut: DUTTage_SC) -> CovGroup:
-    g = CovGroup(UT_FCOV("UT_Tage_SC", "UnityChipForXiangShan.ut_", parent=-1))
+    g = CovGroup(UT_FCOV("../UT_Tage_SC"))
 
     # T0 up/down saturing update
     for up_or_down in range(2):

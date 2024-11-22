@@ -49,7 +49,7 @@ def is_tage_taken_from_tn(way: int, use_sc_excp: int):
 def get_coverage_group_of_sc_predict(dut: DUTTage_SC) -> CovGroup:
     slot_name = ["br_slot_0", "tail_slot"]
 
-    g = CovGroup(UT_FCOV("UT_Tage_SC", "UnityChipForXiangShan.ut_", parent=-1))
+    g = CovGroup(UT_FCOV("../UT_Tage_SC"))
 
     # Calculate TotalSum in SC predict
     g.add_watch_point(
