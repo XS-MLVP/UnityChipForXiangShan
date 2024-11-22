@@ -38,7 +38,7 @@ The above commands will automatically perform the following operations:
 1. Compile all available modules to be verified;
 1. Search for all Python files starting with `test_` in the `ut_*` directories and run the test cases starting with `test_` in them;
 1. Generate test reports (the test reports are located in the `out` directory);
-1. Update statistical data (you can view the statistical results through [Local Documentation Display](#how-to-display-documents-locally)).
+1. Update statistical data.
 
 
 *By default, tests that are too time-consuming will be skipped. You can run all test cases by setting `CFG=configs/noskip.yaml`， eg:
@@ -47,7 +47,7 @@ The above commands will automatically perform the following operations:
 make all CFG=configs/noskip.yaml
 ```
 
-#### How to Display Documents Locally
+#### Display Docs and Data Locally
 
 Follow the [Documentation Deployment Instructions](https://github.com/XS-MLVP/UnityChipForXiangShan/blob/main/documents/README.md) to set up the `hugo` environment, and then execute:
 

@@ -38,7 +38,7 @@ make all
 1. 编译所有可用待验模块；
 1. 搜索`ut_*`目录中所有`test_`开头的python文件，并运行其中`test_`开头的测试用例
 1. 生成测试报告（测试报告位于out目录）
-1. 更新统计数据（可通过[本地展示文档](#如何本地展示文档)查看统计结果）
+1. 更新统计数据
 
 *默认配置下，会skip过于耗时的测试，可通过设置环境变量`CFG=configs/noskip.yaml`运行所有用例:
 
@@ -46,7 +46,7 @@ make all
 make CFG=configs/noskip.yaml
 ```
 
-#### 如何本地展示文档
+#### 如何本地展示文档和数据
 
 按照[文档部署说明](https://github.com/XS-MLVP/UnityChipForXiangShan/blob/main/documents/README.md)配置`hugo`环境，然后执行：
 
