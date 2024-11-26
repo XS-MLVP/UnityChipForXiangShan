@@ -132,10 +132,16 @@ def search_line_coverage(lc_files, target_dir, path, extend_info):
                     find = 1
                     continue
                 if find == 1:
-                    line_hint = int(re.search(r'class="headerCovTableEntry">(\d+)</td>', ln).group(1))
+                    number = re.search(r'class="headerCovTableEntry">(\d+)</td>', ln)
+                    if number is None:
+                        continue
+                    line_hint = int(number.group(1))
                     find = 2
                 elif find == 2:
-                    line_total = int(re.search(r'class="headerCovTableEntry">(\d+)</td>', ln).group(1))
+                    number = re.search(r'class="headerCovTableEntry">(\d+)</td>', ln)
+                    if number is None:
+                        continue
+                    line_total = int(number.group(1))
                     break
         if find != 2:
             warning(f"Failed to get line coverage from {f}")
