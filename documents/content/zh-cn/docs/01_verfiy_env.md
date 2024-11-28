@@ -66,3 +66,19 @@ dut/
 from dut.PreDecode import DUTPreDecode
 dut = DUTPreDecode()
 ```
+
+#### 编译配置
+编译时，默认使用configs/_default.yaml中的配置项。
+
+当然，也可以使用自定义配置，方法如下：
+
+```bash
+# 指定自定义CFG文件
+make test CFG=path/to/your_cfg.yaml
+```
+
+类似地，可以在命令行直接指定键值对传入。目前仅有test相关阶段支持命令行配置键值对：
+```bash
+# 指定KV，传递命令行参数，键值对之间用空格隔开
+make test KV="log.term-level=\'debug\' test.skip-tags=[\'RARELY_USED\']"
+```
