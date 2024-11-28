@@ -26,6 +26,7 @@ def main():
     parser.add_argument("--config", type=str, help="config file", default=None)
     parser.add_argument("-b", "--build", type=str, help="duts to buld, eg: -b dut1,dut2; -b dut*", default="")
     parser.add_argument("--download-rtl", action="store_true", help="only download rtl")
+    parser.add_argument("--allure-json", action="store_true", help="generate allure-report json data")
     args, append_args = parser.parse_known_args()
     cfg_value = []
     for a in append_args.copy():
@@ -72,6 +73,10 @@ def main():
     }
     append_args.extend(["--report-dir", report_dir, "--report-name", report_name,
                         "--report-dump-json", "--custom-key-value", base64_encode(json.dumps(toffee_key_value))])
+    if args.allure_json:
+        def _allure_dir(pdir, pname):
+            return os.path.join(os.path.dirname(os.path.join(pdir, pname)), "allure")
+        append_args.extend(["--alluredir", _allure_dir(report_dir, report_name)])
     pytest.main(append_args, plugins=[__import__(__name__)])
     process_doc_result(report_dir, report_name, cfg)
 
