@@ -68,15 +68,17 @@ def test_rvc_expand_16bit_full(rvc_expander, start, end):
     """
     # Add check point: RVC_EXPAND_RANGE to check expander input range.
     #   When run to here, the range[start, end] is covered
+    covered = -1
     g.add_watch_point(rvc_expander, {
-                                "RANGE[%d-%d]"%(start, end): lambda _: True
-                          }, name = "RVC_EXPAND_ALL_16B").sample()
-
+                                "RANGE[%d-%d]"%(start, end): lambda _: covered == end
+                          }, name = "RVC_EXPAND_ALL_16B", dynamic_bin=True)
     # Reverse mark function to the check point
     g.mark_function("RVC_EXPAND_ALL_16B", test_rvc_expand_16bit_full, bin_name="RANGE[%d-%d]"%(start, end))
-
     # Drive the expander and check the result
     rvc_expand(rvc_expander, generate_rvc_instructions(start, end))
+    # When go to here, the range[start, end] is covered
+    covered = end
+    g.sample()
 
 
 N=10
@@ -91,12 +93,16 @@ def test_rvc_expand_32bit_full(rvc_expander, start, end):
         Randomly generate N 32-bit instructions for each check, and repeat the process K times.
     """
     # Add check point: RVC_EXPAND_ALL_32B to check instr bits.
-    g.add_watch_point(rvc_expander, {"RANGE[%d-%d]"%(start, end): lambda _: True},
-                      name = "RVC_EXPAND_ALL_32B")
+    covered = -1
+    g.add_watch_point(rvc_expander, {"RANGE[%d-%d]"%(start, end): lambda _: covered == end},
+                      name = "RVC_EXPAND_ALL_32B", dynamic_bin=True)
     # Reverse mark function to the check point
     g.mark_function("RVC_EXPAND_ALL_32B", test_rvc_expand_32bit_full)
     # Drive the expander and check the result
     rvc_expand(rvc_expander, list([_ for _ in range(start, end)]))
+    # When go to here, the range[start, end] is covered
+    covered = end
+    g.sample()
 
 
 @pytest.mark.skip("This test is allways failed, need to be fixed")
