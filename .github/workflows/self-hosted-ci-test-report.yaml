@@ -18,15 +18,14 @@ jobs:
     - name: Checkout UnityChipForXiangShan
       uses: actions/checkout@v4
 
-    - name: Check Commit
+    - name: Check Commit in ut_*
       run: |
         skip=true
-        for ut in ut_backend ut_frontend ut_mem_block ut_misc; do
-          if [ "$(git log -1 --format=%ct -- $ut)" -ne "0" ]; then
-            echo "New commits found in $ut"
+        modified_files=$(git diff --name-only HEAD~1 HEAD)
+        for file in $modified_files; do
+          if [[ $file == ut_*/* ]]; then
+            echo "New commits found: $file"
             skip=false
-          else
-            echo "No new commits in $ut"
           fi
         done
         echo "SKIP=$skip" >> $GITHUB_ENV
