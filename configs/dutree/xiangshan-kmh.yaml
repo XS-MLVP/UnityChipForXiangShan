@@ -20,7 +20,7 @@ children:
     desc: "前端模块"
     children:
       - name: "bpu"
-        desc: "分子预测器 (Branch Prediction Unit)"
+        desc: "分支预测器 (Branch Prediction Unit)"
         children:
           - name: "ftb"
             desc: "分支目标缓冲器 (Fetch Target Buffer)"
