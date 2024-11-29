@@ -18,7 +18,7 @@ weight: 13
 ```bash
 git clone https://github.com/XS-MLVP/UnityChipForXiangShan.git
 cd UnityChipForXiangShan
-pip3 install -r requirements.txt # 安装python依赖（例如 toffe）
+pip3 install -r requirements.txt # 安装python依赖（例如 toffee）
 ```
 
 #### 下载RTL代码：
