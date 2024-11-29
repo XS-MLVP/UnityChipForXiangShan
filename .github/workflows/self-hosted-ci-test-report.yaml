@@ -21,7 +21,6 @@ jobs:
     - name: Check Commit
       run: |
         skip=true
-        cd UnityChipForXiangShan
         for ut in ut_backend ut_frontend ut_mem_block ut_misc; do
           if [ "$(git log -1 --format=%ct -- $ut)" -ne "0" ]; then
             echo "New commits found in $ut"
@@ -29,29 +28,24 @@ jobs:
           else
             echo "No new commits in $ut"
           fi
-        cd ..
         echo "SKIP=$skip" >> $GITHUB_ENV
       shell: bash
 
     - name: Install dependencies
       if: env.SKIP == 'false'
       run: |
-        cd UnityChipForXiangShan
         pip3 uninstall -r requirements.txt -y
         pip3 install -r requirements.txt -y
-        cd ..
 
     - name: Run tests and generate report
       if: env.SKIP == 'false'
       run: |
-        cd UnityChipForXiangShan
         make clean
         make CFG=configs/ci.yaml args="-n 32"
-        cd ..
 
     - name: Checkout xs-mlvp.github.io repository
       if: env.SKIP == 'false'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         repository: 'XS-MLVP/xs-mlvp.github.io'
         token: ${{ secrets.COMMIT_KEY }}
@@ -60,7 +54,7 @@ jobs:
     - name: Configure git and sync
       if: env.SKIP == 'false'
       run: |
-        cp -r UnityChipForXiangShan/out/report/* xs-mlvp.github.io/UnityChipForXiangShan/data/reports/
+        cp -r out/report/* xs-mlvp.github.io/UnityChipForXiangShan/data/reports/
         cd xs-mlvp.github.io
         git config user.name "github-actions[bot]"
         git config user.email "22570332+github-actions[bot]@users.noreply.github.com"
