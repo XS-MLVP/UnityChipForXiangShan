@@ -36,7 +36,7 @@ jobs:
       if: env.SKIP == 'false'
       run: |
         pip3 uninstall -r requirements.txt -y
-        pip3 install -r requirements.txt -y
+        pip3 install -r requirements.txt
 
     - name: Run tests and generate report
       if: env.SKIP == 'false'
