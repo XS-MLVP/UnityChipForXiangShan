@@ -16,11 +16,7 @@ jobs:
         timezoneLinux: "Asia/Shanghai"
 
     - name: Checkout UnityChipForXiangShan
-      uses: actions/checkout@v2
-      with:
-        repository: 'XS-MLVP/UnityChipForXiangShan'
-        token: ${{ secrets.COMMIT_KEY }}
-        path: 'UnityChipForXiangShan'
+      uses: actions/checkout@v4
 
     - name: Check Commit
       run: |
