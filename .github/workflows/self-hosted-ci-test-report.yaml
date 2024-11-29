@@ -20,7 +20,7 @@ jobs:
 
     - name: Check Commit
       run: |
-        skip=false
+        skip=true
         for ut in ut_backend ut_frontend ut_mem_block ut_misc; do
           if [ "$(git log -1 --format=%ct -- $ut)" -ne "0" ]; then
             echo "New commits found in $ut"
@@ -52,7 +52,7 @@ jobs:
         token: ${{ secrets.WEB_PUSH_KEY }}
         path: 'xs-mlvp.github.io'
 
-    - name: Configure git and sync
+    - name: Push Report to xs-mlvp.github.io
       if: env.SKIP == 'false'
       run: |
         cp -r out/report/* xs-mlvp.github.io/UnityChipForXiangShan/data/reports/
