@@ -20,7 +20,7 @@ jobs:
 
     - name: Check Commit
       run: |
-        skip=true
+        skip=false
         for ut in ut_backend ut_frontend ut_mem_block ut_misc; do
           if [ "$(git log -1 --format=%ct -- $ut)" -ne "0" ]; then
             echo "New commits found in $ut"
