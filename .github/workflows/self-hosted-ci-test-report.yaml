@@ -40,10 +40,10 @@ jobs:
     - name: Install dependencies
       if: env.SKIP == 'false'
       run: |
-      cd UnityChipForXiangShan
-      pip3 uninstall -r requirements.txt -y 
-      pip3 install -r requirements.txt -y
-      cd ..
+        cd UnityChipForXiangShan
+        pip3 uninstall -r requirements.txt -y
+        pip3 install -r requirements.txt -y
+        cd ..
 
     - name: Run tests and generate report
       if: env.SKIP == 'false'
