@@ -25,6 +25,11 @@
 .div-dut-test-report td {
     text-align: right;
 }
+
+.div-dut-test-report .td-desc{
+    text-align: left;
+}
+
 .div-dut-test-report th {
     text-align: right;
 }
@@ -69,6 +74,26 @@
     font-size: 28px;
     font-weight: bold;
 }
+
+
+table .td-desc .tooltiptext {
+  visibility: hidden;
+  width: 250px;
+  background-color: rgb(87, 87, 87);
+  color: #fff1f1;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+
+  /* Position the tooltip */
+  position: absolute;
+  z-index: 1;
+}
+
+.td-desc:hover .tooltiptext{
+    visibility: visible;
+}
+
 </style>
 
 <div id="line-file-modal" class="modal-linecov">
@@ -102,6 +127,7 @@ function updateDUTestStatus(data_url){
     <tr>\
         <th class=\"td-index\">Index</th>\
         <th class=\"td-name\">Name</th>\
+        <th class=\"td-desc\">Description </th> \
         <th>Document</th>\
         <th>&nbsp;&nbsp;Cases</th>\
         <th>&nbsp;&nbsp;&nbsp;Fail</th>\
@@ -228,13 +254,32 @@ function updateDUTestStatus(data_url){
             var K_fail = K_case + "&K=li,point_name,,,span,Failed&K=ul,grou_name,,,ul,failed";
             return "<a href=\""+ url + K_fail +"\" target=\"_blank\">" + redItem(total - cover) + "</a>";
         }
+
+        function getDescComp(desc) {
+            initial = "<td class=\"td-desc\">";
+            end = "</td>"
+            scale = 15
+            if (desc.length <= scale){
+                return initial + desc + end
+            }
+
+            emit_desc = desc.substr(0, scale) + "..."
+            tooltip_res = "<div class=\"tooltiptext\">" + desc + "</div>"
+            return initial + emit_desc + tooltip_res + end
+
+        }
+
         function traverse(node) {
             if (!node.children || node.children.length === 0) {
                 var meta = node.meta
+                var desc = node.desc
+                console.log("meta infos!")
+                console.log(node)
                 $("#dut-test-items").html($("#dut-test-items").html() + 
                     "<tr><td class=\"td-index\">" + index + "</td>" +
                     "<td class=\"td-name\">" + meta.paths.replace(prefix + "/",
                         "").replaceAll("/", ".") + "</td>" +
+                    getDescComp(desc) + 
                     "<td>" + getDocUrl(meta.doc_url) + "</td>" +
                     "<td>" + getCaseUrl(meta.paths, meta.cases.pass, meta.cases.total) + "</td>" +
                     "<td>" + getCaseFailSkipUrl(meta.paths, meta.cases.fail, false) + "</td>" +

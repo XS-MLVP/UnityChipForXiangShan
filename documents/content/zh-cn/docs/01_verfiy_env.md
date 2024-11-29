@@ -7,21 +7,21 @@ weight: 13
 
 #### 基础环境需求
 
-本项目基于`Python`编程语言进行UT验证，采用的工具和测试框架为[picker](https://github.com/XS-MLVP/picker)和[toffe](https://github.com/XS-MLVP/toffe)，环境需求如下：
+本项目基于`Python`编程语言进行UT验证，采用的工具和测试框架为[picker](https://github.com/XS-MLVP/picker)和[toffe](https://github.com/XS-MLVP/toffe)，**环境需求**如下：
 
 1. Linux操作系统。建议WSL2下安装Ubuntu22.04。
 1. Python。建议Python3.11。
 1. picker。按照[快速开始](https://open-verify.cc/mlvp/docs/quick-start/installer/)中的提示安装最新版本。
+1. lcov 用于后续test阶段报告生成。使用包管理器即可下载：sudo apt install lcov
 
-
-环境配置完成后，clone仓库：
+**环境配置完成**后，clone仓库：
 ```bash
 git clone https://github.com/XS-MLVP/UnityChipForXiangShan.git
 cd UnityChipForXiangShan
 pip3 install -r requirements.txt # 安装python依赖（例如 toffee）
 ```
 
-#### 下载RTL代码：
+#### 下载RTL代码： 
 
 默认从仓库[https://github.com/XS-MLVP/UnityChipXiangShanRTLs](https://github.com/XS-MLVP/UnityChipXiangShanRTLs)中下载。用户也可以自行按照XiangShan文档编译生成RTL。
 
@@ -67,14 +67,14 @@ from dut.PreDecode import DUTPreDecode
 dut = DUTPreDecode()
 ```
 
-#### 编译配置
-编译时，默认使用configs/_default.yaml中的配置项。
+#### 编辑配置
+运行rtl、dut、test等命令时，默认使用configs/_default.yaml中的配置项。
 
 当然，也可以使用自定义配置，方法如下：
 
 ```bash
 # 指定自定义CFG文件
-make test CFG=path/to/your_cfg.yaml
+make CFG=path/to/your_cfg.yaml
 ```
 
 类似地，可以在命令行直接指定键值对传入。目前仅有test相关阶段支持命令行配置键值对：
