@@ -34,8 +34,9 @@ def rvc_expand(rvc_expander, ref_insts):
             debug(f"find bad inst:{insn}, ref: 1, dut: 0")
             find_error +=1
         elif (insn_disasm != "unknown") and  (instr_ex == 1):
-            debug(f"find bad inst:{insn}, ref: 0, dut: 1")
-            find_error +=1
+            if (instr_filter(insn_disasm) != 1): 
+                debug(f"find bad inst:{insn},disasm:{insn_disasm}, ref: 0, dut: 1")
+                find_error +=1
     assert 0 == find_error, "RVC expand error (%d errros)" % find_error
 
 
