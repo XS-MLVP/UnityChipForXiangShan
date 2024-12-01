@@ -44,6 +44,10 @@ openxiangshan-kmh-97e37a2237-24092701.tar.gz
 
 该过程的目的是将RTL通过picker工具打包为Python模块。可以通过make命令指定被打包DUT，也可以一次性打包所有DUT。
 
+如果想要自行打包某个dut，需要创建编写scripts目录中的build\_ut\_\<name\>.py脚本。这一脚本必须实现一个build方法，在打包时会被自动调用。此外还有一个line\_coverage\_files方法，用于指定行覆盖率参考的文件。
+
+picker的打包支持内部信号的加入，详见picker的\-\-internal参数，传递给其一个自定义的yaml即可。
+
 ```bash
 # 调用scripts目录中的build_ut_<name>.py中的build方法，创建待验证的Python版DUT
 make dut DUTS=<name>  # DUTS的值如果有多个，需要用逗号隔开，支持通配符。DUTS默认值为 "*"，编译所有DUT
