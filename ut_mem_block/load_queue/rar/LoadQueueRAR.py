@@ -1,1 +1,0 @@
-class RVCExpander(toffee.Bundle):
