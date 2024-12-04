@@ -17,9 +17,9 @@ jobs:
 
     steps:
     - name: Set Up timezone
-      uses: szenius/set-timezone@v2.0
-      with:
-        timezoneLinux: "Asia/Shanghai"
+      run: |
+        timedatectl set-timezone Asia/Shanghai
+      shell: bash
 
     - name: Use docker run all tests
       run: |
