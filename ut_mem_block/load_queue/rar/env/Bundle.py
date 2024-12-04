@@ -26,9 +26,9 @@ class ReleaseBundle(Bundle):
     signals = ["valid", "bits_paddr"]
 
 class WritebackBundle(Bundle):
-    # 通过前缀进行绑定io_ldWbPtr_ 
+    # 通过前缀进行绑定io_ldWbPtr_
     signals = ["flag", "value"]
   
 class FullBundle(Bundle):
-    # 通过前缀进行绑定io_
+    # 通过前缀进行绑定io_  (full)
     signals = ["lqFull"]
