@@ -10,7 +10,10 @@ jobs:
     runs-on: ubuntu-22.04
     container:
       image: ghcr.io/xs-mlvp/uc4xs:latest
-      options: --env GITHUB_TOKEN=${{ secrets.WEB_PUSH_KEY }}
+      options: --env GITHUB_TOKEN=$GITHUB_TOKEN
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.WEB_PUSH_KEY }}
 
     steps:
     - name: Set Up timezone
