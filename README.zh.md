@@ -66,6 +66,15 @@ Press Ctrl+C to stop
 此时，通过浏览器访问提示给出的地址（[http://127.0.0.1:1313](http://127.0.0.1:1313/)）即可。
 
 
+#### 容器测试
+
+可通过docker快速运行测试：
+
+```bash
+sudo docker pull ghcr.io/xs-mlvp/uc4xs:latest                       # 下载镜像
+sudo docker run --rm ghcr.io/xs-mlvp/uc4xs:latest /home/run_ci.sh   # 运行测试
+```
+
 **更多文档与验证进度请查看**：[https://open-verify.cc/UnityChipForXiangShan](https://open-verify.cc/UnityChipForXiangShan/docs/)
 
 #### 万众一芯QQ交流群：
