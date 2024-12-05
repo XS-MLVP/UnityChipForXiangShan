@@ -75,6 +75,13 @@ sudo docker pull ghcr.io/xs-mlvp/uc4xs:latest                       # 下载镜�
 sudo docker run --rm ghcr.io/xs-mlvp/uc4xs:latest /home/run_ci.sh   # 运行测试
 ```
 
+#### 其他说明
+
+- **行为准则：** [CODE_OF_CONDUCT.md](/CODE_OF_CONDUCT.md)
+- **如何贡献：** [CONTRIBUTING.md](/CONTRIBUTING.md)
+- **安全问题：** [SECURITY.md](/SECURITY.md)
+
+
 **更多文档与验证进度请查看**：[https://open-verify.cc/UnityChipForXiangShan](https://open-verify.cc/UnityChipForXiangShan/docs/)
 
 #### 万众一芯QQ交流群：
