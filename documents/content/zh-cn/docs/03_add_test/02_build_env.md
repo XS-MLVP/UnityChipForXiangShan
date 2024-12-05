@@ -14,13 +14,7 @@ ut_backend/ctrl_block/decode
 ├── env
 │   ├── decode_wrapper.py
 │   ├── __init__.py
-│   └── __pycache__
-│       ├── decode_wrapper.cpython-312.pyc
-│       └── __init__.cpython-312.pyc
 ├── __init__.py
-├── __pycache__
-│   ├── __init__.cpython-312.pyc
-│   └── test_rv_decode.cpython-312-pytest-8.3.3.pyc
 ├── README.md
 └── test_rv_decode.py
 ```
