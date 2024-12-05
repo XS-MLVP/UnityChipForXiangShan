@@ -5,10 +5,10 @@ English | [中文](/README.zh.md)
 This project aims to perform unit testing (Unit Test, UT) on the Kunminghu architecture of the [XiangShan Processor](https://github.com/OpenXiangShan/XiangShan) through open-source crowdsourcing. Python is chosen as the primary verification language for this project. By participating in the verification, you will learn the following:
 
 1. **Circuit Characteristics**: Observe the characteristics of circuits from a software perspective and gain an in-depth understanding of circuit design principles.
-2. **High-Performance Processor Design**: Learn the Chisel hardware description language, study related code and papers, and master the latest architectural design concepts.
-3. **Chip Verification Process**: Familiarize yourself with specification documents (Spec documents), learn how to perform UT verification, and evaluate the rationality of verification results.
+2. **High-Performance CPU Design**: Learn the Chisel hardware description language, study related code and papers, and master the latest CPU architectural design concepts.
+3. **Chip Verification**: Familiarize yourself with specification documents (Spec documents), learn how to perform UT verification, and evaluate the rationality of verification results.
 4. **Python Verification**: Master advanced programming patterns such as asynchronous programming and callbacks, and use Python for chip verification.
-5. **Linux Environment**: Learn basic Linux commands and set up the verification environment.
+5. **Linux Experience**: Learn basic Linux commands and set up the verification environment.
 
 This project welcomes contributions in various aspects and will provide rewards (such as bonuses, certificates, internship opportunities, etc.) within a certain period. Specific types of contributions include:
 
