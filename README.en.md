@@ -60,7 +60,7 @@ After executing the above commands, you will see output similar to:
 
 ```bash
 Running in Fast Render Mode. For full rebuilds on change: hugo server --disableFastRender
-Web Server is available at //localhost:1313/ (bind address 127.0.0.1)
+Web Server is available at //localhost:1313/ (bind address 0.0.0.0)
 Press Ctrl+C to stop
 ```
 
@@ -70,9 +70,15 @@ At this point, you can access the provided address ([http://127.0.0.1:1313](http
 To quickly run tests using Docker, you can execute the following commands:
 
 ```bash
-sudo docker pull ghcr.io/xs-mlvp/uc4xs:latest                       # Pull the image
-sudo docker run --rm ghcr.io/xs-mlvp/uc4xs:latest /home/run_ci.sh   # Run the tests
+sudo docker pull ghcr.io/xs-mlvp/uc4xs:latest # Pull the image
+sudo docker run -p 1313:1313 -it --rm ghcr.io/xs-mlvp/uc4xs:latest /home/run_ci.sh # Run the tests
 ```
+
+The `run_ci.sh` script in the container will perform the following actions:
+1. Update picker to the latest version
+1. Download this repository and install Python dependencies
+1. Run `make CFG=configs/ci.yaml args="-n auto"` to execute tests
+1. Run `make doc` to generate documentation (test report)
 
 #### Additional Information
 

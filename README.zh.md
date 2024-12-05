@@ -59,7 +59,7 @@ make doc
 
 ```bash
 Running in Fast Render Mode. For full rebuilds on change: hugo server --disableFastRender
-Web Server is available at //localhost:1313/ (bind address 127.0.0.1)
+Web Server is available at //localhost:1313/ (bind address 0.0.0.0)
 Press Ctrl+C to stop
 ```
 
@@ -71,9 +71,15 @@ Press Ctrl+C to stop
 可通过docker快速运行测试：
 
 ```bash
-sudo docker pull ghcr.io/xs-mlvp/uc4xs:latest                       # 下载镜像
-sudo docker run --rm ghcr.io/xs-mlvp/uc4xs:latest /home/run_ci.sh   # 运行测试
+sudo docker pull ghcr.io/xs-mlvp/uc4xs:latest # 下载镜像
+sudo docker run -p 1313:1313 -it --rm ghcr.io/xs-mlvp/uc4xs:latest /home/run_ci.sh # 运行测试
 ```
+
+容器中的 `run_ci.sh` 脚本会依次执行以下操作：
+1. 更新 picker 到最新版本
+1. 下载本仓库并安装python依赖
+1. 执行 `make CFG=configs/ci.yaml args="-n auto"` 运行测试
+1. 执行 `make doc` 可视化文档（测试报告）
 
 #### 其他说明
 
