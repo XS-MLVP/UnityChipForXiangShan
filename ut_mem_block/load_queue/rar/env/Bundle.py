@@ -30,5 +30,5 @@ class WritebackBundle(Bundle):
     signals = ["flag", "value"]
   
 class FullBundle(Bundle):
-    # 通过前缀进行绑定io_  (full)
+    # 通过前缀进行绑定io_  
     signals = ["lqFull"]

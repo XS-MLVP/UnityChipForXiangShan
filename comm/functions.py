@@ -385,9 +385,9 @@ def extract_signals(verilog_file, output_file):
             signal_type = match.group(1)  # wire or reg
             width = match.group(2) if match.group(2) else ""  # [8:0] or empty
             names = match.group(3)  # 信号名
-            # 分解信号名并格式化
             if signal_type == "reg":
                 signal_type = "logic"
+            # 分解信号名并格式化
             if width=="" :
                 for name in names.split(','):
                     extracted_signals.append(f"  - \"{signal_type} {name.strip()}\"")
