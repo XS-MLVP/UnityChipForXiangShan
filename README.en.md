@@ -66,8 +66,6 @@ Press Ctrl+C to stop
 
 At this point, you can access the provided address ([http://127.0.0.1:1313](http://127.0.0.1:1313/)) through your browser.
 
-**For more documentation, please visit**: [https://open-verify.cc/UnityChipForXiangShan](https://open-verify.cc/UnityChipForXiangShan/docs/)
-
 #### Test In Docker
 To quickly run tests using Docker, you can execute the following commands:
 
@@ -75,6 +73,9 @@ To quickly run tests using Docker, you can execute the following commands:
 sudo docker pull ghcr.io/xs-mlvp/uc4xs:latest                       # Pull the image
 sudo docker run --rm ghcr.io/xs-mlvp/uc4xs:latest /home/run_ci.sh   # Run the tests
 ```
+
+**For more information, please visit**: [https://open-verify.cc/UnityChipForXiangShan](https://open-verify.cc/UnityChipForXiangShan/docs/)
+
 
 #### UnityChip QQ Group:
 
