@@ -76,9 +76,9 @@ sudo docker run --rm ghcr.io/xs-mlvp/uc4xs:latest /home/run_ci.sh   # Run the te
 
 #### Additional Information
 
-- **Code of Conduct:** [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
-- **How to Contribute:** [CONTRIBUTING.md](CONTRIBUTING.md)
-- **Security Issues:** [SECURITY.md](SECURITY.md)
+- **Code of Conduct:** [CODE_OF_CONDUCT.md](/CODE_OF_CONDUCT.md)
+- **How to Contribute:** [CONTRIBUTING.md](/CONTRIBUTING.md)
+- **Security Issues:** [SECURITY.md](/SECURITY.md)
 
 
 **For more information, please visit**: [https://open-verify.cc/UnityChipForXiangShan](https://open-verify.cc/UnityChipForXiangShan/docs/)
