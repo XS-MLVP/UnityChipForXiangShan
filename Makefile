@@ -27,4 +27,4 @@ rtl:
 	@python3 run.py --config $(CFG)  --download-rtl
 
 doc:
-	cd documents && hugo server
+	cd documents && hugo server --bind 0.0.0.0
