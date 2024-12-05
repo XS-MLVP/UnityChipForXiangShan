@@ -13,12 +13,12 @@ weight: 2
 
 ### 确定文件名称
 
-在[香山昆明湖DUT验证进展]()中选择需要验证的UT，如果没有或者进一步细化，可通过编辑`config/dutree/xiangshan=lmh.yaml`自行添加。
+在[香山昆明湖DUT验证进展]()中选择需要验证的UT，如果没有或者进一步细化，可通过编辑`configs/dutree/xiangshan-kmh.yaml`自行添加。
 
 脚本文件的命名格式如下：
 
 ```bash
-scripts/build_ut_<顶层模块>_<下层模块名>[...].<目标模块名>.py
+scripts/build_<顶层模块>_<下层模块名>_..._<目标模块名>.py
 ```
 
 目前本项目内置了4个顶层模块：
