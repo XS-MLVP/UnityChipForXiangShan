@@ -34,18 +34,20 @@ class LoadQueueRAR(toffee.Bundle):
         self.req["ready"].value = query.req.ready
         self.req["bits_uop_robIdx_flag"].value = query.req.bits.uop.robIdx.flag
         self.req["bits_uop_robIdx_value"].value = query.req.bits.uop.robIdx.value
-        
+        self.req["bits_paddr"].value = query.req.bits.paddr
+        self.req[""]
         # self.resp = query.resp
         self.revoke = query.revoke
         self.dut.Step(1) # 推动电路
+        
         return 
         
         
-    def Dequeue(self, ldWbPtr, redirect, vecFeedback, release):
+    # def Dequeue(self, ldWbPtr, redirect, vecFeedback, release):
         
-    def detect(self, query, release):
+    # def detect(self, query, release):
         
-    def releasedupdate(self, query):
+    # def releasedupdate(self, query):
         
-    def revoke(self, query):
+    # def revoke(self, query):
         

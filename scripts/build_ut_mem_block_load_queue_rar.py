@@ -33,7 +33,7 @@ def build(cfg):
         info("Exporting LoadQueueRAR.sv")
         internal_signals_path = os.path.join(get_root_dir("ut_mem_block/load_queue/rar/env/internal.yaml"))
         extract_signals(get_rtl_dir("rtl/LoadQueueRAR.sv", cfg=cfg), internal_signals_path)
-        s, out, err = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/LoadQueueRAR.sv", cfg=cfg)} --fs {get_root_dir("scripts/mem_block_load_queue_rar/rtl_files.f")} --lang python --tdir {get_root_dir("dut")}/ -c --internal={internal_signals_path}')
+        s, out, err = exe_cmd(f'picker export {get_rtl_dir("rtl/LoadQueueRAR.sv", cfg=cfg)} --fs {get_root_dir("scripts/mem_block_load_queue_rar/rtl_files.f")} --lang python --tdir {get_root_dir("dut")}/ --internal={internal_signals_path}')
         assert s, "Failed to export LoadQueueRAR.sv: %s\n%s" % (out, err)
     return True
 
