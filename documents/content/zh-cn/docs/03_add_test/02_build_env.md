@@ -65,7 +65,7 @@ class RVCExpander(toffee.Bundle):
 
 上述 API **屏蔽了 DUT 的引脚**，对外程序通用功能。
 
-### 2. 定义功能覆盖率
+### <a id="定义功能覆盖率"></a>2. 定义功能覆盖率
 
 尽可能的在 Env 中定义好功能覆盖率，如果有必要也可以在测试用例中定义覆盖率。toffee 功能覆盖率的定义请参考[什么是功能覆盖率](http://localhost:1313/docs/03_add_test/05_cover_func/)。为了完善功能检查点和测试用例之间的对应关系，功能覆盖率定义完成后，需要在适合的位置进行检查点和测试用例的对应（测试点反标）。
 
@@ -99,7 +99,7 @@ def init_rvc_expander_funcov(expander, g: fc.CovGroup):
 
 在上述代码中添加了名为`RVC_EXPAND_RET`的功能检查点来检查`RVCExpander`模块是否具有返回非法指令的能力。需要满足`ERROR`和`SUCCE`两个条件，即`stat()`中的`ileage`需要有`True`也需要有`False`值。在定义完检查点后，通过`mark_function`方法，对会覆盖到该检查的测试用例进行了标记。
 
-### 3. 定义必要 fixture
+### <a id="定义必要fixture">3. 定义必要 fixture
 
 ```python
 version_check = get_version_checker("openxiangshan-kmh-*")             # 指定满足要的RTL版本
@@ -131,7 +131,7 @@ def rvc_expander(request):
 
 \*注：在 PyTest 中，执行测试用例`test_A(rvc_expander, ....)`前，会自动调用并执行`rvc_expander(request)`中`yield`关键字前的部分，然后通过`yield`返回`rvc_expander`调用`test_A`用例，用例执行完成后，再继续执行`fixture`中`yield`关键字之后的部分。
 
-### 4. 统计覆盖率
+### <a id="统计覆盖率">4. 统计覆盖率
 
 ```python
 N = 10
