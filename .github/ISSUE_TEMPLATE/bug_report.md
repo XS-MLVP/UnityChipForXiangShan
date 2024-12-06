@@ -42,7 +42,7 @@ Add any other context about the problem here.
 ## Checklist
 
 - [ ] I have searched the existing issues
-- [ ] I have added the appropriate tags
+- [ ] I have added the appropriate labels
 - [ ] I have reproduced the issue with the latest version
 - [ ] I have provided a detailed description of the bug
 - [ ] I have provided steps to reproduce the issue
