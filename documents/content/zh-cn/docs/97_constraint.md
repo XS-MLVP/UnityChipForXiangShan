@@ -2,7 +2,7 @@
 title: 必要规范
 linkTitle: 必要规范
 #menu: {main: {weight: 99}}
-weight: 99
+weight: 97
 ---
 
 为了方便将所有人的贡献集合在一起，需要在编码、环境、文档编写等方面采用相同的“规范”。

@@ -2,7 +2,7 @@
 title: 其他
 linkTitle: 其他
 #menu: {main: {weight: 99}}
-weight: 98
+weight: 96
 ---
 
 ## 测试用例管理
