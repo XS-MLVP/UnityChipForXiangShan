@@ -1,12 +1,3 @@
----
-name: Default Pull Request
-about: Contribute new feature for this project
-title: ''
-labels: ''
-assignees: ''
-
----
-
 # Description
 
 Please include a summary of the changes and the related issue.
