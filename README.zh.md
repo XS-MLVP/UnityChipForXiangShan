@@ -81,6 +81,12 @@ sudo docker run -p 1313:1313 -it --rm ghcr.io/xs-mlvp/uc4xs:latest /home/run_ci.
 1. 执行 `make CFG=configs/ci.yaml args="-n auto"` 运行测试
 1. 执行 `make doc` 可视化文档（测试报告）
 
+#### 维护
+
+在提交Issue、Pull Request、Discussion 时，如果指定对应模块的 Maintainer 能更及时的得到回应。目前已有的维护人员请参考[本连接](https://open-verify.cc/UnityChipForXiangShan/docs/99_maintain/)。
+
+如果您对本项目感兴趣，欢迎成为本项目中的维护者。
+
 #### 其他说明
 
 - **行为准则：** [CODE_OF_CONDUCT.md](/CODE_OF_CONDUCT.md)

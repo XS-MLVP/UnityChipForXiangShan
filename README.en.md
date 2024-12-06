@@ -80,6 +80,13 @@ The `run_ci.sh` script in the container will perform the following actions:
 1. Run `make CFG=configs/ci.yaml args="-n auto"` to execute tests
 1. Run `make doc` to generate documentation (test report)
 
+
+#### Maintenance
+
+When submitting an Issue, Pull Request, or Discussion, specifying the corresponding module's maintainer can help get a quicker response. For the current list of maintainers, please refer to [this link](https://open-verify.cc/UnityChipForXiangShan/docs/99_maintain/).
+
+If you are interested in this project, you are welcome to become a maintainer.
+
 #### Additional Information
 
 - **Code of Conduct:** [CODE_OF_CONDUCT.md](/CODE_OF_CONDUCT.md)
