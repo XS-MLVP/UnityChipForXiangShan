@@ -25,21 +25,20 @@ def test_rvc_expand_16bit_full(): # 合理，可以通过用例名称大体知�
 `pytest`统计的是`assert`语句的结果，因此`assert`语句需要保证能够通过。
 
 ```python
- def test_rvi_inst(decoder, rvc_expander):    
-     """                                                                                                                                                                       
-     Test the RVI instruction set. randomly generate instructions for testing                                                                                                  
-                                                                                                                                                                               
-     Args:                                                                                                                                                                     
-         decoder (fixure): the fixture of the decoder                                                                                                                          
-     """                                                                                                                                                                       
-     need_log_file   = True                                                                                                                                                    
-     insn_list_temp  = generate_random_32bits(100)                                                                                                                             
-     ref_lists       = convert_reference_format(rvc_expander, insn_list_temp, True, libdisasm.disasm, libdisasm.disasm_free_mem)                                               
-     assert decode_run(decoder, ref_lists, need_log_file,"test_rvi_inst") == True, "RVI decode error"                                                                          
-     g.add_cover_point(decoder, {"illegal_inst_triggers_an_exception": lambda _: decoder.Get_decode_checkpoint_illeagl_inst() != 0}, name="RVI_illegal_inst").sample()         
+ def test_rvi_inst(decoder, rvc_expander):
+     """
+     Test the RVI instruction set. randomly generate instructions for testing
+
+     Args:
+         decoder (fixure): the fixture of the decoder
+     """
+     need_log_file   = True
+     insn_list_temp  = generate_random_32bits(100)
+     ref_lists       = convert_reference_format(rvc_expander, insn_list_temp, True, libdisasm.disasm, libdisasm.disasm_free_mem)
+     assert decode_run(decoder, ref_lists, need_log_file,"test_rvi_inst") == True, "RVI decode error"
+     g.add_cover_point(decoder, {"illegal_inst_triggers_an_exception": lambda _: decoder.Get_decode_checkpoint_illeagl_inst() != 0}, name="RVI_illegal_inst").sample()
      g.add_cover_point(decoder, {"fast_check_random_32bit_int": lambda _: True}, name="RVI").sample()
 ```
-
 
 ## 编写注释
 
@@ -62,8 +61,8 @@ def test_<name>(a: type_a, b: type_b):
 
 ## 用例管理
 
-为了方便测试用例管理，可通过 toffee-test 提供的`@pytest.mark.toffee_tags`标签功能，请参考[管理测试用例资源](https://github.com/XS-MLVP/toffee-test/blob/master/README_zh.md#%E7%AE%A1%E7%90%86%E6%B5%8B%E8%AF%95%E7%94%A8%E4%BE%8B%E8%B5%84%E6%BA%90)。
-在本网站的[其他](https://open-verify.cc/UnityChipForXiangShan/docs/98_others/)部分也有用例管理的内容。
+为了方便测试用例管理，可通过 toffee-test 提供的`@pytest.mark.toffee_tags`标签功能，请参考
+本网站的[其他](https://open-verify.cc/UnityChipForXiangShan/docs/98_others/)部分和[toffee-test](https://github.com/XS-MLVP/toffee-test/blob/master/README_zh.md#%E7%AE%A1%E7%90%86%E6%B5%8B%E8%AF%95%E7%94%A8%E4%BE%8B%E8%B5%84%E6%BA%90)。
 
 ## 参考用例
 
