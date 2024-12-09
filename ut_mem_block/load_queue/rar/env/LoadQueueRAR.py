@@ -14,6 +14,62 @@ from toffee_test.reporter import set_line_coverage
 
 g = fc.CovGroup(UT_FCOV("../../Group-A"))
 
+def init_rar_funcov(rarqueue, g: fc.CovGroup):
+    g.add_watch_point(rarqueue.io_query_0_req_ready_0, 
+                      {
+                        "can receive violation query": lambda x: x.value > 0,
+                        "can't receive violation query": lambda x: x.value == 0,
+                      }, name = "RAR_ENQUEUE_0")
+    g.add_watch_point(rarqueue.io_query_1_req_ready_0, 
+                      {
+                        "can receive violation query": lambda x: x.value > 0,
+                        "can't receive violation query": lambda x: x.value == 0,
+                      }, name = "RAR_ENQUEUE_1")
+    g.add_watch_point(rarqueue.io_query_2_req_ready_0, 
+                      {
+                        "can receive violation query": lambda x: x.value > 0,
+                        "can't receive violation query": lambda x: x.value == 0,
+                      }, name = "RAR_ENQUEUE_2")
+    
+    # for i in range(72): #需要跨时钟周期进行检查，需放入test中自定义检查函数 for Dequeue
+    #     signal_name = f"LoadQueueRAR_allocated_{i}"  # 构造信号名称
+    #     signal_name2 = f"LoadQueueRAR_allocated_{i}"
+    #     g.add_watch_point(rarqueue,{
+    #             "check dequeue": lambda x: x[f"{signal_name}"] ==  ,
+    #         } , name=f"check_{signal_name}")
+            
+    g.add_watch_point(rarqueue.io_query_0_resp_bits_rep_frm_fetch,
+                      {
+                          "have ld-ld violation": lambda x: x.value > 0,
+                          "don't have ld-ld voilation": lambda x: x.value ==0,
+                      }, name = "QUERY_0")
+    g.add_watch_point(rarqueue.io_query_0_resp_bits_rep_frm_fetch,
+                      {
+                          "have ld-ld violation": lambda x: x.value > 0,
+                          "don't have ld-ld voilation": lambda x: x.value ==0,
+                      }, name = "QUERY_1")
+    g.add_watch_point(rarqueue.io_query_0_resp_bits_rep_frm_fetch,
+                      {
+                          "have ld-ld violation": lambda x: x.value > 0,
+                          "don't have ld-ld voilation": lambda x: x.value == 0,
+                      }, name = "QUERY_2")
+    g.add_watch_point(rarqueue.io_release,
+                      {
+                          "released update": lambda x: x.value > 0,
+                          "don't need update": lambda x:x.value == 0,
+                      }, name = "CHECK_RELEASED")
+    g.add_watch_point(rarqueue.io_query_0_revoke,
+                      {
+                          "need revoke": lambda x: x.value > 0,
+                      }, name = "CHECK_REVOKE")
+    g.add_watch_point(rarqueue.io_lqFull,
+                      {
+                          "queue is full": lambda x: x.value > 0,
+                          "queue is not full": lambda x: x.value == 0,
+                      }, name = "CHECK_FULL")
+    # The End
+    return None
+
 class LoadQueueRAR(toffee.Bundle):
     def __init__(self, cover_group, **kwargs):
         super().__init__()
