@@ -7,7 +7,15 @@ weight: 3
 
 ## 确定目录结构
 
-UT(单元测试)所在的目录位置的层级结构应该与名称一致，例如`backend.ctrl_block.decode`应当位于`ut_backend/ctrl_block/decode`目录，且每层目录都需要有`__init__.py`，便于通过 python 进行`import`。
+UT(Unit Test, 单元测试)所在的目录位置的层级结构应该与名称一致，例如`backend.ctrl_block.decode`应当位于`ut_backend/ctrl_block/decode`目录，且每层目录都需要有`__init__.py`，便于通过 python 进行`import`。
+
+**本章节的文件为`your_module_wrapper.py`**（如果你的模块是decode，那么文件就是`decode_wrapper.py`）。
+
+wrapper 是包装的意思，也就是我们测试中需要用到的方法封装成和dut解耦合的API提供给测试用例使用。
+
+\*注：解耦合是为了测试用例和 DUT 解耦，使得测试用例可以独立于 DUT 进行编写和调试，也就是在测试用例中，不需要知道 DUT 的具体实现细节，只需要知道如何使用 API 即可。可以参照[将验证代码与DUT进行解耦](https://open-verify.cc/mlvp/docs/mlvp/canonical_env/#%E5%B0%86%E9%AA%8C%E8%AF%81%E4%BB%A3%E7%A0%81%E4%B8%8Edut%E8%BF%9B%E8%A1%8C%E8%A7%A3%E8%80%A6)
+
+该文件应该放于`ut_frontend_or_backend/top_module/your_module/env`（这里依然以`decode`举例：`decode`属于后端，其顶层目录则应该是`ut_backend`；`decode`的顶层模块是`ctrlblock`，那么次级目录就是`ctrl_block`;之后的就是`decode`自己了；最后，由于我们是在**构建测试环境**，再建一级`env`目录。将它们连起来就是：`ut_frontend_or_backend/top_module/your_module/env`）目录下。
 
 ```shell
 ut_backend/ctrl_block/decode
@@ -111,7 +119,7 @@ def rvc_expander(request):
     wave_file = get_out_dir("decoder/rvc_expander_%s.fst" % fname)     # 设置波形文件路径
     coverage_file = get_out_dir("decoder/rvc_expander_%s.dat" % fname) # 设置代码覆盖率文件路径
     coverage_dir = os.path.dirname(coverage_file)
-    os.makedirs(coverage_dir, exist_ok=True)                           # 目标目录不正在则创建目录
+    os.makedirs(coverage_dir, exist_ok=True)                           # 目标目录不存在则创建目录
     expander = RVCExpander(g, coverage_filename=coverage_file, waveform_filename=wave_file)
                                                                        # 创建RVCExpander
     init_rvc_expander_funcov(expander, g)                              # 初始化功能检查点
@@ -130,7 +138,9 @@ def rvc_expander(request):
 4. 结束 DUT，处理代码行覆盖率和功能覆盖率（发往 toffee-report 进行处理）
 5. 清空功能覆盖率
 
-\*注：在 PyTest 中，执行测试用例`test_A(rvc_expander, ....)`前，会自动调用并执行`rvc_expander(request)`中`yield`关键字前的部分，然后通过`yield`返回`rvc_expander`调用`test_A`用例，用例执行完成后，再继续执行`fixture`中`yield`关键字之后的部分。
+\*注：在 PyTest 中，执行测试用例`test_A(rvc_expander, ....)`前（**rvc_expander是我们在使用fixure装饰器时定义的方法名**），会自动调用并执行`rvc_expander(request)`中`yield`关键字前的部分（相当于初始化），然后通过`yield`返回`rvc_expander`调用`test_A`用例（**yield返回的对象，在测试用例里就是我们fixture下定义的方法名**），用例执行完成后，再继续执行`fixture`中`yield`关键字之后的部分。比如：参照下面统计覆盖率的代码，倒数第四行的
+`rvc_expand(rvc_expander, generate_rvc_instructions(start, end))`，其中的`rvc_expander`就是我们在`fixture`中定义的方法名，也就是`yield`返回的对象。
+
 
 ### 4. 统计覆盖率
 
