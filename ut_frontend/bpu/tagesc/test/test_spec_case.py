@@ -6,15 +6,16 @@ from .checkpoints_sc_predict import get_coverage_group_of_sc_predict
 from .checkpoints_sc_train import get_coverage_group_of_sc_train
 from .checkpoints_tage_predict import get_coverage_group_of_tage_predict
 from .checkpoints_tage_train import get_coverage_group_of_tage_train
+from ..bundle.internal import StatusBundle
 from ..env.tage_sc_env import TageSCEnv
 from ..util.meta_parser import MetaParser
 
 
 @toffee_test.testcase
-async def test_tage_tn_saturing_ctr_update(tage_sc_dut: DUTTage_SC):
-    env = TageSCEnv(tage_sc_dut)
+async def test_tage_tn_saturing_ctr_update(test_env: TageSCEnv):
+    env = test_env
     await env.reset_dut()
-    await tage_sc_dut.AStep(1)
+    await test_env.__dut__.AStep(1)
     pc = 0x80000002
     with MetaParser(0) as parser:
         for x in parser.providers_valid:
@@ -28,7 +29,7 @@ async def test_tage_tn_saturing_ctr_update(tage_sc_dut: DUTTage_SC):
                 x.value = ti
             await env.train_agent.exec_update(pc, 1, 1, 1, parser.value, 0, 0, 0, 1, 1, 0, 0)
             for w in range(2):
-                assert getattr(tage_sc_dut, f"Tage_SC_tables_{ti}_per_bank_update_wdata_0_{w}_ctr").value == 0, \
+                assert getattr(test_env.__dut__, f"Tage_SC_tables_{ti}_per_bank_update_wdata_0_{w}_ctr").value == 0, \
                     f"TageTable{ti} down saturation-update failed!"
 
         # ctr up saturing
@@ -40,21 +41,21 @@ async def test_tage_tn_saturing_ctr_update(tage_sc_dut: DUTTage_SC):
                 for x in parser.providers:
                     x.value = ti
                 await env.train_agent.exec_update(pc, w, 1, 1, parser.value, 0, w, 1, 1, 1, 0, 0)
-                assert getattr(tage_sc_dut, f"Tage_SC_tables_{ti}_per_bank_update_wdata_0_{w}_ctr").value == 0b111, \
+                assert getattr(test_env.__dut__, f"Tage_SC_tables_{ti}_per_bank_update_wdata_0_{w}_ctr").value == 0b111, \
                     f"TageTable{ti} up saturation-update failed!"
 
 
 @toffee_test.testcase
-async def test_bank_tick_ctrs(tage_sc_dut: DUTTage_SC):
-    env = TageSCEnv(tage_sc_dut)
+async def test_bank_tick_ctrs(test_env: TageSCEnv):
+    env = test_env
 
     async def expect_reset_u(way: int):
-        await tage_sc_dut.AStep(1)
-        assert getattr(tage_sc_dut, f"Tage_SC_updateResetU_{way}").value == 1, "ResetU should be high!"
+        await test_env.__dut__.AStep(1)
+        assert getattr(test_env.__dut__, f"Tage_SC_updateResetU_{way}").value == 1, "ResetU should be high!"
 
     ##### Test Code Start  #####
     await env.reset_dut()
-    await tage_sc_dut.AStep(1)
+    await test_env.__dut__.AStep(1)
     pc = 0x80000002
     with MetaParser(0) as parser:
         for x in parser.allocates:
@@ -75,13 +76,13 @@ async def test_bank_tick_ctrs(tage_sc_dut: DUTTage_SC):
             x.value = 0xf
         for w in range(2):
             await env.train_agent.exec_update(pc, w, 1, 1, parser.value, 2, w, 1, 1, 1, 0, 0)
-    bank_tick_ctrs = [getattr(tage_sc_dut, f"Tage_SC_bankTickCtrs_{w}").value for w in range(2)]
+    bank_tick_ctrs = [getattr(test_env.__dut__, f"Tage_SC_bankTickCtrs_{w}").value for w in range(2)]
     assert sum(bank_tick_ctrs) == 0, "BankTickCtrs is not down saturation update"
 
 
 @toffee_test.testcase
-async def test_tage_alt_predict_keep_true_and_false(tage_sc_dut: DUTTage_SC):
-    env = TageSCEnv(tage_sc_dut)
+async def test_tage_alt_predict_keep_true_and_false(test_env: TageSCEnv):
+    env = test_env
     await env.reset_dut()
     # Alt prediction is false, provider is true
     with MetaParser(0) as parser:
@@ -100,7 +101,7 @@ async def test_tage_alt_predict_keep_true_and_false(tage_sc_dut: DUTTage_SC):
                 await env.train_agent.exec_update(i * 2, 1, 1, 1, parser.value, 0, 0, 0, 1, 1, 0, 0)
         for w in range(2):
             for i in range(128):
-                ctr_val = getattr(tage_sc_dut, f"Tage_SC_useAltOnNaCtrs_{w}_{i}").value
+                ctr_val = getattr(test_env.__dut__, f"Tage_SC_useAltOnNaCtrs_{w}_{i}").value
                 assert ctr_val == 0xf, f"useAltOnNaCtrs_{w}_{i} should be 0xf!"
         # Alt prediction is true, provider is false
         for x in parser.basecnts:
@@ -112,17 +113,17 @@ async def test_tage_alt_predict_keep_true_and_false(tage_sc_dut: DUTTage_SC):
                 await env.train_agent.exec_update(i * 2, 1, 1, 1, parser.value, 0, 0, 0, 1, 1, 0, 0)
     for w in range(2):
         for i in range(128):
-            ctr_val = getattr(tage_sc_dut, f"Tage_SC_useAltOnNaCtrs_{w}_{i}").value
+            ctr_val = getattr(test_env.__dut__, f"Tage_SC_useAltOnNaCtrs_{w}_{i}").value
             assert ctr_val == 0, f"useAltOnNaCtrs_{w}_{i} should be 0!"
 
 
 @toffee_test.testcase
-async def test_sc_threshold_saturation_update(tage_sc_dut: DUTTage_SC):
-    env = TageSCEnv(tage_sc_dut)
+async def test_sc_threshold_saturation_update(test_env: TageSCEnv):
+    env = test_env
     await env.reset_dut()
     pc = 0x80000004
-    ctrs = [getattr(tage_sc_dut, f"Tage_SC_scThresholds_{i}_ctr") for i in range(2)]
-    thresholds = [getattr(tage_sc_dut, f"Tage_SC_scThresholds_{i}_thres") for i in range(2)]
+    ctrs = [getattr(test_env.__dut__, f"Tage_SC_scThresholds_{i}_ctr") for i in range(2)]
+    thresholds = [getattr(test_env.__dut__, f"Tage_SC_scThresholds_{i}_thres") for i in range(2)]
     with MetaParser(0) as parser:
         for x in parser.sc_ctrs:
             for y in x[1:]:
@@ -170,8 +171,8 @@ async def test_sc_threshold_saturation_update(tage_sc_dut: DUTTage_SC):
 
 
 @toffee_test.testcase
-async def test_sc_table_saturation(tage_sc_dut: DUTTage_SC):
-    env = TageSCEnv(tage_sc_dut)
+async def test_sc_table_saturation(test_env: TageSCEnv):
+    env = test_env
     await env.reset_dut()
     pc = 0x1919810
     # SC Table down saturation update
@@ -191,7 +192,7 @@ async def test_sc_table_saturation(tage_sc_dut: DUTTage_SC):
         await env.train_agent.exec_update(pc, 1, 1, 1, parser.value, 2, 0, 0, 1, 1, 0, 0)
     for i in range(4):
         for w in range(2):
-            update_write_val = getattr(tage_sc_dut, f"Tage_SC_scTables_{i}_update_wdata_{w}").S()  # read as signed
+            update_write_val = getattr(test_env.__dut__, f"Tage_SC_scTables_{i}_update_wdata_{w}").S()  # read as signed
             assert update_write_val == -32, f"Slot{w} of SC Table{i} is not signed down saturation update"
 
     # SC Table up saturation update
@@ -213,18 +214,18 @@ async def test_sc_table_saturation(tage_sc_dut: DUTTage_SC):
 
     for i in range(4):
         for w in range(2):
-            update_write_val = getattr(tage_sc_dut, f"Tage_SC_scTables_{i}_update_wdata_{w}").S()  # read as signed
+            update_write_val = getattr(test_env.__dut__, f"Tage_SC_scTables_{i}_update_wdata_{w}").S()  # read as signed
             assert update_write_val == 31, f"Slot{w} of SC Table{i} is not signed up saturation update"
 
 
 @toffee_test.testcase
-async def test_sc_total_sum_correctness(tage_sc_dut: DUTTage_SC):
+async def test_sc_total_sum_correctness(test_env: TageSCEnv):
     def get_total_sum(sc_sum: int, tage_ctr: int):
         sc_ctr_sum = sc_sum * 2 + 4
         tage_ctr_centered = ((tage_ctr - 4) * 2 + 1) * 8
         return sc_ctr_sum + tage_ctr_centered
 
-    env = TageSCEnv(tage_sc_dut)
+    env = test_env
     ##### Test Code Start  #####
     await env.reset_dut()
     pc = 0x80000000
@@ -242,9 +243,9 @@ async def test_sc_total_sum_correctness(tage_sc_dut: DUTTage_SC):
             update_tage_ctr = parser.providerResps_ctr
             sc_table_sum = sum([parser.sc_ctrs[w][i].S() for i in range(4)])
             total_sum_attr = "Tage_SC_sumAboveThreshold_totalSum" + ("_1" if w else "")
-            real_val_xdata = getattr(tage_sc_dut, total_sum_attr)
+            real_val_xdata = getattr(test_env.__dut__, total_sum_attr)
             expect_val = get_total_sum(sc_table_sum, update_tage_ctr[w].value)
-            await tage_sc_dut.AStep(1)
+            await test_env.__dut__.AStep(1)
             assert expect_val == real_val_xdata.S(), "TotalSum in train is not correct"
 
         async with toffee.Executor() as _exec:
@@ -255,15 +256,15 @@ async def test_sc_total_sum_correctness(tage_sc_dut: DUTTage_SC):
     # Test total sum of predict
     async def assert_predict_total_sum(w: int):
         _suffix = "_1" if w else ""
-        tage = getattr(tage_sc_dut, f"Tage_SC_s2_tagePrvdCtrCentered_r" + _suffix).value
+        tage = getattr(test_env.__dut__, f"Tage_SC_s2_tagePrvdCtrCentered_r" + _suffix).value
         tage_centered = ((tage - 4) * 2 + 1) * 8
-        high_sc_sum = getattr(tage_sc_dut, f"Tage_SC_s2_scTableSums{_suffix}_1").S()
-        low_sc_sum = getattr(tage_sc_dut, f"Tage_SC_s2_scTableSums{_suffix}_0").S()
+        high_sc_sum = getattr(test_env.__dut__, f"Tage_SC_s2_scTableSums{_suffix}_1").S()
+        low_sc_sum = getattr(test_env.__dut__, f"Tage_SC_s2_scTableSums{_suffix}_0").S()
         expect_high = high_sc_sum + tage_centered
         expect_low = low_sc_sum + tage_centered
-        real_high = getattr(tage_sc_dut, "Tage_SC_s2_totalSums_1" + _suffix)
-        real_low = getattr(tage_sc_dut, "Tage_SC_s2_totalSums_0" + _suffix)
-        await tage_sc_dut.AStep(1)
+        real_high = getattr(test_env.__dut__, "Tage_SC_s2_totalSums_1" + _suffix)
+        real_low = getattr(test_env.__dut__, "Tage_SC_s2_totalSums_0" + _suffix)
+        await test_env.__dut__.AStep(1)
         assert expect_high == real_high.S() and expect_low == real_low.S(), "TotalSum in predict is not correct"
 
     async with toffee.Executor() as _exec:
@@ -273,8 +274,8 @@ async def test_sc_total_sum_correctness(tage_sc_dut: DUTTage_SC):
 
 
 @toffee_test.testcase
-async def test_update_when_predict(tage_sc_dut: DUTTage_SC):
-    env = TageSCEnv(tage_sc_dut)
+async def test_update_when_predict(test_env: TageSCEnv):
+    env = test_env
     await env.reset_dut()
     async with toffee.Executor() as _exec:
         _exec(env.predict_agent.exec_predict(0x114514, 1))
@@ -289,8 +290,8 @@ async def test_update_when_predict(tage_sc_dut: DUTTage_SC):
 
 
 @toffee_test.testcase
-async def test_always_taken(tage_sc_dut: DUTTage_SC):
-    env = TageSCEnv(tage_sc_dut)
+async def test_always_taken(test_env: TageSCEnv):
+    env = test_env
 
     pc = 0x800013
     await env.reset_dut()
@@ -300,24 +301,25 @@ async def test_always_taken(tage_sc_dut: DUTTage_SC):
     async with toffee.Executor() as _exec:
         _exec(env.ctrl_agent.exec_activate())
         _exec(env.predict_agent.exec_predict(pc, 1))
-    await tage_sc_dut.AStep(1)
+    await test_env.__dut__.AStep(1)
     s3 = env.predict_agent.io_out.s3
     assert (s3.br_taken_mask_1.value, s3.br_taken_mask_0.value) == (1, 1), "Predict result should be true"
 
 
 @toffee_test.fixture
-async def tage_sc_dut(toffee_request: toffee_test.ToffeeRequest):
+async def test_env(toffee_request: toffee_test.ToffeeRequest):
     import asyncio
     dut = toffee_request.create_dut(DUTTage_SC, "clock")
+    status = StatusBundle.from_prefix("").bind(dut)
 
     toffee_request.add_cov_groups([
-        get_coverage_group_of_tage_predict(dut),
-        get_coverage_group_of_tage_train(dut),
+        get_coverage_group_of_tage_predict(status),
+        get_coverage_group_of_tage_train(status),
         get_coverage_group_of_sc_predict(dut),
         get_coverage_group_of_sc_train(dut),
     ])
     toffee.start_clock(dut)
-    yield dut
+    yield TageSCEnv(dut)
 
     cur_loop = asyncio.get_event_loop()
     for task in asyncio.all_tasks(cur_loop):
