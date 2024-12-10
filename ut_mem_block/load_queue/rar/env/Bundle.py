@@ -1,4 +1,4 @@
-from mlvp import Bundle
+from toffee import Bundle
 
 class ControlRedirectBundle(Bundle):
     # 通过前缀进行绑定io_redirect_
