@@ -8,6 +8,7 @@ from dut.Tage_SC import DUTTage_SC
 from .checkpoints_sc_predict import get_coverage_group_of_sc_predict
 from .checkpoints_tage_predict import get_coverage_group_of_tage_predict
 from .checkpoints_tage_train import get_coverage_group_of_tage_train
+from ..bundle.internal import StatusBundle
 from ..env.fake_global_history import TageSCFakeGlobalHistory
 from ..env.tage_sc_env import TageSCEnv
 
@@ -37,9 +38,10 @@ async def test_random(tage_sc_env: TageSCEnv, pc_bound: int):
 async def tage_sc_env(toffee_request: toffee_test.ToffeeRequest):
     import asyncio
     dut = toffee_request.create_dut(DUTTage_SC, "clock")
+    status = StatusBundle.from_prefix("").bind(dut)
     toffee_request.add_cov_groups([
-        get_coverage_group_of_tage_predict(dut),
-        get_coverage_group_of_tage_train(dut),
+        get_coverage_group_of_tage_predict(status),
+        get_coverage_group_of_tage_train(status),
         get_coverage_group_of_sc_predict(dut),
     ])
     toffee.start_clock(dut)
