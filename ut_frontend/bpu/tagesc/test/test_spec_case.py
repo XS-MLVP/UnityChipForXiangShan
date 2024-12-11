@@ -1,3 +1,4 @@
+import pytest
 import toffee
 import toffee_test
 
@@ -10,7 +11,7 @@ from ..bundle.internal import StatusBundle
 from ..env.tage_sc_env import TageSCEnv
 from ..util.meta_parser import MetaParser
 
-
+@pytest.mark.toffee_tags(version = ["97e37a2237"])
 @toffee_test.testcase
 async def test_tage_tn_saturing_ctr_update(test_env: TageSCEnv):
     env = test_env
@@ -45,6 +46,7 @@ async def test_tage_tn_saturing_ctr_update(test_env: TageSCEnv):
                     f"TageTable{ti} up saturation-update failed!"
 
 
+@pytest.mark.toffee_tags(version = ["97e37a2237"])
 @toffee_test.testcase
 async def test_bank_tick_ctrs(test_env: TageSCEnv):
     env = test_env
@@ -79,7 +81,7 @@ async def test_bank_tick_ctrs(test_env: TageSCEnv):
     bank_tick_ctrs = [getattr(test_env.__dut__, f"Tage_SC_bankTickCtrs_{w}").value for w in range(2)]
     assert sum(bank_tick_ctrs) == 0, "BankTickCtrs is not down saturation update"
 
-
+@pytest.mark.toffee_tags(version = ["97e37a2237"])
 @toffee_test.testcase
 async def test_tage_alt_predict_keep_true_and_false(test_env: TageSCEnv):
     env = test_env
@@ -116,7 +118,7 @@ async def test_tage_alt_predict_keep_true_and_false(test_env: TageSCEnv):
             ctr_val = getattr(test_env.__dut__, f"Tage_SC_useAltOnNaCtrs_{w}_{i}").value
             assert ctr_val == 0, f"useAltOnNaCtrs_{w}_{i} should be 0!"
 
-
+@pytest.mark.toffee_tags(version = ["97e37a2237"])
 @toffee_test.testcase
 async def test_sc_threshold_saturation_update(test_env: TageSCEnv):
     env = test_env
@@ -169,7 +171,7 @@ async def test_sc_threshold_saturation_update(test_env: TageSCEnv):
     for x in thresholds:
         assert x.value == 0x4, "SC Threshold.thres should execute limit down saturation update"
 
-
+@pytest.mark.toffee_tags(version = ["97e37a2237"])
 @toffee_test.testcase
 async def test_sc_table_saturation(test_env: TageSCEnv):
     env = test_env
@@ -217,7 +219,7 @@ async def test_sc_table_saturation(test_env: TageSCEnv):
             update_write_val = getattr(test_env.__dut__, f"Tage_SC_scTables_{i}_update_wdata_{w}").S()  # read as signed
             assert update_write_val == 31, f"Slot{w} of SC Table{i} is not signed up saturation update"
 
-
+@pytest.mark.toffee_tags(version = ["97e37a2237"])
 @toffee_test.testcase
 async def test_sc_total_sum_correctness(test_env: TageSCEnv):
     def get_total_sum(sc_sum: int, tage_ctr: int):
@@ -272,7 +274,7 @@ async def test_sc_total_sum_correctness(test_env: TageSCEnv):
         _exec(env.predict_agent.exec_predict(pc, 2))
         _exec(assert_predict_total_sum(1))
 
-
+@pytest.mark.toffee_tags(version = ["97e37a2237"])
 @toffee_test.testcase
 async def test_update_when_predict(test_env: TageSCEnv):
     env = test_env
@@ -288,7 +290,7 @@ async def test_update_when_predict(test_env: TageSCEnv):
         _exec(env.train_agent.exec_update(0x114514, 1, 1, 1, prev["last_stage_meta"], 1, 0, 0, 1, 1, 0, 0))
     assert prev == env.predict_agent.io_out.as_dict()
 
-
+@pytest.mark.toffee_tags(version = ["97e37a2237"])
 @toffee_test.testcase
 async def test_always_taken(test_env: TageSCEnv):
     env = test_env
