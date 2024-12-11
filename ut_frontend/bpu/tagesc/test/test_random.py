@@ -42,7 +42,7 @@ async def tage_sc_env(toffee_request: toffee_test.ToffeeRequest):
     toffee_request.add_cov_groups([
         get_coverage_group_of_tage_predict(status),
         get_coverage_group_of_tage_train(status),
-        get_coverage_group_of_sc_predict(dut),
+        get_coverage_group_of_sc_predict(status),
     ])
     toffee.start_clock(dut)
     yield TageSCEnv(dut)
