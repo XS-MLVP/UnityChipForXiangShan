@@ -1,0 +1,4 @@
+PREDICT_WIDTH=16
+RVC_LABEL = "isRVC"
+BRTYPE_LABEL = "brType"
+RET_LABEL = "isRet"

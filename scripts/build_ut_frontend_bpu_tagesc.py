@@ -127,7 +127,7 @@ def build(cfg):
     from toffee_test.markers import match_version
     from comm import error, info, get_root_dir, exe_cmd
     # check version
-    if not match_version(cfg.rtl.version, "openxiangshan-kmh-24092701+"):
+    if not match_version(cfg.rtl.version, "openxiangshan-kmh-*"):
         error(f"frontend_bpu_tagesc: Unsupported RTL version {cfg.rtl.version}")
         return False
     # find source files for Tage_SC

@@ -45,6 +45,11 @@ children:
         priority: high
       - name: "ifu"
         desc: "指令单元 (Instruction Fetch Unit)"
+        children:
+          - name: "pred_checker"
+            desc: "预译码器"
+          - name: "rvc_expander"
+            desc: "RVC指令扩充器"
       - name: "instr_uncache"
         priority: high
         desc: "指令非缓存"
