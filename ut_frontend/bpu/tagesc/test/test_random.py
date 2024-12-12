@@ -1,5 +1,6 @@
-import random
 import os
+import random
+
 import pytest
 import toffee
 import toffee_test
@@ -12,7 +13,8 @@ from ..bundle.internal import StatusBundle
 from ..env.fake_global_history import TageSCFakeGlobalHistory
 from ..env.tage_sc_env import TageSCEnv
 
-@pytest.mark.toffee_tags(version = ["97e37a2237"])
+
+@pytest.mark.toffee_tags(version=["97e37a2237"])
 @pytest.mark.parametrize("pc_bound", list(range(8)))
 @toffee_test.testcase
 async def test_random(tage_sc_env: TageSCEnv, pc_bound: int):

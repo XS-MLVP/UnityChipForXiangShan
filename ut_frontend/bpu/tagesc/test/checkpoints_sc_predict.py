@@ -3,13 +3,13 @@ __all__ = ["get_coverage_group_of_sc_predict"]
 from toffee.funcov import CovGroup
 
 from comm import UT_FCOV
-from dut.Tage_SC import DUTTage_SC
-from ut_frontend.bpu.tagesc.bundle.internal import StatusBundle
+from ..bundle.internal import StatusBundle
 
 
 def is_calculate_predict_total_sum(way: int):
     def calculate_predict_total_sum(status: StatusBundle) -> bool:
         return status.s2_valid(3)
+
     return calculate_predict_total_sum
 
 
@@ -25,6 +25,7 @@ def is_not_use_sc_as_tage_use_alt(way: int, tn_hit: int):
         above_threshold = abs(total_sum) > threshold
         use_sc = provided and above_threshold
         return valid and use_alt and not use_sc and (tn_hit == provided)
+
     return not_use_sc_as_tage_use_alt
 
 
@@ -40,6 +41,7 @@ def is_tage_taken_from_tn(way: int, use_sc_excp: int):
         above_threshold = abs(total_sum) > threshold
         use_sc = provided and above_threshold
         return valid and provided and not use_alt and (use_sc == use_sc_excp)
+
     return tage_taken_from_tn
 
 
