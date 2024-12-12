@@ -1,4 +1,4 @@
-__all__ = ['InternalBundle']
+__all__ = ['StatusBundle']
 
 from toffee import Bundle, Signal, Signals
 

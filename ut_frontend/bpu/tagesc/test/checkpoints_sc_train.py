@@ -1,18 +1,19 @@
+__all__ = ['get_coverage_group_of_sc_train']
+
 from toffee.funcov import CovGroup
 
 from comm import UT_FCOV
 from ..bundle.internal import StatusBundle
 from ..util.meta_parser import MetaParser
 
-__all__ = ['get_coverage_group_of_sc_train']
-
 
 def is_update_calculate_total_sum(way: int):
     def update_calculate_total_sum(status: StatusBundle) -> bool:
         valid = status.pipline.s1_ready.value and status.internal.update.valid(way)
         with MetaParser(status.update.bits.meta.value) as meta_parser:
-            tage_valid = meta_parser.providers_valid[way]
+            tage_valid = meta_parser.providers_valid[way].value
             return valid and tage_valid
+
     return update_calculate_total_sum
 
 
@@ -39,6 +40,7 @@ def is_update_threshold_ctr_saturing_to_neutral(way: int, up_or_down: int):
         valid = status.pipline.s1_ready.value and status.update.valid.value and update_valid \
                 and (threshold - 4 <= total_sum <= threshold - 2)
         return valid and (new_ctr == (0b11111 if up_or_down else 0))
+
     return update_threshold_ctr_saturing_to_neutral
 
 

@@ -24,6 +24,7 @@ def is_update_t0_saturing_ctr(way: int, up_or_down: int):
         new_ctr = base_table.new_ctr(way)
         update_taken = base_table.update_taken(pc, way)
         return valid and new_ctr == v and old_ctr == v and (update_taken == up_or_down)
+
     return update_t0_saturing
 
 
@@ -36,6 +37,7 @@ def is_update_tn_saturing_ctr(way: int, ti: int, up_or_down: int):
         valid = status.pipline.s1_ready.value and mask
         taken = tage_table.get_table(ti).update_taken(pc, way)
         return valid and has_silent and (taken == up_or_down)
+
     return update_tn_saturing
 
 
@@ -52,13 +54,14 @@ def is_allocate_new_entry(way: int, except_success_or_failure: int):
     return allocate_new_entry
 
 
-def is_allocate_as_provider_predict_incorrectly(way: int):
+def is_allocate_as_provider_predict_incorrectly(way: int, success: int):
     def allocate_as_provider(status: StatusBundle) -> bool:
         with MetaParser(status.update.bits.meta.value) as meta_parser:
-            incorrect = not status.internal.update.provider_correct(way)
+            expect = status.internal.update.provider_correct(way) == success
             valid = status.pipline.s1_ready.value and status.update.valid.value \
-                    and meta_parser.providers_valid[way].value and incorrect
+                    and meta_parser.providers_valid[way].value and expect
             return valid
+
     return allocate_as_provider
 
 
@@ -69,6 +72,7 @@ def is_update_predict_from_tagged(way: int):
             provided = meta_parser.providers_valid[way].value
             alt_used = meta_parser.altUsed[way].value
             return valid and provided and not alt_used
+
     return update_predict_from_tagged
 
 
@@ -80,6 +84,7 @@ def is_update_use_alt_on_na_ctrs(way: int):
             weak = meta_parser.providerResps_ctr[way].value in {0b100, 0b011}
             alt_diff = (meta_parser.basecnts[way].value >= 0b10) != (meta_parser.providerResps_ctr[way].value >= 0b100)
             return valid and provided and weak and alt_diff
+
     return update_use_alt_on_na_ctrs
 
 
@@ -98,6 +103,7 @@ def is_update_always_taken(way: int):
         always_taken = getattr(status.update.bits.ftb_entry, f"always_taken_{way}").value
         valid = status.pipline.s1_ready.value and status.update.valid.value
         return valid and always_taken
+
     return update_always_taken
 
 
@@ -133,7 +139,7 @@ def get_coverage_group_of_tage_train(status: StatusBundle) -> CovGroup:
             alloc[slot_name[w]] = is_allocate_new_entry(w, success_or_failure)
 
             alloc_as_provider_mis_pred[f"{slot_name[w]} provider incorrect"] \
-                = is_allocate_as_provider_predict_incorrectly(w)
+                = is_allocate_as_provider_predict_incorrectly(w, success_or_failure)
 
         g.add_watch_point(status, alloc, name="Tn Allocate " + cond)
         g.add_watch_point(status, alloc_as_provider_mis_pred, name="Tn Allocate As Provider MisPredict " + cond)
@@ -146,8 +152,8 @@ def get_coverage_group_of_tage_train(status: StatusBundle) -> CovGroup:
     g.add_watch_point(
         status,
         {
-            slot_name[0]: lambda d: d.internal.update.valid(0) and d.pipline.s0_fire_1.value,
-            slot_name[1]: lambda d: d.internal.update.valid(1) and d.pipline.s0_fire_1.value,
+            slot_name[0]: lambda status: status.internal.update.valid(0) and status.pipline.s0_fire_1.value,
+            slot_name[1]: lambda status: status.internal.update.valid(1) and status.pipline.s0_fire_1.value,
         },
         name="Update When Predict"
     )
