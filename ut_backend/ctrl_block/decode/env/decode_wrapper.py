@@ -100,6 +100,7 @@ class RVCExpander(toffee.Bundle):
 
     def expand(self, instr):
         self.io["in"].value = instr
+        self.io["fsIsOff"].value = False
         self.dut.RefreshComb()
         self.cover_group.sample()
         return self.io["out_bits"].value, self.io["ill"].value
