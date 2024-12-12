@@ -1,0 +1,27 @@
+name: Run all test and generate report
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    container:
+      image: ghcr.io/xs-mlvp/uc4xs:latest
+      options: --env GITHUB_TOKEN=$GITHUB_TOKEN
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.WEB_PUSH_KEY }}
+
+    steps:
+    - name: Set Up timezone
+      uses: szenius/set-timezone@v2.0
+      with:
+        timezoneLinux: "Asia/Shanghai"
+
+    - name: Use docker run all tests
+      run: |
+        bash /home/run_ci.sh
+      shell: bash

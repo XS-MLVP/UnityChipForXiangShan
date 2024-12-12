@@ -59,11 +59,39 @@ make doc
 
 ```bash
 Running in Fast Render Mode. For full rebuilds on change: hugo server --disableFastRender
-Web Server is available at //localhost:1313/ (bind address 127.0.0.1)
+Web Server is available at //localhost:1313/ (bind address 0.0.0.0)
 Press Ctrl+C to stop
 ```
 
 此时，通过浏览器访问提示给出的地址（[http://127.0.0.1:1313](http://127.0.0.1:1313/)）即可。
+
+
+#### 容器测试
+
+可通过docker快速运行测试：
+
+```bash
+sudo docker pull ghcr.io/xs-mlvp/uc4xs:latest # 下载镜像
+sudo docker run -p 1313:1313 -it --rm ghcr.io/xs-mlvp/uc4xs:latest /home/run_ci.sh # 运行测试
+```
+
+容器中的 `run_ci.sh` 脚本会依次执行以下操作：
+1. 更新 picker 到最新版本
+1. 下载本仓库并安装python依赖
+1. 执行 `make CFG=configs/ci.yaml args="-n auto"` 运行测试
+1. 执行 `make doc` 可视化文档（测试报告）
+
+#### 维护
+
+在提交Issue、Pull Request、Discussion 时，如果指定对应模块的 Maintainer 能更及时的得到回应。目前已有的维护人员请参考[本连接](https://open-verify.cc/UnityChipForXiangShan/docs/99_maintain/)。
+
+如果您对本项目感兴趣，欢迎成为本项目中的维护者。
+
+#### 其他说明
+
+- **行为准则：** [CODE_OF_CONDUCT.md](/CODE_OF_CONDUCT.md)
+- **如何贡献：** [CONTRIBUTING.md](/CONTRIBUTING.md)
+- **安全问题：** [SECURITY.md](/SECURITY.md)
 
 
 **更多文档与验证进度请查看**：[https://open-verify.cc/UnityChipForXiangShan](https://open-verify.cc/UnityChipForXiangShan/docs/)

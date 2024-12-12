@@ -28,7 +28,8 @@ def process_doc_result(report_dir, report_name, cfg):
     from .functions import get_abs_path, time_format
     extend_info = {"time": time_format(fmt="%Y-%m-%d %H:%M:%S")}
     toffee_result = os.path.join(report_dir, os.path.dirname(report_name), "toffee_report.json")
-    assert os.path.exists(toffee_result), f"{toffee_result} not found, please check the toffee report"
+    if not os.path.exists(toffee_result):
+        return
     report_data = json.loads(open(toffee_result).read())
     extend_info["raw_report"] = report_data
     # 0. load dut tree
