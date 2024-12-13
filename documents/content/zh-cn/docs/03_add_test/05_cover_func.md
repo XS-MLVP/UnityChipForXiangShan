@@ -27,17 +27,18 @@ weight: 6
 
 ### 指定 Group 名称
 
-测试报告通过 Group 名字和 DUT 名字进行匹配，利用 comm.UT_FCOV 获取 DUT 前缀，例如在 Python 模块`ut_backend/ctrl_block/decode/env/decode_wrapper.py`中进行如下调用：
+测试报告通过 Group 名字和 DUT 名字进行匹配，利用 comm.UT_FCOV 获取 DUT 前缀，例如在 Python 模块`ut_frontend/ifu/rvc_expander/classical_version/env/rvc_expander_wrapper.py`中进行如下调用：
 
 ```python
 from comm import UT_FCOV
-# 本模块名为：ut_backend.ctrl_block.decode.env.decode_wrapper
-# 通过../../去掉了上级模块env和decode_wrapper
+# 本模块名为：ut_frontend.ifu.rvc_expander.classical_version.env.rvc_expander_wrapper
+# 通过../../../去掉了classical_version和上级模块env，rvc_expander_wrapper
 # UT_FCOV会默认去掉前缀 ut_
-name = UT_FCOV("../../INT")
+g = fc.CovGroup(UT_FCOV("../../../CLASSIC"))
+# name = UT_FCOV("../../../CLASSIC")
 ```
 
-name 的值为`backend.ctrl_block.decode.INT`，在最后统计结果时，会按照最长前缀匹配到目标 UT（即匹配到：backend.ctrl_block.decode 模块）
+name 的值为`frontend.ifu.rvc_expander.CLASSIC`，在最后统计结果时，会按照最长前缀匹配到目标 UT（即匹配到：frontend.ifu.rvc_expander 模块）
 
 ### 创建覆盖率组
 
@@ -48,7 +49,7 @@ import toffee.funcov as fc
 # 使用上面指定的GROUP名字
 g = fc.CovGroup(name)
 ```
-
+这两步也可以合成一句`g = fc.CovGroup(UT_FCOV("../../../CLASSIC"))`。
 创建的g对象就表示了一个功能覆盖率组，可以使用其来提供观察点和反标。
 
 ### 添加观察点和反标
@@ -88,7 +89,7 @@ def init_rvc_expander_funcov(expander, g: fc.CovGroup):
 ```
 这个例子的第一个`g.add_watch_point`是放在测试用例之外的，因为它和现有的测试用例没有直接关系，放在测试用例之外反而更加方便。添加观察点之后，只要`add_watch_point`方法中的`bins`条件触发了，我们的`toffee-test`框架就能够收集到对应的功能点。
 
-2. 在测试用例之中（`test_rv_decode.py`中）
+2. 在测试用例之中（`test_rvc_expander.py`中）
 
 ```python
 N=10
@@ -122,6 +123,8 @@ def test_rvc_expand_32bit_full(rvc_expander, start, end):
 在上一个例子的最后，我们调用了`g.sample()`，这个函数的作用是告诉`toffee-test`，`add_watch_point`里的`bins`已经执行过了，判断一下是不是True，是的话就为这个观察点记录一次Pass。
 
 有手动就有自动。我们可以在构建测试环境时，在定义fixture中加入`StepRis(lambda x: g.sample())`,这样就会在每个时钟周期的上升沿自动采样。
+
+以下内容来自`ut_backend/ctrl_block/decode/env/decode_wrapper.py `。
 
 ```python
 @pytest.fixture()
