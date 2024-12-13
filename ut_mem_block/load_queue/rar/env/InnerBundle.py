@@ -402,5 +402,5 @@ class InnerBundle(Bundle):
 	uop_8_robIdx_flag, uop_8_robIdx_value, uop_8_uopIdx, uop_9_lqIdx_flag, uop_9_lqIdx_value, uop_9_robIdx_flag, \
 	uop_9_robIdx_value, uop_9_uopIdx = Signals(2285)
 
-# bundle = InnerBundle.from_prefix("LoadQueueRAR_")
+bundle = InnerBundle.from_prefix("LoadQueueRAR_")
 

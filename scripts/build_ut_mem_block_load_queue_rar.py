@@ -25,7 +25,7 @@ def build(cfg):
         warning("backend_ctrlblock_decode: %s" % f"Unsupported RTL version {cfg.rtl.version}")
         return False
     # check files
-    f = is_all_file_exist(["rtl/LoadQueueRAR.sv", "rtl/LqPAddrModule.sv", "rtl/FreeList_3.sv", "rtl/DelayNWithValid_14.sv", "rtl/DelayN_196.sv", "rtl/DelayNWithValid_11.sv"], get_rtl_dir(cfg=cfg))
+    f = is_all_file_exist(["rtl/LoadQueueRAR.sv", "rtl/LqPAddrModule.sv", "rtl/FreeList_3.sv", "rtl/DelayNWithValid_4.sv", "rtl/DelayN_195.sv", "rtl/DelayNWithValid_7.sv"], get_rtl_dir(cfg=cfg))
     assert f is True, f"File {f} not found"
     # build
     # export LoadQueueRAR
