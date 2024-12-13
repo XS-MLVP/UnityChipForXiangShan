@@ -7,29 +7,58 @@ weight: 3
 
 ## 确定目录结构
 
-UT(Unit Test, 单元测试)所在的目录位置的层级结构应该与名称一致，例如`backend.ctrl_block.decode`应当位于`ut_backend/ctrl_block/decode`目录，且每层目录都需要有`__init__.py`，便于通过 python 进行`import`。
+UT(Unit Test, 单元测试)所在的目录位置的层级结构应该与名称一致，例如`frontend.ifu.rvc_expander`应当位于`ut_frontend/ifu/rvc_expander`目录，且每层目录都需要有`__init__.py`，便于通过 python 进行`import`。
 
-**本章节的文件为`your_module_wrapper.py`**（如果你的模块是decode，那么文件就是`decode_wrapper.py`）。
+**本章节的文件为`your_module_wrapper.py`**（如果你的模块是`rvc_expander`，那么文件就是`rvc_expander_wrapper.py`）。
 
 wrapper 是包装的意思，也就是我们测试中需要用到的方法封装成和dut解耦合的API提供给测试用例使用。
 
 \*注：解耦合是为了测试用例和 DUT 解耦，使得测试用例可以独立于 DUT 进行编写和调试，也就是在测试用例中，不需要知道 DUT 的具体实现细节，只需要知道如何使用 API 即可。可以参照[将验证代码与DUT进行解耦](https://open-verify.cc/mlvp/docs/mlvp/canonical_env/#%E5%B0%86%E9%AA%8C%E8%AF%81%E4%BB%A3%E7%A0%81%E4%B8%8Edut%E8%BF%9B%E8%A1%8C%E8%A7%A3%E8%80%A6)
 
-该文件应该放于`ut_frontend_or_backend/top_module/your_module/env`（这里依然以`decode`举例：`decode`属于后端，其顶层目录则应该是`ut_backend`；`decode`的顶层模块是`ctrlblock`，那么次级目录就是`ctrl_block`;之后的就是`decode`自己了；最后，由于我们是在**构建测试环境**，再建一级`env`目录。将它们连起来就是：`ut_frontend_or_backend/top_module/your_module/env`）目录下。
+该文件应该放于`ut_frontend_or_backend/top_module/your_module/env`（这里依然以`rvc_expander`举例：`rvc_expander`属于前端，其顶层目录则应该是`ut_frontend`；`rvc_expander`的顶层模块是`ifu`，那么次级目录就是`ifu`;之后的就是`rvc_expander`自己了；最后，由于我们是在**构建测试环境**，再建一级`env`目录。将它们连起来就是：`ut_frontend_or_backend/top_module/your_module/env`）目录下。
 
 ```shell
-ut_backend/ctrl_block/decode
-├── env
-│   ├── decode_wrapper.py
+ut_frontend/ifu/rvc_expander
+├── classical_version
+│   ├── env
+│   │   ├── __init__.py
+│   │   └── rvc_expander_wrapper.py
 │   ├── __init__.py
+│   └── test_rvc_expander.py
 ├── __init__.py
 ├── README.md
-└── test_rv_decode.py
+└── toffee_version
+    ├── agent
+    │   └── __init__.py
+    ├── bundle
+    │   └── __init__.py
+    ├── env
+    │   ├── __init__.py
+    │   └── ref_rvc_expand.py
+    ├── __init__.py
+    └── test
+        ├── __init__.py
+        ├── rvc_expander_fixture.py
+        └── test_rvc.py
 ```
+这里`rvc_expander`目录下有`classical_version`传统版本和`toffee_version`使用toffee的版本。
+传统版本就是使用`pytest`框架来进行测试，`toffee`只使用了其`Bundle`;而在toffee版本中，我们会使用更多`toffee`的特性。         
+一般来说，**使用传统版本就已经可以覆盖绝大多数情况了**，只有在传统版本不能满足需求时，才需要使用`toffee`版本。  
+编写测试环境的时候，**两个版本选择一个就行**。  
+模块（例如`rvc_expander`）中的代码目录结构由贡献者自行决定（我们写的时候并**不需要再建一级`classical_version`或`toffee_version`目录**），但需要满足 python 规范，且逻辑和命名合理。
 
-模块（例如`decode`）中的代码目录结构由贡献者自行决定，但需要满足 python 规范，且逻辑和命名合理。
+## Env 编写要求
 
-## 编写测试环境：一般思路
+- 需要进行 RTL 版本检查
+- Env 提供的 API 需要和引脚、时序无关
+- Env 提供的 API 需要稳定，不能随意进行接口/返回值修改
+- 需要定义必要的 fixture
+- 需要初始化功能检查点（功能检查点可以独立成一个模块）
+- 需要进行覆盖率统计
+- 需要有说明文档
+
+
+## 编写测试环境：传统版本
 
 在 UT 验证模块的测试环境中，目标是完成以下工作：
 
@@ -42,13 +71,14 @@ ut_backend/ctrl_block/decode
 
 ### 1. DUT 封装
 
+以下内容位于`ut_frontend/ifu/rvc_expander/classical_version/env/rvc_expander_wrapper.py`。
+
 ```python
 class RVCExpander(toffee.Bundle):
     def __init__(self, cover_group, **kwargs):
         super().__init__()
         self.cover_group = cover_group
         self.dut = DUTRVCExpander(**kwargs) # 创建DUT
-        self.dut.io_in.AsImmWrite()         # DUTRVCExpander为组合电路，将输入引脚设置为ImmWrite写入模式
         self.io = toffee.Bundle.from_prefix("io_", self.dut) # 通过 Bundle 使用前缀关联引脚
         self.bind(self.dut)                 # 把 Bundle 与 DUT 进行绑定
 
@@ -79,10 +109,12 @@ class RVCExpander(toffee.Bundle):
 
 尽可能的在 Env 中定义好功能覆盖率，如果有必要也可以在测试用例中定义覆盖率。toffee 功能覆盖率的定义请参考[什么是功能覆盖率](http://localhost:1313/docs/03_add_test/05_cover_func/)。为了完善功能检查点和测试用例之间的对应关系，功能覆盖率定义完成后，需要在适合的位置进行检查点和测试用例的对应（测试点反标）。
 
+以下内容位于`ut_frontend/ifu/rvc_expander/classical_version/env/rvc_expander_wrapper.py`。
+
 ```python
 import toffee.funcov as fc
 # 创建功能覆盖率组
-g = fc.CovGroup(UT_FCOV("../../INT"))
+g = fc.CovGroup(UT_FCOV("../../../CLASSIC"))
 
 def init_rvc_expander_funcov(expander, g: fc.CovGroup):
     """Add watch points to the RVCExpander module to collect function coverage information"""
@@ -110,6 +142,8 @@ def init_rvc_expander_funcov(expander, g: fc.CovGroup):
 在上述代码中添加了名为`RVC_EXPAND_RET`的功能检查点来检查`RVCExpander`模块是否具有返回非法指令的能力。需要满足`ERROR`和`SUCCE`两个条件，即`stat()`中的`ileage`需要有`True`也需要有`False`值。在定义完检查点后，通过`mark_function`方法，对会覆盖到该检查的测试用例进行了标记。
 
 ### 3. 定义必要fixture
+
+以下内容位于`ut_frontend/ifu/rvc_expander/classical_version/env/rvc_expander_wrapper.py`。
 
 ```python
 version_check = get_version_checker("openxiangshan-kmh-*")             # 指定满足要的RTL版本
@@ -147,6 +181,8 @@ def rvc_expander(request):
 
 ### 4. 统计覆盖率
 
+以下内容位于`ut_frontend/ifu/rvc_expander/classical_version/test_rvc_expander.py`
+
 ```python
 N = 10
 T = 1<<16
@@ -177,17 +213,7 @@ def test_rvc_expand_16bit_full(rvc_expander, start, end):
 在定义了覆盖率之后，还需要在测试用例中进行覆盖率统计。上述代码中，在测试用例中使用`add_watch_point`添加了一个功能检查点`rvc_expander`，并在后面进行了标记和采样,而且在最后一样对覆盖率进行了采样。
 覆盖率采样，实际上是通过回调函数触发了一次`add_watch_point`中bins的判断，当其中bins的判断结果为`True`时，就会统计一次Pass。
 
-### Env 编写要求
-
-- 需要进行 RTL 版本检查
-- Env 提供的 API 需要和引脚、时序无关
-- Env 提供的 API 需要稳定，不能随意进行接口/返回值修改
-- 需要定义必要的 fixture
-- 需要初始化功能检查点（功能检查点可以独立成一个模块）
-- 需要进行覆盖率统计
-- 需要有说明文档
-
-## toffee框架支持的测试环境
+## 编写测试环境：toffee版本
 
 使用python语言进行的测试可以通过引入我们的开源测试框架[toffee](https://github.com/XS-MLVP/toffee)来得到更好的支持。
 
