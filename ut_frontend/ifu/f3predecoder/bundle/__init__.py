@@ -1,0 +1,1 @@
+from .f3predecoder_bundle import F3PreDecoderBundle

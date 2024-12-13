@@ -1,7 +1,6 @@
 import toffee_test
 import toffee
 from ..env import PredCheckerEnv
-from ..bundle import PredCheckerBundle
 from dut.PredChecker import DUTPredChecker
 import toffee.funcov as fc
 from toffee.funcov import CovGroup
@@ -21,4 +20,14 @@ async def predchecker_env(toffee_request: toffee_test.ToffeeRequest):
     dut.InitClock("clock")
     toffee.start_clock(dut)
     env = PredCheckerEnv(dut)
-    return env
+    yield env
+
+    import asyncio
+    cur_loop = asyncio.get_event_loop()
+    for task in asyncio.all_tasks(cur_loop):
+        if task.get_name() == "__clock_loop":
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                break
