@@ -69,7 +69,7 @@ class RVCExpander(toffee.Bundle):
 
 在上述例子中，`class RVCExpander`对`DUTRVCExpander`进行了封装，对外提供了两个 API：
 
-- expand(instr: int) -> (int, int) ：该函数用于接受输入指令 instr 进行解码，返回（结果，非法指令标记）。如果非法指令标记不为 0，者说明输入指令非法。
+- expand(instr: int, fsIsOff: bool) -> (int, int) ：该函数用于接受输入指令 instr 进行解码，返回（结果，非法指令标记）。如果非法指令标记不为 0，者说明输入指令非法。
 - stat() -> dict(instr, decode, ilegal)：该函数用于返回当前的状态，其中包含当前的输入指令，解码结果以及非法指令标记。
 
 上述 API **屏蔽了 DUT 的引脚**，对外程序通用功能。
