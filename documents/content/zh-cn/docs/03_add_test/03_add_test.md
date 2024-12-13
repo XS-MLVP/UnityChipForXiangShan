@@ -7,7 +7,7 @@ weight: 4
 
 ## 命名要求
 
-所有测试用例文件请以`test_*.py`的方式进行命名，`*`用测试目标替换（例如`test_rv_decode.py`）。所有测试用例也需要以`test_`前缀开头。用例名称需要具有明确意义。
+所有测试用例文件请以`test_*.py`的方式进行命名，`*`用测试目标替换（例如`test_rvc_expander.py`）。所有测试用例也需要以`test_`前缀开头。用例名称需要具有明确意义。
 
 命名举例如下：
 
@@ -24,20 +24,31 @@ def test_rvc_expand_16bit_full(): # 合理，可以通过用例名称大体知�
 在每个测试用例中，都需要通过`assert`来判断本测试是否通过。
 `pytest`统计的是`assert`语句的结果，因此`assert`语句需要保证能够通过。
 
-```python
- def test_rvi_inst(decoder, rvc_expander):
-     """
-     Test the RVI instruction set. randomly generate instructions for testing
+以下内容位于`ut_frontend/ifu/rvc_expander/classical_version/test_rvc_expander.py`中：
 
-     Args:
-         decoder (fixure): the fixture of the decoder
-     """
-     need_log_file   = True
-     insn_list_temp  = generate_random_32bits(100)
-     ref_lists       = convert_reference_format(rvc_expander, insn_list_temp, True, libdisasm.disasm, libdisasm.disasm_free_mem)
-     assert decode_run(decoder, ref_lists, need_log_file,"test_rvi_inst") == True, "RVI decode error"
-     g.add_cover_point(decoder, {"illegal_inst_triggers_an_exception": lambda _: decoder.Get_decode_checkpoint_illeagl_inst() != 0}, name="RVI_illegal_inst").sample()
-     g.add_cover_point(decoder, {"fast_check_random_32bit_int": lambda _: True}, name="RVI").sample()
+```python
+def rvc_expand(rvc_expander, ref_insts, is_32bit=False, fsIsOff=False):
+    """compare the RVC expand result with the reference
+
+    Args:
+        rvc_expander (warpper): the fixture of the RVC expander
+        ref_insts (list[int]]): the reference instruction list
+    """
+    find_error = 0
+    for insn in ref_insts:
+        insn_disasm = disasmbly(insn)
+        value, instr_ex = rvc_expander.expand(insn, fsIsOff)
+        if is_32bit:
+            assert value == insn, "RVC expand error, 32bit instruction need to be the same"
+        if (insn_disasm == "unknown") and  (instr_ex == 0):
+            debug(f"find bad inst:{insn}, ref: 1, dut: 0")
+            find_error +=1
+        elif (insn_disasm != "unknown") and  (instr_ex == 1):
+            if (instr_filter(insn_disasm) != 1): 
+                debug(f"find bad inst:{insn},disasm:{insn_disasm}, ref: 0, dut: 1")
+                find_error +=1
+    assert 0 == find_error, "RVC expand error (%d errros)" % find_error
+
 ```
 
 ## 编写注释
@@ -68,8 +79,10 @@ def test_<name>(a: type_a, b: type_b):
 
 如果很多测试用例（Test）具有相同的操作，该公共操作部分可以提炼成一个通用函数。以 RVCExpander 验证为例，可以把压缩指令的展开与参考模型（disasm）的对比封装成以下函数：
 
+以下内容位于`ut_frontend/ifu/rvc_expander/classical_version/test_rvc_expander.py`中：
+
 ```python
-def rvc_expand(rvc_expander, ref_insts):
+def rvc_expand(rvc_expander, ref_insts, is_32bit=False, fsIsOff=False):
     """compare the RVC expand result with the reference
 
     Args:
@@ -79,14 +92,18 @@ def rvc_expand(rvc_expander, ref_insts):
     find_error = 0
     for insn in ref_insts:
         insn_disasm = disasmbly(insn)
-        _, instr_ex = rvc_expander.expand(insn)
+        value, instr_ex = rvc_expander.expand(insn, fsIsOff)
+        if is_32bit:
+            assert value == insn, "RVC expand error, 32bit instruction need to be the same"
         if (insn_disasm == "unknown") and  (instr_ex == 0):
             debug(f"find bad inst:{insn}, ref: 1, dut: 0")
             find_error +=1
         elif (insn_disasm != "unknown") and  (instr_ex == 1):
-            debug(f"find bad inst:{insn}, ref: 0, dut: 1")
-            find_error +=1
+            if (instr_filter(insn_disasm) != 1): 
+                debug(f"find bad inst:{insn},disasm:{insn_disasm}, ref: 0, dut: 1")
+                find_error +=1
     assert 0 == find_error, "RVC expand error (%d errros)" % find_error
+
 ```
 
 在上述公共部分中有 assert，因此调用该函数的 Test 也能提过该 assert 判断运行结果是否提过。
@@ -103,6 +120,8 @@ def test_rvc_expand_16bit_smoke(rvc_expander):
 为了方便进行管理，上述测试用例通过`toffee_tags`标记上了 SMOKE 标签。它的输入参数为`rvc_expander`，则在在运行时，会自动调用对应同名的`fixture`进行该参数的填充。
 
 RVCExpander 展开 16 位压缩指令的测试目标是对 2^16 所有压缩指令进行遍历，检测所有情况是否都与参考模型 disasm 一致。在实现上，如果仅仅用一个 Test 进行遍历，则需要耗费大量时间，为此我们可以利用 PyTest 提供的`parametrize`对 test 进行参数化配置，然后通过`pytest-xdist`插件并行执行：
+
+以下内容位于`ut_frontend/ifu/rvc_expander/classical_version/test_rvc_expander.py`中：
 
 ```python
 N = 10
