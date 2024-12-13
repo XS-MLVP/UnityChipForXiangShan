@@ -5,8 +5,8 @@ class RVCExpanderAgent(Agent):
     def __init__(self, bundle:RVCExpanderIOBundle):
         super().__init__(bundle)
         self.bundle = bundle
-        
-    # @driver_method()
+    
+    @driver_method()
     async def expand(self, instr, fsIsOff): 
         self.bundle._in.value = instr
         self.bundle._fsIsOff.value = fsIsOff

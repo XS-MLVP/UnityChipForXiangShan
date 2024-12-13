@@ -93,9 +93,9 @@ class RVCExpander(toffee.Bundle):
         self.io = toffee.Bundle.from_prefix("io_", self.dut)
         self.bind(self.dut)
 
-    def expand(self, instr):
+    def expand(self, instr, fsIsOff):
         self.io["in"].value = instr
-        self.io["fsIsOff"].value = False
+        self.io["fsIsOff"].value = fsIsOff
         self.dut.RefreshComb()
         self.cover_group.sample()
         return self.io["out_bits"].value, self.io["ill"].value
@@ -118,6 +118,7 @@ def rvc_expander(request):
     os.makedirs(coverage_dir, exist_ok=True)
     expander = RVCExpander(g, coverage_filename=coverage_file, waveform_filename=wave_file)
     expander.dut.io_in.AsImmWrite()
+    expander.dut.io_fsIsOff.AsImmWrite()
     init_rvc_expander_funcov(expander, g)
     yield expander
     expander.dut.Finish()

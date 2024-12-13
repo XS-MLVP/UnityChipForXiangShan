@@ -29,7 +29,7 @@ ut_backend/ctrl_block/decode
 
 模块（例如`decode`）中的代码目录结构由贡献者自行决定，但需要满足 python 规范，且逻辑和命名合理。
 
-## 编写测试环境
+## 编写测试环境：一般思路
 
 在 UT 验证模块的测试环境中，目标是完成以下工作：
 
@@ -38,7 +38,7 @@ ut_backend/ctrl_block/decode
 3. 定义必要 fixture 提供给测试用例
 4. 在合理时刻统计覆盖率
 
-以 decode 环境中的 RVCExpander 为例（`ut_backend/ctrl_block/decode/env/decode_wrapper.py`）：
+以 IFU 环境中的 RVCExpander 为例（`ut_frontend/ifu/rvc_expander/classical_version/env/rvc_expander_wrapper.py`）：
 
 ### 1. DUT 封装
 
@@ -52,8 +52,9 @@ class RVCExpander(toffee.Bundle):
         self.io = toffee.Bundle.from_prefix("io_", self.dut) # 通过 Bundle 使用前缀关联引脚
         self.bind(self.dut)                 # 把 Bundle 与 DUT 进行绑定
 
-    def expand(self, instr):
+    def expand(self, instr, fsIsOff):
         self.io["in"].value = instr         # 给DUT引脚赋值
+        self.io["fsIsOff"].value = fsIsOff  # 给DUT引脚赋值
         self.dut.RefreshComb()              # 推动组合电路
         self.cover_group.sample()           # 调用sample对功能覆盖率进行统计
         return self.io["out_bits"].value, self.io["ill"].value  # 返回结果 和 是否是非法指令
@@ -122,6 +123,8 @@ def rvc_expander(request):
     os.makedirs(coverage_dir, exist_ok=True)                           # 目标目录不存在则创建目录
     expander = RVCExpander(g, coverage_filename=coverage_file, waveform_filename=wave_file)
                                                                        # 创建RVCExpander
+    expander.dut.io_in.AsImmWrite()                                    # 设置io_in引脚的写入时机为立即写入             
+    expander.dut.io_fsIsOff.AsImmWrite()                               # 设置io_fsIsOff引脚的写入时机为立即写入  
     init_rvc_expander_funcov(expander, g)                              # 初始化功能检查点
     yield expander                                                     # 返回创建好的 RVCExpander 给 Test Case
     expander.dut.Finish()                                              # Tests Case运行完成后，结束DUT
@@ -183,3 +186,153 @@ def test_rvc_expand_16bit_full(rvc_expander, start, end):
 - 需要初始化功能检查点（功能检查点可以独立成一个模块）
 - 需要进行覆盖率统计
 - 需要有说明文档
+
+## toffee框架支持的测试环境
+
+使用python语言进行的测试可以通过引入我们的开源测试框架[toffee](https://github.com/XS-MLVP/toffee)来得到更好的支持。
+
+toffee的官方教程可以参考[这里](https://open-verify.cc/mlvp/docs/mlvp/)。
+
+### bundle：快捷DUT封装
+
+toffee通过Bundle实现了对DUT的绑定。toffee提供了多种建立Bundle与DUT绑定的方法。相关代码
+
+#### 手动绑定
+
+toffee框架下，用于支持绑定引脚的最底层类是Signal，其通过命名匹配的方式和DUT中的各个引脚进行绑定。相关代码参照`ut_frontend/ifu/rvc_expander/toffee_version`。
+
+以最简单的RVCExpander为例，其io引脚形如：
+
+``` verilog
+module RVCExpander(
+  input  [31:0] io_in,
+  input         io_fsIsOff,
+  output [31:0] io_out_bits,
+  output        io_ill
+);
+
+```
+
+一共四个信号，io\_in, io\_fsIsOff, io\_out\_bits, io\_ill。我们可以抽取共同的前缀，比如\"io_\"（不过由于in在python中有其他含义，其不能直接作为变量名，虽然可以使用setattr 和getattr方法来规避这个问题，但是出于代码简洁的考虑，我们只选取\"io\"作为前缀），将后续部分作为引脚名定义在对应的Bundle类中：
+
+
+```python
+
+class RVCExpanderIOBundle(Bundle):
+	_in, _fsIsOff ,_out_bits,_ill = Signals(4)
+
+```
+
+然后在更高一级的Env或者Bundle中，采取from\_prefix的方式完成前缀的绑定：
+
+```python
+self.agent = RVCExpanderAgent(RVCExpanderIOBundle.from_prefix("io").bind(dut))
+```
+
+#### 自动定义Bundle
+
+实际上，Bundle类的定义也不一定需要写明，可以仅仅通过前缀绑定：
+
+```python
+
+self.io = toffee.Bundle.from_prefix("io_", self.dut) # 通过 Bundle 使用前缀关联引脚
+self.bind(self.dut)   
+
+```
+
+如果Bundle的from_prefix方法传入dut，其将根据前缀和DUT的引脚名自动生成引脚的定义，而在访问的时候，使用dict访问的思路即可：
+
+```python
+
+self.io["in"].value = instr
+self.io["fsIsOff"].value = False
+
+```
+
+#### Bundle代码生成
+
+toffee框架的[scripts](https://github.com/XS-MLVP/toffee/tree/master/scripts)提供了两个脚本。
+
+bundle\_code\_gen\.py脚本主要提供了三个方法：
+
+```python
+def gen_bundle_code_from_dict(bundle_name: str, dut, dict: dict, max_width: int = 120)
+def gen_bundle_code_from_prefix(bundle_name: str, dut, prefix: str = "", max_width: int = 120):
+def gen_bundle_code_from_regex(bundle_name: str, dut, regex: str, max_width: int = 120):
+```
+通过传入dut和生成规则（包括dict、prefix、regex三种），自动生成对应的bundle代码。
+
+而bundle\_code\_intel\_gen\.py则解析picker生成的signals\.json文件，自动生成层次化的bundle代码。可以直接在命令行调用：
+
+```bash
+python bundle_code_intel_gen.py [signal] [target]
+```
+
+如发现自动生成脚本存在bug，欢迎提issue以便我们修正。
+
+### Agent：驱动方法
+
+如果说Bundle是将DUT的数据职责进行抽象的话，那么Agent则是将DUT的行为职责封装为一个个接口。简单地说，Agent通过封装多个对外开放的方法，将多组IO操作抽象为一个具体的行为：
+
+```python
+
+class RVCExpanderAgent(Agent):
+    def __init__(self, bundle:RVCExpanderIOBundle):
+        super().__init__(bundle)
+        self.bundle = bundle
+    
+    @driver_method()
+    async def expand(self, instr, fsIsOff):             # 传入参数：RVC指令和fs.status使能情况
+        self.bundle._in.value = instr                   # 引脚赋值
+        self.bundle._fsIsOff.value = fsIsOff            # 引脚赋值
+        
+        await self.bundle.step()                        # 推动时钟
+        return self.bundle._out_bits.value,             # 返回值：扩展后指令
+                self.bundle._ill.value                  # 返回值：指令合法校验
+```
+
+譬如，RVCExpander的指令扩展功能接收输入的指令（可能为RVI指令，也可能为RVC指令）和CSR对fs\.status的使能情况。我们将这个功能抽象为expand方法，提供除self以外的两个参数。同时，指令扩展最终将会返回传入指令对应的RVI指令和该指令是否合法的判断，对应地，该方法也返回这两个值。
+
+### Env：测试环境
+
+```python
+class RVCExpanderEnv(Env):
+    def __init__(self, dut:DUTRVCExpander):
+        super().__init__()
+        dut.io_in.xdata.AsImmWrite()        
+        dut.io_fsIsOff.xdata.AsImmWrite()   # 设置引脚写入时机
+        self.agent = RVCExpanderAgent(RVCExpanderIOBundle.from_prefix("io").bind(dut)) # 补全前缀，绑定DUT
+```
+
+### 覆盖率定义
+
+定义覆盖率组的方式和前述方式类似，这里就不再赘述了。
+
+### 测试套件定义
+
+测试套件的定义略有不同：
+
+```python
+@toffee_test.fixture
+async def rvc_expander(toffee_request: toffee_test.ToffeeRequest):
+    import asyncio
+    version_check()
+    dut = toffee_request.create_dut(DUTRVCExpander)
+    start_clock(dut)
+    init_rvc_expander_funcov(dut, gr)
+    
+    toffee_request.add_cov_groups([gr])
+    expander = RVCExpanderEnv(dut)
+    yield expander
+
+    cur_loop = asyncio.get_event_loop()
+    for task in asyncio.all_tasks(cur_loop):
+        if task.get_name() == "__clock_loop":
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                break
+```
+
+由于toffee提供了更强大的测试覆盖率管理功能，因此不需要手动设置行覆盖率。同时，由于toffee的时钟机制，建议在套件代码最后额外检查任务是否全部结束。

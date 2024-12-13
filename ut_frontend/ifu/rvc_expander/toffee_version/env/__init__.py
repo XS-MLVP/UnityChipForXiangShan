@@ -9,6 +9,4 @@ class RVCExpanderEnv(Env):
         super().__init__()
         dut.io_in.xdata.AsImmWrite()
         dut.io_fsIsOff.xdata.AsImmWrite()
-        # start_clock(dut)
         self.agent = RVCExpanderAgent(RVCExpanderIOBundle.from_prefix("io").bind(dut))
-        

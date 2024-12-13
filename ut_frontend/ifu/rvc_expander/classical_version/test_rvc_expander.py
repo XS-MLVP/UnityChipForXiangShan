@@ -19,7 +19,7 @@ from tools.disasm import disasmbly, libdisasm
 from comm import TAG_LONG_TIME_RUN, TAG_SMOKE, TAG_RARELY_USED, debug
 
 
-def rvc_expand(rvc_expander, ref_insts, is_32bit=False):
+def rvc_expand(rvc_expander, ref_insts, is_32bit=False, fsIsOff=False):
     """compare the RVC expand result with the reference
 
     Args:
@@ -29,7 +29,7 @@ def rvc_expand(rvc_expander, ref_insts, is_32bit=False):
     find_error = 0
     for insn in ref_insts:
         insn_disasm = disasmbly(insn)
-        value, instr_ex = rvc_expander.expand(insn)
+        value, instr_ex = rvc_expander.expand(insn, fsIsOff)
         if is_32bit:
             assert value == insn, "RVC expand error, 32bit instruction need to be the same"
         if (insn_disasm == "unknown") and  (instr_ex == 0):

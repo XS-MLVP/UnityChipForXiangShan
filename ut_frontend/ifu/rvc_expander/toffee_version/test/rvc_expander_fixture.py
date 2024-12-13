@@ -68,11 +68,6 @@ def init_rvc_expander_funcov(dut:DUTRVCExpander, g: fc.CovGroup):
 async def rvc_expander(toffee_request: toffee_test.ToffeeRequest):
     import asyncio
     version_check()
-    # fname = request.node.name
-    # wave_file = get_out_dir("decoder/rvc_expander_%s.fst" % fname)
-    # coverage_file = get_out_dir("decoder/rvc_expander_%s.dat" % fname)
-    # coverage_dir = os.path.dirname(coverage_file)
-    # os.makedirs(coverage_dir, exist_ok=True)
     dut = toffee_request.create_dut(DUTRVCExpander)
     start_clock(dut)
     init_rvc_expander_funcov(dut, gr)

@@ -1,3 +1,4 @@
+# currently no use
 def ref_rvc_expander(opcode, fsIsOff):
     op_str = bin(opcode)[2:].zfill(32)
     lowest2 = opcode[-2:]
