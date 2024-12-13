@@ -5,10 +5,10 @@ linkTitle: 添加测试
 weight: 15
 ---
 
-添加一个全新的 DUT 测试用例，需要完成以下三部分内容：
+添加一个全新的 DUT 测试用例，需要完成以下三部分内容(本节以前端的`ifu`下的`rvc_expander`为例)：
 
-1. **添加编译脚本**： 在`scripts`目录下使用`python`编写对应`rtl`的编译文件（例如`build_ut_backend_ctrl_block_decode.py`）。
-1. **构建测试环境**： 在目录中创建目标测试 UT 目录（例如`ut_backend/ctrl_block/decode`）。如果有需要的话，可以在`tools、comm`等模块中添加该 DUT 测试需要的基础工具。
+1. **添加编译脚本**： 在`scripts`目录下使用`python`编写对应`rtl`的编译文件（例如`build_ut_frontend_ifu_rvc_expander.py`）。
+1. **构建测试环境**： 在目录中创建目标测试 UT 目录（例如`ut_frontend/ifu/rvc_expander`）。如果有需要的话，可以在`tools、comm`等模块中添加该 DUT 测试需要的基础工具。
 1. **添加测试用例**： 在测试 UT 目录，按[PyTest 规范](https://docs.pytest.org/en/stable/)添加测试用例。
 
 如果是在已有的 DUT 测试中增加内容，按原有目录结构添加即可。
@@ -21,6 +21,6 @@ weight: 15
 1. **代码覆盖率**：代码覆盖率是芯片验证的重要指标，一般需需要覆盖目标 DUT 的所有代码。
 1. **功能覆盖率**：功能覆盖率即目标功能验证完成了多少，一般需要达到 100%。
 
-在后续的文档中，我们将以 decode 模块为例，详细说明上述过程。
+在后续的文档中，我们将继续以`rvc_expander`模块为例，详细说明上述过程。
 
 \*注：目录或文件名称需要合理，以便于能通过命名知晓其具体含义。
