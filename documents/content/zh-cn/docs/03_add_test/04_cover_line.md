@@ -110,18 +110,18 @@ ignore 参数可以指定在覆盖率文件中需要过滤掉的内容，例如�
 ```python
 ...
 set_line_coverage(request, coverage_file,
-                  get_root_dir("scripts/backend_ctrlblock_decode"))
+                  get_root_dir("scripts/frontend_ifu_rvc_expander"))
 ```
 
-在统计覆盖率时，会在"scripts/backend_ctrlblock_decode"目录中搜索到`line_coverage.ignore`文件，然后按其中每行的通配符进行过滤。
+在统计覆盖率时，会在"scripts/frontend_ifu_rvc_expander"目录中搜索到`line_coverage.ignore`文件，然后按其中每行的通配符进行过滤。
 
 ```ignore
 # Line covarge ignore file
 # ignore Top file
-*/DecodeStage_top*%
+*/RVCExpander_top*%
 ```
 
-上述文件表示，在统计覆盖率时，会忽略掉包含"DecodeStage_top"关键字的文件（实际上是收集了对应的数据，但是最后统计的时候忽略了）。
+上述文件表示，在统计覆盖率时，会忽略掉包含"RVCExpander_top"关键字的文件（实际上是收集了对应的数据，但是最后统计的时候忽略了）。
 
 ## 查看统计结果
 
