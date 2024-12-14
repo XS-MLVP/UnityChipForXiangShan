@@ -39,8 +39,6 @@ def ref_rvc_expander(opcode, fsIsOff):
         
         if func == "011": # ld in kunminghu
             imm = ld_imm
-            if fsIsOff:
-                illegal = True
             return int(imm + rs1p + "011" + rs2p + "0000011", 2), illegal
         if func == "100":
             zcb_code = op_str[-12:-10]
@@ -58,13 +56,12 @@ def ref_rvc_expander(opcode, fsIsOff):
                     funct_lh = "101"
                 else:
                     funct_lh = "001"
-                # TODO: not yet finished, still some zcb extension instrs to be add
                 instr_zcb = h_imm + rs1p + funct_lh + rs2p + zcb_l
             
             elif zcb_code == "10": # sb
                 instr_zcb = b_imm[0:7] + rs2p + rs1p + "000" + b_imm[7:] + zcb_s    
 
-            else: # 11
+            else: # 11 
                 if opcode[-7] == '1':
                     illegal = True
                 instr_zcb = h_imm[0:7] + rs2p + rs1p + "001" + h_imm[7:] + zcb_s    
@@ -153,7 +150,7 @@ def ref_rvc_expander(opcode, fsIsOff):
                             instr = '0' * 4 + '1' * 8 + rs1p + "111" + rs1p + "0010011"
                         elif funct3 == "001": # c.sext.b
                             instr = "011000000100" + rs1p + "001" + rs1p + "0010011" 
-                            
+                        # TODO: not yet finished, still some zcb extension instrs to be add
                     
             return instr, illegal
         
