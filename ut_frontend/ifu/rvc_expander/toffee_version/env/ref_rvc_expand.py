@@ -146,10 +146,6 @@ def ref_rvc_expander(opcode, fsIsOff):
                         instr = "0000001" + rs2p + rs1p + "000" + "rd" + "0110011"
                     else: #zcbs, 11
                         funct3 = op_str[-5:-2]
-                        if funct3 == "000": # c.zext.b
-                            instr = '0' * 4 + '1' * 8 + rs1p + "111" + rs1p + "0010011"
-                        elif funct3 == "001": # c.sext.b
-                            instr = "011000000100" + rs1p + "001" + rs1p + "0010011" 
                         # TODO: not yet finished, still some zcb extension instrs to be add
                     
             return instr, illegal
@@ -178,13 +174,13 @@ def ref_rvc_expander(opcode, fsIsOff):
         if func == "001": # fldsp
             imm = '0' * 3 + op_str[-5:-2] + op_str[-13] + op_str[-7:-5] + "000"
 
-            return int(imm + stack_p + "011" + rd + "0000111", 2), illegal
+            return int(imm + stack_p + "011" + rd + "0000111", 2), fsIsOff
         
         if func == "010" : # lwsp
             imm = '0' * 4 + op_str[-4:-2] + op_str[-13] + op_str[-7:-4] + "00"
             if int(rd, 2) == 0:
                 illegal = False
-            return int(imm + stack_p + "010" + rd + "0000011", 2), fsIsOff
+            return int(imm + stack_p + "010" + rd + "0000011", 2),  illegal
         
         if func == "011" : # ldsp
             imm = '0' * 3 + op_str[-5:-2] + op_str[-13] + op_str[-7:-5] + "000"
