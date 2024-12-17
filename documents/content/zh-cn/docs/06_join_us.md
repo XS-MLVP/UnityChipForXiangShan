@@ -16,7 +16,7 @@ weight: 18
 ### 如何提交文档
 
 
-本仓库文档以PR的形式在本仓库提交，DUT文档在仓库[UnityChipForXiangShan](https://github.com/XS-MLVP/UnityChipForXiangShan/tree/main/documents/content/zh-cn/docs/98_UT)中进行提交。
+本仓库文档以PR的形式在本仓库提交，DUT文档在仓库[UnityChipForXiangShan/documents/content/zh-cn/docs/98_UT](https://github.com/XS-MLVP/UnityChipForXiangShan/tree/main/documents/content/zh-cn/docs/98_UT)中进行提交。
 
 
 本项目欢迎任何人以[`ISSUE`](https://github.com/XS-MLVP/UnityChipForXiangShan/issues)、[`DISCUSS`](https://github.com/XS-MLVP/env-xs-ov-00-bpu/discussions)、[`Fork`](https://github.com/XS-MLVP/UnityChipForXiangShan/fork)、[`PR`](https://github.com/XS-MLVP/env-xs-ov-00-bpu/pulls)的方式参与。
