@@ -1,7 +1,7 @@
 import toffee_test
 import toffee
 from ..env import PredCheckerEnv
-from ..bundle import PredCheckerBundle, _13Bundle
+from ..bundle import PredCheckerBundle
 from dut.PredChecker import DUTPredChecker
 import toffee.funcov as fc
 from toffee.funcov import CovGroup

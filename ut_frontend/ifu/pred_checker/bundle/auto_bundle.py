@@ -92,7 +92,7 @@ class _12Bundle(Bundle):
 	_in = _8Bundle.from_prefix("_in")
 	_out = _11Bundle.from_prefix("_out")
 
-class _13Bundle(Bundle):
+class PredCheckerBundle(Bundle):
 	clock = Signal()
 	PredChecker = _4Bundle.from_prefix("PredChecker")
 	io = _12Bundle.from_prefix("io")

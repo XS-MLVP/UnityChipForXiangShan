@@ -1,13 +1,13 @@
-# Decode 单元验证
+# RVCExpander 单元验证
 
 ## 测试目标
 
-解码单元的功能是对输入的指令进行解码，最终转换为后端可识别的微指令。输出的指令有两种类型：16位的压缩指令（RVC） 和 32位的普通指令（RVI）。本单元测试的主要目的是**检查Dcode模块是否能识别所有非法指令**。
+RVCExpander的作用是对RVC指令进行扩展，并检查RVC指令是否非法。本单元测试的主要目的是**检查RVCExpander模块是否能识别所有非法指令并正确完成指令扩展**。
 
 测试基本流程为：
 
 1. 随机生成指令
-1. 把指令输给DUT，得到解码结果（结果种包含是否为异常指令）
+1. 把指令输给DUT，得到解码结果（结果包含是否为异常指令、指令扩展结果）
 1. 把指令输给disasm，判断能否正常解析（disasm为RISC-V官方反汇编工具，可以认为 Golden）
 1. 对比DUT和disasm的结果判断是否一致
 
@@ -30,7 +30,7 @@
 
 |序号|所属模块|功能描述|检查点描述|检查标识|检查项|
 |-|-|-|-|-|-|
-|1|rvcexpander|压缩指令展开|检查是否能判断非法指令|RVC_EXPAND_RET|ERROR：stat接口`ilegal==False`<br>SUCCE：stat接口`ilegal==True`|
+|1|rvcexpander|压缩指令展开|检查是否能判断非法指令|RVC_EXPAND_RET|ERROR：stat接口`illegal==False`<br>SUCCE：stat接口`illegal==True`|
 |2|||检查是否能展开所有正常指令，<br>发现所有非法指令|RVC_EXPAND_ALL_16B|RANGE[`start~end`]: 16位压缩指令共有 2^16种可能，<br>通过不同的start-end指定输入指令的<br>遍历范围，遍历该范围内的输入是否<br>是合法或非法指令（start，end由用例指定）|
 |3||常规指令展开|遍历所有32bit指令，<br>检查是否合法|RVC_EXPAND_ALL_32B|检查项同上|
 |4|||随机生成N条32位指令，<br>检查是否合法|RVC_EXPAND_RANDOM_32B|POS_{i}：为了保证随机指令足够多，判断随机<br>生成的指令中第i位是否为1(0 <= i < 32)|
@@ -50,10 +50,11 @@ class RVCExpander
     # 对指令指令 instr 进行展开
     # 参数：
     #    instr 输入指令
+    #    fsIsOff CSR是否使能fs\.status
     # 返回：
     #    value 扩展结果
     #    ilegel 是否非法指令
-    def expand(self, instr) -> (value, ilegal):
+    def expand(self, instr, fsIsOff) -> (value, ilegal):
     # 获取 expander的状态
     # 返回：
     #    {
@@ -112,18 +113,6 @@ def rvc_expander(request) -> RVCExpander:
 ||通过disasm获取反汇编结果|||
 |4|检查两边的结果是否一致|所有指令是否非法指令判断结果一致|[1.SUCCE]()，[1.ERROR](), |
 
-
-## 目录结构
-
-```bash
-decode
-├── README.md                 # 说明文件
-├── __init__.py               # python模块文件
-├── env                       # 环境模块
-│   └── __init__.py
-│   └── decode_wrapper.py
-└── test_rv_decode.py         # 测试用例
-```
 
 ## 检查列表
 
