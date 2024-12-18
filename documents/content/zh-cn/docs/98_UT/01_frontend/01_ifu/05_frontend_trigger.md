@@ -33,7 +33,7 @@ FrontEndTrigger目前仅支持设置PC断点，这通过设置断点的tdata1寄
 
 所以，基于以上功能描述，我们需要测试：
 
-select位为1时，断点是否永远不会处罚。
+select位为1时，断点是否永远不会触发。
 
 select位为0时，当PC和tdata2的数据的关系满足tdata2的match位时，是否会设置断点。
 
