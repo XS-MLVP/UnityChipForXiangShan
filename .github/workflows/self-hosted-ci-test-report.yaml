@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build:
+  build_test_report:
     runs-on: ubuntu-22.04
     container:
       image: ghcr.io/xs-mlvp/uc4xs:latest
