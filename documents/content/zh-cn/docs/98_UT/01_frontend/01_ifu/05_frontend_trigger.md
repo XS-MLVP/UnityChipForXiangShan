@@ -4,6 +4,8 @@ linkTitle: FrontendTrigger
 weight: 12
 ---
 
+<div class="ifu-ctx">
+
 # FrontendTrigger子模块
 该子模块的主要作用是在前端设置硬件断点和检查。
 
@@ -73,3 +75,5 @@ select位为0时，当PC和tdata2的数据的关系不满足tdata2的match位时
 | 2\.2 | 链式断点        | timing测试        | 对两个trigger，仅设置前一个trigger的chain位，且两trigger的timing位不同，随机设置PC等，测试后一个trigger是否一定不触发               | 
 | 2\.3\.1 | 链式断点        | 未命中测试           | 对两个trigger，仅设置前一个trigger的chain位，且两trigger的timing位相同，设置后一个trigger命中而前一个未命中，检查后一个trigger是否一定不触发 |
 | 2\.3\.2 | 链式断点        | 命中测试            | 对两个trigger，仅设置前一个trigger的chain位，且两trigger的timing位相同且均命中，检查后一个trigger是否触发 |
+
+</div>
