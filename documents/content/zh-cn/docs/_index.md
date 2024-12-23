@@ -64,12 +64,12 @@ function update_charts(data_url){
 
 其他内容快捷连接：
 
-- **[DUT文档与功能](https://open-verify.cc/UnityChipForXiangShan/)**
-- **[待确认bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bugc)**
-- **[已发现bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bug)**
-- **[已修复bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bugfixed)**
-- **[正在进行的任务列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/task)**
-- **[已完成的任务列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/taskdone)**
+- **[DUT文档与功能](https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/)**
+- **[待确认bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bug%20need%20to%20confirm)**
+- **[已发现bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bug%20confirmed)**
+- **[已修复bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bug%20fixed)**
+- **[正在进行的任务列表](https://xs-mlvp.github.io/crowdsourcing/kunming_lake)**
+- **[已完成的任务列表](https://xs-mlvp.github.io/crowdsourcing/kunming_lake)**
 
 <br>
 <div style="text-align: center; width: 100%;">

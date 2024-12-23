@@ -8,6 +8,10 @@ export REPORT := "--toffee-report"
 
 all: rtl dut test_all
 
+update_python_deps:
+	pip3 uninstall -y -r requirements.txt
+	pip3 install -r requirements.txt
+
 clean:
 	rm -rf out/*
 

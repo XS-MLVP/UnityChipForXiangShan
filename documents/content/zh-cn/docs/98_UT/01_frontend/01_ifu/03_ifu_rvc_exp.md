@@ -4,6 +4,8 @@ linkTitle: RVCExpander
 weight: 12
 ---
 
+<div class="ifu-ctx">
+
 # 子模块：RVCExpander简介
 
 RVCExpander是IFU的子模块，负责对传入的指令进行指令扩展，并解码计算非法信息。
@@ -585,3 +587,5 @@ RVI的SW格式形如：\| imm[11:5]\| rs2 \| rs1 \| 010 \| imm[4:0] \| 0100011 \
 该指令最终扩展成为**sd rd, offset(x2)**
 
 RVI的SD格式形如：\| imm[11:5]\| rs2 \| rs1 \| 011 \| imm[4:0] \| 0100111 \|
+
+</div>
