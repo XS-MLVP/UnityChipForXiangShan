@@ -9,6 +9,8 @@ weight: 12
 # FrontendTrigger子模块
 该子模块的主要作用是在前端设置硬件断点和检查。
 
+该模块的输入pc有一个隐含条件，那就是这个pc是通过ftq传递的startAddr计算出来的。
+
 ## FrontendTrigger功能介绍
 
 ### 断点设置和断点检查
