@@ -26,11 +26,11 @@ A clear and concise description of the work need to be done
 测试用例：
 
 **其他任务信息**
-描述预计难度、DDL等信息
+描述预计难度、预计周期等信息
 A clear and concise description of other information concerning the task, including expected difficulty, time limit e\.g.
 
 预计难度：
 
-DDL：
+预计周期：
 
 已提供的支持：

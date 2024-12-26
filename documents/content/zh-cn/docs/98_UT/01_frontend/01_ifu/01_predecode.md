@@ -44,7 +44,7 @@ CFI指令类型（branch/jal/jalr/call/ret）、CFI指令的目标地址计算�
 
 所以，可以认为立即数是这么重组的：
 
-instr(12) + instr(10, 9) + instr(6) + instr(7) + instr(2) + instr(11) +instr(5,3) + "0"
+instr(12) + instr(8) + instr(10, 9) + instr(6) + instr(7) + instr(2) + instr(11) +instr(5,3) + "0"
 
 而RVI中，对于JAL指令，是这么定义的：
 
