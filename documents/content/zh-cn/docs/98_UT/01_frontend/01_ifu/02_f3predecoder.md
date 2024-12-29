@@ -49,7 +49,7 @@ weight: 12
 
 然后，需要判断是否为call或者ret，这可以通过rd和rs的取值来考察。当然，首先必须得满足无条件跳转指令。
 
-对于类型2，只有为RVC指令且目的寄存器rd为link寄存器（x1或x5）时，才为Call。
+对于类型2，只有不为RVC指令且目的寄存器rd为link寄存器（x1或x5）时，才为Call。
 
 对于类型3，当rd为link寄存器时，必为Call。当rs为link寄存器且rd不为时，必为Ret。
 
