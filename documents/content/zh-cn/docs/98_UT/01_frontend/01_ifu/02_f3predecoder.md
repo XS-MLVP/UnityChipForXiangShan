@@ -79,11 +79,11 @@ weight: 12
 | 2\.2\.1\.1 | ret、call判定    | RVC\.JAL判定call | 对传入的RVC\.JAL指令，当rd设置为1或5，应当判定该指令为call          |
 | 2\.2\.1\.2 | ret、call判定    | RVC\.JAL例外     | 对传入的RVC\.JAL指令，当rd设置为1和5之外的值，不应当判定该指令为call或ret |
 | 2\.2\.2 | ret、call判定    | RVI\.JAL不判定    | 对传入的RVI\.JAL指令，无论什么情况都不能判定为call或ret    |
-| 2\.3\.1\.1 | RVI\.JALR和rd为link     | 传入RVI\.JALR指令，并且rd为1或5，无论其他取值，都应判定为call     |
-| 2\.3\.1\.2 | RVI\.JALR且仅rs为link    | 传入RVI\.JALR指令，rd不为1和5，rs为1或5，应判定为ret        |
-| 2\.3\.1\.3 | RVI\.JALR无link        | 对传入的JALR指令，若rd和rs均不为link，则不应判定为ret和cal |
-| 2\.3\.2\.1 | RVC\.JALR为Ret | 传入RVC\.JALR指令，必定为call     |
-| 2\.3\.2\.2\.1 | RVC\.JR且rs为link    | 传入RVC\.JR指令，rs为1或5，应判定为ret        |
-| 2\.3\.2\.2\.2 | RVC\.JR且rs不为link    | 传入RVC\.JR指令，rs不为1或5，不应判定为ret        |
+| 2\.3\.1\.1 | ret、call判定    | RVI\.JALR和rd为link     | 传入RVI\.JALR指令，并且rd为1或5，无论其他取值，都应判定为call     |
+| 2\.3\.1\.2 | ret、call判定    | RVI\.JALR且仅rs为link    | 传入RVI\.JALR指令，rd不为1和5，rs为1或5，应判定为ret        |
+| 2\.3\.1\.3 | ret、call判定    | RVI\.JALR无link        | 对传入的JALR指令，若rd和rs均不为link，则不应判定为ret和cal |
+| 2\.3\.2\.1 | ret、call判定    | RVC\.JALR为Ret | 传入RVC\.JALR指令，必定为call     |
+| 2\.3\.2\.2\.1 | ret、call判定    | RVC\.JR且rs为link    | 传入RVC\.JR指令，rs为1或5，应判定为ret        |
+| 2\.3\.2\.2\.2 | ret、call判定    | RVC\.JR且rs不为link  | 传入RVC\.JR指令，rs不为1或5，不应判定为ret        |
 
 </div>
