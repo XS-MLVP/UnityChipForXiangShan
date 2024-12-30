@@ -47,9 +47,15 @@ children:
         desc: "指令单元 (Instruction Fetch Unit)"
         children:
           - name: "pred_checker"
-            desc: "预译码器"
+            desc: "预檢查器"
           - name: "rvc_expander"
             desc: "RVC指令扩充器"
+          - name: "predecode"
+            desc: "预译码器"
+          - name: "f3predecoder"
+            desc: "从预译码器时序优化得到的F3流水级预译码模块"
+          - name: "frontend_trigger"
+            desc: "前端断点模块"
       - name: "instr_uncache"
         priority: high
         desc: "指令非缓存"
