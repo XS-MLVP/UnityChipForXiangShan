@@ -6,6 +6,8 @@ weight: 12
 
 # **IFU简介**
 
+<div class="ifu-ctx">
+
 IFU(Instruction Fetch Unit)，取指令单元，负责从内存或ICache取出指令，经过预译码、扩展RVC和预检之后，将指令交给后续译码器进行进一步的译码。
 
 IFU的子模块包括PreDecode，F3PreDecoder，RVCExpander，PredChecker和FrontendTrigger。
@@ -184,11 +186,219 @@ m\_waitLastCmt，之后只要之前所有的指令都已完成提交——或者
 
 该工作主要由FrontEndTrigger子模块完成。
 
+## IFU接口说明
+
+为方便测试开展，需要对IFU的接口进行进一步的说明，以明确各个接口的含义。
+
+### FTQ交互接口
+
+编译后可用的接口包括：
+
+#### req FTQ取指请求
+
+req是FTQ向IFU的取指令请求，编译后包含以下成员：
+
+| 接口名 | 解释 | 
+| ----- | ---- |
+| ftqIdx | 指示当前预测块在FTQ中的位置。 |
+| ftqOffset | 指示预测的跳转指令在预测块中的位置。如果valid为假表示这个预测块没有预测跳转指令。 |
+| startAddr | 当前预测块的起始地址。 | 
+| nextlineStart | 起始地址所在cacheline的下一个cacheline的开始地址。 |
+| nextStartAddr | 下一个预测块的起始地址 |
+
+#### redirect FTQ重定向请求
+
+FTQ会向IFU发送重定向请求，这通过fromFtq\.redirect完成，从而指示IFU应该冲刷的内容。
+
+编译后，redirect包含以下接口成员：
+
+| 接口名 | 解释 | 
+| ----- | ---- |
+| ftqIdx | 需要冲刷的ftq预测块序号，包含flag和value两个量。|
+| level | 重定向等级 |
+| ftq\_offset | ftq预测块中跳转指令的位置 |
+
+#### toFtq\_pdWb 写回
+
+| 接口名 | 解释 | 
+| ----- | ---- |
+| cfioffset | 经由PredChecker修复的跳转指令的预测位置。但经过编译后，cfioffset的数值已经被优化了，只剩下了cfioffset\_valid表示是否存在编译优化。|
+| ftqIdx | 表明预测块在FTQ中的位置，这条信息主要是对FTQ有用，要和FTQ传入的请求保持一致。|
+| instrRange | 可以看作是一个bool数组，表示该条指令是不是在这个预测块的有效指令范围内（第一条有效跳转指令之后的指令）。|
+| jalTarget | 表明该预测块跳转指令的跳转目标。 |
+| misOffset | 表明错误预测的指令在预测块中的位置。 |
+| pc | 预测块中所有指令的PC指针。 |
+| pd | 每条指令的预测信息，包括CFI指令的类型、isCall、isRet和isRVC。|
+| target | 该预测块最后一条指令的下一条指令的pc。| 
+
+### ICache交互接口
+
+#### 控制信号
+| 接口名 | 解释 | 
+| ----- | ---- |
+| icache\_ready | ICache通知IFU自己已经准备好了，可以发送缓存行了。|
+| icache\_stop | IFU在F3流水级之前出现了问题，通知ICache停下。 |
+
+#### ICacheInter\.resp ICache传送给IFU的信息
+
+| 接口名 | 解释 | 
+| ----- | ---- |
+|  data | ICache传送的缓存行。 | 
+| doubleLine |指示ICache传来的预测块是否跨缓存行。 |
+| exception | ICache向IFU报告每个缓存行上的异常情况，方便ICache生成每个指令的异常向量。|
+| backendException | ICache向IFU报告后端是否存在异常 | 
+| gpaddr | 客户页地址 |
+| isForVSnonLeafPTE | 是否为非叶的PTE，这个数据最终会流向写回gpaddrMem的信号 |
+| itlb_pbmt | ITLB基于客户页的内存类型，对MMIO状态有用 | 
+| paddr | 指令块的起始物理地址 | 
+| vaddr | 指令块起始虚拟地址、指令块起始物理地址 |
+| pmp\_mmio | 指示当前指令块是否在MMIO空间 | 
+
+### 性能相关接口
+
+ICachePerf和perf，可以先不关注。
+
+### ITLBInter
+
+该接口仅在MMIO状态下，IFU重发请求时活跃。
+
+#### req IFU向ITLB发送的请求
+
+这是IFU向ITLB发送的查询请求，只有一个量：bits\_vaddr，传递需要让ITLB查询的虚拟地址。
+
+#### resp ITLB返回给IFU的查询结果
+
+这是ITLB返回给IFU的查询结果，包含如下接口：
+
+| 接口名 | 解释 | 
+| ----- | ---- |
+| excp | 指令的异常信息，包含三个量：访问异常指令af\_instr、客户页错误指令gpf\_instr、页错误指令pf\_instr | 
+| gpaddr | 客户页地址 |
+| isForVSnonLeafPTE | 指示传入的是否是非叶PTE |
+| paddr | 指令物理地址 | 
+| pbmt | 指令的基于页的内存类型 |
+
+### UncacheInter
+
+该接口在MMIO状态下活跃，负责接收IFU并返回指令码。
+
+#### toUncache
+
+这是IFU向Uncache发送的请求，除了ready和valid以外，还传送了一个48位数据，即需要获取的指令的物理地址。
+
+#### fromUncache
+
+这是Uncache给IFU的回复，除了valid以外，还传送一个32位数据，即指令码（可为RVC或RVI指令）
+
+### toIbuffer
+
+IFU通过这个接口向Ibuffer写入取指结果。包含以下成员:
+
+| 接口名 | 解释 | 
+| ----- | ---- |
+| backendException | 是否存在后端异常 |
+| crossPageIPFFix | 表示跨页异常向量 |
+| valid | 和一般意义上的valid相区别，表示每条指令是否是合法指令的开始（RVI指令的上半条或者RVC指令） |、
+| enqable | 对每条指令，其为valid并且在预测块的范围内 | 
+| exceptionType | 每个指令的异常类型 |
+| foldpc | 压缩过后的pc |
+| ftqOffset | 是否是ftq指令 |
+| ftqPtr | ftq预测块在FTQ的位置 | 
+| illegalInstr | 这条指令是否为非法指令 | 
+| instrs | 拼接后的指令码 |
+| isLastInFtqEntry | 判断该指令是否为这个预测块中最后一条有效指令的开始 |
+| pd | 指令控制信息，包括CFI指令的类型和RVC指令的判定 | 
+| triggered | 指令是否触发前端的trigger |
+
+### toBackend_gpaddrMem 
+
+这组接口在gpfault发生时使用，由IFU向gpaddrMem传递预测块指针和页错误地址。
+
+| 接口名 | 解释 | 
+| ----- | ---- |
+| waddr | 传递ftq指针 |
+| wdata\.gpaddr | 传递出错的客户页地址 |
+| wdata\.isForVSnonLeafPTE | 指示是否为非叶PTE |
+| wen | 类似valid，指示gpaddrMem存在gpfault需要处理 |
+
+### io_csr_fsIsOff
+
+指示是否使能了fs\.CSR，对非法指令的判断很关键。
+
+### rob_commits 来自ROB的提交信息
+
+共分为8个相同结构的rob\_commit，包含以下成员
+
+| 接口名 | 解释 | 
+| ----- | ---- |
+| ftqIdx | 预测块指针 |
+| ftqOffset | 预测指令的位置，共4位，是一个数字 |
+
+### pmp
+
+和物理内存保护相关，在mmio状态下重发请求时使用。
+
+#### req
+
+IFU向pmp发起的请求，传递前一步从ITLB查询得到的物理地址。
+
+#### resp
+
+PMP给IFU的回复结果，包含以下成员
+
+| 接口名 | 解释 | 
+| ----- | ---- |
+| mmio | 在MMIO空间 |
+| instr | 对指令的判断结果，当指令不可执行时，该值为true |
+
+### mmio\_commits
+
+#### mmioFtqPtr
+
+IFU传递给FTQ的idx，用于查询上一个预测块的MMIO状态
+
+#### mmioLastCommit
+
+上一个请求是MMIO请求
+
+### frontendTrigger
+
+用于设置前端断点
+
+包含以下成员：
+
+#### debugMode
+
+debug的模式
+
+#### triggerCanRaiseBpExp
+
+trigger是否可以引起断点异常
+
+#### tEnableVec
+
+信号数组，表示是否使能对应的trigger
+
+#### tupdate
+
+表示更新的断点信息，其中包含tdata和addr，addr是请求设置的断点idx。
+
+tdata包括下列成员：
+
+| 接口名 | 解释 | 
+| ----- | ---- |
+| matchType | 断点匹配类型，等于、大于、小于 |
+| action | 触发执行的动作 |
+| tdata2 | 触发端点的基准数值 |
+| select | 是否选择 |
+| chain | 是否传导 |  
+
 ## IFU功能点和测试点
 
 ### 功能点1 接收FTQ预测块请求
 
 #### 功能点1\.1 F0流水级接收请求
+
 向FTQ报告自己已ready。
 
 所以，我们只需要在发送请求后检查和ftq相关的的ready情况即可。
@@ -210,7 +420,7 @@ F1流水级也会计算PC。
 所以，可以总结出以下的测试点：
 
 | 序号 | 名称      | 描述                             |
-|------|---------|--------------------------------|
+|------|---------| -------------------------------- |
 | 2\.1\.1| PC生成    | IFU接收FTQ请求后，在F1流水级生成PC         |
 | 2\.1\.2| 切取指针生成 | IFU接收FTQ请求后，在F1流水级生成后续切取缓存行的指针 |
 
@@ -329,12 +539,13 @@ io\_toIbuffer\_bits\_valid（表示指令是否是一条指令的开始）、io\
 | 7\.1\.6 | 有效开始向量   | IFU向IBuffer传送表示指令有效和指令是否为指令开始的向量 |
 
 #### 功能点7\.2 客户页错误传送gpaddr信息
+
 当且仅当发生guest page fault时，后端需要gpaddr信息，为了节省面积，gpaddr不走正常通路进入ibuffer，
-而是随ftqPtr被发送到gpaMem，后端需要时从gpaMem读出。IFU需要保证gpf发生时通向gpaMem的valid拉高、gpaddr正确。
+而是随ftqPtr被发送到gpaMem，后端需要时从gpaMem读出。IFU需要保证gpf发生时通向gpaMem的valid拉高、gpaddr正确，同时还要传递预测块的ftqIdx（通过waddr传入）。
 
 这里我们只需要确保在客户页错误发生时通向gpaMem的valid为高，且gpaddr正确填入。
 
-| 序号   | 名称     | 描述                                    |
+| 序号   | 名称     | 描述                                |
 |------|--------|---------------------------------------|
 | 7\.2 |  客户页错误 | 客户页错误发生时，IFU应将gpaMem的valid拉高且填入gpaddr |
 
@@ -448,7 +659,7 @@ CFI指令的冲刷由后端发送给FTQ完成。所以不需要在这里设置�
 | 10\.5\.2 |  RVC指令重定向 | 如果是RVC指令，传递给FTQ的冲刷请求应该重定向到PC\+2 |
 
 #### 功能点11 硬件断点
-该功能主要由FrontEndTrigger子模块完成。不需要为这一功能额外设置测试点
+该功能主要由FrontEndTrigger子模块完成。不需要为这一功能额外设置测试点（参照FrontendTrigger的测试点即可）
 
 #### **<a id="ifu_functions">测试点汇总 </a>**
 
@@ -505,3 +716,13 @@ CFI指令的冲刷由后端发送给FTQ完成。所以不需要在这里设置�
 | 10\.4   | 向IBuffer发送指令        | 向IBuffer发送指令        | IFU在获得完整数据后，截取获得指令码，以每个预测块一条指令的形式发送给IBuffer             |
 | 10\.5\.1 | 指令冲刷                | RVI指令重定向            | 如果是RVI指令，传递给FTQ的冲刷请求应该重定向到PC\+4                         |
 | 10\.5\.2 | 指令冲刷                | RVC指令重定向            | 如果是RVC指令，传递给FTQ的冲刷请求应该重定向到PC\+2                         |
+| 11\.1\.1 | 断点设置和检查     | select1判定       | 给定tdata1的select位为1，随机构造其它输入，检查断点是否没有触发                                                        |
+| 11\.1\.2\.1 | 断点设置和检查     | select0关系匹配判定  | 给定tdata1的select位为0，构造PC与tdata2数据的关系同tdata2的match位匹配的输入，检查断点是否触发                               | 
+| 11\.1\.2\.2 | 断点设置和检查     | select0关系不匹配判定 | 给定tdata1的select位为0，构造PC与tdata2数据的关系同tdata2的match位不匹配的输入，检查断点是否触发                              |
+| 11\.2\.1 | 链式断点        | chain位测试        | 对每个trigger，在满足PC断点触发条件的情况下，设置chain位，检查断点是否一定不触发                                               |
+| 11\.2\.2 | 链式断点        | timing测试        | 对两个trigger，仅设置前一个trigger的chain位，且两trigger的timing位不同，随机设置PC等，测试后一个trigger是否一定不触发               | 
+| 11\.2\.3\.1 | 链式断点        | 未命中测试           | 对两个trigger，仅设置前一个trigger的chain位，且两trigger的timing位相同，设置后一个trigger命中而前一个未命中，检查后一个trigger是否一定不触发 |
+| 11\.2\.3\.2 | 链式断点        | 命中测试            | 对两个trigger，仅设置前一个trigger的chain位，且两trigger的timing位相同且均命中，检查后一个trigger是否触发 |
+
+
+</div>
