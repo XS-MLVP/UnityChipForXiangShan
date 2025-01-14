@@ -28,7 +28,7 @@ dut:
 	@python3 run.py --config $(CFG) --build $(DUTS) $(args)
 
 rtl:
-	@python3 run.py --config $(CFG)  --download-rtl
+	@python3 run.py --config $(CFG)  --download-rtl $(args)
 
 doc:
 	cd documents && hugo server --bind 0.0.0.0
