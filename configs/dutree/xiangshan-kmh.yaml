@@ -36,6 +36,9 @@ children:
             desc: "返回地址堆栈 (Return Address Stack)"
       - name: "ftq"
         desc: "前端指令队列 (Fetch To Queue)"
+        children:
+          - name: "ftq_redirect_mem"
+            desc: "重定向信息存储器"
         priority: critical
       - name: "ibuffer"
         desc: "指令缓冲器 (Instruction Buffer)"
