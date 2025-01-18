@@ -33,6 +33,7 @@ jobs:
 
     - name: Check changed files
       run: |
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
         git fetch origin ${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}
         git diff --name-only origin/${{ github.event.pull_request.base.ref }} ${{ github.event.pull_request.head.sha }} > changed_files.txt
         cat changed_files.txt
@@ -56,5 +57,6 @@ jobs:
       if: steps.analyze_changes.outputs.test_duts != ''
       run: |
         make update_python_deps
+        make rtl
         make test target="${{ steps.analyze_changes.outputs.test_duts }}"
       shell: bash
