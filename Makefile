@@ -18,6 +18,9 @@ clean:
 clean_dut:
 	cd dut && ls | grep -v __init__.py | xargs rm -rf
 
+clean_rtl:
+	cd rtl && ls | grep -v README.md | xargs rm -rf
+
 test_all:
 	@python3 run.py --config $(CFG) $(KV) -- $(REPORT) -vs ut_*/ $(args)
 
