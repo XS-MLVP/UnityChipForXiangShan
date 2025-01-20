@@ -1,0 +1,105 @@
+
+<style>
+#father-maintainers{
+    font-size: 18px;
+}
+
+#son-maintainers{
+    font-size: 16px;
+}
+
+#father-maintainers p, #son-maintainers .dynamic {
+    margin-left: 20px; /* 缩进 */
+    text-indent: -20px; /* 圆点对齐左侧 */
+    padding-left: 20px; /* 确保文字不被覆盖 */
+    position: relative;
+}
+
+#father-maintainers p::before, #son-maintainers .dynamic::before {
+    content: "•"; /* 使用圆点符号 */
+    font-size: 18px; /* 圆点大小 */
+    color: black; /* 圆点颜色 */
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+    
+</style>
+    
+    
+<div id="div-maintainers">
+    <div id="father-maintainers">
+        <p style="font-weight: bold;">主UT模块</p>
+    </div>
+
+    <div id="son-maintainers">
+        <p style="font-weight: bold;">子UT模块</p>
+    </div>
+</div>
+    
+<script>
+
+function updateMaintainers(data_url){
+    $.getJSON(data_url, function (data) {
+        var index = 1;
+        $("#father-maintainers").html(`<p style="font-weight: bold;">主UT模块</p>`);
+        $("#son-maintainers").html(`<p style="font-weight: bold;">子UT模块</p>`);
+        const prefixes = []
+        const fathers = []
+        const sons = []
+        
+        function traverse(node, level = 1) {
+            const name = node.name || "Unnamed";
+            var maintainer = "TBD";
+            if (node.maintainers){
+                maintainers = []
+                for (let i = 0; i < node.maintainers.length; i++){
+                    let cur = node.maintainers[i]
+                    let tmp_maintainer = cur.name || "TBD";
+                    if (cur.page){
+                        tmp_maintainer = "<a href=\"" + cur.page + "\">" + tmp_maintainer + "</a>"
+                    } else {
+                        tmp_maintainer = "<a>" + tmp_maintainer + "</a>"
+                    }
+                    maintainers.push(tmp_maintainer)
+                }
+                maintainer = maintainers.join(' ')
+            }
+            
+            var has_son =  node.children && (node.children.length > 0)
+            
+            if (level > 1){
+                prefixes.push(name);
+                if (level == 2){
+
+                    fathers.push("<p class=\"dynamic\">" + prefixes.join('.') + ": " + maintainer + "</p>")
+
+                } else {
+                    push_son = (!has_son) || (has_son && maintainer !== "TBD")
+                    if (push_son){
+                        sons.push("<p class=\"dynamic\">" + prefixes.join('.') + ": " + maintainer + "</p>")
+
+                    }
+                }
+            }
+
+            if (node.children && node.children.length > 0) {
+                $.each(node.children, function (index, child) {
+                    traverse(child, level + 1);
+                });
+            }
+
+            if (level > 1){
+                prefixes.pop()
+            }
+        }
+        // 开始遍历数据
+        traverse(data.tree);
+        // let appended = $("#div-maintainers").html();
+
+        // 更新 HTML
+        $("#father-maintainers").html($("#father-maintainers").html() + fathers.join(''));
+        $("#son-maintainers").html($("#son-maintainers").html() + sons.join(''));
+    });
+}
+</script>

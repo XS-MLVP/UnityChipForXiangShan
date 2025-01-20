@@ -18,6 +18,9 @@ desc: "所有昆明湖DUT"
 children:
   - name: "frontend"
     desc: "前端模块"
+    maintainers: 
+      - name: "Gao-Zeyu"
+        page: "https://github.com/Gao-Zeyu"
     children:
       - name: "bpu"
         desc: "分支预测器 (Branch Prediction Unit)"
@@ -32,6 +35,9 @@ children:
               doc_url: "https://open-verify.cc/xs-bpu/docs/modules/04_ittage"
           - name: "tagesc"
             desc: "分支目标缓冲器+SC预测器 (TAGE-SC)"
+            maintainers:
+              - name: "FrankOu2001"
+                page: "https://github.com/FrankOu2001"
           - name: "ras"
             desc: "返回地址堆栈 (Return Address Stack)"
       - name: "ftq"
@@ -71,6 +77,11 @@ children:
         children:
           - name: "decode"
             desc: "解码"
+            maintainers:
+              - name: "my-mayfly"
+                page: "https://github.com/my-mayfly"
+              - name: "TheKiteRunner24"
+                page: "https://github.com/TheKiteRunner24"
           - name: "rename"
             desc: "重命名"
             children:

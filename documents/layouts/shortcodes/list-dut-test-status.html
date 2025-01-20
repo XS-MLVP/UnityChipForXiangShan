@@ -138,6 +138,7 @@ function updateDUTestStatus(data_url){
         <th>CkRate (%)</th>\
         <th>Lines</th>\
         <th>CvRate (%)</th>\
+        <th>Maintainer</th>\
     </tr>\
   </tbody>");
         var prefix = data.tree.meta.paths;
@@ -273,8 +274,10 @@ function updateDUTestStatus(data_url){
             if (!node.children || node.children.length === 0) {
                 var meta = node.meta
                 var desc = node.desc
-                console.log("meta infos!")
-                console.log(node)
+                var maintainer = node.maintainer
+                if (maintainer == undefined){
+                    maintainer = "暂无"
+                }
                 $("#dut-test-items").html($("#dut-test-items").html() + 
                     "<tr><td class=\"td-index\">" + index + "</td>" +
                     "<td class=\"td-name\">" + meta.paths.replace(prefix + "/",
@@ -290,6 +293,7 @@ function updateDUTestStatus(data_url){
                     "<td>" + calcRate(meta.functions.cover, meta.functions.total) + "</td>" +
                     "<td>" + getLineCovUrl(meta.paths, meta.lines.cover, meta.lines.total) + "</td>" +
                     "<td>" + calcRate(meta.lines.cover, meta.lines.total) + "</td>" +
+                    "<td>" + maintainer + "</td>" +
                     "</tr>"
                 );
                 index++;
