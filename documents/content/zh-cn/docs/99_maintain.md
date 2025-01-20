@@ -60,6 +60,20 @@ weight: 99
 - misc.l2_cache: TBD
 - misc.mmio: TBD
 
+<!-- <script src="../../js/echarts.min.js"></script> -->
+
+<script>
+function update_maintainers(data_url){
+    updateMaintainers(data_url)
+}
+</script>
+
+<div style="text-align: center; width: 100%;">
+{{<list-report  baseurl="../../data/reports" label="当前版本：" id="maintainers" onchange="update_maintainers">}}
+</div>
+<br>
+
+{{<maintainers>}}
 
 *其他维护者陆续更新中
 
