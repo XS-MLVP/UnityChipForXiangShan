@@ -180,10 +180,20 @@ def download_rtl(base_url, out_dir, version="latest"):
         use_rtl(base_url.split("/")[-1], out_dir)
     return True
 
+def _build_dut(d, cfg):
+    try:
+        module = importlib.import_module(f"scripts.{d}")
+        if not module.build(cfg):
+            warning(f"Build scripts/{d}.py failed")
+        else:
+            info(f"Build scripts/{d}.py success")
+    except Exception as e:
+        warning(f"Failed to build {d}, error: {e}\n{traceback.format_exc()}")
 
 def build_dut(duts, cfg):
     target_duts = [d.strip() for d in duts.split(",")]
     if len(target_duts) == 0:
+        warning(f"No dut to build for: {duts}")
         return
     prefix = "build_ut_"
     build_modules = [f.replace(".py", "") for f in 
@@ -199,16 +209,11 @@ def build_dut(duts, cfg):
     if len(dut_to_build) == 0:
         warning(f"No dut to build for: {duts}")
         return
-    for d in dut_to_build:
-        debug(f"Build {d}")
-        try:
-            module = importlib.import_module(f"scripts.{d}")
-            if not module.build(cfg):
-                warning(f"Build scripts/{d}.py failed")
-            else:
-                info(f"Build scripts/{d}.py success")
-        except Exception as e:
-            warning(f"Failed to build {d}, error: {e}\n{traceback.format_exc()}")
+    import multiprocessing
+    pool = multiprocessing.Pool()
+    pool.starmap(_build_dut, [(d, cfg) for d in dut_to_build])
+    pool.close()
+    pool.join()
 
 
 def replace_default_vars(input_str, cfg):
