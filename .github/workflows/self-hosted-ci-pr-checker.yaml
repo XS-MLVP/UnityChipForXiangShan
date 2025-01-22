@@ -21,11 +21,6 @@ jobs:
       with:
         timezoneLinux: "Asia/Shanghai"
 
-    - name: Update picker
-      run: |
-        bash /home/update_picker.sh
-      shell: bash
-
     - name: Checkout code
       uses: actions/checkout@v4
       with:
@@ -51,6 +46,12 @@ jobs:
           echo "Changed directories: $test_duts"
           echo "::set-output name=test_duts::$test_duts"
         fi
+      shell: bash
+
+    - name: Update picker
+      if: steps.analyze_changes.outputs.test_duts != ''
+      run: |
+        bash /home/update_picker.sh
       shell: bash
 
     - name: Run tests in the changed ut_* directories
