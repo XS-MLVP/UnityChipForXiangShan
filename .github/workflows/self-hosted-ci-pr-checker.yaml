@@ -57,5 +57,5 @@ jobs:
       if: steps.analyze_changes.outputs.test_duts != ''
       run: |
         make update_python_deps
-        make test target="${{ steps.analyze_changes.outputs.test_duts }}"
+        make test target="${{ steps.analyze_changes.outputs.test_duts }}" DUTS="'${{ steps.analyze_changes.outputs.test_duts }}'"
       shell: bash
