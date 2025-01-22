@@ -44,7 +44,7 @@ jobs:
       run: |
         changed_dirs=$(awk -F'/' '/^ut_/ {print $1"/"$2}' changed_files.txt | sort | uniq)
         test_duts=$(echo "$changed_dirs" | tr '\n' ' ')
-        if [ -z "$test_duts" ]; then
+        if [[ -z "$test_duts" || "$test_duts" =~ ^[[:space:]]+$ ]]; then
           echo "No changes in ut_* directories. Skipping run tests."
           exit 0
         else
