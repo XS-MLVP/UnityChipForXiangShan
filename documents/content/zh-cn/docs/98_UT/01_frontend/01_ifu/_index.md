@@ -203,7 +203,7 @@ req是FTQ向IFU的取指令请求，编译后包含以下成员：
 | 接口名 | 解释 | 
 | ----- | ---- |
 | ftqIdx | 指示当前预测块在FTQ中的位置。 |
-| ftqOffset | 指示预测的跳转指令在预测块中的位置。如果valid为假表示这个预测块没有预测跳转指令。 |
+| ftqOffset | 指示预测块的大小 |
 | startAddr | 当前预测块的起始地址。 | 
 | nextlineStart | 起始地址所在cacheline的下一个cacheline的开始地址。 |
 | nextStartAddr | 下一个预测块的起始地址 |
@@ -315,7 +315,7 @@ IFU通过这个接口向Ibuffer写入取指结果。包含以下成员:
 | enqable | 对每条指令，其为valid并且在预测块的范围内 | 
 | exceptionType | 每个指令的异常类型 |
 | foldpc | 压缩过后的pc |
-| ftqOffset | 是否是ftq指令 |
+| ftqOffset | 指令是否在预测块范围中 |
 | ftqPtr | ftq预测块在FTQ的位置 | 
 | illegalInstr | 这条指令是否为非法指令 | 
 | instrs | 拼接后的指令码 |
@@ -345,7 +345,7 @@ IFU通过这个接口向Ibuffer写入取指结果。包含以下成员:
 | 接口名 | 解释 | 
 | ----- | ---- |
 | ftqIdx | 预测块指针 |
-| ftqOffset | 预测指令的位置，共4位，是一个数字 |
+| ftqOffset | 预测块的大小 |
 
 ### pmp
 

@@ -205,7 +205,6 @@ node_default_meta_data = {
     "paths":     "",
     "light":     False,
     "light_count": 0,
-    "doc_url":   "",
 }
 
 
