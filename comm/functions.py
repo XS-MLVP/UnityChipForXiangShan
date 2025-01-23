@@ -191,7 +191,7 @@ def _build_dut(d, cfg):
         warning(f"Failed to build {d}, error: {e}\n{traceback.format_exc()}")
 
 def build_dut(duts, cfg):
-    target_duts = [d.strip() for d in duts.split(",")]
+    target_duts = [d.strip() for d in duts.strip().replace(" ", ",").split(",")]
     if len(target_duts) == 0:
         warning(f"No dut to build for: {duts}")
         return
@@ -199,16 +199,25 @@ def build_dut(duts, cfg):
     build_modules = [f.replace(".py", "") for f in 
                      os.listdir(get_root_dir("scripts")) if f.startswith(prefix) and f.endswith(".py")]
     dut_to_build = []
+    searched_dut = []
     for d in target_duts:
+        if d.startswith("ut_"):
+            d = d[3:]
+        if "/" in d:
+            if d.endswith("/"):
+                d = d[:-1]
+            d = d.replace("/", "_") + "*"
         d = prefix + d
         if "*" in d or "?" in d:
             dut_to_build.extend(fnmatch.filter(build_modules, d))
         elif d in build_modules:
             dut_to_build.append(d)
+        searched_dut.append(d)
     dut_to_build = list(set(dut_to_build))
     if len(dut_to_build) == 0:
         warning(f"No dut to build for: {duts}")
         return
+    info(f"Build duts: {dut_to_build} with: {searched_dut}")
     import multiprocessing
     pool = multiprocessing.Pool()
     pool.starmap(_build_dut, [(d, cfg) for d in dut_to_build])

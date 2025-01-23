@@ -21,11 +21,6 @@ jobs:
       with:
         timezoneLinux: "Asia/Shanghai"
 
-    - name: Update picker
-      run: |
-        bash /home/update_picker.sh
-      shell: bash
-
     - name: Checkout code
       uses: actions/checkout@v4
       with:
@@ -44,7 +39,7 @@ jobs:
       run: |
         changed_dirs=$(awk -F'/' '/^ut_/ {print $1"/"$2}' changed_files.txt | sort | uniq)
         test_duts=$(echo "$changed_dirs" | tr '\n' ' ')
-        if [ -z "$test_duts" ]; then
+        if [[ -z "$test_duts" || "$test_duts" =~ ^[[:space:]]+$ ]]; then
           echo "No changes in ut_* directories. Skipping run tests."
           exit 0
         else
@@ -53,9 +48,15 @@ jobs:
         fi
       shell: bash
 
+    - name: Update picker
+      if: steps.analyze_changes.outputs.test_duts != ''
+      run: |
+        bash /home/update_picker.sh
+      shell: bash
+
     - name: Run tests in the changed ut_* directories
       if: steps.analyze_changes.outputs.test_duts != ''
       run: |
         make update_python_deps
-        make test target="${{ steps.analyze_changes.outputs.test_duts }}"
+        make test target="${{ steps.analyze_changes.outputs.test_duts }}" DUTS="'${{ steps.analyze_changes.outputs.test_duts }}'"
       shell: bash
