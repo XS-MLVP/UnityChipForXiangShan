@@ -58,6 +58,21 @@ instr(12) + instr(8) + instr(10, 9) + instr(6) + instr(7) + instr(2) + instr(11)
 
 ![RVCBR](RVCBR.png)
 
+## PreDecode接口说明
+
+### 输入接口
+
+in\_bits\_data 17 x 2B的初始指令码，其中，每2个字节既可以代表一条RVC指令，也可以代表一个RVI指令的一半。
+
+### 输出接口
+
+instr：拼接后的 16 x 4B的初始指令码
+
+jumpOffset：如果这条指令是跳转指令，则jumpOffset表示其跳转偏移
+
+pd：每条指令预译码信息，在时序优化之后，PreDecode模块的控制信息只剩下了valid和isRVC，后者表示这条指令是否为RVC指令
+
+hasHalfValid：这个信号需要和pd的valid结合起来看，PreDecode的一个功能是求出指令开始向量，也就是对每个4B的拼接指令，判断其低2B是否为一条有效指令的开始（即一条RVI指令的前半部分，或者一条RVC指令），但是需要分类讨论该预测块的第一个2B是否为一条有效指令的开始。hasHalfValid表示的是当前预测块的第一个2B指令为一条RVI指令的后半部分时，给出的指令开始向量。类似地，pd中的valid指的是当前预测块的第一个2B指令为一条指令的开始时，给出的指令开始向量。
 
 ## PreDecoder测试点和功能点
 
