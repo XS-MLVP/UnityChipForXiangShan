@@ -2,68 +2,84 @@ from ... import PREDICT_WIDTH, RET_LABEL, RVC_LABEL, BRTYPE_LABEL
 
 class pred_checker_mdl:
     def __init__(self):
-        self.fixed_range = [0 for i in range(PREDICT_WIDTH)]
-        self.fixed_taken = [0 for i in range(PREDICT_WIDTH)]
-        self.fixed_miss_pred = [0 for i in range(PREDICT_WIDTH)]
-        self.fixed_target = [0 for i in range(PREDICT_WIDTH)]
-        self.jal_target = [0 for i in range(PREDICT_WIDTH)]
+        self.fixedRange = [0 for i in range(PREDICT_WIDTH)]
+        self.fixedTaken = [0 for i in range(PREDICT_WIDTH)]
+        self.fixedMisspred = [0 for i in range(PREDICT_WIDTH)]
+        self.fixedTarget = [0 for i in range(PREDICT_WIDTH)]
+        self.jalTarget = [0 for i in range(PREDICT_WIDTH)]
         self.jumpOffset = [0 for i in range(PREDICT_WIDTH)]
-        self.fixed_flg = False # Indicate if pds has a valid CFI and checked if FTQ has corressponding prediction
-        self.missed_flg = False  # Indicate if FTQ has a prediction and checked if pds has corressponding prediction
+        self.fixedFlg = False # Indicate if pds has a valid CFI and checked if FTQ has corressponding prediction
+        self.missedFlg = False  # Indicate if FTQ has a prediction and checked if pds has corressponding prediction
 
     # Use pds info to check if the pred_checker will report any error
     def ref_pred_check(self, ftqValid, ftqOffBits, instrRange, instrValid, jumpOffset, pc, pds, tgt, fire):
         # Clear the previous result
-        self.fixed_range = [0 for i in range(PREDICT_WIDTH)]
-        self.fixed_taken = [0 for i in range(PREDICT_WIDTH)]
-        self.fixed_miss_pred = [0 for i in range(PREDICT_WIDTH)]
-        self.fixed_target = [0 for i in range(PREDICT_WIDTH)]
-        self.jal_target = [0 for i in range(PREDICT_WIDTH)]
+        self.fixedRange = [0 for i in range(PREDICT_WIDTH)]
+        self.fixedTaken = [0 for i in range(PREDICT_WIDTH)]
+        self.fixedMisspred = [0 for i in range(PREDICT_WIDTH)]
+        self.fixedTarget = [0 for i in range(PREDICT_WIDTH)]
+        self.jalTarget = [0 for i in range(PREDICT_WIDTH)]
         self.jumpOffset = [0 for i in range(PREDICT_WIDTH)]
-        self.fixed_flg = False
+        self.fixedFlg = False
         # Copy input jumpOffset
         self.jumpOffset = jumpOffset
         if not ftqValid:
             for idx in range(PREDICT_WIDTH):
-                self.fixed_target[idx] = pc[idx] + 4 #default target = pc + 4
-                self.fixed_range[idx] = 1
-                self.fixed_taken[idx] = 0
-                self.fixed_miss_pred[idx] = 0
-                self.jal_target[idx] = pc[idx]
+                self.fixedTarget[idx] = pc[idx] + 4 #default target = pc + 4
+                self.fixedRange[idx] = 1
+                self.fixedTaken[idx] = 0
+                self.fixedMisspred[idx] = 0
+                self.jalTarget[idx] = pc[idx]
         else:
             for idx in range(PREDICT_WIDTH): # Check each instruction
-                if instrValid[idx]: # if the instruction is a valid RVC/RVI instruction
-                    self.fixed_target[idx] = pc[idx] + 4
-                    self.jal_target[idx] = pc[idx] + jumpOffset[idx]
-                else:
-                    self.fixed_target[idx] = pc[idx] + 2
-                    self.jal_target[idx] = pc[idx] + jumpOffset[idx] - 2
                 if instrRange[idx]: 
-                    self.fixed_range[idx] = 1
-                if pds[idx][BRTYPE_LABEL] == 2: # if the instruction is a JAL instruction
-                    if not self.fixed_flg and idx != ftqOffBits: # if FTQ didn't give JAL, report first CFI instruction
-                        self.fixed_flg = True
-                        if self.missed_flg: # if FTQ has a previous prediction but pds JAL is subsequent to it 
-                            self.fixed_range[idx] = 0
-                            self.fixed_miss_pred[idx] = 0
+                    self.fixedRange[idx] = 1
+                if (pds[idx][BRTYPE_LABEL] == 2) or (pds[idx][RET_LABEL] == True): # if the instruction is a JAL/RET instruction
+                    if not self.fixedFlg and idx != ftqOffBits: # if FTQ didn't give JAL, report first CFI instruction
+                        self.fixedFlg = True
+                        if self.missedFlg: # if FTQ has a previous prediction but pds JAL is subsequent to it 
+                            self.fixedMisspred[idx] = 0
+                            self.missedFlg = False
                         else :
-                            self.fixed_range[idx] = 1
-                            self.fixed_miss_pred[idx] = 1
-                    elif not self.fixed_flg and idx == ftqOffBits: # if the first CFI instruction is corresponding to the ftqOffBits
-                        self.fixed_miss_pred[idx] = 0
-                        self.fixed_range[idx] = 1
-                    self.fixed_taken[idx] = 1
-                elif idx == ftqOffBits and pds[idx][BRTYPE_LABEL] != 2: # FTQ has a wrong prediction, pds gave no JAL
-                    self.missed_flg = True 
-                    self.fixed_miss_pred[idx] = 1
-                else: # other non-CFI instruction
-                    if not self.fixed_flg and instrRange[idx]: 
-                        self.fixed_range[idx] = 1
+                            self.fixedMisspred[idx] = 1
+                    elif not self.fixedFlg and idx == ftqOffBits: # if the first CFI instruction is corresponding to the ftqOffBits
+                        self.fixedMisspred[idx] = 0
+                    self.fixedTaken[idx] = 1
+                # FTQ has a wrong prediction, pds gave no JAL/RET
+                elif idx == ftqOffBits and (pds[idx][BRTYPE_LABEL] != 2) and (not pds[idx][RET_LABEL]):                     
+                    if not self.fixedFlg:
+                        # ftqOffset < pds CFI index
+                        self.fixedMisspred[idx] = 1
+                        self.missedFlg = True
                     else:
-                        self.fixed_range[idx] = 0
-                    if self.fixed_flg: # if reported a fix error, mark subsequent range/tanken/miss_pred as 0
-                        self.fixed_miss_pred[idx] = 0
-                        self.fixed_range[idx] = 0
-                        self.fixed_taken[idx] = 0
-        print("ref:fixed_target", self.fixed_target)
-        return self.fixed_range, self.fixed_taken, self.fixed_miss_pred, self.fixed_target, self.jal_target
+                        self.fixedMisspred[idx] = 0
+                else: # other non-CFI instruction
+                    if not self.fixedFlg and instrRange[idx]: # Copy instrRange to fixedRange if pred is correct
+                        self.fixedRange[idx] = 1
+                    else:
+                        self.fixedRange[idx] = 0
+                    if self.fixedFlg: # if reported a fix error, mark subsequent tanken/miss_pred as 0
+                        self.fixedMisspred[idx] = 0
+                        self.fixedTaken[idx] = 0
+                if instrValid[idx]: # if the instruction is a valid RVC/RVI instruction
+                    pcStep = 4
+                else:
+                    pcStep = 2
+                if self.fixedFlg:
+                    self.fixedTarget[idx] = pc[idx] + jumpOffset[idx] + pcStep
+                    if pds[idx][BRTYPE_LABEL] == 2:
+                        self.jalTarget[idx] = pc[idx] + jumpOffset[idx] + pcStep
+                else:
+                    self.fixedTarget[idx] = pc[idx] + pcStep
+                    self.jalTarget[idx] = pc[idx]
+            if self.fixedFlg:
+                index = 0
+                while index < PREDICT_WIDTH:
+                    if self.fixedTaken[index] == 1:
+                        break
+                    index += 1
+                index += 1
+                self.fixedRange = [1] * (index) + [0] * (PREDICT_WIDTH - index)
+                    
+        #print("ref:fixedTarget", self.fixedTarget)
+        return self.fixedRange, self.fixedTaken, self.fixedMisspred, self.fixedTarget, self.jalTarget
