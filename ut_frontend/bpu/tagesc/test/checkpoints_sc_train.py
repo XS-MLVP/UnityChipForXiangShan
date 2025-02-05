@@ -37,7 +37,7 @@ def is_update_threshold_ctr_saturing_to_neutral(way: int, up_or_down: int):
         total_sum = status.internal.above_threshold_total_sum(way)
         threshold = status.internal.sc_threshold(way)
         new_ctr = status.internal.new_threshold_ctr(way)
-        valid = status.pipline.s1_ready.value and status.update.valid.value and update_valid \
+        valid = status.pipline.s1_ready.value and update_valid \
                 and (threshold - 4 <= total_sum <= threshold - 2)
         return valid and (new_ctr == (0b11111 if up_or_down else 0))
 
