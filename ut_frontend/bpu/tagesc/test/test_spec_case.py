@@ -1,4 +1,3 @@
-import pytest
 import toffee
 import toffee_test
 
@@ -12,14 +11,16 @@ from ..env.tage_sc_env import TageSCEnv
 from ..util.meta_parser import MetaParser
 
 
-@pytest.mark.toffee_tags(version=["97e37a2237"])
 @toffee_test.testcase
 async def test_tage_tn_saturing_ctr_update(test_env: TageSCEnv):
     env = test_env
     await env.reset_dut()
     await test_env.__dut__.AStep(1)
     pc = 0x80000002
-    with MetaParser(0) as parser:
+    async with toffee.Executor() as _exec:
+        _exec(env.ctrl_agent.exec_activate())
+        _exec(env.predict_agent.exec_predict(pc, 0x13))
+    with MetaParser(env.predict_agent.io_out.last_stage_meta.value) as parser:
         for x in parser.providers_valid:
             x.value = 1
         for x in parser.providerResps_ctr:
@@ -29,31 +30,40 @@ async def test_tage_tn_saturing_ctr_update(test_env: TageSCEnv):
         for ti in range(4):
             for x in parser.providers:
                 x.value = ti
-            await env.train_agent.exec_update(pc, 1, 1, 1, parser.value, 0, 0, 0, 1, 1, 0, 0)
+            await env.train_agent.exec_update(pc, 1, 1, 1, parser.value, 1, 0, 0, 1, 1, 0, 0)
             for w in range(2):
-                assert getattr(test_env.__dut__, f"Tage_SC_tables_{ti}_per_bank_update_wdata_0_{w}_ctr").value == 0, \
+                logic_way = w ^ ((pc >> 1) & 1)
+                assert getattr(test_env.__dut__,
+                               f"Tage_SC_tables_{ti}_per_bank_update_wdata_0_{logic_way}_ctr").value == 0, \
                     f"TageTable{ti} down saturation-update failed!"
 
-        # ctr up saturing
-        pc += 32
+    # ctr up saturing
+    pc += 0x32
+    async with toffee.Executor() as _exec:
+        _exec(env.ctrl_agent.exec_activate())
+        _exec(env.predict_agent.exec_predict(pc, 0x13))
+    with MetaParser(env.predict_agent.io_out.last_stage_meta.value) as parser:
+        for x in parser.providers_valid:
+            x.value = 1
         for x in parser.providerResps_ctr:
             x.value = 0b111
         for w in range(2):
+            logic_way = w ^ ((pc >> 1) & 1)
             for ti in range(4):
                 for x in parser.providers:
                     x.value = ti
-                await env.train_agent.exec_update(pc, w, 1, 1, parser.value, 0, w, 1, 1, 1, 0, 0)
-                assert getattr(test_env.__dut__, f"Tage_SC_tables_{ti}_per_bank_update_wdata_0_{w}_ctr").value == 0b111, \
+                await env.train_agent.exec_update(pc, w, 1, 1, parser.value, 0x13, w, 1, 1, 1, 0, 0)
+                assert getattr(test_env.__dut__,
+                               f"Tage_SC_tables_{ti}_per_bank_update_wdata_0_{1 - logic_way}_ctr").value == 0b111, \
                     f"TageTable{ti} up saturation-update failed!"
 
 
-@pytest.mark.toffee_tags(version=["97e37a2237"])
 @toffee_test.testcase
 async def test_bank_tick_ctrs(test_env: TageSCEnv):
     env = test_env
 
     async def expect_reset_u(way: int):
-        await test_env.__dut__.AStep(1)
+        await test_env.__dut__.AStep(2)
         assert getattr(test_env.__dut__, f"Tage_SC_updateResetU_{way}").value == 1, "ResetU should be high!"
 
     ##### Test Code Start  #####
@@ -72,10 +82,6 @@ async def test_bank_tick_ctrs(test_env: TageSCEnv):
                 _exec(expect_reset_u(1 - w))
 
         for x in parser.allocates:
-            x.value = 7
-        await env.train_agent.exec_update(pc, w, 1, 1, parser.value, 2, w, 1, 1, 1, 0, 0)
-
-        for x in parser.allocates:
             x.value = 0xf
         for w in range(2):
             await env.train_agent.exec_update(pc, w, 1, 1, parser.value, 2, w, 1, 1, 1, 0, 0)
@@ -83,7 +89,6 @@ async def test_bank_tick_ctrs(test_env: TageSCEnv):
     assert sum(bank_tick_ctrs) == 0, "BankTickCtrs is not down saturation update"
 
 
-@pytest.mark.toffee_tags(version=["97e37a2237"])
 @toffee_test.testcase
 async def test_tage_alt_predict_keep_true_and_false(test_env: TageSCEnv):
     env = test_env
@@ -121,7 +126,6 @@ async def test_tage_alt_predict_keep_true_and_false(test_env: TageSCEnv):
             assert ctr_val == 0, f"useAltOnNaCtrs_{w}_{i} should be 0!"
 
 
-@pytest.mark.toffee_tags(version=["97e37a2237"])
 @toffee_test.testcase
 async def test_sc_threshold_saturation_update(test_env: TageSCEnv):
     env = test_env
@@ -175,7 +179,6 @@ async def test_sc_threshold_saturation_update(test_env: TageSCEnv):
         assert x.value == 0x4, "SC Threshold.thres should execute limit down saturation update"
 
 
-@pytest.mark.toffee_tags(version=["97e37a2237"])
 @toffee_test.testcase
 async def test_sc_table_saturation(test_env: TageSCEnv):
     env = test_env
@@ -224,7 +227,6 @@ async def test_sc_table_saturation(test_env: TageSCEnv):
             assert update_write_val == 31, f"Slot{w} of SC Table{i} is not signed up saturation update"
 
 
-@pytest.mark.toffee_tags(version=["97e37a2237"])
 @toffee_test.testcase
 async def test_sc_total_sum_correctness(test_env: TageSCEnv):
     def get_total_sum(sc_sum: int, tage_ctr: int):
@@ -236,7 +238,12 @@ async def test_sc_total_sum_correctness(test_env: TageSCEnv):
     ##### Test Code Start  #####
     await env.reset_dut()
     pc = 0x80000000
-    with MetaParser(0) as parser:
+
+    async with toffee.Executor() as _exec:
+        _exec(env.ctrl_agent.exec_activate())
+        _exec(env.predict_agent.exec_predict(pc, 0))
+
+    with MetaParser(env.predict_agent.io_out.last_stage_meta.value) as parser:
         for w in range(2):
             parser.sc_ctrs[w][0].value = 19
 
@@ -252,7 +259,7 @@ async def test_sc_total_sum_correctness(test_env: TageSCEnv):
             total_sum_attr = "Tage_SC_sumAboveThreshold_totalSum" + ("_1" if w else "")
             real_val_xdata = getattr(test_env.__dut__, total_sum_attr)
             expect_val = get_total_sum(sc_table_sum, update_tage_ctr[w].value)
-            await test_env.__dut__.AStep(1)
+            await test_env.__dut__.AStep(2)
             assert expect_val == real_val_xdata.S(), "TotalSum in train is not correct"
 
         async with toffee.Executor() as _exec:
@@ -271,7 +278,7 @@ async def test_sc_total_sum_correctness(test_env: TageSCEnv):
         expect_low = low_sc_sum + tage_centered
         real_high = getattr(test_env.__dut__, "Tage_SC_s2_totalSums_1" + _suffix)
         real_low = getattr(test_env.__dut__, "Tage_SC_s2_totalSums_0" + _suffix)
-        await test_env.__dut__.AStep(1)
+        await test_env.__dut__.AStep(2)
         assert expect_high == real_high.S() and expect_low == real_low.S(), "TotalSum in predict is not correct"
 
     async with toffee.Executor() as _exec:
@@ -280,7 +287,6 @@ async def test_sc_total_sum_correctness(test_env: TageSCEnv):
         _exec(assert_predict_total_sum(1))
 
 
-@pytest.mark.toffee_tags(version=["97e37a2237"])
 @toffee_test.testcase
 async def test_update_when_predict(test_env: TageSCEnv):
     env = test_env
@@ -297,7 +303,6 @@ async def test_update_when_predict(test_env: TageSCEnv):
     assert prev == env.predict_agent.io_out.as_dict()
 
 
-@pytest.mark.toffee_tags(version=["97e37a2237"])
 @toffee_test.testcase
 async def test_always_taken(test_env: TageSCEnv):
     env = test_env

@@ -14,7 +14,7 @@ class PredictAgent(Agent):
         self.io_in = in_bundle
         self.io_out = out_bundle
 
-    async def exec_predict(self, pc: int, global_hist: int) -> None:
+    async def exec_predict(self, pc: int, global_hist: int):
         self.io_in.assign(__gen_input_dict__(pc, global_hist))
         await self.io_in.step(4)
 

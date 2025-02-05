@@ -99,7 +99,7 @@ def get_coverage_group_of_tage_predict(status: StatusBundle) -> CovGroup:
     for use_alt in range(2):
         group.add_watch_point(
             status,
-            {slot_name[w]: is_ti_unconf_provider(w, i, use_alt) for i in range(4) for w in range(2)},
+            {f"t{i}_{slot_name[w]}": is_ti_unconf_provider(w, i, use_alt) for i in range(4) for w in range(2)},
             name=" ".join(["Tn is Unconfident Provider and ", alt_use_str[use_alt]]),
         )
     # Multi tables hit and provider is unconfident, and use/doesn't use alt.

@@ -42,9 +42,8 @@ def is_update_tn_saturing_ctr(way: int, ti: int, up_or_down: int):
 
 
 def is_allocate_new_entry(way: int, except_success_or_failure: int):
-    # WARNING: 目前的判断逻辑还是按照Chisel代码进行的, 所以可用表项信息失效的bug依旧存在.
     def allocate_new_entry(status: StatusBundle) -> bool:
-        valid = status.internal.update.valid(way) and status.update.valid.value and status.pipline.s1_ready.value
+        valid = status.internal.update.valid(way) and status.pipline.s1_ready.value
         need_to_allocate = status.internal.need_to_allocate(way)
         with MetaParser(status.update.bits.meta.value) as meta_parser:
             allocatable_count = sum([x.value for x in meta_parser.allocates])
@@ -68,7 +67,7 @@ def is_allocate_as_provider_predict_incorrectly(way: int, success: int):
 def is_update_predict_from_tagged(way: int):
     def update_predict_from_tagged(status: StatusBundle) -> bool:
         with MetaParser(status.update.bits.meta.value) as meta_parser:
-            valid = status.internal.update.valid(way) and status.update.valid.value
+            valid = status.internal.update.valid(way)
             provided = meta_parser.providers_valid[way].value
             alt_used = meta_parser.altUsed[way].value
             return valid and provided and not alt_used
@@ -79,7 +78,7 @@ def is_update_predict_from_tagged(way: int):
 def is_update_use_alt_on_na_ctrs(way: int):
     def update_use_alt_on_na_ctrs(status: StatusBundle) -> bool:
         with MetaParser(status.update.bits.meta.value) as meta_parser:
-            valid = status.internal.update.valid(way) and status.update.valid.value
+            valid = status.internal.update.valid(way)
             provided = meta_parser.providers_valid[way].value
             weak = meta_parser.providerResps_ctr[way].value in {0b100, 0b011}
             alt_diff = (meta_parser.basecnts[way].value >= 0b10) != (meta_parser.providerResps_ctr[way].value >= 0b100)
@@ -100,9 +99,10 @@ def is_reset_us(way: int):
 
 def is_update_always_taken(way: int):
     def update_always_taken(status: StatusBundle) -> bool:
-        always_taken = getattr(status.update.bits.ftb_entry, f"always_taken_{way}").value
+        # always_taken = getattr(status.update.bits.ftb_entry, f"always_taken_{way}").value
+        strong_bias = status.update.bits.ftb_entry.get_strong_bias(way)
         valid = status.pipline.s1_ready.value and status.update.valid.value
-        return valid and always_taken
+        return valid and strong_bias
 
     return update_always_taken
 
@@ -152,8 +152,8 @@ def get_coverage_group_of_tage_train(status: StatusBundle) -> CovGroup:
     g.add_watch_point(
         status,
         {
-            slot_name[0]: lambda status: status.internal.update.valid(0) and status.pipline.s0_fire_1.value,
-            slot_name[1]: lambda status: status.internal.update.valid(1) and status.pipline.s0_fire_1.value,
+            slot_name[0]: lambda status: status.internal.update.valid(0) and status.pipline.s1_fire_1.value,
+            slot_name[1]: lambda status: status.internal.update.valid(1) and status.pipline.s1_fire_1.value,
         },
         name="Update When Predict"
     )

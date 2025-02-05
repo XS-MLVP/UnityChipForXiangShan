@@ -14,15 +14,14 @@ from ..env.fake_global_history import TageSCFakeGlobalHistory
 from ..env.tage_sc_env import TageSCEnv
 
 
-@pytest.mark.toffee_tags(version=["97e37a2237"])
 @pytest.mark.parametrize("pc_bound", list(range(8)))
 @toffee_test.testcase
 async def test_random(tage_sc_env: TageSCEnv, pc_bound: int):
-    random.seed(os.urandom(8))
+    random.seed(os.urandom(128))
     fgh = TageSCFakeGlobalHistory()
     env = tage_sc_env
     await env.reset_dut()
-    for _ in range(2500):
+    for _ in range(3500):
         taken = (random.randint(0, 1), random.randint(0, 1)) if _ > 0 else (0, 0)
         pc = 0x80000003 + random.randint(0, pc_bound)
         async with toffee.Executor() as _exec:

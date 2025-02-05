@@ -16,12 +16,17 @@ class PipelineBundle(Bundle):
     s0_fire_3, s1_fire_3, s2_fire_3 = Signals(3)
 
 
-class FoldedHistoryBundle(Bundle):
-    [hist_0_folded_hist, hist_1_folded_hist, hist_2_folded_hist, hist_3_folded_hist,
-     hist_4_folded_hist, hist_5_folded_hist, hist_6_folded_hist, hist_7_folded_hist,
-     hist_8_folded_hist, hist_9_folded_hist, hist_10_folded_hist, hist_11_folded_hist,
-     hist_12_folded_hist, hist_13_folded_hist, hist_14_folded_hist, hist_15_folded_hist,
-     hist_16_folded_hist, hist_17_folded_hist] = Signals(18)
+class TageFoldedHistoryBundle(Bundle):
+    [hist_1_folded_hist, hist_3_folded_hist,
+     hist_4_folded_hist, hist_5_folded_hist,
+     hist_7_folded_hist,
+     hist_8_folded_hist, hist_9_folded_hist,
+     hist_14_folded_hist, hist_15_folded_hist,
+     hist_16_folded_hist, hist_17_folded_hist] = Signals(11)
+
+
+class SCFoldedHistoryBundle(Bundle):
+    hist_2_folded_hist, hist_11_folded_hist, hist_12_folded_hist = Signals(3)
 
 
 class FTBSlotBundle(Bundle):
@@ -29,9 +34,12 @@ class FTBSlotBundle(Bundle):
 
 
 class FTBEntryBundle(Bundle):
-    always_taken_0, always_taken_1 = Signals(2)
+    strong_bias_0, strong_bias_1 = Signals(2)
     br_slot = FTBSlotBundle.from_prefix("brSlots_0_")
     tail_slot = FTBSlotBundle.from_prefix("tailSlot_")
+
+    def get_strong_bias(self, way: int):
+        return (self.strong_bias_0.value, self.strong_bias_1.value)[way]
 
 
 class BranchPredictionBundle(Bundle):
@@ -40,8 +48,8 @@ class BranchPredictionBundle(Bundle):
 
 class BranchPredictReq(Bundle):
     bits_s0_pc_0, bits_s0_pc_1, bits_s0_pc_2, bits_s0_pc_3 = Signals(4)
-    fh_tage = FoldedHistoryBundle.from_prefix("bits_folded_hist_1_")
-    fh_sc = FoldedHistoryBundle.from_prefix("bits_folded_hist_3_")
+    fh_tage = TageFoldedHistoryBundle.from_prefix("bits_folded_hist_1_")
+    fh_sc = SCFoldedHistoryBundle.from_prefix("bits_folded_hist_3_")
 
 
 class BranchPredictionResp(Bundle):
