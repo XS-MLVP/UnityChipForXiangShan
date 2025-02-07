@@ -5,11 +5,11 @@ class pred_checker_sqr:
     def __init__(self):
         pass
     
-    def gen_vec(self, PREDICT_WIDTH, vec_depth, case_id):
-        vec_pkt = [self._gen_vec_single(PREDICT_WIDTH, case_id) for _ in range(vec_depth)]        
+    def gen_vec(self, PREDICT_WIDTH, vec_depth, caseId):
+        vec_pkt = [self._gen_vec_single(PREDICT_WIDTH, caseId) for _ in range(vec_depth)]        
         return vec_pkt
     
-    def _gen_vec_single(self, PREDICT_WIDTH, case_id):
+    def _gen_vec_single(self, PREDICT_WIDTH, caseId):
         fire = True
         ftqValid = False
         ftqOffBits = random.randint(0, 15)
@@ -22,7 +22,7 @@ class pred_checker_sqr:
         
         # Pds has no JAL info; instrRange is False; instrValid is False;
         # Check if the pred_checker will report a JAL missed prediction
-        if(case_id == 1):
+        if(caseId == 1):
             pds = [{RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: random.choice([0]) } for i in range(PREDICT_WIDTH)]
             instrRange = [random.choice([True]) for _ in range(PREDICT_WIDTH)]
             instrValid = [random.choice([True]) for _ in range(PREDICT_WIDTH)]
@@ -34,7 +34,7 @@ class pred_checker_sqr:
             
         # Pds has JAL info;  insrRange&instrValid is corresponding to JAL info;
         # Check if the pred_checker will report a JAL missed prediction
-        elif(case_id == 2):    
+        elif(caseId == 2):    
             #print("Case 1.1.2: generate test vector")
             pc_0 = random.randint(0, 2**50 - 2**6)
             randOffset = random.randint(0, 15)
@@ -49,7 +49,7 @@ class pred_checker_sqr:
             jumpOffset[randOffset] = random.randint(0, 2**50 - pc[randOffset])
             tgt = pc[randOffset] + jumpOffset[randOffset]
         
-        elif(case_id == 3):
+        elif(caseId == 3):
             #print("Case 1.2.1: generate test vector")
             pc_0 = random.randint(0, 2**50 - 2**6)
             randOffset = random.randint(0, 15)
@@ -63,7 +63,7 @@ class pred_checker_sqr:
             # Cause we are testing a wrong prediction, so tgt is not cared.
             tgt = pc[randOffset] + random.randint(0, 2**50 - pc[randOffset]) 
         
-        elif(case_id == 4):
+        elif(caseId == 4):
             #print("Case 1.2.2: generate test vector")
             pc_0 = random.randint(0, 2**50 - 2**6)
             ftqValid = True
@@ -79,7 +79,7 @@ class pred_checker_sqr:
             jumpOffset[randOffset] = random.randint(0, 2**50 - pc_0)
             pc = [pc_0 + i*4 for i in range(PREDICT_WIDTH)]
             tgt = pc_0 + jumpOffset[randOffset]
-        elif(case_id == 5):
+        elif(caseId == 5):
             #print("Case 2.1.1: generate test vector") 
             pds = [{RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: random.choice([0]) } for i in range(PREDICT_WIDTH)]
             instrRange = [random.choice([True]) for _ in range(PREDICT_WIDTH)]
@@ -89,7 +89,7 @@ class pred_checker_sqr:
             jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
             tgt = pc[PREDICT_WIDTH - 1] + 1 
 
-        elif(case_id == 6):
+        elif(caseId == 6):
             #print("Case 2.1.2: generate test vector")
             pc_0 = random.randint(0, 2**50 - 2**6)
             randOffset = random.randint(0, 15)
@@ -103,7 +103,7 @@ class pred_checker_sqr:
             pc = [pc_0 + i*4 for i in range(PREDICT_WIDTH)]
             jumpOffset[randOffset] = random.randint(0, 2**50 - pc[randOffset])
             tgt = pc[randOffset] + jumpOffset[randOffset]
-        elif(case_id == 7):
+        elif(caseId == 7):
             #print("Case 2.2.1: generate test vector")
             pc_0 = random.randint(0, 2**50 - 2**6)
             randOffset = random.randint(0, 15)
@@ -114,10 +114,9 @@ class pred_checker_sqr:
             instrValid = [True for _ in range(PREDICT_WIDTH)]
             jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
             pc = [pc_0 + i*4 for i in range(PREDICT_WIDTH)]
-            # Cause we are testing a wrong prediction, so tgt is not cared.
             tgt = pc[randOffset] + random.randint(0, 2**50 - pc[randOffset]) 
         
-        elif(case_id == 8):
+        elif(caseId == 8):
             #print("Case 2.2.2: generate test vector")
             pc_0 = random.randint(0, 2**50 - 2**6)
             ftqValid = True
@@ -134,7 +133,7 @@ class pred_checker_sqr:
             pc = [pc_0 + i*4 for i in range(PREDICT_WIDTH)]
             tgt = pc_0 + jumpOffset[randOffset]
             
-        elif(case_id == 32):
+        elif(caseId == 32):
             #print("Case 3.2: generate test vector")
             pc_0 = random.randint(0, 2**50 - 2**6)
             ftqValid = True
@@ -152,7 +151,7 @@ class pred_checker_sqr:
             pc = [pc_0 + i*4 for i in range(PREDICT_WIDTH)]
             tgt = pc_0 + 200 # Cause we are testing a wrong prediction, so tgt is not cared.
             
-        elif(case_id == 33):
+        elif(caseId == 33):
             #print("Case 3.3: generate test vector")
             pc_0 = random.randint(0, 2**50 - 2**6)
             ftqValid = True
@@ -170,8 +169,178 @@ class pred_checker_sqr:
             jumpOffset[randOffset] = random.randint(0, 2**50 - pc_0)
             pc = [pc_0 + i*4 for i in range(PREDICT_WIDTH)]
             tgt = pc_0 + 200
+        
+        elif(caseId == 41):
+            #print("Case 4.1.1: generate test vector")
+            pc_0 = random.randint(0, 2**50 - 2**6)
+            ftqValid = False
+            randOffset = random.randint(0, 15)
+            ftqOffBits = random.randint(0, 15)
+            pds = [{RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 0 } for i in range(PREDICT_WIDTH)]
+            instrRange = [True for _ in range(PREDICT_WIDTH)]
+            instrValid = [True for _ in range(PREDICT_WIDTH)]
+            jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
+            pc = [pc_0 + i*4 for i in range(PREDICT_WIDTH)]
+            tgt = pc_0 + 200 # Cause we are testing no-jumping case, so tgt is not cared.
+        
+        elif(caseId == 42):
+            #print("Case 4.1.2: generate test vector")
+            pc_0 = random.randint(0, 2**50 - 2**6)
+            randOffset = random.randint(0, 15)
+            pds = [{RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 0 } for i in range(PREDICT_WIDTH)]
+            pds[randOffset] = random.choice([{RVC_LABEL: False, RET_LABEL: True, BRTYPE_LABEL: 3},
+                                             {RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 2},
+                                             {RVC_LABEL: False, RET_LABEL:False, BRTYPE_LABEL:1}])
+            ftqValid = True
+            ftqOffBits = randOffset
+            instrRange = [True for _ in range(PREDICT_WIDTH)]
+            instrValid = [True for _ in range(PREDICT_WIDTH)]
+            jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
+            pc = [pc_0 + i*4 for i in range(PREDICT_WIDTH)]
+            jumpOffset[randOffset] = random.randint(0, 2**50 - pc[randOffset])
+            tgt = pc[randOffset] + jumpOffset[randOffset]
+            
+        elif(caseId == 43):
+            #print("Case 4.2")
+            pc_0 = random.randint(0, 2**50 - 2**6)
+            ftqValid = True
+            ftqOffBits = random.randint(0, 15)
+            pds = [{RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 0 } for i in range(PREDICT_WIDTH)]
+            instrRange = [True for _ in range(PREDICT_WIDTH)]
+            instrValid = [True for _ in range(PREDICT_WIDTH)]
+            jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
+            pc = [pc_0 + i*4 for i in range(PREDICT_WIDTH)]
+            tgt = pc_0 + 200 # Cause the case has to generate a fault prediction, so tgt is not cared.
+            
+        elif(caseId == 51):
+            #print("Case 5.1.1")
+            pc_0 = random.randint(0, 2**50 - 2**6)
+            ftqValid = False
+            ftqOffBits = 0
+            pds = [{RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 0} for _ in range(PREDICT_WIDTH)]
+            instrRange = [True for _ in range(PREDICT_WIDTH)]
+            instrValid = [True for _ in range(PREDICT_WIDTH)]
+            jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
+            pc = [pc_0 + i*4 for i in range(PREDICT_WIDTH)]
+            tgt = pc_0 + 200 # Cause the case has to generate no-jumping prediction, so tgt is not cared.
+            
+        elif(caseId == 52):
+            #print("Case 5.1.2")
+            randOffset = random.randint(0, 15)
+            pc_0 = random.randint(0, 2**50 - 2**6)
+            ftqValid = False
+            ftqOffBits = 0
+            instrRange = [True for _ in range(PREDICT_WIDTH)]
+            instrValid = [True for _ in range(PREDICT_WIDTH)]
+            pds = [{RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 0} for _ in range(PREDICT_WIDTH)]
+            instrValid[randOffset] = False
+            pc = [pc_0 + i*4 for i in range(PREDICT_WIDTH)]
+            jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
+            tgt = pc_0 + 200 # Cause the case has to generate no-jumping prediction, so tgt is not cared.
+            
+        elif(caseId == 53):
+            #print("Case 5.1.3")
+            randOffset = random.randint(0, 15)
+            pc_0 = random.randint(0, 2**50 - 2**6)
+            ftqValid = True
+            ftqOffBits = randOffset
+            instrRange = [True for _ in range(PREDICT_WIDTH)]
+            instrValid = [True for _ in range(PREDICT_WIDTH)]
+            pds = [{RVC_LABEL: random.choice([True, False]), RET_LABEL: False, BRTYPE_LABEL: 0} for _ in range(PREDICT_WIDTH)]
+            pds[randOffset] = random.choice([{RVC_LABEL: False, RET_LABEL: True, BRTYPE_LABEL: 3},
+                                             {RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 2},
+                                             {RVC_LABEL: False, RET_LABEL:False, BRTYPE_LABEL:1}])
+            pc = [pc_0 + i*4 for i in range(PREDICT_WIDTH)]
+            jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
+            jumpOffset[randOffset] = random.randint(0, 2**50 - pc_0 - 2**6)
+            tgt = pc[randOffset] + jumpOffset[randOffset]
+        
+        elif(caseId == 54):
+            #print("Case 5.2")
+            randOffset = random.randint(0, 15)
+            pc_0 = random.randint(0, 2**50 - 2 ** 6)
+            ftqValid = True
+            ftqOffBits = randOffset
+            instrRange = [True for _ in range(randOffset + 1)] + [False for _ in range(PREDICT_WIDTH - randOffset - 1)]
+            instrValid = [True for _ in range(PREDICT_WIDTH)]
+            instrValid[randOffset] = False
+            pds = [{RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 0} for _ in range(PREDICT_WIDTH)]
+            pds[randOffset] = {RVC_LABEL: True, RET_LABEL: False, BRTYPE_LABEL: 0}
+            for i in range(PREDICT_WIDTH - 1):
+                pc[0] = pc_0;
+                if pds[i][RVC_LABEL] == False:
+                    pc[i + 1] = pc[i] + 4
+                else:
+                    pc[i + 1] = pc[i] + 2
+            jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
+            tgt = pc[randOffset] + jumpOffset[randOffset]
+        
+        elif(caseId == 61):
+            #print("Case 6.1.1") 
+            randOffset = random.randint(0, 15)
+            pc_0 = random.randint(0, 2**50 - 2 ** 6)
+            ftqValid = True
+            ftqOffBits = randOffset
+            instrRange = [True for _ in range(randOffset + 1)] + [False for _ in range(PREDICT_WIDTH - randOffset - 1)]
+            instrValid = [True for _ in range(PREDICT_WIDTH)]
+            pds = [{RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 0} for _ in range(PREDICT_WIDTH)]
+            pds[randOffset] = {RVC_LABEL: True, RET_LABEL: False, BRTYPE_LABEL: 0}
+            for i in range(PREDICT_WIDTH - 1):
+                pc[0] = pc_0;
+                if pds[i][RVC_LABEL] == False:
+                    pc[i + 1] = pc[i] + 4
+                else:
+                    pc[i + 1] = pc[i] + 2
+            jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
+            tgt = pc[randOffset] + jumpOffset[randOffset]
+            
+        elif(caseId == 62):
+            #print("Case 6.1.2")
+            randOffset = random.randint(0, 15)
+            pc_0 = random.randint(0, 2**50 - 2 ** 6)
+            ftqValid = True
+            ftqOffBits = randOffset
+            instrRange = [True for _ in range(randOffset + 1)] + [False for _ in range(PREDICT_WIDTH - randOffset - 1)]
+            instrValid = [True for _ in range(PREDICT_WIDTH)]
+            pds = [{RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 0} for _ in range(PREDICT_WIDTH)]
+            pds[randOffset] = random.choice([{RVC_LABEL: False, RET_LABEL: True, BRTYPE_LABEL: 3},
+                                             {RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 2},
+                                             {RVC_LABEL: False, RET_LABEL:False, BRTYPE_LABEL:1}])
+            for i in range(PREDICT_WIDTH - 1):
+                pc[0] = pc_0;
+                if pds[i][RVC_LABEL] == False:
+                    pc[i + 1] = pc[i] + 4
+                else:
+                    pc[i + 1] = pc[i] + 2
+            jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
+            jumpOffset[randOffset] = random.randint(4, 2**50 - pc_0)
+            tgt = pc[randOffset] + jumpOffset[randOffset]
+            
+        elif(caseId == 63):
+            #print("Case 6.2")
+            randOffset = random.randint(0, 15)
+            pc_0 = random.randint(0, 2**50 - 2 ** 6)
+            ftqValid = True
+            ftqOffBits = randOffset
+            instrRange = [True for _ in range(randOffset + 1)] + [False for _ in range(PREDICT_WIDTH - randOffset - 1)]
+            instrValid = [True for _ in range(PREDICT_WIDTH)]
+            pds = [{RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 0} for _ in range(PREDICT_WIDTH)]
+            pds[randOffset] = random.choice([{RVC_LABEL: False, RET_LABEL: True, BRTYPE_LABEL: 3},
+                                             {RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 2},
+                                             {RVC_LABEL: False, RET_LABEL:False, BRTYPE_LABEL:1}])
+            for i in range(PREDICT_WIDTH - 1):
+                pc[0] = pc_0;
+                if pds[i][RVC_LABEL] == False:
+                    pc[i + 1] = pc[i] + 4
+                else:
+                    pc[i + 1] = pc[i] + 2
+            jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
+            jumpOffset[randOffset] = random.randint(4, 2**50 - pc[15])
+            tgt = pc[randOffset] + jumpOffset[randOffset]# + random.randint(1, 15)
+            
         else:
-            pass
+            for i in range(10):
+                print("Invalid case number")
         
         vec = [ftqValid, ftqOffBits, instrRange, instrValid, jumpOffset, pc, pds, tgt, fire]
         #print("Generated test vector: ftqValid, ftqOffBits, instrRange, instrValid, jumpOffset, pc, pds, tgt, fire\n", vec)
