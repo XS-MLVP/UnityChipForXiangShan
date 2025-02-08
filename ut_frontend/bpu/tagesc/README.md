@@ -25,7 +25,7 @@ TAGE-SC是香山前端BPU中的一个子预测器，主要的功能是预测指�
 除了对DUT进行封装外，本测试环境还实现了工具和模拟外围设备的函数：
 
 + `TageSCFakeGlobalHistory`：维护分支历史并生成折叠历史
-+ `MetaParser`：用于解析Meta信息。但不推荐使用，因为实现所用到的`SubDataRef`函数存在问题。
++ `MetaParser`：用于解析Meta信息。
 
 ## 功能检测
 
@@ -35,47 +35,67 @@ TAGE-SC是香山前端BPU中的一个子预测器，主要的功能是预测指�
 > 3. `PC`代表更新输入的预测块地址
 > 4. `UpdateMeta`代表更新输入的Meta信息
 
-| 序号 | 所述模块 | 功能描述   | 检查点描述                               | 检查标识                                              | 检查项                                                                                                                                                                                                                                                                                     |
-|----|------|--------|-------------------------------------|-------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 1  | TAGE | TAGE预测 | 历史表Tn(1≤n≤4)提供主预测                   | Tn is provider                                              | `status.s2_valid(1) && s2_internal.provided(way) && s2_internal.provider(way) == ti`                                                                                                                                                                                                    |
-| 2  | TAGE | TAGE预测 | 没有命中的历史表                            | All Tn Miss                                                 | status.s2_valid(1) && status.internal.s2.provided(way)                                                                                                                                                                                                                                  |
-| 3  | TAGE | TAGE预测 | 多个历史表同时命中                           | Multi Tables Hit                                            | status.s2_valid(1) && status.internal.s2.provided(way) && status.internal.tage_table.hit_count(way) > 1                                                                                                                                                                                 |
-| 4  | TAGE | TAGE预测 | 预测块中的所有分支指令由同一个历史表提供主预测             | All Slots use the Same Provider                             | status.s2_valid(1) && (status.internal.s2.provided(0) && status.internal.s2.provided(1))&& (status.internal.s2.provider(0) == status.internal.s2.provider(1))                                                                                                                           |
-| 5  | TAGE | TAGE预测 | Tn(1 ≤ n ≤ 4) 提供弱预测，最终没有使用替代预测      | Tn is Unconfident Provider and NOT use_alt                  | status.s2_valid(1) && status.internal.s2.provided(way) && status.internal.s2.provider_weak(way) && status.internal.s2.provider(way) == ti && !status.internal.s2.alt_used(way)                                                                                                          |
-| 6  | TAGE | TAGE预测 | Tn(1 ≤ n ≤ 4) 提供弱预测，最终使用替代预测        | Tn is Unconfident Provider and use_alt                      | status.s2_valid(1) && status.internal.s2.provided(way) && status.internal.s2.provider_weak(way) && status.internal.s2.provider(way) == ti && status.internal.s2.alt_used(way)                                                                                                           |
-| 7  | TAGE | TAGE预测 | 多个历史表命中且主预测置信度低，最终没有使用替代预测          | Multiple Tables Hit&Provider is Unconf and NOT use _alt     | status.s2_valid(1) && status.internal.s2.provided(way) && status.internal.s2.provider_weak(way) && status.internal.tage_table.hit_count(way) > 1 && !status.internal.s2.alt_used(way)                                                                                                   |
-| 8  | TAGE | TAGE预测 | 多个历史表命中且主预测置信度低，最终使用替代预测            | Multiple Tables Hit&Provider is Unconf and use _alt         | status.s2_valid(1) && status.internal.s2.provided(way) && status.internal.s2.provider_weak(way) && status.internal.tage_table.hit_count(way) > 1 && status.internal.s2.alt_used(way)                                                                                                    |
-| 9  | TAGE | TAGE预测 | 预测块中的所有分支指令由同一个历史表提供弱预测，最终没有 使用替代预测 | All Slots Use the Same Unconfident Provider and NOT use_alt | status.s2_valid(1) && status.internal.s2.provided(0) && status.internal.s2.provided(1) &&  status.internal.s2.provided(1) && <br />!status.internal.s2.alt_used(0) && !status.internal.s2.alt_used(1) && (status.internal.s2.provider(0) == status.internal.s2.provider(1))             |
-| 10 | TAGE | TAGE预测 | 预测块中的所有分支指令由同一个历史表提供弱预测，最终使用 替代预测   | All Slots Use the Same Unconfident Provider and  use_alt    | status.s2_valid(1) && status.internal.s2.provided(0) && status.internal.s2.provided(1) &&  status.internal.s2.provided(1) && <br />status.internal.s2.alt_used(0) && status.internal.s2.alt_used(1) && (status.internal.s2.provider(0) == status.internal.s2.provider(1))               |
-| 11 | TAGE | TAGE训练 | T0下饱和更新                             | TO Down saturing                                            | status.pipline.s1_ready.value && status.internal.base_table.write_valid() && status.internal.base_table.write_mask(pc, way) &&  status.internal.base_table.old_ctr(way) == 0 && status.internal.base_table.new_ctr == 0 && status.internal.base_table.update_taken(pc, way)             |
-| 12 | TAGE | TAGE训练 | T0上饱和更新                             | TO Up saturing                                              | status.pipline.s1_ready.value && status.internal.base_table.write_valid() && status.internal.base_table.write_mask(pc, way) &&  status.internal.base_table.old_ctr(way) == 3 && status.internal.base_table.new_ctr == 3 && status.internal.base_table.update_taken(pc, way)             |                                                                                                                                                                                                                                                                               |
-| 13 | TAGE | TAGE训练 | Tn(1 ≤ n ≤ 4) 下饱和更新                 | Tn Down saturing                                            | status.pipline.s1_ready.value && status.internal.tage_table.has_silent(ti, way) && status.internal.tage_table.get_table(ti).update_mask(pc, way) && !status.internal.tage_table.get_table(ti).update_taken(pc, way)                                                                     |
-| 14 | TAGE | TAGE训练 | Tn(1 ≤ n ≤ 4) 上饱和更新                 | Tn Up saturing                                              | status.pipline.s1_ready.value && status.internal.tage_table.has_silent(ti, way) && status.internal.tage_table.get_table(ti).update_mask(pc, way) && status.internal.tage_table.get_table(ti).update_taken(pc, way)                                                                      |
-| 15 | TAGE | TAGE训练 | 历史表申请新表项成功                          | Tn Allocate Success                                         | status.internal.update.valid(way) && status.update.valid.value && status.pipline.s1_ready.value && status.internal.need_to_allocate(way) && sum(UpdateMeta.allocates) > 1                                                                                                               |
-| 16 | TAGE | TAGE训练 | 历史表申请新表项失败                          | Tn Allocate Failure                                         | status.internal.update.valid(way) && status.update.valid.value && status.pipline.s1_ready.value && status.internal.need_to_allocate(way) && sum(UpdateMeta.allocates) == 0                                                                                                              |
-| 17 | TAGE | TAGE训练 | 主预测错误，在更长历史表中申请新表项成功                | Tn Allocate As Provider MisPredict Success                  | status.pipline.s1_ready.value && status.update.valid.value && status.internal.update.provider_correct(way) && UpdateMeta.providers_valid(way)                                                                                                                                           |
-| 18 | TAGE | TAGE训练 | 主预测错误，在更长历史表中申请新表项失败                | Tn Allocate As Provider MisPredict Failure                  | status.pipline.s1_ready.value && status.update.valid.value && !status.internal.update.provider_correct(way) && UpdateMeta.providers_valid(way)                                                                                                                                          |
-| 18 | TAGE | TAGE训练 | useAltOnNaCtrs 寄存器组更新               | Update useAltOnNaCtrs                                       | status.internal.update.valid(way) && status.update.valid.value && UpdateMeta.providers_valid(way) && (UpdateMeta.basecnts(way) >= 0b10) != (UpdateMeta.providerResps_ctr(way) >= 0b100) && UpdateMeta.providerResps_ctr(way) in {0b100, 0b011}                                          |
-| 19 | TAGE | TAGE训练 | 重置us计数器                             | Reset us                                                    | status.pipline.s1_ready.value && status.internal.bank_tick_ctr(way) == 0x7f && status.internal.update.reset_u(way)                                                                                                                                                                      |
-| 20 | TAGE | TAGE训练 | 输入的训练信息中 always_taken 位为 1          | Always Taken is True                                        | status.pipline.s1_ready.value && status.update.bits.ftb_entry.always_taken(way) && status.update.valid.value                                                                                                                                                                            |
-| 21 | TAGE | TAGG训练 | 训练与预测同时进行                           | Update When Predict                                         | status.internal.update.valid(way) && status.pipline.s0_fire_1.value                                                                                                                                                                                                                     |
-| 22 | SC   | SC预测   | 预测时 TotalSum 计算正确                   | SC Predict Calculate TotalSum                               | status.s2_valid(3)                                                                                                                                                                                                                                                                      |
-| 23 | SC   | SC预测   | 不使用 SC 的预测因为 TAGE 预测来自替代预测          | SC is Not Used and TAGE Use TO, Tn Miss                     | status.s2_valid(3) && !status.internal.s2.alt_used(way) && status.internal.s2.provided(way) && (status.internal.s2.total_sum(way, status.internal.s2.tage_taken(way)) > status.internal.s2.sc_threshold(way))                                                                           |
-| 24 | SC   | SC预测   | 不使用 SC 的预测因为 TAGE 没有命中的历史表          | SC is Not Used and TAGE Use TO, Tn Hit                      | status.s2_valid(3) && !status.internal.s2.alt_used(way) && !status.internal.s2.provided(way) && (status.internal.s2.total_sum(way, status.internal.s2.tage_taken(way)) > status.internal.s2.sc_threshold(way))                                                                          |
-| 25 | SC   | SC训练   | 训练时 TotalSum 计算正确                   | SC Train Calculate TotalSum                                 | status.pipline.s1_ready.value && status.internal.update.valid(way) && UpdateMeta.providers_valid(way)                                                                                                                                                                                   |
-| 26 | SC   | SC训练   | Tn(1≤n≤4)上饱和更新                      | SC Table is Up Saturing                                     | status.pipline.s1_ready.value && status.internal.sc.get_table(ti).update_mask(pc, way) && status.internal.sc.get_table(ti).old_ctr(pc, way) == 31 && status.internal.sc.get_table(ti).update_taken(way)                                                                                 |
-| 27 | SC   | SC训练   | Tn(1≤n≤4)下饱和更新                      | SC Table is Down Saturing                                   | status.pipline.s1_ready.value && status.internal.sc.get_table(ti).update_mask(pc, way) && status.internal.sc.get_table(ti).old_ctr(pc, way) == -32 && !status.internal.sc.get_table(ti).update_taken(way)                                                                               |
-| 28 | SC   | SC训练   | SC Threshold 中的 ctr 训练后的值为最小值       | SC Threshold Counter is Down Saturing                       | status.pipline.s1_ready.value && status.update.valid.value && status.internal.update.valid(way) && (status.internal.sc_threshold(way) - 4 <= status.internal.above_threshold_total_sum(way) <= status.internal.sc_threshold(way) - 2) && status.internal.new_threshold_ctr(way) == 0    |
-| 29 | SC   | SC训练   | SC Threshold 中的 ctr 训练后的值为最大值       | SC Threshold Counter is Up Saturing                         | status.pipline.s1_ready.value && status.update.valid.value && status.internal.update.valid(way) && (status.internal.sc_threshold(way) - 4 <= status.internal.above_threshold_total_sum(way) <= status.internal.sc_threshold(way) - 2) && status.internal.new_threshold_ctr(way) == 0x1f |
-| 30 | SC   | SC训练   | SC Threshold 中的 thres 有限地下饱和更新      | SC Threshold Threshold is Down Saturing                     | status.pipline.s1_ready.value &&  status.internal.sc_threshold(way) == 4                                                                                                                                                                                                                |
-| 31 | SC   | SC训练   | SC Threshold 中的 thres 有限地上饱和更新      | SC Threshold Threshold is Down Saturing                     | status.pipline.s1_ready.value &&  status.internal.sc_threshold(way) == 32                                                                                                                                                                                                               |
+| 序号 | 所述模块 | 功能描述 | 检查点描述                                                   | 检查标识                                                    | 检查项                                                       |
+| ---- | -------- | -------- | ------------------------------------------------------------ | ----------------------------------------------------------- | ------------------------------------------------------------ |
+| 1    | TAGE     | TAGE预测 | 历史表Tn(1≤n≤4)提供主预测                                    | Tn is provider                                              | ctrl_bundle.s2_valid_fire(1) && s2_internal.provided(way) && s2_internal.provider(way) == ti |
+| 2    | TAGE     | TAGE预测 | 没有命中的历史表                                             | All Tn Miss                                                 | ctrl_bundle.s2_valid_fire(1) && !internal_monitor.s2.provided(way) |
+| 3    | TAGE     | TAGE预测 | 多个历史表同时命中                                           | Multi Tables Hit                                            | ctrl_bundle.s2_valid_fire(1) && internal_monitor.s2.provided(way) && internal_monitor.tage_table.hit_count(way) > 1 |
+| 4    | TAGE     | TAGE预测 | 预测块中的所有分支指令由同一个历史表提供主预测               | All Slots use the Same Provider                             | ctrl_bundle.s2_valid_fire(1) && (internal_monitor.s2.provided(0) && internal_monitor.s2.provided(1))&& (internal_monitor.s2.provider(0) == internal_monitor.s2.provider(1)) |
+| 5    | TAGE     | TAGE预测 | Tn(1 ≤ n ≤ 4) 提供弱预测，最终没有使用替代预测               | Tn is Unconfident Provider and NOT use_alt                  | ctrl_bundle.s2_valid_fire(1) && internal_monitor.s2.provided(way) && internal_monitor.s2.provider_weak(way) && internal_monitor.s2.provider(way) == ti && !internal_monitor.s2.alt_used(way) |
+| 6    | TAGE     | TAGE预测 | Tn(1 ≤ n ≤ 4) 提供弱预测，最终使用替代预测                   | Tn is Unconfident Provider and use_alt                      | ctrl_bundle.s2_valid_fire(1) && internal_monitor.s2.provided(way) && internal_monitor.s2.provider_weak(way) && internal_monitor.s2.provider(way) == ti && internal_monitor.s2.alt_used(way) |
+| 7    | TAGE     | TAGE预测 | 多个历史表命中且主预测置信度低，最终没有使用替代预测         | Multiple Tables Hit&Provider is Unconf and NOT use _alt     | ctrl_bundle.s2_valid_fire(1) && internal_monitor.s2.provided(way) && internal_monitor.s2.provider_weak(way) && internal_monitor.tage_table.hit_count(way) > 1 && !internal_monitor.s2.alt_used(way) |
+| 8    | TAGE     | TAGE预测 | 多个历史表命中且主预测置信度低，最终使用替代预测             | Multiple Tables Hit&Provider is Unconf and use _alt         | ctrl_bundle.s2_valid_fire(1) && internal_monitor.s2.provided(way) && internal_monitor.s2.provider_weak(way) && internal_monitor.tage_table.hit_count(way) > 1 && internal_monitor.s2.alt_used(way) |
+| 9    | TAGE     | TAGE预测 | 预测块中的所有分支指令由同一个历史表提供弱预测，最终没有 使用替代预测 | All Slots Use the Same Unconfident Provider and NOT use_alt | ctrl_bundle.s2_valid_fire(1) && internal_monitor.s2.provided(0) && internal_monitor.s2.provided(1) &&  internal_monitor.s2.provided(1) && <br />!internal_monitor.s2.alt_used(0) && !internal_monitor.s2.alt_used(1) && (internal_monitor.s2.provider(0) == internal_monitor.s2.provider(1)) |
+| 10   | TAGE     | TAGE预测 | 预测块中的所有分支指令由同一个历史表提供弱预测，最终使用 替代预测 | All Slots Use the Same Unconfident Provider and  use_alt    | ctrl_bundle.s2_valid_fire(1) && internal_monitor.s2.provided(0) && internal_monitor.s2.provided(1) &&  internal_monitor.s2.provided(1) && <br />internal_monitor.s2.alt_used(0) && internal_monitor.s2.alt_used(1) && (internal_monitor.s2.provider(0) == internal_monitor.s2.provider(1)) |
+| 11   | TAGE     | TAGE训练 | T0下饱和更新                                                 | T0 Down saturing                                            | ctrl_bundle.s1_ready.value && internal_monitor.base_table.write_valid() && internal_monitor.base_table.write_mask(pc, way) &&  internal_monitor.base_table.old_ctr(way) == 0 && internal_monitor.base_table.new_ctr == 0 && internal_monitor.base_table.update_taken(pc, way) |
+| 12   | TAGE     | TAGE训练 | T0上饱和更新                                                 | T0 Up saturing                                              | ctrl_bundle.s1_ready.value && internal_monitor.base_table.write_valid() && internal_monitor.base_table.write_mask(pc, way) &&  internal_monitor.base_table.old_ctr(way) == 3 && internal_monitor.base_table.new_ctr == 3 && internal_monitor.base_table.update_taken(pc, way) |
+| 13   | TAGE     | TAGE训练 | Tn(1 ≤ n ≤ 4) 下饱和更新                                     | Tn Down saturing                                            | ctrl_bundle.s1_ready.value && internal_monitor.tage_table.has_silent(ti, way) && internal_monitor.tage_table.get_table(ti).update_mask(pc, way) && !internal_monitor.tage_table.get_table(ti).update_taken(pc, way) |
+| 14   | TAGE     | TAGE训练 | Tn(1 ≤ n ≤ 4) 上饱和更新                                     | Tn Up saturing                                              | ctrl_bundle.s1_ready.value && internal_monitor.tage_table.has_silent(ti, way) && internal_monitor.tage_table.get_table(ti).update_mask(pc, way) && internal_monitor.tage_table.get_table(ti).update_taken(pc, way) |
+| 15   | TAGE     | TAGE训练 | 历史表申请新表项成功                                         | Tn Allocate Success                                         | internal_monitor.update.valid(way) && update_driver.valid.value && ctrl_bundle.s1_ready.value && internal_monitor.need_to_allocate(way) && sum(UpdateMeta.allocates) > 1 |
+| 16   | TAGE     | TAGE训练 | 历史表申请新表项失败                                         | Tn Allocate Failure                                         | internal_monitor.update.valid(way) && update_driver.valid.value && ctrl_bundle.s1_ready.value && internal_monitor.need_to_allocate(way) && sum(UpdateMeta.allocates) == 0 |
+| 17   | TAGE     | TAGE训练 | 主预测错误，在更长历史表中申请新表项成功                     | Tn Allocate As Provider MisPredict Success                  | ctrl_bundle.s1_ready.value && update_driver.valid.value && internal_monitor.update.provider_correct(way) && UpdateMeta.providers_valid(way) |
+| 18   | TAGE     | TAGE训练 | 主预测错误，在更长历史表中申请新表项失败                     | Tn Allocate As Provider MisPredict Failure                  | ctrl_bundle.s1_ready.value && update_driver.valid.value && !internal_monitor.update.provider_correct(way) && UpdateMeta.providers_valid(way) |
+| 18   | TAGE     | TAGE训练 | useAltOnNaCtrs 寄存器组更新                                  | Update useAltOnNaCtrs                                       | internal_monitor.update.valid(way) && update_driver.valid.value && UpdateMeta.providers_valid(way) && (UpdateMeta.basecnts(way) >= 0b10) != (UpdateMeta.providerResps_ctr(way) >= 0b100) && UpdateMeta.providerResps_ctr(way) in {0b100, 0b011} |
+| 19   | TAGE     | TAGE训练 | 重置us计数器                                                 | Reset us                                                    | ctrl_bundle.s1_ready.value && internal_monitor.bank_tick_ctr(way) == 0x7f && internal_monitor.update.reset_u(way) |
+| 20   | TAGE     | TAGE训练 | 输入的训练信息中 strong_bias 位为 1                          | Strong Bias is True                                         | ctrl_bundle.s1_ready.value && update_driver.bits.ftb_entry.strong_bias(way) && update_driver.valid.value |
+| 21   | TAGE     | TAGG训练 | 训练与预测同时进行                                           | Update When Predict                                         | internal_monitor.update.valid(way) && ctrl_bundle.s0_fire_1.value |
+| 22   | SC       | SC预测   | 预测时 TotalSum 计算正确                                     | SC Predict Calculate TotalSum                               | ctrl_bundle.s2_valid_fire(3)                                 |
+| 23   | SC       | SC预测   | 不使用 SC 的预测因为 TAGE 预测来自替代预测                   | SC is Not Used and TAGE Use T0, Tn Miss                     | ctrl_bundle.s2_valid_fire(3) && !internal_monitor.s2.alt_used(way) && internal_monitor.s2.provided(way) && (internal_monitor.s2.total_sum(way, internal_monitor.s2.tage_taken(way)) > internal_monitor.s2.sc_threshold_thres(way)) |
+| 24   | SC       | SC预测   | 不使用 SC 的预测因为 TAGE 没有命中的历史表                   | SC is Not Used and TAGE Use T0, Tn Hit                      | ctrl_bundle.s2_valid_fire(3) && !internal_monitor.s2.alt_used(way) && !internal_monitor.s2.provided(way) && (internal_monitor.s2.total_sum(way, internal_monitor.s2.tage_taken(way)) > internal_monitor.s2.sc_threshold_thres(way)) |
+| 25   | SC       | SC训练   | 训练时 TotalSum 计算正确                                     | SC Train Calculate TotalSum                                 | ctrl_bundle.s1_ready.value && internal_monitor.update.valid(way) && UpdateMeta.providers_valid(way) |
+| 26   | SC       | SC训练   | Tn(1≤n≤4)上饱和更新                                          | SC Table is Up Saturing                                     | ctrl_bundle.s1_ready.value && internal_monitor.sc.get_table(ti).update_mask(pc, way) && internal_monitor.sc.get_table(ti).old_ctr(pc, way) == 31 && internal_monitor.sc.get_table(ti).update_taken(way) |
+| 27   | SC       | SC训练   | Tn(1≤n≤4)下饱和更新                                          | SC Table is Down Saturing                                   | ctrl_bundle.s1_ready.value && internal_monitor.sc.get_table(ti).update_mask(pc, way) && internal_monitor.sc.get_table(ti).old_ctr(pc, way) == -32 && !internal_monitor.sc.get_table(ti).update_taken(way) |
+| 28   | SC       | SC训练   | SC Threshold 中的 ctr 训练后的值为最小值                     | SC Threshold Counter is Down Saturing                       | ctrl_bundle.s1_ready.value && update_driver.valid.value && internal_monitor.update.valid(way) && (internal_monitor.sc_threshold_thres(way) - 4 <= internal_monitor.above_threshold_total_sum(way) <= internal_monitor.sc_threshold_thres(way) - 2) && internal_monitor.new_threshold_ctr(way) == 0 |
+| 29   | SC       | SC训练   | SC Threshold 中的 ctr 训练后的值为最大值                     | SC Threshold Counter is Up Saturing                         | ctrl_bundle.s1_ready.value && update_driver.valid.value && internal_monitor.update.valid(way) && (internal_monitor.sc_threshold_thres(way) - 4 <= internal_monitor.above_threshold_total_sum(way) <= internal_monitor.sc_threshold_thres(way) - 2) && internal_monitor.new_threshold_ctr(way) == 0x1f |
+| 30   | SC       | SC训练   | SC Threshold 中的 thres 有限地下饱和更新                     | SC Threshold Threshold is Down Saturing                     | ctrl_bundle.s1_ready.value &&  internal_monitor.sc_threshold_thres(way) == 4 |
+| 31   | SC       | SC训练   | SC Threshold 中的 thres 有限地上饱和更新                     | SC Threshold Threshold is Down Saturing                     | ctrl_bundle.s1_ready.value &&  internal_monitor.sc_threshold_thres(way) == 32 |
 
 
 ## 验证接口
 
-### TrainAgent.exec_update
+### PredictAgent
 
-参数: 
+#### exec_predict
+
+##### 说明
+
+进行预测操作
+
+##### 参数
+
+1. pc: 预测块的地址
+2. global_hist：全局分支历史
+
+### UpdateAgent
+
+#### exec_update
+
+##### 说明
+
+进行更新操作
+
+##### 参数
+
 1. pc: 预测块的地址
 2. br_slot_valid: 条件分支指令槽中的指令是否有效
 3. tail_slot_valid: 无条件跳转指令槽是否有效
@@ -86,8 +106,8 @@ TAGE-SC是香山前端BPU中的一个子预测器，主要的功能是预测指�
 8. br_taken_mask_1：第二个指令(tailSlot的)是否跳转
 9. mispred_mask_0: 第一个指令(brSlot的)的结果是否错误
 10. mispred_mask_1: 第二个指令(tailSlot的)的结果是否错误
-11. always_taken_0: 第一个指令(brSlot的)是否是强偏向性的
-12. always_taken_1: 第二个指令(tailSlot的)是否是强偏向性的
+11. strong_bias_0: 第一个指令(brSlot的)是否是强偏向性的
+12. strong_bias_1: 第二个指令(tailSlot的)是否是强偏向性的
 
 ## 用例说明[TBD]
 
@@ -137,15 +157,15 @@ TAGE-SC是香山前端BPU中的一个子预测器，主要的功能是预测指�
 | 3  | 修改 Meta 信息:T0 的 ctr 均为 2'b10，主预测的 ctr 均为 3'b011                                 |                                        |       |
 | 4  | 执行循环 128 次，对于第 i 次循环:用“PC=i*2，块中分支均有效，1 中构造的 Meta 信息，分支均不跳转且分支均预测错误”为输入，训练 18 次 | useAltOnNaCtrs 中的所有计数器增加到最大值，且完成过下饱和更新 |       |
 
-#### always_taken置1测试
+#### strong_bias置1测试
 
-该用例会测试训练输入中指令的 always_taken 为 1 时，模块是否会将其对应表项的预测信息更新为跳转。
+该用例会测试训练输入中指令的 strong_bias 为 1 时，模块是否会将其对应表项的预测信息更新为跳转。
 
-| 步骤 | 操作内容                                                             | 预期结果          | 功能覆盖点 |
-|----|------------------------------------------------------------------|---------------|-------|
-| 1  | 以“PC=0x800013，全局分支历史为 1，第二条分支有效、预测错误且 always_taken 位置 1”为输入，进行训练 |               |       |
-| 2  | 以“PC=0x800013，全局分支历史为 1，第一条分支有效、预测错误且 always_taken 位置 1”为输入，进行训练 |               |       |
-| 3  | 以“PC=0x800013，全局分支历史为 1”为输入，进行预测                                 | 块中两条分支的预测均为跳转 |       |
+| 步骤 | 操作内容                                                     | 预期结果                   | 功能覆盖点 |
+| ---- | ------------------------------------------------------------ | -------------------------- | ---------- |
+| 1    | 以“PC=0x800013，全局分支历史为 1，第二条分支有效、预测错误且 strong_bias 位置 1”为输入，进行训练 |                            |            |
+| 2    | 以“PC=0x800013，全局分支历史为 1，第一条分支有效、预测错误且 strong_bias 位置 1”为输入，进行训练 |                            |            |
+| 3    | 以“PC=0x800013，全局分支历史为 1”为输入，进行预测            | 块中两条分支的预测均为跳转 |            |
 
 
 #### 预测和更新同时进行测试
@@ -193,34 +213,34 @@ SCThreshold 包含两个计数器:ctr 和 thres。该用例会让 ctr 和 thres 
 ## 目录结构
 
 ```
-tagesc
-├── agent # DUT操作封装
-│   ├── ctrl_agent.py
-│   ├── __init__.py
-│   ├── predict_agent.py
-│   └── train_agent.py
-├── bundle # 引脚相关
-│   ├── __init__.py
-│   ├── internal.py
-│   └── port.py
-├── env # 封装的测试环境
-│   ├── fake_global_history.py 
-│   ├── __init__.py
-│   └── tage_sc_env.py
-├── __init__.py
-├── internal.yaml
-├── README.md
-├── test # 功能点和testcase
-│   ├── checkpoints_sc_predict.py
-│   ├── checkpoints_sc_train.py
-│   ├── checkpoints_tage_predict.py
-│   ├── checkpoints_tage_train.py
-│   ├── __init__.py
-│   ├── test_random.py
-│   └── test_spec_case.py
-└── util
-    ├── __init__.py
-    └── meta_parser.py
+tage_sc
+|-- agent 														# 模块功能的封装
+|   |-- __init__.py
+|   |-- predict_agent.py
+|   `-- update_agent.py
+|-- bundle 														# DUT 引脚的封装
+|   |-- __init__.py
+|   |-- internal.py
+|   |-- port.py
+|-- env 															# 验证环境
+|   |-- fake_global_history.py
+|   |-- __init__.py
+|   `-- tage_sc_env.py
+|-- __init__.py
+|-- internal.yaml 										# 需要导出的内部信号
+|-- README.md
+|-- test
+|   |-- checkpoints_sc_predict.py 		# sc 预测功能的检查点
+|   |-- checkpoints_sc_train.py  			# sc 训练功能的检查点
+|   |-- checkpoints_tage_predict.py 	# tage 预测功能的检查点
+|   |-- checkpoints_tage_train.py 		# tage 训练功能的检查点
+|   |-- __init__.py
+|   |-- test_random.py								# 随机测试
+|   `-- test_spec_case.py							# 固定Case测试
+`-- util
+    |-- __init__.py
+    `-- meta_parser.py								# 解析Meta信号
+
 ```
 
 
@@ -228,23 +248,22 @@ tagesc
 ## 检测列表
 
 
-- [ ] 本文档符合指定[模板]()要求
-- [ ] Env提供的API不包含任何DUT引脚和时序信息
+- [x] 本文档符合指定[模板]()要求
+- [x] Env提供的API不包含任何DUT引脚和时序信息
 - [ ] Env的API保持稳定（共有[ X ]个）
 - [ ] Env中对所支持的RTL版本（支持版本[ X ]）进行了检查
 - [ ] 功能点（共有[ X ]个）与[设计文档]()一致
 - [ ] 检查点（共有[ X ]个）覆盖所有功能点
-- [ ] 检查点的输入不依赖任何DUT引脚，仅依赖Env的标准API
+- [x] 检查点的输入不依赖任何DUT引脚，仅依赖Env的标准API
 - [ ] 所有测试用例（共有[ X ]个）都对功能检查点进行了反标
 - [ ] 所有测试用例都是通过 assert 进行的结果判断
 - [x] 所有DUT或对应wrapper都是通过fixture创建
 - [x] 在上述fixture中对RTL版本进行了检查
 - [x] 创建DUT或对应wrapper的fixture进行了功能和代码行覆盖率统计
-- [ ] 设置代码行覆盖率时对过滤需求进行了检查
+- [x] 设置代码行覆盖率时对过滤需求进行了检查
 
 ## TODO
 
 + 重命名检查表示
 + 完善用例说明的功能覆盖点部分
-+ 适配新的RTL
 + 接入参考模型
