@@ -1,4 +1,4 @@
-__all__ = ["BranchPredictReq", "BranchPredictionResp", "UpdateBundle", "CtrlBundle", "PipelineBundle"]
+__all__ = ["BranchPredictDriver", "BranchPredictMonitor", "BranchUpdateDriver", "ControlBundle", "BranchUpdateDriver"]
 
 from toffee import Bundle, Signal, Signals
 
@@ -7,13 +7,27 @@ class CtrlBundle(Bundle):
     tage_enable, sc_enable = Signals(2)
 
 
-class PipelineBundle(Bundle):
+class ControlBundle(Bundle):
     s1_ready = Signal()
     # 0->BPU, 1->Tage, 3->SC
     s0_fire_0, s1_fire_0, s2_fire_0 = Signals(3)
     s0_fire_1, s1_fire_1, s2_fire_1 = Signals(3)
     s0_fire_2, s1_fire_2, s2_fire_2 = Signals(3)
     s0_fire_3, s1_fire_3, s2_fire_3 = Signals(3)
+
+    ctrl = CtrlBundle().from_prefix("ctrl_")
+
+    def s0_fire_xdata(self, i):
+        return (self.s0_fire_0, self.s0_fire_1, self.s0_fire_2, self.s0_fire_3)[i]
+
+    def s1_fire_xdata(self, i):
+        return (self.s1_fire_0, self.s1_fire_1, self.s1_fire_2, self.s1_fire_3)[i]
+
+    def s2_fire_xdata(self, i):
+        return (self.s2_fire_0, self.s2_fire_1, self.s2_fire_2, self.s2_fire_3)[i]
+
+    def s2_valid_fire(self, i):
+        return self.s2_fire_xdata(i).value and self.s1_ready.value
 
 
 class TageFoldedHistoryBundle(Bundle):
@@ -39,23 +53,23 @@ class FTBEntryBundle(Bundle):
     tail_slot = FTBSlotBundle.from_prefix("tailSlot_")
 
     def get_strong_bias(self, way: int):
-        return (self.strong_bias_0.value, self.strong_bias_1.value)[way]
+        return (self.strong_bias_0, self.strong_bias_1)[way].value
 
 
 class BranchPredictionBundle(Bundle):
     br_taken_mask_0, br_taken_mask_1 = Signals(2)
 
 
-class BranchPredictReq(Bundle):
+class BranchPredictDriver(Bundle):
     bits_s0_pc_0, bits_s0_pc_1, bits_s0_pc_2, bits_s0_pc_3 = Signals(4)
     fh_tage = TageFoldedHistoryBundle.from_prefix("bits_folded_hist_1_")
     fh_sc = SCFoldedHistoryBundle.from_prefix("bits_folded_hist_3_")
 
 
-class BranchPredictionResp(Bundle):
+class BranchPredictMonitor(Bundle):
     last_stage_meta = Signal()
-    s2 = BranchPredictionBundle.from_prefix(r"s2_full_pred_3_")
-    s3 = BranchPredictionBundle.from_prefix(r"s3_full_pred_3_")
+    s2 = BranchPredictionBundle.from_prefix("s2_full_pred_3_")
+    s3 = BranchPredictionBundle.from_prefix("s3_full_pred_3_")
 
 
 class BranchPredictionUpdate(Bundle):
@@ -64,6 +78,6 @@ class BranchPredictionUpdate(Bundle):
     ftb_entry = FTBEntryBundle.from_prefix("ftb_entry_")
 
 
-class UpdateBundle(Bundle):
+class BranchUpdateDriver(Bundle):
     valid = Signal()
     bits = BranchPredictionUpdate.from_prefix("bits_")

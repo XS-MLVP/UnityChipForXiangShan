@@ -1,10 +1,10 @@
-__all__ = ["TageSCFakeGlobalHistory"]
+__all__ = ["FakeGlobalHistory"]
 
 GLOBAL_HISTORY_LEN = 256
 GLOBAL_HISTORY_MASK = (1 << GLOBAL_HISTORY_LEN) - 1
 
 
-class TageSCFakeGlobalHistory:
+class FakeGlobalHistory:
     def __init__(self, init_val: int = 0):
         self.value = init_val
 
