@@ -3,8 +3,8 @@ __all__ = ["get_coverage_group_of_tage_train"]
 from toffee.funcov import CovGroup
 
 from comm import UT_FCOV
-from ..bundle.internal import StatusBundle
-from ..util.meta_parser import MetaParser
+from ..env.tage_sc_env import TageSCEnv
+from ..util.meta_parser import GetMetaParser
 
 slot_name = ["br_slot_0", "tail_slot"]
 
@@ -14,11 +14,11 @@ def get_idx(pc: int, way: int):
 
 
 def is_update_t0_saturing_ctr(way: int, up_or_down: int):
-    def update_t0_saturing(status: StatusBundle) -> bool:
+    def update_t0_saturing(test_env: TageSCEnv) -> bool:
         v = 0b11 if up_or_down else 0
-        pc = status.update.bits.pc.value
-        base_table = status.internal.base_table
-        valid = status.pipline.s1_ready.value and base_table.write_valid() \
+        pc = test_env.update_driver.bits.pc.value
+        base_table = test_env.internal_monitor.base_table
+        valid = test_env.ctrl_bundle.s1_ready.value and base_table.write_valid() \
                 and base_table.write_mask(pc, way)
         old_ctr = base_table.old_ctr(way)
         new_ctr = base_table.new_ctr(way)
@@ -29,12 +29,12 @@ def is_update_t0_saturing_ctr(way: int, up_or_down: int):
 
 
 def is_update_tn_saturing_ctr(way: int, ti: int, up_or_down: int):
-    def update_tn_saturing(status: StatusBundle) -> bool:
-        pc = status.update.bits.pc.value
-        tage_table = status.internal.tage_table
+    def update_tn_saturing(test_env: TageSCEnv) -> bool:
+        pc = test_env.update_driver.bits.pc.value
+        tage_table = test_env.internal_monitor.tage_table
         has_silent = tage_table.has_silent(ti, way)
         mask = tage_table.get_table(ti).update_mask(pc, way)
-        valid = status.pipline.s1_ready.value and mask
+        valid = test_env.ctrl_bundle.s1_ready.value and mask
         taken = tage_table.get_table(ti).update_taken(pc, way)
         return valid and has_silent and (taken == up_or_down)
 
@@ -42,10 +42,10 @@ def is_update_tn_saturing_ctr(way: int, ti: int, up_or_down: int):
 
 
 def is_allocate_new_entry(way: int, except_success_or_failure: int):
-    def allocate_new_entry(status: StatusBundle) -> bool:
-        valid = status.internal.update.valid(way) and status.pipline.s1_ready.value
-        need_to_allocate = status.internal.need_to_allocate(way)
-        with MetaParser(status.update.bits.meta.value) as meta_parser:
+    def allocate_new_entry(test_env: TageSCEnv) -> bool:
+        valid = test_env.internal_monitor.update.valid(way) and test_env.ctrl_bundle.s1_ready.value
+        need_to_allocate = test_env.internal_monitor.need_to_allocate(way)
+        with GetMetaParser(test_env.update_driver.bits.meta.value) as meta_parser:
             allocatable_count = sum([x.value for x in meta_parser.allocates])
             return valid and need_to_allocate \
                 and ((allocatable_count > 0) if except_success_or_failure else (allocatable_count == 0))
@@ -54,10 +54,10 @@ def is_allocate_new_entry(way: int, except_success_or_failure: int):
 
 
 def is_allocate_as_provider_predict_incorrectly(way: int, success: int):
-    def allocate_as_provider(status: StatusBundle) -> bool:
-        with MetaParser(status.update.bits.meta.value) as meta_parser:
-            expect = status.internal.update.provider_correct(way) == success
-            valid = status.pipline.s1_ready.value and status.update.valid.value \
+    def allocate_as_provider(test_env: TageSCEnv) -> bool:
+        with GetMetaParser(test_env.update_driver.bits.meta.value) as meta_parser:
+            expect = test_env.internal_monitor.update.provider_correct(way) == success
+            valid = test_env.ctrl_bundle.s1_ready.value and test_env.update_driver.valid.value \
                     and meta_parser.providers_valid[way].value and expect
             return valid
 
@@ -65,9 +65,9 @@ def is_allocate_as_provider_predict_incorrectly(way: int, success: int):
 
 
 def is_update_predict_from_tagged(way: int):
-    def update_predict_from_tagged(status: StatusBundle) -> bool:
-        with MetaParser(status.update.bits.meta.value) as meta_parser:
-            valid = status.internal.update.valid(way)
+    def update_predict_from_tagged(test_env: TageSCEnv) -> bool:
+        with GetMetaParser(test_env.update_driver.bits.meta.value) as meta_parser:
+            valid = test_env.internal_monitor.update.valid(way)
             provided = meta_parser.providers_valid[way].value
             alt_used = meta_parser.altUsed[way].value
             return valid and provided and not alt_used
@@ -76,9 +76,9 @@ def is_update_predict_from_tagged(way: int):
 
 
 def is_update_use_alt_on_na_ctrs(way: int):
-    def update_use_alt_on_na_ctrs(status: StatusBundle) -> bool:
-        with MetaParser(status.update.bits.meta.value) as meta_parser:
-            valid = status.internal.update.valid(way)
+    def update_use_alt_on_na_ctrs(test_env: TageSCEnv) -> bool:
+        with GetMetaParser(test_env.update_driver.bits.meta.value) as meta_parser:
+            valid = test_env.internal_monitor.update.valid(way)
             provided = meta_parser.providers_valid[way].value
             weak = meta_parser.providerResps_ctr[way].value in {0b100, 0b011}
             alt_diff = (meta_parser.basecnts[way].value >= 0b10) != (meta_parser.providerResps_ctr[way].value >= 0b100)
@@ -88,33 +88,32 @@ def is_update_use_alt_on_na_ctrs(way: int):
 
 
 def is_reset_us(way: int):
-    def reset_us(status: StatusBundle) -> bool:
-        valid = status.pipline.s1_ready.value
-        bank_tick_ctr = status.internal.bank_tick_ctr(way)
-        reset_u = status.internal.update.reset_u(way)
+    def reset_us(test_env: TageSCEnv) -> bool:
+        valid = test_env.ctrl_bundle.s1_ready.value
+        bank_tick_ctr = test_env.internal_monitor.bank_tick_ctr(way)
+        reset_u = test_env.internal_monitor.update.reset_u(way)
         return valid and reset_u and bank_tick_ctr == 0x7f
 
     return reset_us
 
 
-def is_update_always_taken(way: int):
-    def update_always_taken(status: StatusBundle) -> bool:
-        # always_taken = getattr(status.update.bits.ftb_entry, f"always_taken_{way}").value
-        strong_bias = status.update.bits.ftb_entry.get_strong_bias(way)
-        valid = status.pipline.s1_ready.value and status.update.valid.value
+def is_update_strong_bias(way: int):
+    def update_strong_bias(test_env: TageSCEnv) -> bool:
+        strong_bias = test_env.update_driver.bits.ftb_entry.get_strong_bias(way)
+        valid = test_env.ctrl_bundle.s1_ready.value and test_env.update_driver.valid.value
         return valid and strong_bias
 
-    return update_always_taken
+    return update_strong_bias
 
 
-def get_coverage_group_of_tage_train(status: StatusBundle) -> CovGroup:
+def get_coverage_group_of_tage_train(test_env: TageSCEnv) -> CovGroup:
     g = CovGroup(UT_FCOV("../UT_Tage_SC"))
 
     # T0 up/down saturing update
     for up_or_down in range(2):
         s = "up saturing" if up_or_down else "down saturing"
         g.add_watch_point(
-            status,
+            test_env,
             {slot_name[w]: is_update_t0_saturing_ctr(w, up_or_down) for w in range(2)},
             name=" ".join(["T0", s.capitalize()])
         )
@@ -122,7 +121,7 @@ def get_coverage_group_of_tage_train(status: StatusBundle) -> CovGroup:
     for up_or_down in range(2):
         s = "up saturing" if up_or_down else "down saturing"
         g.add_watch_point(
-            status,
+            test_env,
             {"_".join([f"T{i}", slot_name[w]]): is_update_tn_saturing_ctr(w, i, up_or_down) for i in range(4) for w in
              range(2)},
             name=" ".join(["Tn", s.capitalize()])
@@ -141,26 +140,29 @@ def get_coverage_group_of_tage_train(status: StatusBundle) -> CovGroup:
             alloc_as_provider_mis_pred[f"{slot_name[w]} provider incorrect"] \
                 = is_allocate_as_provider_predict_incorrectly(w, success_or_failure)
 
-        g.add_watch_point(status, alloc, name="Tn Allocate " + cond)
-        g.add_watch_point(status, alloc_as_provider_mis_pred, name="Tn Allocate As Provider MisPredict " + cond)
+        g.add_watch_point(test_env, alloc, name="Tn Allocate " + cond)
+        g.add_watch_point(test_env, alloc_as_provider_mis_pred, name="Tn Allocate As Provider MisPredict " + cond)
 
     # Reset useful counter
-    g.add_watch_point(status, {slot_name[w]: is_reset_us(w) for w in range(2)}, name="Reset us")
+    g.add_watch_point(test_env, {slot_name[w]: is_reset_us(w) for w in range(2)}, name="Reset us")
 
     # Train Information's `always_taken` Bit is True
-    g.add_watch_point(status, {slot_name[w]: is_update_always_taken(w) for w in range(2)}, name="Always Taken is True")
+    g.add_watch_point(test_env, {slot_name[w]: is_update_strong_bias(w) for w in range(2)},
+                      name="Strong Bias is True")
     g.add_watch_point(
-        status,
+        test_env,
         {
-            slot_name[0]: lambda status: status.internal.update.valid(0) and status.pipline.s1_fire_1.value,
-            slot_name[1]: lambda status: status.internal.update.valid(1) and status.pipline.s1_fire_1.value,
+            slot_name[0]: lambda status: test_env.internal_monitor.update.valid(
+                0) and test_env.ctrl_bundle.s0_fire_1.value,
+            slot_name[1]: lambda status: test_env.internal_monitor.update.valid(
+                1) and test_env.ctrl_bundle.s0_fire_1.value,
         },
         name="Update When Predict"
     )
 
     # useAltOnNaCtrs update
     g.add_watch_point(
-        status,
+        test_env,
         {"_".join([slot_name[w], "useAltOnNaCtrs", "update"]): is_update_use_alt_on_na_ctrs(w) for w in range(2)},
         name="Update useAltOnNaCtrs"
     )

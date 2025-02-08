@@ -1,8 +1,6 @@
-__all__ = ['StatusBundle']
+__all__ = ['InternalMonitor']
 
 from toffee import Bundle, Signal, Signals
-
-from ut_frontend.bpu.tagesc.bundle import PipelineBundle, UpdateBundle
 
 
 class BaseTable(Bundle):
@@ -120,6 +118,8 @@ class S2Status(Bundle):
     altUsed_0, altUsed_1 = Signals(2)
     tageTakens_dup_0_0, tageTakens_dup_0_1 = Signals(2)
     totalSums_0, totalSums_1, totalSums_0_1, totalSums_1_1 = Signals(4)
+    scTableSums_0, scTableSums_1, scTableSums_1_0, scTableSums_1_1 = Signals(4)
+    tagePrvdCtrCentered_r, tagePrvdCtrCentered_r_1 = Signals(2)
 
     def provided(self, way) -> int:
         return (self.provideds_0, self.provideds_1)[way].value
@@ -136,15 +136,25 @@ class S2Status(Bundle):
     def tage_taken(self, way) -> int:
         return (self.tageTakens_dup_0_0, self.tageTakens_dup_0_1)[way].value
 
-    def total_sum(self, way, taken) -> int:
-        idx = way * 2 + taken
-        return (self.totalSums_0, self.totalSums_1, self.totalSums_0_1, self.totalSums_1_1)[idx].S()
+    def total_sum(self, way) -> tuple[int, int]:
+        low = (self.totalSums_0, self.totalSums_0_1)[way].S()
+        high = (self.totalSums_1, self.totalSums_1_1)[way].S()
+        return low, high
+
+    def sc_table_sum(self, way) -> tuple[int, int]:
+        low = (self.scTableSums_0, self.scTableSums_1_0)[way].S()
+        high = (self.scTableSums_1, self.scTableSums_1_1)[way].S()
+        return low, high
+
+    def tage_prvd_ctr_centered(self, way) -> int:
+        return (self.tagePrvdCtrCentered_r, self.tagePrvdCtrCentered_r_1)[way].value
 
 
-class InternalBundle(Bundle):
+class InternalMonitor(Bundle):
     needToAllocate, needToAllocate_1 = Signals(2)
     bankTickCtrs_0, bankTickCtrs_1 = Signals(2)
     scThresholds_0_thres, scThresholds_1_thres = Signals(2)
+    scThresholds_0_ctr, scThresholds_1_ctr = Signals(2)
     sumAboveThreshold_totalSum, sumAboveThreshold_totalSum_1 = Signals(2)
     newThres_newCtr, newThres_newCtr_1 = Signals(2)
 
@@ -160,20 +170,14 @@ class InternalBundle(Bundle):
     def bank_tick_ctr(self, way) -> int:
         return (self.bankTickCtrs_0, self.bankTickCtrs_1)[way].value
 
-    def sc_threshold(self, way) -> int:
+    def sc_threshold_thres(self, way) -> int:
         return (self.scThresholds_0_thres, self.scThresholds_1_thres)[way].value
 
+    def sc_threshold_ctr(self, way) -> int:
+        return (self.scThresholds_0_ctr, self.scThresholds_1_ctr)[way].value
+
     def above_threshold_total_sum(self, way):
-        return (self.sumAboveThreshold_totalSum, self.sumAboveThreshold_totalSum_1)[way].value
+        return (self.sumAboveThreshold_totalSum, self.sumAboveThreshold_totalSum_1)[way].S()
 
     def new_threshold_ctr(self, way):
         return (self.newThres_newCtr, self.newThres_newCtr_1)[way].value
-
-
-class StatusBundle(Bundle):
-    pipline = PipelineBundle.from_prefix("io_")
-    internal = InternalBundle.from_prefix("Tage_SC_")
-    update = UpdateBundle.from_prefix("io_update_")
-
-    def s2_valid(self, i):
-        return self.pipline.s1_ready.value and getattr(self.pipline, f"s2_fire_{i}").value
