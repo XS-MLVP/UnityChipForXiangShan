@@ -1,6 +1,5 @@
 ../../rtl/rtl/DecodeUnitComp.sv
 ../../rtl/rtl/DecodeUnit.sv
-../../rtl/rtl/FPToVecDecoder.sv
 ../../rtl/rtl/indexedLSUopTable_1.sv
 ../../rtl/rtl/indexedLSUopTable_2.sv
 ../../rtl/rtl/indexedLSUopTable_3.sv

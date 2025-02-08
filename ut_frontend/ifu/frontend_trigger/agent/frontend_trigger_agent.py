@@ -2,12 +2,14 @@ from toffee import Agent, driver_method
 from ..bundle import FrontendTriggerBundle
 import difflib
 
+# 设置断点的控制数据类
 class BreakpointReq():
     data = 0
     chain = False
     matchType = 0
     select = 0
 
+# 断点信息，一部分来自内部信号
 class BreakpointInfo():
     timing = 0
     tdata2 = 0 

@@ -12,10 +12,10 @@ This project aims to perform unit testing (Unit Test, UT) on the Kunminghu archi
 
 This project welcomes contributions in various aspects and will provide rewards (such as bonuses, certificates, internship opportunities, etc.) within a certain period. Specific types of contributions include:
 
-- **# 1**: Write verification documents, including specification documents, instruction documents, functional description documents, etc., for the Design Under Test (DUT).
-- **# 2**: Develop test cases, including test code and comments for each functional point, as well as related instruction documents.
-- **# 3**: Discover and report bugs in the XiangShan Processor, and provide cause analysis and repair suggestions.
-- **# 4**: Other contributions, such as adding new features to the tools provided by this project.
+- **# 1**: Create test cases, including functional point-specific test code with annotations, as well as accompanying documentation.
+- **# 2**: Identify and report bugs in the Xiangshan Processor (additional rewards may be granted for root cause analysis and repair suggestions).
+- **# 3**: Develop verification documentation, including specification documents, user manuals, functional description documents for the Design Under Test (DUT), and related materials.
+- **# 4**: Miscellaneous contributions, such as implementing new features or enhancements for tools used in this project.
 
 UnityChip project website: [https://open-verify.cc](https://open-verify.cc)
 

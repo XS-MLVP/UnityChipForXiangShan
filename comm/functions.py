@@ -180,35 +180,49 @@ def download_rtl(base_url, out_dir, version="latest"):
         use_rtl(base_url.split("/")[-1], out_dir)
     return True
 
+def _build_dut(d, cfg):
+    try:
+        module = importlib.import_module(f"scripts.{d}")
+        if not module.build(cfg):
+            warning(f"Build scripts/{d}.py failed")
+        else:
+            info(f"Build scripts/{d}.py success")
+    except Exception as e:
+        warning(f"Failed to build {d}, error: {e}\n{traceback.format_exc()}")
 
 def build_dut(duts, cfg):
-    target_duts = [d.strip() for d in duts.split(",")]
+    target_duts = [d.strip() for d in duts.strip().replace(" ", ",").split(",")]
     if len(target_duts) == 0:
+        warning(f"No dut to build for: {duts}")
         return
     prefix = "build_ut_"
     build_modules = [f.replace(".py", "") for f in 
                      os.listdir(get_root_dir("scripts")) if f.startswith(prefix) and f.endswith(".py")]
     dut_to_build = []
+    searched_dut = []
     for d in target_duts:
+        if d.startswith("ut_"):
+            d = d[3:]
+        if "/" in d:
+            if d.endswith("/"):
+                d = d[:-1]
+            d = d.replace("/", "_") + "*"
         d = prefix + d
         if "*" in d or "?" in d:
             dut_to_build.extend(fnmatch.filter(build_modules, d))
         elif d in build_modules:
             dut_to_build.append(d)
+        searched_dut.append(d)
     dut_to_build = list(set(dut_to_build))
     if len(dut_to_build) == 0:
         warning(f"No dut to build for: {duts}")
         return
-    for d in dut_to_build:
-        debug(f"Build {d}")
-        try:
-            module = importlib.import_module(f"scripts.{d}")
-            if not module.build(cfg):
-                warning(f"Build scripts/{d}.py failed")
-            else:
-                info(f"Build scripts/{d}.py success")
-        except Exception as e:
-            warning(f"Failed to build {d}, error: {e}\n{traceback.format_exc()}")
+    info(f"Build duts: {dut_to_build} with: {searched_dut}")
+    import multiprocessing
+    pool = multiprocessing.Pool()
+    pool.starmap(_build_dut, [(d, cfg) for d in dut_to_build])
+    pool.close()
+    pool.join()
 
 
 def replace_default_vars(input_str, cfg):
@@ -368,3 +382,108 @@ def module_name_with(names, prefix=None):
     elif isinstance(names, list):
         return [mname + "." + n for n in names]
     raise ValueError("Invalid names type")
+
+
+def get_all_rtl_files(top_module, cfg):
+    """
+    Returns the file paths of all modules that the `top_module` depends on,
+    with the path of `top_module` as the first element in the list.
+
+    This function assumes that there is **only one module** in the file and
+    that the **file name matches the module name**.
+    """
+    import re
+    from glob import iglob
+    from collections import OrderedDict
+
+    some_verilog_keywords = {
+        'for', 'real', 'initial', 'input', 'endcase', 'typedef', 'primitive', 'always_comb', 'always_latch', 'negedge',
+        'repeat', 'while', 'endfunction', 'int', 'output', 'wire', 'logic', 'reg', 'assign', 'function', 'case',
+        'always_ff', 'if', 'posedge', 'table', 'end', 'task', 'forever', 'enum', 'endtask', 'module', 'localparam',
+        'timescale', 'endprimitive', 'else', 'endtable', 'always', 'parameter', 'time', 'endmodule', 'begin',
+        "and", "or", "not", "xor"
+    }
+
+    module_pattern = re.compile(r"\bmodule\s+(\w+)\b")
+    instance_pattern = re.compile(r"\b(\w+)\s+(?!module)(\w+)\s*\(")
+    module_path_map = OrderedDict()
+
+    def resolve_verilog_file(path):
+        module_set = set()
+        instance_set = set()
+
+        def remove_inline_comments(s):
+            # Remove the line comment first
+            s = re.sub(r"//.*$", "", s)
+            # Then remove the block comment
+            return re.sub(r'/\*.*?\*/', "", s)
+
+        def parse_line(line_text: str) -> None:
+            _line = remove_inline_comments(line_text)
+
+            # Extract names of declared modules
+            module_matches = module_pattern.finditer(_line)
+            for match in module_matches:
+                _name = match.group(1)
+                module_set.add(_name)
+
+            # Extract names of instanced modules
+            instance_matches = instance_pattern.finditer(_line)
+            for match in instance_matches:
+                _name = match.group(1)
+                if _name not in some_verilog_keywords:
+                    instance_set.add(_name)
+
+        # Code begin
+        block_comment_depth = 0
+        pending_line = ''
+
+        with open(path, "r") as file:
+            while True:
+                chunk = file.read(32768)
+                if not chunk:
+                    break
+
+                lines = ("".join((pending_line, chunk))).split("\n")
+                if lines:
+                    pending_line = lines.pop()
+
+                for line in lines:
+                    # for block comment
+                    start_pos = line.find("/*")
+                    end_pos = line.find("*/")
+                    while start_pos != -1 or end_pos != -1:
+                        # if '/*' appears before '*/', increase depth
+                        if start_pos != -1 and (end_pos == -1 or start_pos < end_pos):
+                            block_comment_depth += 1
+                            line = " ".join((line[:start_pos], line[start_pos + 2:]))
+                        # if '*/' appears before '/*', decrease depth
+                        elif end_pos != -1:
+                            block_comment_depth -= 1
+                            line = " ".join((line[:end_pos], line[end_pos + 2:]))
+                        start_pos = line.find("/*")
+                        end_pos = line.find("*/")
+
+                    # skip if content of current line is in block comment
+                    if block_comment_depth > 0:
+                        continue
+                    parse_line(line)
+        if pending_line:
+            parse_line(pending_line)
+        return module_set, instance_set
+
+    def get_rtl_helper(top_module_name) -> None:
+        from comm import get_rtl_dir
+        # Walk through the rtl dir
+        rtl_dir = os.path.join(str(get_rtl_dir(cfg=cfg)), f"**/{top_module_name}.*v")
+        for path in iglob(rtl_dir, recursive=True):
+            module_set, inst_set = resolve_verilog_file(path)
+            for _name in module_set:
+                module_path_map[_name] = path
+            module_set.clear()
+            for _name in inst_set:
+                if _name not in module_path_map:
+                    get_rtl_helper(_name)
+
+    get_rtl_helper(top_module)
+    return list(module_path_map.values())

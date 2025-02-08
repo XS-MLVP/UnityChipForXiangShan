@@ -28,7 +28,57 @@ weight: 12
 前端的0、6、8号Trigger支持Chain功能。
 当它们对应的Chain位被置时，只有当该Trigger和编号在它后面一位的Trigger同时命中，且timing配置相同时，处理器才会产生异常。其中可以和6,8号trigger实现chain功能的7,9号trigger在后端访存部件中
 
-## FrontEndTrigger测试点和功能点
+## FrontendTrigger 接口说明
+
+设计上并没有提供一个或一组对外的接口来查询某个断点的状态，因此，要在测试中检查断点状态，要么需要检查内部信号的情况（仓库中提供的构建脚本已经暴露了所有内部信号），要么通过具体执行过程中，断点的触发情况来判定。
+
+### 输入接口
+
+主要分为控制接口和执行信息（目前执行信息只有pc）
+
+#### 控制接口 io_frontendTrigger
+
+本接口存储了frontendTrigger的控制信息，包含以下信号/信号组：
+
+##### debugMode
+
+当前是否处于debug模式下
+
+##### tEnableVec
+
+对FrontendTrigger的每个断点，指示其是否有效。
+
+##### tUpdate
+
+更新断点的控制信息，包含以下信号/信号组：
+
+valid：此次更新是否有效/是否更新。
+
+bits\_addr：此次更新的是哪个断点（0~3）
+
+bits\_tdata\_action：断点触发条件达成后的行为
+
+bits\_tdata\_chain：断点是否链式传导
+
+bits\_tdata\_matchType：断点匹配类型（等于、大于、小于三种）
+
+bits\_tdata\_select：目前为止，select为0时为pc断点
+
+bits\_tdata\_tdata2：用于和PC比较的基准值
+
+##### triggerCanRaiseBpExp
+
+trigger是否可以引起异常
+
+#### pc
+
+pc有一个隐含条件，就是16条指令的pc必定是连续的
+
+### 输出接口
+
+triggered：16条指令的断点触发情况。
+
+## FrontEndTrigger 测试点和功能点
 
 ### 功能点1 设置断点和断点检查
 FrontEndTrigger目前仅支持设置PC断点，这通过设置断点的tdata1寄存器的select位为0实现。

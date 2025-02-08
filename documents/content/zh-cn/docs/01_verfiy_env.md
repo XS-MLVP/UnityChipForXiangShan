@@ -29,6 +29,12 @@ pip3 install -r requirements.txt # 安装python依赖（例如 toffee）
 make rtl    # 该命下载最新的rtl代码，并解压至rtl目录，并创建软连接
 ```
 
+可以用以下命令指定下载的rtl版本：
+
+```bash
+make rtl args="rtl.version=\'openxiangshan-kmh-fad7803d-24120901\'"
+```
+
 所有RTL下载包请在[UnityChipXiangShanRTLs](https://github.com/XS-MLVP/UnityChipXiangShanRTLs)中查看。
 
 RTL压缩包的命名规范为：`名称-微架构-Git标记-日期编号.tar.gz`，例如`openxiangshan-kmh-97e37a2237-24092701.tar.gz`。在使用时，仓库代码会过滤掉git标记和后缀，例如通过 cfg.rtl.version 访问到的版本号为：`openxiangshan-kmh-24092701`。压缩包内的目录结构为：

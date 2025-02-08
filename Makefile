@@ -18,17 +18,20 @@ clean:
 clean_dut:
 	cd dut && ls | grep -v __init__.py | xargs rm -rf
 
-test_all:
+clean_rtl:
+	cd rtl && ls | grep -v README.md | xargs rm -rf
+
+test_all: dut
 	@python3 run.py --config $(CFG) $(KV) -- $(REPORT) -vs ut_*/ $(args)
 
-test:
+test: dut
 	@python3 run.py --config $(CFG) $(KV) -- $(REPORT) -vs $(target) $(args)
 
-dut:
+dut: rtl
 	@python3 run.py --config $(CFG) --build $(DUTS) $(args)
 
 rtl:
-	@python3 run.py --config $(CFG)  --download-rtl
+	@python3 run.py --config $(CFG)  --download-rtl $(args)
 
 doc:
 	cd documents && hugo server --bind 0.0.0.0
