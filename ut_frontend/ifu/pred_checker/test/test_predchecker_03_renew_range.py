@@ -12,7 +12,7 @@ from .pred_checker_dut import predchecker_env
 from .pred_checker_mdl import pred_checker_mdl
 from .pred_checker_sqr import pred_checker_sqr
 
-TEST_CYCLES = 20
+TEST_CYCLE = 10000
 
 @toffee_test.testcase
 async def test_renew_range_3_1(predchecker_env):
@@ -21,9 +21,9 @@ async def test_renew_range_3_1(predchecker_env):
     mdl = pred_checker_mdl()
     res = []
     ref_res = []
-    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLES, 2)
-    vec_pkt.extend(sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLES, 6))
-    for i in range(TEST_CYCLES):
+    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLE, 2)
+    vec_pkt.extend(sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLE, 22))
+    for i in range(TEST_CYCLE):
         print(f"Test cycle {i}")
         async for res in predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i]):
             if len(res) == 2:
@@ -39,8 +39,8 @@ async def test_renew_range_3_1(predchecker_env):
         assert stg1_fixedRange == ref_res[0], f"Pred Checker Fixed Range error!!! at vec_pkt[{i}]: stg1_fixedRange {stg1_fixedRange} != {ref_res[0]} \n\nvec_pkt[i]: {vec_pkt[i]}"
         assert stg1_fixedTaken == ref_res[1], f"Pred Checker Fixed Taken error!!! at vec_pkt[{i}]: stg1_fixedTaken {stg1_fixedTaken} != {ref_res[1]} \n\nvec_pkt[i]: {vec_pkt[i]}"
         assert stg2_fixedMissPred == ref_res[2], f"Pred Checker Fixed Miss Prediction error!!! at vec_pkt[{i}]: stg2_fixedMissPred {stg2_fixedMissPred} != {ref_res[2]} \n\nvec_pkt[i]: {vec_pkt[i]}"
-        #assert stg2_fixedTarget == ref_res[3], f"Pred Checker Fixed Target error!!! at vec_pkt[{i}]: stg2_fixedTarget {stg2_fixedTarget} != {ref_res[3]} \n\nvec_pkt[i]: {vec_pkt[i]}"
-        #assert stg2_jalTarget == ref_res[4], f"Pred Checker JAL Target error!!! at vec_pkt[{i}]: stg2_jalTarget {stg2_jalTarget} != {ref_res[4]} \n\nvec_pkt[i]: {vec_pkt[i]}"
+        assert stg2_fixedTarget == ref_res[3], f"Pred Checker Fixed Target error!!! at vec_pkt[{i}]: stg2_fixedTarget {stg2_fixedTarget} != {ref_res[3]} \n\nvec_pkt[i]: {vec_pkt[i]}"
+        assert stg2_jalTarget == ref_res[4], f"Pred Checker JAL Target error!!! at vec_pkt[{i}]: stg2_jalTarget {stg2_jalTarget} != {ref_res[4]} \n\nvec_pkt[i]: {vec_pkt[i]}"
     del mdl, sqr
 
 @toffee_test.testcase  
@@ -50,8 +50,8 @@ async def test_renew_range_3_2(predchecker_env):
     mdl = pred_checker_mdl()
     res = []
     ref_res = []
-    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLES, 32)
-    for i in range(TEST_CYCLES):
+    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLE, 32)
+    for i in range(TEST_CYCLE):
         print(f"Test cycle {i}")
         async for res in predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i]):
             if len(res) == 2:
@@ -67,8 +67,8 @@ async def test_renew_range_3_2(predchecker_env):
         assert stg1_fixedRange == ref_res[0], f"Pred Checker Fixed Range error!!! at vec_pkt[{i}]: stg1_fixedRange {stg1_fixedRange} != {ref_res[0]} \n\nvec_pkt[i]: {vec_pkt[i]}"
         assert stg1_fixedTaken == ref_res[1], f"Pred Checker Fixed Taken error!!! at vec_pkt[{i}]: stg1_fixedTaken {stg1_fixedTaken} != {ref_res[1]} \n\nvec_pkt[i]: {vec_pkt[i]}"
         assert stg2_fixedMissPred == ref_res[2], f"Pred Checker Fixed Miss Prediction error!!! at vec_pkt[{i}]: stg2_fixedMissPred {stg2_fixedMissPred} != {ref_res[2]} \n\nvec_pkt[i]: {vec_pkt[i]}"
-        #assert stg2_fixedTarget == ref_res[3], f"Pred Checker Fixed Target error!!! at vec_pkt[{i}]: stg2_fixedTarget {stg2_fixedTarget} != {ref_res[3]} \n\nvec_pkt[i]: {vec_pkt[i]}"
-        #assert stg2_jalTarget == ref_res[4], f"Pred Checker JAL Target error!!! at vec_pkt[{i}]: stg2_jalTarget {stg2_jalTarget} != {ref_res[4]} \n\nvec_pkt[i]: {vec_pkt[i]}"
+        assert stg2_fixedTarget == ref_res[3], f"Pred Checker Fixed Target error!!! at vec_pkt[{i}]: stg2_fixedTarget {stg2_fixedTarget} != {ref_res[3]} \n\nvec_pkt[i]: {vec_pkt[i]}"
+        assert stg2_jalTarget == ref_res[4], f"Pred Checker JAL Target error!!! at vec_pkt[{i}]: stg2_jalTarget {stg2_jalTarget} != {ref_res[4]} \n\nvec_pkt[i]: {vec_pkt[i]}"
     del mdl, sqr
     
 @toffee_test.testcase
@@ -78,8 +78,8 @@ async def test_renew_range_3_3(predchecker_env):
     mdl = pred_checker_mdl()
     res = []
     ref_res = []
-    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLES, 33)
-    for i in range(TEST_CYCLES):
+    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLE, 33)
+    for i in range(TEST_CYCLE):
         print(f"Test cycle {i}")
         async for res in predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i]):
             if len(res) == 2:
@@ -92,12 +92,12 @@ async def test_renew_range_3_3(predchecker_env):
                 #print(f"Stage 2 JAL Target: {stg2_jalTarget}")
                 #print(f"Stage 2 Fixed Miss Prediction: {stg2_fixedMissPred}")
         ref_res = mdl.ref_pred_check(*vec_pkt[i])
-        print("\nftqOffbits: ", vec_pkt[i][1])
-        print("\nref:fixed_range", ref_res[0])
-        print("\nres:fixed_range", stg1_fixedRange)
+        #print("\nftqOffbits: ", vec_pkt[i][1])
+        #print("\nref:fixed_range", ref_res[0])
+        #print("\nres:fixed_range", stg1_fixedRange)
         assert stg1_fixedRange == ref_res[0], f"Pred Checker Fixed Range error!!! at vec_pkt[{i}]: stg1_fixedRange {stg1_fixedRange} != {ref_res[0]} \n\nvec_pkt[i]: {vec_pkt[i]} "
         assert stg1_fixedTaken == ref_res[1], f"Pred Checker Fixed Taken error!!! at vec_pkt[{i}]: stg1_fixedTaken {stg1_fixedTaken} != {ref_res[1]} \n\nvec_pkt[i]: {vec_pkt[i]} "
         assert stg2_fixedMissPred == ref_res[2], f"Pred Checker Fixed Miss Prediction error!!! at vec_pkt[{i}]: stg2_fixedMissPred {stg2_fixedMissPred} != {ref_res[2]} \n\nvec_pkt[i]: {vec_pkt[i]}"
-        #assert stg2_fixedTarget == ref_res[3], f"Pred Checker Fixed Target error!!! at vec_pkt[{i}]: stg2_fixedTarget {stg2_fixedTarget} != {ref_res[3]} \n\nvec_pkt[i]: {vec_pkt[i]}"
-        #assert stg2_jalTarget == ref_res[4], f"Pred Checker JAL Target error!!! at vec_pkt[{i}]: stg2_jalTarget {stg2_jalTarget} != {ref_res[4]} \n\nvec_pkt[i]: {vec_pkt[i]}"
+        assert stg2_fixedTarget == ref_res[3], f"Pred Checker Fixed Target error!!! at vec_pkt[{i}]: stg2_fixedTarget {stg2_fixedTarget} != {ref_res[3]} \n\nvec_pkt[i]: {vec_pkt[i]}"
+        assert stg2_jalTarget == ref_res[4], f"Pred Checker JAL Target error!!! at vec_pkt[{i}]: stg2_jalTarget {stg2_jalTarget} != {ref_res[4]} \n\nvec_pkt[i]: {vec_pkt[i]}"
     del mdl, sqr

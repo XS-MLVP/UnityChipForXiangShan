@@ -11,7 +11,7 @@ from .pred_checker_dut import predchecker_env
 from .pred_checker_mdl import pred_checker_mdl
 from .pred_checker_sqr import pred_checker_sqr
 
-TEST_CYCLES = 1000
+TEST_CYCLE = 10000
 
 @toffee_test.testcase
 async def test_tgt_chk_6_1_1(predchecker_env):
@@ -20,20 +20,15 @@ async def test_tgt_chk_6_1_1(predchecker_env):
     mdl = pred_checker_mdl()
     res = []
     ref_res = []
-    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLES, 61)
-    for i in range(TEST_CYCLES):
+    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLE, 61)
+    for i in range(TEST_CYCLE):
         print(f"Test cycle {i}")
         #print(*vec_pkt[i])
         async for res in predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i]):
             if len(res) == 2:
                 stg1_fixedRange, stg1_fixedTaken = res
-                #print(f"Stage 1 Fixed Range: {stg1_fixedRange}")
-                #print(f"Stage 1 Fixed Taken: {stg1_fixedTaken}")
             elif len(res) == 3:
                 stg2_fixedTarget, stg2_jalTarget, stg2_fixedMissPred = res
-                #print(f"Stage 2 Fixed Target: {stg2_fixedTarget}")
-                #print(f"Stage 2 JAL Target: {stg2_jalTarget}")
-                #print(f"Stage 2 Fixed Miss Prediction: {stg2_fixedMissPred}")
         ref_res = mdl.ref_pred_check(*vec_pkt[i])
         #print(f"res:fixedRange::{stg1_fixedRange}")
         #print(f"res:fixedTaken::{stg1_fixedTaken}")
@@ -56,20 +51,15 @@ async def test_tgt_chk_6_1_2(predchecker_env):
     mdl = pred_checker_mdl()
     res = []
     ref_res = []
-    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLES, 62)
-    for i in range(TEST_CYCLES):
+    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLE, 62)
+    for i in range(TEST_CYCLE):
         print(f"Test cycle {i}")
         #print(*vec_pkt[i])
         async for res in predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i]):
             if len(res) == 2:
                 stg1_fixedRange, stg1_fixedTaken = res
-                #print(f"Stage 1 Fixed Range: {stg1_fixedRange}")
-                #print(f"Stage 1 Fixed Taken: {stg1_fixedTaken}")
             elif len(res) == 3:
                 stg2_fixedTarget, stg2_jalTarget, stg2_fixedMissPred = res
-                #print(f"Stage 2 Fixed Target: {stg2_fixedTarget}")
-                #print(f"Stage 2 JAL Target: {stg2_jalTarget}")
-                #print(f"Stage 2 Fixed Miss Prediction: {stg2_fixedMissPred}")
         ref_res = mdl.ref_pred_check(*vec_pkt[i])
         #print(f"res:fixedRange::{stg1_fixedRange}")
         #print(f"res:fixedTaken::{stg1_fixedTaken}")
@@ -92,24 +82,22 @@ async def test_tgt_chk_6_2(predchecker_env):
     mdl = pred_checker_mdl()
     res = []
     ref_res = []
-    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLES, 63)
-    for i in range(TEST_CYCLES):
+    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLE, 63)
+    for i in range(TEST_CYCLE):
         print(f"Test cycle {i}")
         #print(*vec_pkt[i])
         async for res in predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i]):
             if len(res) == 2:
                 stg1_fixedRange, stg1_fixedTaken = res
-                #print(f"Stage 1 Fixed Range: {stg1_fixedRange}")
-                #print(f"Stage 1 Fixed Taken: {stg1_fixedTaken}")
             elif len(res) == 3:
                 stg2_fixedTarget, stg2_jalTarget, stg2_fixedMissPred = res
-                #print(f"Stage 2 Fixed Target: {stg2_fixedTarget}")
-                #print(f"Stage 2 JAL Target: {stg2_jalTarget}")
-                #print(f"Stage 2 Fixed Miss Prediction: {stg2_fixedMissPred}")
         ref_res = mdl.ref_pred_check(*vec_pkt[i])
         #print(f"res:fixedRange::{stg1_fixedRange}")
+        #print(f"ref:fixedRange::{ref_res[0]}")
         #print(f"res:fixedTaken::{stg1_fixedTaken}")
+        #print(f"ref:fixedTaken::{ref_res[1]}")
         #print(f"res:fixedMissPred::{stg2_fixedMissPred}")
+        #print(f"ref:fixedMissPred::{ref_res[2]}")
         #print(f"res:fixedTarget::{stg2_fixedTarget}")
         #print(f"ref:fixedTarget::{ref_res[3]}")
         #print(f"res:jalTarget::{stg2_jalTarget}")

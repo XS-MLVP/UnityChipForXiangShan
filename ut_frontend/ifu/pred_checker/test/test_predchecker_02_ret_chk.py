@@ -11,7 +11,7 @@ from .pred_checker_dut import predchecker_env
 from .pred_checker_mdl import pred_checker_mdl
 from .pred_checker_sqr import pred_checker_sqr
 
-TEST_CYCLES = 10000
+TEST_CYCLE = 10000
 
 @toffee_test.testcase 
 async def test_ret_chk_2_1_1(predchecker_env):
@@ -19,7 +19,7 @@ async def test_ret_chk_2_1_1(predchecker_env):
     ref_res = []
     mdl = pred_checker_mdl()
     sqr = pred_checker_sqr()
-    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLES, 5)
+    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLE, 21)
     for i in range(len(vec_pkt)):
         print(f"Test cycle {i}")
         async for res in predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i]):
@@ -47,7 +47,7 @@ async def test_ret_chk_2_1_2(predchecker_env):
     mdl = pred_checker_mdl()
     res = []
     ref_res = []
-    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLES, 6)
+    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLE, 22)
     for i in range(len(vec_pkt)):
         print(f"Test cycle {i}")
         async for res in predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i]):
@@ -75,7 +75,7 @@ async def test_ret_chk_2_2_1(predchecker_env):
     mdl = pred_checker_mdl()
     res = []
     ref_res = []
-    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLES, 7)
+    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLE, 23)
     for i in range(len(vec_pkt)):
         print(f"Test cycle {i}")
         async for res in predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i]):
@@ -104,7 +104,7 @@ async def test_ret_chk_2_2_2(predchecker_env):
     mdl = pred_checker_mdl()
     res = []
     ref_res = []
-    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLES, 8)
+    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLE, 24)
     #print(f"vec_pkt: \n{vec_pkt}\n")
     for i in range(len(vec_pkt)):
         print(f"Test cycle {i}")
@@ -120,7 +120,7 @@ async def test_ret_chk_2_2_2(predchecker_env):
                 #print(f"Stage 2 Fixed Miss Prediction: {stg2_fixedMissPred}")
         # Check the result: Is JAL fix reported
         ref_res = mdl.ref_pred_check(*vec_pkt[i])
-        #assert stg1_fixedRange == ref_res[0], f"Pred Checker Fixed Range error!!! at vec_pkt[{i}]: stg1_fixedRange {stg1_fixedRange} != {ref_res[0]} \n\nvec_pkt[i]: {vec_pkt[i]}"
+        assert stg1_fixedRange == ref_res[0], f"Pred Checker Fixed Range error!!! at vec_pkt[{i}]: stg1_fixedRange {stg1_fixedRange} != {ref_res[0]} \n\nvec_pkt[i]: {vec_pkt[i]}"
         assert stg1_fixedTaken == ref_res[1], f"Pred Checker Fixed Taken error!!! at vec_pkt[{i}]: stg1_fixedTaken {stg1_fixedTaken} != {ref_res[1]} \n\nvec_pkt[i]: {vec_pkt[i]}"
         assert stg2_fixedMissPred == ref_res[2], f"Pred Checker Fixed Miss Prediction error!!! at vec_pkt[{i}]: stg2_fixedMissPred {stg2_fixedMissPred} != {ref_res[2]} \n\nvec_pkt[i]: {vec_pkt[i]}"
         #assert stg2_fixedTarget == ref_res[3], f"Pred Checker Fixed Target error!!! at vec_pkt[{i}]: stg2_fixedTarget {stg2_fixedTarget} != {ref_res[3]} \n\nvec_pkt[i]: {vec_pkt[i]}"

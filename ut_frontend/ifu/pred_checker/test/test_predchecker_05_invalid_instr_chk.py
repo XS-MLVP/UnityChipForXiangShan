@@ -11,7 +11,7 @@ from .pred_checker_dut import predchecker_env
 from .pred_checker_mdl import pred_checker_mdl
 from .pred_checker_sqr import pred_checker_sqr
 
-TEST_CYCLES = 10000
+TEST_CYCLE = 10000
 
 @toffee_test.testcase
 async def test_invalid_instr_chk_5_1_1(predchecker_env):
@@ -20,8 +20,8 @@ async def test_invalid_instr_chk_5_1_1(predchecker_env):
     mdl = pred_checker_mdl()
     res = []
     ref_res = []
-    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLES, 51)
-    for i in range(TEST_CYCLES):
+    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLE, 51)
+    for i in range(TEST_CYCLE):
         print(f"Test cycle {i}")
         async for res in predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i]):
             if len(res) == 2:
@@ -48,8 +48,8 @@ async def test_invalid_instr_chk_5_1_2(predchecker_env):
     mdl = pred_checker_mdl()
     res = []
     ref_res = []
-    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLES, 52)
-    for i in range(TEST_CYCLES):
+    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLE, 52)
+    for i in range(TEST_CYCLE):
         print(f"Test cycle {i}")
         async for res in predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i]):
             if len(res) == 2:
@@ -76,8 +76,8 @@ async def test_5_1_3(predchecker_env):
     mdl = pred_checker_mdl()
     res = []
     ref_res = []
-    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLES, 53)
-    for i in range(TEST_CYCLES):
+    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLE, 53)
+    for i in range(TEST_CYCLE):
         print(f"Test cycle {i}")
         async for res in predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i]):
             if len(res) == 2:
@@ -104,8 +104,8 @@ async def test_5_2(predchecker_env):
     mdl = pred_checker_mdl()
     res = []
     ref_res = []
-    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLES, 54)
-    for i in range(TEST_CYCLES):
+    vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLE, 54)
+    for i in range(TEST_CYCLE):
         print(f"Test cycle {i}")
         #print(*vec_pkt[i])
         async for res in predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i]):
