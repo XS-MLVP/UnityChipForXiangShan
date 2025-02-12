@@ -1,7 +1,10 @@
 from ... import PREDICT_WIDTH, RET_LABEL, RVC_LABEL, BRTYPE_LABEL
+from toffee.model import *
 '''PredChecker reference model'''
-class pred_checker_mdl:
+
+class pred_checker_mdl(Model):
     def __init__(self):
+        super().__init__()
         self.fixedRange = [0 for i in range(PREDICT_WIDTH)]
         self.fixedTaken = [0 for i in range(PREDICT_WIDTH)]
         self.fixedMisspred = [0 for i in range(PREDICT_WIDTH)]
@@ -10,6 +13,7 @@ class pred_checker_mdl:
         self.fixedFlg = False # Indicate if pds has a valid CFI and checked if FTQ has corressponding prediction
         self.missedFlg = False  # Indicate if FTQ has a prediction and checked if pds has corressponding prediction
 
+    @driver_hook(agent_name="predCheckerAgent", driver_name="agent_pred_check")
     def ref_pred_check(self, ftqValid, ftqOffbits, instrRange, instrValid, jumpOffset, pc, pds, tgt, fire):
         # Clear the previous result if it exists
         for i in range(PREDICT_WIDTH):
@@ -64,7 +68,13 @@ class pred_checker_mdl:
             # pds do not exist CFI but FTQ gave a jumping prediction
             if ftqValid:
                 self.fixedMisspred[ftqOffbits] = 1
-                   
-        return self.fixedRange, self.fixedTaken, self.fixedMisspred, self.fixedTarget, self.jalTarget
+        
+        stg1_fixedRange = self.fixedRange
+        stg1_fixedTaken = self.fixedTaken
+        stg2_fixedTarget = self.fixedTarget
+        stg2_jalTarget = self.jalTarget
+        stg2_fixedMissPred = self.fixedMisspred
+        
+        return stg1_fixedRange, stg1_fixedTaken, stg2_fixedTarget, stg2_jalTarget, stg2_fixedMissPred 
     
     

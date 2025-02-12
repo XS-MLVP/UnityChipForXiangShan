@@ -133,6 +133,23 @@ class pred_checker_sqr:
             pc = self._gen_pc_list(pc_0, pds)
             tgt = pc_0 + jumpOffset[randOffset]
             
+        elif(caseId == 31):
+            #print("Case 3.2: generate test vector")
+            pc_0 = random.randint(0, 2**50 - 2**6)
+            ftqValid = True
+            randOffset = random.randint(0, 14)
+            ftqOffBits = randOffset
+            pds = [{RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 0 } for i in range(PREDICT_WIDTH)]
+            pds[randOffset] = random.choice([{RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 2}, 
+                                            {RVC_LABEL: False, RET_LABEL: True, BRTYPE_LABEL: 3}])
+            instrRange = [True for _ in range(ftqOffBits + 1)]
+            instrRange.extend([False for _ in range(PREDICT_WIDTH - 1 - ftqOffBits)])
+            instrValid = [True for _ in range(PREDICT_WIDTH)]
+            jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
+            jumpOffset[randOffset] = random.randint(0, 2**50 - pc_0)
+            pc = self._gen_pc_list(pc_0, pds)
+            tgt = pc_0 + jumpOffset[randOffset]
+            
         elif(caseId == 32):
             #print("Case 3.2: generate test vector")
             pc_0 = random.randint(0, 2**50 - 2**6)
@@ -149,7 +166,7 @@ class pred_checker_sqr:
             jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
             jumpOffset[randOffset] = random.randint(0, 2**50 - pc_0)
             pc = self._gen_pc_list(pc_0, pds)
-            tgt = pc_0 + 200 # Cause we are testing a wrong prediction, so tgt is not cared.
+            tgt = pc_0 + 10086 # Cause we are testing a wrong prediction, so tgt is not cared.
             
         elif(caseId == 33):
             #print("Case 3.3: generate test vector")
@@ -180,7 +197,7 @@ class pred_checker_sqr:
             instrValid = [True for _ in range(PREDICT_WIDTH)]
             jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
             pc = self._gen_pc_list(pc_0, pds)
-            tgt = pc_0 + 200 # Cause we are testing no-jumping case, so tgt is not cared.
+            tgt = pc_0 + 10086 # Cause we are testing no-jumping case, so tgt is not cared.
         
         elif(caseId == 42):
             #print("Case 4.1.2: generate test vector")
@@ -209,7 +226,7 @@ class pred_checker_sqr:
             instrValid = [True for _ in range(PREDICT_WIDTH)]
             jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
             pc = self._gen_pc_list(pc_0, pds)
-            tgt = pc_0 + 200 # Cause the case has to generate a fault prediction, so tgt is not cared.
+            tgt = pc_0 + 10086 # Cause the case has to generate a fault prediction, so tgt is not cared.
             
         elif(caseId == 51):
             #print("Case 5.1.1")
@@ -221,7 +238,7 @@ class pred_checker_sqr:
             instrValid = [True for _ in range(PREDICT_WIDTH)]
             jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
             pc = self._gen_pc_list(pc_0, pds)
-            tgt = pc_0 + 200 # Cause the case has to generate no-jumping prediction, so tgt is not cared.
+            tgt = pc_0 + 10086 # Cause the case has to generate no-jumping prediction, so tgt is not cared.
             
         elif(caseId == 52):
             #print("Case 5.1.2")
@@ -235,7 +252,7 @@ class pred_checker_sqr:
             instrValid[randOffset] = False
             pc = self._gen_pc_list(pc_0, pds)
             jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
-            tgt = pc_0 + 200 # Cause the case has to generate no-jumping prediction, so tgt is not cared.
+            tgt = pc_0 + 10086 # Cause the case has to generate no-jumping prediction, so tgt is not cared.
             
         elif(caseId == 53):
             #print("Case 5.1.3")
@@ -354,8 +371,8 @@ class pred_checker_sqr:
             tgt = 52
             
         else:
-            for i in range(10):
-                print("Invalid case number")
+            print(f"Invalid case number, caseId == {caseId}")
+            assert caseId == -1, "caseId error"
         
         vec = [ftqValid, ftqOffBits, instrRange, instrValid, jumpOffset, pc, pds, tgt, fire]
         #print("Generated test vector: ftqValid, ftqOffBits, instrRange, instrValid, jumpOffset, pc, pds, tgt, fire\n", vec)

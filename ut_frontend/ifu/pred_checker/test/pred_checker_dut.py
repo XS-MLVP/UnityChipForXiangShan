@@ -5,6 +5,17 @@ from dut.PredChecker import DUTPredChecker
 import toffee.funcov as fc
 from toffee.funcov import CovGroup
 
+
+def init_pred_checker_funcov(dut:DUTPredChecker, g: fc.CovGroup):
+    # 1. Add point
+    g.add_watch_point(dut, {
+        "ERROR": lambda d: getattr(dut, "io_out_stage10ut_fixedRange_0").value == 0,
+        "SUCCE": lambda d: getattr(dut, "io_out_stage10ut_fixedRange_0").value == 1,
+    }, name = "predChecker_RANGE")
+    
+    
+    
+
 #def init_pred_checker_cover_point(pred_checker):
 #    g = fc.CovGroup("predChecker")
 #    g.add_watch_point(pred_checker.io_out_stage2Out_fixedMissPred_0, {"io_out_stage20ut_fixedMissPred": lambda x: fc.Eq(0)}, name="PredChecker_MissPred[0]")
@@ -32,3 +43,6 @@ async def predchecker_env(toffee_request: toffee_test.ToffeeRequest):
                 await task
             except asyncio.CancelledError:
                 break
+            
+            
+            
