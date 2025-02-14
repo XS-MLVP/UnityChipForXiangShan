@@ -355,20 +355,6 @@ class pred_checker_sqr:
             jumpOffset[randOffset] = random.choice([negJumpOffset, posJumpOffset])
             tgt = pc[randOffset] + jumpOffset[randOffset]
             
-        elif(caseId == 81):
-            #print("Case 7.1")
-            randOffset = 15
-            pc_0 = 0
-            ftqValid = True
-            ftqOffBits = randOffset
-            instrRange = [True for _ in range(randOffset + 1)] + [False for _ in range(PREDICT_WIDTH - randOffset - 1)]
-            instrValid = [True for _ in range(PREDICT_WIDTH)]
-            pds = [{RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 0} for _ in range(PREDICT_WIDTH)]
-            pds[randOffset] = {RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 2}
-            pc = self._gen_pc_list(pc_0, pds)
-            jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
-            jumpOffset[randOffset] = -24 # Complement of -8
-            tgt = 52
             
         else:
             print(f"Invalid case number, caseId == {caseId}")
