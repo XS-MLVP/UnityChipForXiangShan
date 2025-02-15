@@ -25,7 +25,15 @@ test_all: dut
 	@python3 run.py --config $(CFG) $(KV) -- $(REPORT) -vs ut_*/ $(args)
 
 test: dut
-	@python3 run.py --config $(CFG) $(KV) -- $(REPORT) -vs $(target) $(args)
+	python3 run.py --config $(CFG) $(KV) -- $(REPORT) -vs $(target) $(args) -n auto
+
+test_trigger: dut
+	make test  CFG="./configs/frontend_trigger.yaml" target="./ut_frontend/ifu/frontend_trigger/"
+	
+
+
+test_predecode: dut
+	make test target="./ut_frontend/ifu/predecode/"
 
 dut: rtl
 	@python3 run.py --config $(CFG) --build $(DUTS) $(args)
