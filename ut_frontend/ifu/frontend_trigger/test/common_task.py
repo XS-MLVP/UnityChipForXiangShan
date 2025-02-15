@@ -108,20 +108,7 @@ async def ftrigger_chain_task1(
         bound_pair_list = list(set(islice(bound_pair_gen, 20)))
 
         for bound1, bound2 in bound_pair_list:
-            # first_chain_bp = BreakpointUpdateInfo(
-            #     matchType=match_type_map[bound1[0]],
-            #     select=0,
-            #     action=random.randint(0, 1),
-            #     chain=True,
-            #     tdata2=to_even(bound1[1]),
-            # )
-            # second_chain_bp = BreakpointUpdateInfo(
-            #     matchType=match_type_map[bound2[0]],
-            #     select=0,
-            #     action=random.randint(0, 1),
-            #     chain=False,
-            #     tdata2=to_even(bound2[1]),
-            # )
+
             first_chain_bp = next(first_chain_bp_update_gen)
             second_chain_bp = next(second_chain_bp_update_gen)
 

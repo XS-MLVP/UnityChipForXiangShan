@@ -30,7 +30,7 @@ async def test_smoke(frontend_trigger_env: FrontendTriggerEnv):
     async def __smoke_task1():
         bp_update = BreakpointUpdateInfo()
         bp_update.chain = False
-        bp_update.matchType = 3
+        bp_update.matchType = 0
         bp_update.select = 0
         bp_update.action = 0
         bp_update.tdata2 = 0x1234_1234_5678
@@ -50,12 +50,6 @@ async def test_smoke(frontend_trigger_env: FrontendTriggerEnv):
         await frontend_trigger_env.agent.bundle.step(2)
         await frontend_trigger_env.agent.set_pcs(pcs)
         await frontend_trigger_env.agent.bundle.step(2)
-        # await frontend_trigger_env.agent.set_pcs(list(map(lambda x: x + 2, pcs)))
-        # await frontend_trigger_env.agent.bundle.step(2)
-        # await frontend_trigger_env.agent.set_pcs(list(map(lambda x: x - 2, pcs)))
-        # bp_flags.tEnableVec = [True, True, True, True]
-        # await frontend_trigger_env.agent.set_breakpoint_flags(bp_flags)
-        # await frontend_trigger_env.agent.bundle.step(2)
 
     async with Executor(exit="any") as exec:
         exec(ticks_task(frontend_trigger_env.agent))

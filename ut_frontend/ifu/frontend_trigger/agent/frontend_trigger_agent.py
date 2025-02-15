@@ -239,5 +239,9 @@ class FrontendTriggerAgent(Agent):
     async def send_cycle(self, new_cycle: int):
         self.cycle = new_cycle
         await self.bundle.step()
-        # BUG: driver_method 有返回值时，不应该用于 ref model 的比对
-        return self.cycle + 1
+        # BUG: driver_method 有返回值时，不应该用于 ref model 的比对，日志如下
+        # TOFFEE_WARNING @_base_agent.py:131:     The dut result is 8, but the model result is None.
+        # TOFFEE_WARNING @_base_agent.py:131:     The dut result is 9, but the model result is None.
+        # TOFFEE_WARNING @_base_agent.py:131:     The dut result is 10, but the model result is None.
+        # 取消下面一行注释，即可复现
+        # return self.cycle + 1

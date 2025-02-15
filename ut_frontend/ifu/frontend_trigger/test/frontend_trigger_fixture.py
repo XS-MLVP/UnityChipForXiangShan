@@ -29,7 +29,7 @@ def init_frontend_trigger_funcov(dut: DUTFrontendTrigger, g: fc.CovGroup):
         )
 
     # Reverse mark function coverage to the check point
-    # TODO: 检查为什么无效
+    # BUG: 加不加 mark_function 对最后的 funcov 都没有影响
     for i in range(16):
         g.mark_function(
             f"PC{i}_TRIGGERED",
