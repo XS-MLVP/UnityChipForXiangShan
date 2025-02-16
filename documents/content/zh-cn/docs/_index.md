@@ -14,14 +14,16 @@ function update_charts(data_url){
 }
 </script>
 
+本项目旨在通过开源众包的方式对[香山处理器](https://github.com/OpenXiangShan/XiangShan)的昆明湖架构进行单元（Unit Test, UT）验证。下图是香山昆明湖架构各个模块验证情况。
+
 <div id="meta_chart" style="width: 100%;height:400px;"></div>
 <div style="text-align: center; width: 100%;">
 {{<list-report  baseurl="../data/reports" label="当前版本：" detail="查看测试报告" id="index" onchange="update_charts">}}
 </div>
 <br>
 
+总统计数据如下：
 
-香山昆明湖架构各个模块验证情况如上图中所示。总统计数据如下：
 <table>
     <ol>
     <tr>
