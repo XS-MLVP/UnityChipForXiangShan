@@ -25,8 +25,11 @@ weight: 12
 
 ### 链式断点
 
+根据RISCV的debug spec，香山实现的是mcontrol6。
+
 前端的0、6、8号Trigger支持Chain功能。
-当它们对应的Chain位被置时，只有当该Trigger和编号在它后面一位的Trigger同时命中，且timing配置相同时，处理器才会产生异常。其中可以和6,8号trigger实现chain功能的7,9号trigger在后端访存部件中
+当它们对应的Chain位被置时，只有当该Trigger和编号在它后面一位的Trigger同时命中，~~且timing配置相同时~~（在最新的手册中，这一要求已被删除），处理器才会产生异常。其中可以和6,8号trigger实现chain功能的7,9号trigger在后端访存部件中。
+
 
 ## FrontendTrigger 接口说明
 
@@ -103,7 +106,7 @@ select位为0时，当PC和tdata2的数据的关系不满足tdata2的match位时
 
 ### 功能点2 链式断点
 
-当某一个trigger的chain位被置后，当其后的trigger的chain位未设置，且两个trigger均命中并且两个trigger的timing相同时，后一个trigger才会触发。
+当某一个trigger的chain位被置后，当其后的trigger的chain位未设置，且两个trigger均命中~~并且两个trigger的timing相同~~时，后一个trigger才会触发。
 
 对0号trigger，不需要考虑链式的情况
 
@@ -112,9 +115,8 @@ select位为0时，当PC和tdata2的数据的关系不满足tdata2的match位时
 | 序号   | 名称   | 描述                                                |
 |------|------|---------------------------------------------------|
 | 2\.1 |  chain位测试 | 对每个trigger，在满足PC断点触发条件的情况下，设置chain位，检查断点是否一定不触发。  |
-| 2\.2 | timing测试 | 对两个trigger，仅设置前一个trigger的chain位，且两trigger的timing位不同，随机设置PC等，测试后一个trigger是否一定不触发。 | 
-| 2\.3\.1 | 未命中测试 | 对两个trigger，仅设置前一个trigger的chain位，且两trigger的timing位相同，设置后一个trigger命中而前一个未命中，检查后一个trigger是否一定不触发。 |
-| 2\.3\.2 | 命中测试 | 对两个trigger，仅设置前一个trigger的chain位，且两trigger的timing位相同且均命中，检查后一个trigger是否触发。 |
+| 2\.2\.1 | 未命中测试 | 对两个trigger，仅设置前一个trigger的chain位~~且两trigger的timing位相同~~，设置后一个trigger命中而前一个未命中，检查后一个trigger是否一定不触发。 |
+| 2\.2\.2 | 命中测试 | 对两个trigger，仅设置前一个trigger的chain位~~且两trigger的timing位相同~~且均命中，检查后一个trigger是否触发。 |
 
 ## **测试点汇总**
 
@@ -124,8 +126,7 @@ select位为0时，当PC和tdata2的数据的关系不满足tdata2的match位时
 | 1\.2\.1 | 断点设置和检查     | select0关系匹配判定  | 给定tdata1的select位为0，构造PC与tdata2数据的关系同tdata2的match位匹配的输入，检查断点是否触发                               | 
 | 1\.2\.2 | 断点设置和检查     | select0关系不匹配判定 | 给定tdata1的select位为0，构造PC与tdata2数据的关系同tdata2的match位不匹配的输入，检查断点是否触发                              |
 | 2\.1 | 链式断点        | chain位测试        | 对每个trigger，在满足PC断点触发条件的情况下，设置chain位，检查断点是否一定不触发                                               |
-| 2\.2 | 链式断点        | timing测试        | 对两个trigger，仅设置前一个trigger的chain位，且两trigger的timing位不同，随机设置PC等，测试后一个trigger是否一定不触发               | 
-| 2\.3\.1 | 链式断点        | 未命中测试           | 对两个trigger，仅设置前一个trigger的chain位，且两trigger的timing位相同，设置后一个trigger命中而前一个未命中，检查后一个trigger是否一定不触发 |
-| 2\.3\.2 | 链式断点        | 命中测试            | 对两个trigger，仅设置前一个trigger的chain位，且两trigger的timing位相同且均命中，检查后一个trigger是否触发 |
+| 2\.2\.1 | 链式断点        | 未命中测试           | 对两个trigger，仅设置前一个trigger的chain位，设置后一个trigger命中而前一个未命中，检查后一个trigger是否一定不触发 |
+| 2\.2\.2 | 链式断点        | 命中测试            | 对两个trigger，仅设置前一个trigger的chain位，检查后一个trigger是否触发 |
 
 </div>
