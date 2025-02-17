@@ -8,12 +8,13 @@ from toffee.funcov import CovGroup
 from comm.functions import UT_FCOV, module_name_with
 from ... import PREDICT_WIDTH, RET_LABEL, RVC_LABEL, BRTYPE_LABEL
 
-gr = fc.CovGroup(UT_FCOV("../../../TOFFEE"))
+# moudle path is ut_frontend.ifu.pred_checker.test.pred_checker_dut
+gr = fc.CovGroup(UT_FCOV("../../../pred_checker"))
 
 def init_pred_checker_funcov(dut:DUTPredChecker, g:fc.CovGroup):
     # For function point 1 - JAL prediction error checking:
     # NO_JAL_FALSE_REPORT - 误检检查: False detection test
-    # JAL_MISS_PRED_DETECT - 正确检测到预测错误 Error prediction fix test
+    # JAL_FAL_PRED_COV - 正确检测到预测错误 Error prediction fix test
     for j in range(PREDICT_WIDTH):
         g.add_watch_point(dut, {
             "NO_JAL_FALSE_REPORT": lambda dut: all(getattr(dut, f"io_out_stage2Out_fixedMissPred_{i}").value == False for i in range(PREDICT_WIDTH)),

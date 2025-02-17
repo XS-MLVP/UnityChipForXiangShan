@@ -128,7 +128,7 @@ async def test_renew_range_3_3(predchecker_env):
 
 @toffee_test.testcase
 async def test_not_cfi_chk_4_1_1(predchecker_env):
-    print("Test case 4.1.1: Input no-exist CFI and FTQ hasn't given a jump prediction, check pred_checker report")
+    print("Test case 4.1.1: Input do not exist CFI and FTQ hasn't given a jump prediction, check pred_checker report")
     sqr = pred_checker_sqr()
     vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLE, 41)
     for i in range(TEST_CYCLE):
