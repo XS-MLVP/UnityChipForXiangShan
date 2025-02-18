@@ -1,0 +1,21 @@
+[project]
+name = "unitychipforxiangshan"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "allure-pytest>=2.13.5",
+    "filelock>=3.9.0",
+    "hypothesis>=6.124.7",
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.2",
+    "pytoffee",
+    "pyyaml>=6.0.1",
+    "requests>=2.28.1",
+    "toffee-test",
+]
+
+[tool.uv.sources]
+pytoffee = { git = "https://github.com/XS-MLVP/toffee", rev = "master" }
+toffee-test = { git = "https://github.com/XS-MLVP/toffee-test", rev = "master" }
