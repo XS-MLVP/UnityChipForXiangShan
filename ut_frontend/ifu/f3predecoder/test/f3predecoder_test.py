@@ -6,5 +6,6 @@ import toffee_test
 async def test_smoke(f3predecoder_env : F3PreDecoderEnv):
     instrs = [483 for i in range(16)]
 
+
     print(await f3predecoder_env.agent.f3_predecode(instrs))
     
