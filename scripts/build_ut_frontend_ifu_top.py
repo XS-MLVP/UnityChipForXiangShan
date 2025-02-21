@@ -1,6 +1,5 @@
 import os
-from comm import warning, info
-from .build_ut_frontend_bpu_tagesc import get_rtl_dependencies
+from comm import warning, info, get_all_rtl_files
 
 def build(cfg):
     from tempfile import NamedTemporaryFile
@@ -11,7 +10,7 @@ def build(cfg):
         error(f"frontend_bpu_tagesc: Unsupported RTL version {cfg.rtl.version}")
         return False
     # find source files for Tage_SC
-    rtl_files = get_rtl_dependencies("NewIFU", cfg=cfg)
+    rtl_files = get_all_rtl_files("NewIFU", cfg=cfg)
     info(f"rtl_files: {rtl_files}")
     assert rtl_files, "Cannot find RTL files of Frontend.IFU"
 
