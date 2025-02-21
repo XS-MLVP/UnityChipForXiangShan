@@ -93,11 +93,11 @@ cd /home/workspace                                             # Change to the w
 git clone https://github.com/XS-MLVP/UnityChipForXiangShan.git # Clone the repository
 cd UnityChipForXiangShan                                       # Enter the repository
 pip3 install --force-reinstall -r requirements.txt             # Update Python dependencies
-make all                                                       # Test if the Docker development environment is working properly
+# Test if the Docker development environment is working properly
+make all
 ```
 
 For more Docker commands, please refer to: [https://docs.docker.com/reference/cli/docker/](https://docs.docker.com/reference/cli/docker/)
-```
 
 
 #### Maintenance
