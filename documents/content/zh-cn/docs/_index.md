@@ -70,8 +70,8 @@ function update_charts(data_url){
 - **[待确认bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bug%20need%20to%20confirm)**
 - **[已发现bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bug%20confirmed)**
 - **[已修复bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bug%20fixed)**
-- **[正在进行的任务列表](https://xs-mlvp.github.io/crowdsourcing/kunming_lake)**
-- **[已完成的任务列表](https://xs-mlvp.github.io/crowdsourcing/kunming_lake)**
+- **[正在进行的任务列表](https://open-verify.cc/crowdsourcing/kunming_lake)**
+- **[已完成的任务列表](https://open-verify.cc/crowdsourcing/kunming_lake)**
 
 <br>
 <div style="text-align: center; width: 100%;">
