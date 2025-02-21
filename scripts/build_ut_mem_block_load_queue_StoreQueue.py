@@ -31,7 +31,7 @@ def build(cfg):
     # export LoadQueueRAR
     if not os.path.exists(get_root_dir("dut/StoreQueue")):
         info("Exporting StoreQueue.sv")
-        internal_signals_path = os.path.join(get_root_dir("ut_mem_block/StoreQueue/env/internal.yaml"))
+        internal_signals_path = os.path.join(get_root_dir("scripts/mem_block/store_queue/internal.yaml"))
         extract_signals(get_rtl_dir("rtl/StoreQueue.sv", cfg=cfg), internal_signals_path)
         s, out, err = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/StoreQueue.sv", cfg=cfg)} --fs {get_root_dir("scripts/mem_block_store_queue/rtl_files.f")} --lang python --tdir {get_root_dir("dut")}/ -w Store.fst --internal={internal_signals_path} -c ')
         assert s, "Failed to export StoreQueue.sv: %s\n%s" % (out, err)

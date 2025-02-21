@@ -19,7 +19,7 @@ from comm import warning, info
 def build(cfg):
     # import base modules
     from toffee_test.markers import match_version
-    from comm import is_all_file_exist, get_rtl_dir, exe_cmd, get_root_dir, extract_signals
+    from comm import is_all_file_exist, get_rtl_dir, exe_cmd, get_root_dir, extract_signals, get_rtl_dependencies
     # check version
     if not match_version(cfg.rtl.version, []):
         warning("memblock_loadstorequeue_rar: %s" % f"Unsupported RTL version {cfg.rtl.version}")
@@ -31,7 +31,7 @@ def build(cfg):
     # export LoadQueueRAR
     if not os.path.exists(get_root_dir("dut/LoadQueueRAR")):
         info("Exporting LoadQueueRAR.sv")
-        internal_signals_path = os.path.join(get_root_dir("ut_mem_block/load_queue/rar/env/internal.yaml"))
+        internal_signals_path = os.path.join(get_root_dir("scripts/mem_block/load_queue_rar/internal.yaml"))
         extract_signals(get_rtl_dir("rtl/LoadQueueRAR.sv", cfg=cfg), internal_signals_path)
         s, out, err = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/LoadQueueRAR.sv", cfg=cfg)} --fs {get_root_dir("scripts/mem_block_load_queue_rar/rtl_files.f")} --lang python --tdir {get_root_dir("dut")}/ -w RAR.fst --internal={internal_signals_path} -c')
         assert s, "Failed to export LoadQueueRAR.sv: %s\n%s" % (out, err)

@@ -31,7 +31,7 @@ def build(cfg):
     # export LoadQueueRAR
     if not os.path.exists(get_root_dir("dut/LoadQueueRAW")):
         info("Exporting LoadQueueRAW.sv")
-        internal_signals_path = os.path.join(get_root_dir("ut_mem_block/load_queue/raw/env/internal.yaml"))
+        internal_signals_path = os.path.join(get_root_dir("scripts/mem_block/load_queue_raw/internal.yaml"))
         extract_signals(get_rtl_dir("rtl/LoadQueueRAW.sv", cfg=cfg), internal_signals_path)
         s, out, err = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/LoadQueueRAW.sv", cfg=cfg)} --fs {get_root_dir("scripts/mem_block_load_queue_raw/rtl_files.f")} --lang python --tdir {get_root_dir("dut")}/ -w RAW.fst -c --internal={internal_signals_path}')
         assert s, "Failed to export LoadQueueRAW.sv: %s\n%s" % (out, err)

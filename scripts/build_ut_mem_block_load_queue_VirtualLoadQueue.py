@@ -31,7 +31,7 @@ def build(cfg):
     # export LoadQueueRAR
     if not os.path.exists(get_root_dir("dut/VirtualLoadQueue")):
         info("Exporting VirtualLoadQueue.sv")
-        internal_signals_path = os.path.join(get_root_dir("ut_mem_block/load_queue/VirtualLoadQueue/env/internal.yaml"))
+        internal_signals_path = os.path.join(get_root_dir("scripts/mem_block/load_queue_virtual//internal.yaml"))
         extract_signals(get_rtl_dir("rtl/VirtualLoadQueue.sv", cfg=cfg), internal_signals_path)
         s, out, err = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/VirtualLoadQueue.sv", cfg=cfg)} --fs {get_root_dir("scripts/mem_block_load_queue_virtual/rtl_files.f")} --lang python --tdir {get_root_dir("dut")}/ -w Virtual.fst -c --internal={internal_signals_path}')
         assert s, "Failed to export VirtualLoadQueue.sv: %s\n%s" % (out, err)
