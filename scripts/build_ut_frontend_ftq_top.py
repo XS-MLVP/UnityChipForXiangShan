@@ -12,7 +12,7 @@ def build(cfg):
     if not match_version(cfg.rtl.version, "openxiangshan-kmh-*"):
         warning("frontend_ftq_top: %s" % f"Unsupported RTL version {cfg.rtl.version}")
         return False
-    # check files
+    # check files 1
     module_name = "FtqTop"
     file_name ="Ftq.sv"
     dp_file_names = [
