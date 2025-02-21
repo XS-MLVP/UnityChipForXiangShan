@@ -81,6 +81,25 @@ The `run_ci.sh` script in the container will perform the following actions:
 1. Run `make doc` to generate documentation (test report)
 
 
+The Docker image includes tools such as `cmake`, `verilator`, `verible`, and `swig`, so you can use the Docker image as a development environment for test cases:
+
+```bash
+sudo docker pull ghcr.io/xs-mlvp/uc4xs:latest                  # Pull the Docker image
+# Run bash in Docker and mount your working directory
+sudo docker run -v /path/to/your/local/workspace:/home/workspace -it ghcr.io/xs-mlvp/uc4xs:latest /bin/bash
+# Execute in Docker's bash environment
+bash /home/update_picker.sh                                    # Update picker to the latest version
+cd /home/workspace                                             # Change to the working directory
+git clone https://github.com/XS-MLVP/UnityChipForXiangShan.git # Clone the repository
+cd UnityChipForXiangShan                                       # Enter the repository
+pip3 install --force-reinstall -r requirements.txt             # Update Python dependencies
+make all                                                       # Test if the Docker development environment is working properly
+```
+
+For more Docker commands, please refer to: [https://docs.docker.com/reference/cli/docker/](https://docs.docker.com/reference/cli/docker/)
+```
+
+
 #### Maintenance
 
 When submitting an Issue, Pull Request, or Discussion (Please delete irrelevant parts of the template as needed), specifying the corresponding module's maintainer can help get a quicker response. For the current list of maintainers, please refer to [this link](https://open-verify.cc/UnityChipForXiangShan/docs/99_maintain/).
