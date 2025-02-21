@@ -48,7 +48,7 @@ make CFG=configs/noskip.yaml
 
 #### 如何本地展示文档和数据
 
-按照[文档部署说明](https://github.com/XS-MLVP/UnityChipForXiangShan/blob/main/documents/README.md)配置`hugo`环境，然后执行：
+按照[文档部署说明](https://github.com/XS-MLVP/UnityChipForXiangShan/blob/main/documents/README.zh.md)配置`hugo`环境，然后执行：
 
 ```bash
 cd UnityChipForXiangShan

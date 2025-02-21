@@ -49,7 +49,7 @@ make all CFG=configs/noskip.yaml
 
 #### Display Docs and Data Locally
 
-Follow the [Documentation Deployment Instructions](https://github.com/XS-MLVP/UnityChipForXiangShan/blob/main/documents/README.md) to set up the `hugo` environment, and then execute:
+Follow the [Documentation Deployment Instructions](https://github.com/XS-MLVP/UnityChipForXiangShan/blob/main/documents/README.en.md) to set up the `hugo` environment, and then execute:
 
 ```bash
 cd UnityChipForXiangShan
