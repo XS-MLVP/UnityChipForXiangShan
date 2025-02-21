@@ -15,7 +15,7 @@ from toffee_test.reporter import set_line_coverage
 from ut_mem_block.load_queue.rar.env import InnerBundle
 from ut_mem_block.load_queue.rar.env.Bundle import *
 
-g = fc.CovGroup(UT_FCOV("../../Group-A"))
+g = fc.CovGroup(UT_FCOV("../../UT_LoadQueue_RAR"))
 
 def init_rar_funcov(rarqueue, g: fc.CovGroup):
     g.add_watch_point(rarqueue.req_0.ready, 
@@ -214,4 +214,3 @@ class LoadQueueRAR(toffee.Bundle):
         return self.inner
     
     # def reset(self):
-
