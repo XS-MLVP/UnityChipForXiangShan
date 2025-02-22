@@ -2,12 +2,14 @@ import toffee_test
 from dut.PreDecode import DUTPreDecode
 from ..env import PreDecodeEnv
 from toffee import start_clock
+import toffee.funcov as fc
+from comm import UT_FCOV, module_name_with, get_version_checker
 
+grp = fc.CovGroup(UT_FCOV("../../CLASSIC"))
 
 @toffee_test.fixture
 async def predecode_env(toffee_request: toffee_test.ToffeeRequest):
     import asyncio
-    # version_check()
     dut = toffee_request.create_dut(DUTPreDecode)
     start_clock(dut)
     predecode_env = PreDecodeEnv(dut)
