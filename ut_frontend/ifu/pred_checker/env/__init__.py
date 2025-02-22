@@ -10,4 +10,6 @@ class PredCheckerEnv(Env):
     def __init__(self, dut:DUTPredChecker):
         super().__init__()
         self.predCheckerAgent = PredCheckerAgent(PredCheckerBundle.from_prefix("").bind(dut))
-        self.attach(pred_checker_mdl())
+        self.mdl = PredCheckerModel()
+        self.attach(self.mdl)
+        

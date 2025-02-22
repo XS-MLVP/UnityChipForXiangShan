@@ -2,11 +2,13 @@ from ... import PREDICT_WIDTH, RET_LABEL, RVC_LABEL, BRTYPE_LABEL
 import random
 
 class pred_checker_sqr:
+    latest_vec_pkt = None
     def __init__(self):
         pass
     
     def gen_vec(self, PREDICT_WIDTH, vec_depth, caseId):
         vec_pkt = [self._gen_vec_single(PREDICT_WIDTH, caseId) for _ in range(vec_depth)]        
+        self.latest_vec_pkt = vec_pkt
         return vec_pkt
     
     def _gen_vec_single(self, PREDICT_WIDTH, caseId):
@@ -335,7 +337,7 @@ class pred_checker_sqr:
             tgt = pc[randOffset] + jumpOffset[randOffset] + 10086
         
         elif(caseId == 71):
-            #print("Case 7.1")
+            #print("Case 7")
             randOffset = random.randint(0, 15)
             pc_0 = random.randint(0, 2**50 - 2 ** 6)
             ftqValid = True
@@ -354,6 +356,48 @@ class pred_checker_sqr:
             posJumpOffset = random.randint(4, 2**50 - pc[PREDICT_WIDTH - 1])
             jumpOffset[randOffset] = random.choice([negJumpOffset, posJumpOffset])
             tgt = pc[randOffset] + jumpOffset[randOffset]
+            if tgt >= 2**50:
+                tgt = tgt - 2**50
+            
+        elif(caseId == 72):
+            # Case 7 with additional target boundary test
+            randOffset = random.randint(0, 15)
+            pc_0 = random.randint(2**50 - 2 ** 8, 2**50 - 2**6 - 1) # boundary pc
+            ftqValid = True
+            ftqOffBits = randOffset
+            instrRange = [True for _ in range(randOffset + 1)] + [False for _ in range(PREDICT_WIDTH - randOffset - 1)]
+            instrValid = [random.choice([True, False]) for _ in range(PREDICT_WIDTH)]
+            pds = [{RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 0} for _ in range(PREDICT_WIDTH)]
+            pds[randOffset] = random.choice([{RVC_LABEL: random.choice([True, False]), RET_LABEL: True, BRTYPE_LABEL: 3},
+                                             {RVC_LABEL: random.choice([True, False]), RET_LABEL: False, BRTYPE_LABEL: 2},
+                                             {RVC_LABEL: random.choice([True, False]), RET_LABEL:False, BRTYPE_LABEL:1}])
+            pc = self._gen_pc_list(pc_0, pds)
+            jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
+            negJumpOffset = - 2**50
+            while (negJumpOffset + pc_0 < 0):
+                negJumpOffset = random.randint(-(2**50), -4)
+            posJumpOffset = random.randint(4, 2**50 - pc[PREDICT_WIDTH - 1])
+            jumpOffset[randOffset] = random.choice([negJumpOffset, posJumpOffset])
+            tgt = pc[randOffset] + jumpOffset[randOffset]
+            if tgt >= 2**50:
+                tgt = tgt - 2**50
+            
+        elif(caseId == 73):
+            # Case 7 with additional target boundary test: overflow
+            randOffset = random.randint(0, 15)
+            pc_0 = 2**50 - 65 # boundary pc
+            ftqValid = True
+            ftqOffBits = randOffset
+            instrRange = [True for _ in range(randOffset + 1)] + [False for _ in range(PREDICT_WIDTH - randOffset - 1)]
+            instrValid = [True  for _ in range(PREDICT_WIDTH)]
+            pds = [{RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 0} for _ in range(PREDICT_WIDTH)]
+            pds[randOffset] = {RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 2}
+            pc = self._gen_pc_list(pc_0, pds)
+            jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
+            jumpOffset[randOffset] = random.randint(66, 128)
+            tgt = pc[randOffset] + jumpOffset[randOffset]
+            if tgt >= 2**50:
+                tgt = tgt - 2**50
             
             
         else:

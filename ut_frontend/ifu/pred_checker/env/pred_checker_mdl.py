@@ -1,20 +1,28 @@
 from ... import PREDICT_WIDTH, RET_LABEL, RVC_LABEL, BRTYPE_LABEL
 from toffee.model import *
+from ..bundle import PredCheckerBundle
 '''PredChecker reference model'''
 
-class pred_checker_mdl(Model):
+class PredCheckerModel(Model):
     def __init__(self):
         super().__init__()
-        self.fixedRange = [0 for i in range(PREDICT_WIDTH)]
-        self.fixedTaken = [0 for i in range(PREDICT_WIDTH)]
-        self.fixedMisspred = [0 for i in range(PREDICT_WIDTH)]
-        self.fixedTarget = [0 for i in range(PREDICT_WIDTH)]
-        self.jalTarget = [0 for i in range(PREDICT_WIDTH)]
-        self.fixedFlg = False # Indicate if pds has a valid CFI and checked if FTQ has corressponding prediction
-        self.missedFlg = False  # Indicate if FTQ has a prediction and checked if pds has corressponding prediction
+        self.fixedRange = [0 for _ in range(PREDICT_WIDTH)]
+        self.fixedTarget = [0 for _ in range(PREDICT_WIDTH)]
+        self.fixedMisspred = [0 for _ in range(PREDICT_WIDTH)]
+        self.fixedTarget = [0 for _ in range(PREDICT_WIDTH)]
+        self.jalTarget = [0 for _ in range(PREDICT_WIDTH)]
 
     @driver_hook(agent_name="predCheckerAgent", driver_name="agent_pred_check")
-    def ref_pred_check(self, ftqValid, ftqOffbits, instrRange, instrValid, jumpOffset, pc, pds, tgt, fire):
+    async def ref_pred_check(self, ftqValid, ftqOffbits, instrRange, instrValid, jumpOffset, pc, pds, tgt, fire):
+        # Store input
+        self.ftqValid = ftqValid
+        self.ftqOffbits = ftqOffbits
+        self.instrRange = instrRange
+        self.instrValid = instrValid
+        self.jumpOffset = jumpOffset
+        self.pc = pc
+        self.pds = pds
+        self.tgt = tgt
         # Clear the previous result if it exists
         for i in range(PREDICT_WIDTH):
             if instrRange[i]:
@@ -26,7 +34,7 @@ class pred_checker_mdl(Model):
         self.fixedTarget = [0 for i in range(PREDICT_WIDTH)]
         self.jalTarget = [0 for i in range(PREDICT_WIDTH)]
         
-        # Generage fixedTarget and jalTarget
+        # Generate fixedTarget and jalTarget
         for idx in range(PREDICT_WIDTH):
             if pds[idx][RVC_LABEL] or (not instrValid[idx]):
                 self.fixedTarget[idx] = pc[idx]  + 2
@@ -34,7 +42,11 @@ class pred_checker_mdl(Model):
             else:
                 self.fixedTarget[idx] = pc[idx] + 4
                 self.jalTarget[idx] = pc[idx] + jumpOffset[idx]
-        
+        # Overflow condition
+        for i in range(PREDICT_WIDTH):
+            if self.jalTarget[i] >= 2**50:
+                self.jalTarget[i] = self.jalTarget[i] - 2**50
+                
         # Check missPred accroding to pds info
         cfi_idx = []
         for idx in range(PREDICT_WIDTH):
@@ -58,12 +70,17 @@ class pred_checker_mdl(Model):
                         self.fixedTaken[i] = 0
             if (not pds[cfi_idx[0]][RET_LABEL]) and (pds[cfi_idx[0]][BRTYPE_LABEL] < 3):
             # Target fix includes 2 conditions:
-            # 1. ftqOffbits is less than valid CFI index number;
+            # 1. ftqOffbits is larger than valid CFI index number;
             # 2. ftqOffbits equal to valid CFI index, but tgt not equal to pc[x] + jumpOffset[x].
-                if ((pc[cfi_idx[0]] + jumpOffset[cfi_idx[0]]) != tgt) or (cfi_idx[0] < ftqOffbits):
+                pds_tgt = pc[cfi_idx[0]] + jumpOffset[cfi_idx[0]]
+                if pds_tgt >= 2**50: # If target overflow
+                    pds_tgt = pds_tgt - 2**50
+                if (pds_tgt != tgt) or (cfi_idx[0] < ftqOffbits):
                     self.fixedTarget[cfi_idx[0]] = self.jalTarget[cfi_idx[0]]
                     if cfi_idx[0] <= ftqOffbits:
                         self.fixedMisspred[cfi_idx[0]] = 1
+                    if self.fixedTarget[cfi_idx[0]] >= 2**50:
+                        self.fixedTarget[cfi_idx[0]] = self.fixedTarget[cfi_idx[0]] - 2**50
         else:
             # pds do not exist CFI but FTQ gave a jumping prediction
             if ftqValid:

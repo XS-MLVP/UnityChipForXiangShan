@@ -21,7 +21,6 @@ async def test_jal_chk_1_1_1(predchecker_env):
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
     del sqr
     
-    
 @toffee_test.testcase
 async def test_jal_chk_1_1_2(predchecker_env):
     print("Testing case 1.1.2")
@@ -231,12 +230,10 @@ async def test_rand_tgt_7(predchecker_env):
     print("Test 7, random pds info, check result")
     sqr = pred_checker_sqr()
     vec_pkt = sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLE, 71)
-    for i in range(TEST_CYCLE):
+    vec_pkt.extend(sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLE, 72))
+    vec_pkt.extend(sqr.gen_vec(PREDICT_WIDTH, TEST_CYCLE, 73))
+    for i in range(len(vec_pkt)):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-        #print(f"res:fixedRange::{res[0]}")
-        #print(f"res:fixedTaken::{res[1]}")
-        #print(f"res:fixedMissPred::{res[2]}")
-        #print(f"res:fixedTarget::{res[3]}")
-        #print(f"res:jalTarget::{res[4]}")
     del sqr
+    
