@@ -48,7 +48,7 @@ make CFG=configs/noskip.yaml
 
 #### 如何本地展示文档和数据
 
-按照[文档部署说明](https://github.com/XS-MLVP/UnityChipForXiangShan/blob/main/documents/README.md)配置`hugo`环境，然后执行：
+按照[文档部署说明](https://github.com/XS-MLVP/UnityChipForXiangShan/blob/main/documents/README.zh.md)配置`hugo`环境，然后执行：
 
 ```bash
 cd UnityChipForXiangShan
@@ -80,6 +80,23 @@ sudo docker run -p 1313:1313 -it --rm ghcr.io/xs-mlvp/uc4xs:latest /home/run_ci.
 1. 下载本仓库并安装python依赖
 1. 执行 `make CFG=configs/ci.yaml args="-n auto"` 运行测试
 1. 执行 `make doc` 可视化文档（测试报告）
+
+docker镜像中包含了`cmake, verilator, verible, swig`等环境，因此可以使用docker作为测试用例的开发环境：
+
+```bash
+sudo docker pull ghcr.io/xs-mlvp/uc4xs:latest                  # 拉取docker镜像
+# 运行doker中的bash，并挂载工作目录
+sudo docker run -v /path/to/your/local/workspace:/home/workspace -it ghcr.io/xs-mlvp/uc4xs:latest /bin/bash
+# 在docker的bash环境中执行
+bash /home/update_picker.sh                                    # 更新picker到最新
+cd /home/workspace                                             # 切换工作目录
+git clone https://github.com/XS-MLVP/UnityChipForXiangShan.git # 下载仓库代码
+cd UnityChipForXiangShan                                       # 进入仓库
+pip3 install --force-reinstall -r requirements.txt             # 更新python依赖
+make all                                                       # 测试docker用例开发环境是否正常
+```
+
+更多docker命令请参考：[https://docs.docker.com/reference/cli/docker/](https://docs.docker.com/reference/cli/docker/)
 
 #### 维护
 
