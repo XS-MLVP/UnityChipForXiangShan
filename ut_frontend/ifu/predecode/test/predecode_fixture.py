@@ -7,10 +7,32 @@ from comm import UT_FCOV, module_name_with, get_version_checker
 
 grp = fc.CovGroup(UT_FCOV("../../CLASSIC"))
 
+def init_cov(dut:DUTPreDecode, grp: fc.CovGroup):
+    for i in range(16):
+        grp.add_cover_point(dut,{
+            "instr is rvc:": lambda x: getattr(dut,f'io_out_pd_{i}_isRVC').value == 1,
+            "instr is rvi:": lambda x: getattr(dut,f'io_out_pd_{i}_isRVC').value == 0,
+        },name=f'check_rvc_rvi_{i}')
+    
+    for i in range(2,16):
+        grp.add_cover_point(dut,{
+            "instr is half_valid_start:": lambda x: getattr(dut,f'io_out_hasHalfValid_{i}').value == 1,
+            "instr is not half_valid_start:": lambda x: getattr(dut,f'io_out_hasHalfValid_{i}').value == 0,
+        },name=f'check_half_valid_start_{i}')
+    
+    for i in range(1,16):
+        grp.add_cover_point(dut,{
+            "instr is valid_starts:": lambda x: getattr(dut,f'io_out_pd_{i}_valid').value == 1,
+            "instr is not valid_starts:": lambda x: getattr(dut,f'io_out_pd_{i}_valid').value == 0,
+        },name=f'check_valid_start_{i}')
+    return grp
+        
+
 @toffee_test.fixture
 async def predecode_env(toffee_request: toffee_test.ToffeeRequest):
     import asyncio
     dut = toffee_request.create_dut(DUTPreDecode)
+    toffee_request.add_cov_groups(init_cov(dut, grp))
     start_clock(dut)
     predecode_env = PreDecodeEnv(dut)
     yield predecode_env

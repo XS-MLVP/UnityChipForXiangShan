@@ -9,10 +9,10 @@ grp = fc.CovGroup(UT_FCOV("../../CLASSIC"))
 def init_cov(dut:DUTF3Predecoder, grp: fc.CovGroup):
     for i in range(16):
         grp.add_cover_point(dut,{
-                "instr is not cfi": lambda x: getattr(dut, f'io_out_pd_{i}_brType').value == 0,
-                "instr is branch": lambda x: getattr(dut, f'io_out_pd_{i}_brType').value == 1,
-                "instr is jal": lambda x: getattr(dut, f'io_out_pd_{i}_brType').value == 2,
-                "instr is jalr": lambda x: getattr(dut, f'io_out_pd_{i}_brType').value == 3,
+            "instr is not cfi": lambda x: getattr(dut, f'io_out_pd_{i}_brType').value == 0,
+            "instr is branch": lambda x: getattr(dut, f'io_out_pd_{i}_brType').value == 1,
+            "instr is jal": lambda x: getattr(dut, f'io_out_pd_{i}_brType').value == 2,
+            "instr is jalr": lambda x: getattr(dut, f'io_out_pd_{i}_brType').value == 3,
         },name = f'check_cfi_{i}')
     
     for i in range(16):
