@@ -18,8 +18,9 @@ from comm import warning, info
 
 def build(cfg):
     # import base modules
+    from tempfile import NamedTemporaryFile
     from toffee_test.markers import match_version
-    from comm import is_all_file_exist, get_rtl_dir, exe_cmd, get_root_dir, extract_signals
+    from comm import is_all_file_exist, get_rtl_dir, exe_cmd, get_root_dir, extract_signals, get_all_rtl_files
     # check version
     if not match_version(cfg.rtl.version, []):
         warning("memblock_loadstorequeue_raw: %s" % f"Unsupported RTL version {cfg.rtl.version}")
@@ -31,9 +32,13 @@ def build(cfg):
     # export LoadQueueRAR
     if not os.path.exists(get_root_dir("dut/LoadQueueRAW")):
         info("Exporting LoadQueueRAW.sv")
-        internal_signals_path = os.path.join(get_root_dir("scripts/mem_block/load_queue_raw/internal.yaml"))
+        rtl_files = get_all_rtl_files("LoadQueueRAW", cfg=cfg)
+        internal_signals_path = os.path.join(get_root_dir("scripts/mem_block_load_queue_raw/internal.yaml"))
         extract_signals(get_rtl_dir("rtl/LoadQueueRAW.sv", cfg=cfg), internal_signals_path)
-        s, out, err = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/LoadQueueRAW.sv", cfg=cfg)} --fs {get_root_dir("scripts/mem_block_load_queue_raw/rtl_files.f")} --lang python --tdir {get_root_dir("dut")}/ -w RAW.fst -c --internal={internal_signals_path}')
+        with NamedTemporaryFile("w+", encoding="utf-8", suffix=".txt") as filelist:
+            filelist.write("\n".join(rtl_files))
+            filelist.flush()
+            s, out, err = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/LoadQueueRAW.sv", cfg=cfg)} --fs {filelist.name} --lang python --tdir {get_root_dir("dut")}/ -w RAW.fst -c --internal={internal_signals_path}')
         assert s, "Failed to export LoadQueueRAW.sv: %s\n%s" % (out, err)
     return True
 
