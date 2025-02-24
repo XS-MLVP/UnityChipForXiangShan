@@ -385,7 +385,7 @@ class pred_checker_sqr:
         elif(caseId == 73):
             # Case 7 with additional target boundary test: overflow
             randOffset = random.randint(0, 15)
-            pc_0 = 2**50 - 65 # boundary pc
+            pc_0 = 2**50 - random.randint(1, 65) # boundary pc
             ftqValid = True
             ftqOffBits = randOffset
             instrRange = [True for _ in range(randOffset + 1)] + [False for _ in range(PREDICT_WIDTH - randOffset - 1)]

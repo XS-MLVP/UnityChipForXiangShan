@@ -79,13 +79,13 @@ class PredCheckerModel(Model):
                     self.fixedTarget[cfi_idx[0]] = self.jalTarget[cfi_idx[0]]
                     if cfi_idx[0] <= ftqOffbits:
                         self.fixedMisspred[cfi_idx[0]] = 1
-                    if self.fixedTarget[cfi_idx[0]] >= 2**50:
-                        self.fixedTarget[cfi_idx[0]] = self.fixedTarget[cfi_idx[0]] - 2**50
         else:
             # pds do not exist CFI but FTQ gave a jumping prediction
             if ftqValid:
                 self.fixedMisspred[ftqOffbits] = 1
-        
+        for i in range(PREDICT_WIDTH):
+            if self.fixedTarget[i] >= 2**50:
+                self.fixedTarget[i] = self.fixedTarget[i] - 2**50
         stg1_fixedRange = self.fixedRange
         stg1_fixedTaken = self.fixedTaken
         stg2_fixedTarget = self.fixedTarget
