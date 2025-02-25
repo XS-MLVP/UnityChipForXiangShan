@@ -237,7 +237,7 @@ FTQ会向IFU发送重定向请求，这通过fromFtq\.redirect完成，从而指
 | ----- | ---- |
 | cfioffset | 经由PredChecker修复的跳转指令的预测位置。但经过编译后，cfioffset的数值已经被优化了，只剩下了cfioffset\_valid表示是否存在编译优化。|
 | ftqIdx | 表明预测块在FTQ中的位置，这条信息主要是对FTQ有用，要和FTQ传入的请求保持一致。|
-| instrRange | 可以看作是一个bool数组，表示该条指令是不是在这个预测块的有效指令范围内（第一条有效跳转指令之后的指令）。|
+| instrRange | 可以看作是一个bool数组，表示该条指令是不是在这个预测块的有效指令范围内（即第一条有效跳转指令之前的指令）。|
 | jalTarget | 表明该预测块跳转指令的跳转目标。 |
 | misOffset | 表明错误预测的指令在预测块中的位置。 |
 | pc | 预测块中所有指令的PC指针。 |
@@ -264,7 +264,7 @@ FTQ会向IFU发送重定向请求，这通过fromFtq\.redirect完成，从而指
 | isForVSnonLeafPTE | 是否为非叶的PTE，这个数据最终会流向写回gpaddrMem的信号 |
 | itlb_pbmt | ITLB基于客户页的内存类型，对MMIO状态有用 | 
 | paddr | 指令块的起始物理地址 | 
-| vaddr | 指令块起始虚拟地址、指令块起始物理地址 |
+| vaddr | 指令块起始虚拟地址、下一个缓存行的虚拟地址 |
 | pmp\_mmio | 指示当前指令块是否在MMIO空间 | 
 
 ### 性能相关接口
