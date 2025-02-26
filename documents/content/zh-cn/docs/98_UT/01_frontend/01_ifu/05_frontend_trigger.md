@@ -14,13 +14,13 @@ weight: 12
 ## FrontendTrigger功能介绍
 
 ### 断点设置和断点检查
-在IFU的FrontendTrigger模块里共4个Trigger，编号为0,1,6,8，每个Trigger的配置信息（断点类型、匹配地址等）保存在tdata寄存器中。
+在IFU的FrontendTrigger模块里共4个Trigger，编号为0,1,2,3，每个Trigger的配置信息（断点类型、匹配地址等）保存在tdata寄存器中。
 
 当软件向CSR寄存器tselect、tdata1/2写入特定的值时，CSR会向IFU发送tUpdate请求，更新FrontendTrigger内的tdata寄存器中的配置信息。
 目前前端的Trigger仅可以配置成PC断点（mcontrol(tdata1)寄存器的select位为0；当select=1时，该Trigger将永远不会命中，且不会产生异常）。
 
 在取指时，IFU的F3流水级会向FrontendTrigger模块发起查询并在同一周期得到结果。后者会对取指块内每一条指令在每一个Trigger上做检查，
-当指令的PC和tdata2寄存器内容的关系满足mcontrol的match位所指示的关系（香山支持match位为0、2、3，对应等于、大于、小于）时，
+当指令的PC和tdata2寄存器内容的关系满足mcontrol的match位所指示的关系（香山支持match位为0、2、3，对应等于、大于等于、小于）时，
 该指令会被标记为Trigger命中，随着执行在后端产生断点异常，进入M-Mode或调试模式。
 
 ### 链式断点
