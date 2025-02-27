@@ -15,6 +15,7 @@ class F3PredecodeInstrGen():
         
     def inst_gen(self, isa = 'random', type = 'not_cfi'):
         if type == 'br':
+            #generate br type instructions
             for _ in range(16):
                 #rvi
                 opcode = 0b1100011
@@ -39,6 +40,7 @@ class F3PredecodeInstrGen():
                     self.instrs.append(instr_rvc)
                 
         elif type == 'jal':
+            #generate jal type instructions
             for _ in range(16):
                 #rvi 
                 opcode = 0b1101111
@@ -58,6 +60,7 @@ class F3PredecodeInstrGen():
                     self.instrs.append(instr_rvc)
                     
         elif type == 'jalr':
+            #generate jalr type instructions
             for _ in range(16):
                 #rvi
                 funct3 = 0b000
@@ -80,6 +83,7 @@ class F3PredecodeInstrGen():
                     self.instrs.append(instr_rvc)
                     
         elif type == 'not_cfi':
+            #generate not cfi type instructions
             for _ in range(16):
                 #rvi
                 opcode = random.getrandbits(7) | 0b11
