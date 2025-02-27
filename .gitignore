@@ -16,7 +16,7 @@ documents/static/data/*
 !documents/static/data/README.txt
 
 # C extensions
-*.so
+# *.so
 
 # Distribution / packaging
 .Python
