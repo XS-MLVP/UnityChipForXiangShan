@@ -6,8 +6,8 @@ __pycache__/
 
 # results
 out/
-dut/*
-!dut/__init__.py
+# dut/*
+# !dut/__init__.py
 documents/public/
 documents/resources/_gen/
 rtl/*
