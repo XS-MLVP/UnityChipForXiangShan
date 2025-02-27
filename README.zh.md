@@ -100,7 +100,7 @@ make all                                                       # 测试docker用
 
 #### 维护
 
-在提交Issue、Pull Request、Discussion 时（请根据需要删除模板中不相关部分），指定对应模块的 Maintainer 能更及时的得到回应。目前已有的维护人员请参考[本连接](https://open-verify.cc/UnityChipForXiangShan/docs/99_maintain/)。
+在提交Issue、Pull Request、Discussion 时（请根据需要删除模板中不相关部分），指定对应模块的 Maintainer 能更及时的得到回应。目前已有的维护人员请参考[本链接](https://open-verify.cc/UnityChipForXiangShan/docs/99_maintain/)。
 
 如果您对本项目感兴趣，欢迎成为本项目中的维护者。
 
