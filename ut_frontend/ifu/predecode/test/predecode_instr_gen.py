@@ -18,6 +18,7 @@ class PreDecodeInstrGen():
         self.half_valid_starts = []
         
     def random_instrs(self):
+        #genetare random instructions
         self.instrs = [random.getrandbits(16) for _ in range(17)]
         self.new_instrs = [self.instrs[i+1] << 16 | self.instrs[i] for i in range(16)]
         return self.instrs, self.new_instrs
@@ -37,9 +38,7 @@ class PreDecodeInstrGen():
             return instr_rvi if isa == 'rvi' else instr_rvc
         
         if type == 'br':
-            #TODO
-            instr_rvi = 0
-            
+            instr_rvi = 0 #instr_rvi is aborted
             func3 = random.choice([0b110,0b111])
             op = 0b01
             instr_rvc = func3 << 13 | random.getrandbits(11) << 2 | op

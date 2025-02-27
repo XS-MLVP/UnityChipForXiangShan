@@ -25,6 +25,17 @@ def init_cov(dut:DUTPreDecode, grp: fc.CovGroup):
             "instr is valid_starts:": lambda x: getattr(dut,f'io_out_pd_{i}_valid').value == 1,
             "instr is not valid_starts:": lambda x: getattr(dut,f'io_out_pd_{i}_valid').value == 0,
         },name=f'check_valid_start_{i}')
+        
+    def _mark(name):
+        return module_name_with(name, "../predecode_test")
+    
+    for i in range(16):
+        grp.mark_function(f'check_rvc_rvi_{i}',_mark(["test_rvc_rvi_checker_2_1_2","test_rvc_rvi_checker_2_1_1"]))
+    for i in range(2,16):
+        grp.mark_function(f'check_half_valid_start_{i}',_mark(["test_precoding_checker_2_3_2"]))
+    for i in range(1,16):
+        grp.mark_function(f'check_valid_start_{i}',_mark(["test_precoding_checker_2_3_1"]))
+        
     return grp
         
 
