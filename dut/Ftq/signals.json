@@ -1,0 +1,2750 @@
+{
+    "clock": {
+        "High": -1,
+        "Low": 0,
+        "Pin": "input",
+        "_": true
+    },
+    "io": {
+        "fromBackend": {
+            "ftqIdxAhead": {
+                "0": {
+                    "bits_value": {
+                        "High": 5,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "valid": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    }
+                }
+            },
+            "ftqIdxSelOH_bits": {
+                "High": 2,
+                "Low": 0,
+                "Pin": "input",
+                "_": true
+            },
+            "redirect": {
+                "bits": {
+                    "cfiUpdate": {
+                        "backendIAF": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "backendIGPF": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "backendIPF": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isMisPred": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "pc": {
+                            "High": 49,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "taken": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "target": {
+                            "High": 49,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "ftqIdx": {
+                        "flag": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "value": {
+                            "High": 5,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "ftqOffset": {
+                        "High": 3,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "level": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    }
+                },
+                "valid": {
+                    "High": -1,
+                    "Low": 0,
+                    "Pin": "input",
+                    "_": true
+                }
+            },
+            "rob_commits": {
+                "0": {
+                    "bits": {
+                        "commitType": {
+                            "High": 2,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "ftqIdx": {
+                            "flag": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "value": {
+                                "High": 5,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            }
+                        },
+                        "ftqOffset": {
+                            "High": 3,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "valid": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    }
+                },
+                "1": {
+                    "bits": {
+                        "commitType": {
+                            "High": 2,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "ftqIdx": {
+                            "flag": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "value": {
+                                "High": 5,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            }
+                        },
+                        "ftqOffset": {
+                            "High": 3,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "valid": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    }
+                },
+                "2": {
+                    "bits": {
+                        "commitType": {
+                            "High": 2,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "ftqIdx": {
+                            "flag": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "value": {
+                                "High": 5,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            }
+                        },
+                        "ftqOffset": {
+                            "High": 3,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "valid": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    }
+                },
+                "3": {
+                    "bits": {
+                        "commitType": {
+                            "High": 2,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "ftqIdx": {
+                            "flag": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "value": {
+                                "High": 5,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            }
+                        },
+                        "ftqOffset": {
+                            "High": 3,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "valid": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    }
+                },
+                "4": {
+                    "bits": {
+                        "commitType": {
+                            "High": 2,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "ftqIdx": {
+                            "flag": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "value": {
+                                "High": 5,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            }
+                        },
+                        "ftqOffset": {
+                            "High": 3,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "valid": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    }
+                },
+                "5": {
+                    "bits": {
+                        "commitType": {
+                            "High": 2,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "ftqIdx": {
+                            "flag": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "value": {
+                                "High": 5,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            }
+                        },
+                        "ftqOffset": {
+                            "High": 3,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "valid": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    }
+                },
+                "6": {
+                    "bits": {
+                        "commitType": {
+                            "High": 2,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "ftqIdx": {
+                            "flag": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "value": {
+                                "High": 5,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            }
+                        },
+                        "ftqOffset": {
+                            "High": 3,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "valid": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    }
+                },
+                "7": {
+                    "bits": {
+                        "commitType": {
+                            "High": 2,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "ftqIdx": {
+                            "flag": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "value": {
+                                "High": 5,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            }
+                        },
+                        "ftqOffset": {
+                            "High": 3,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "valid": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    }
+                }
+            }
+        },
+        "fromBpu_resp": {
+            "bits": {
+                "last_stage": {
+                    "ftb_entry": {
+                        "brSlots": {
+                            "0": {
+                                "lower": {
+                                    "High": 11,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                },
+                                "offset": {
+                                    "High": 3,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                },
+                                "sharing": {
+                                    "High": -1,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                },
+                                "tarStat": {
+                                    "High": 1,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                },
+                                "valid": {
+                                    "High": -1,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                }
+                            }
+                        },
+                        "carry": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isCall": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isJalr": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRet": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "last_may_be_rvi_call": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "pftAddr": {
+                            "High": 3,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "strong_bias": {
+                            "0": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "1": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            }
+                        },
+                        "tailSlot": {
+                            "lower": {
+                                "High": 19,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "offset": {
+                                "High": 3,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "sharing": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "tarStat": {
+                                "High": 1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "valid": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            }
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "meta": {
+                        "High": 259,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "spec_info": {
+                        "NOS": {
+                            "flag": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "value": {
+                                "High": 4,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            }
+                        },
+                        "TOSR": {
+                            "flag": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "value": {
+                                "High": 4,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            }
+                        },
+                        "TOSW": {
+                            "flag": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "value": {
+                                "High": 4,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            }
+                        },
+                        "histPtr": {
+                            "flag": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "value": {
+                                "High": 7,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            }
+                        },
+                        "sctr": {
+                            "High": 2,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "ssp": {
+                            "High": 3,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "topAddr": {
+                            "High": 49,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    }
+                },
+                "s1": {
+                    "full_pred": {
+                        "3": {
+                            "br_taken_mask": {
+                                "0": {
+                                    "High": -1,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                },
+                                "1": {
+                                    "High": -1,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                }
+                            },
+                            "fallThroughAddr": {
+                                "High": 49,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "fallThroughErr": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "hit": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "is_br_sharing": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "offsets": {
+                                "0": {
+                                    "High": 3,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                },
+                                "1": {
+                                    "High": 3,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                }
+                            },
+                            "slot_valids": {
+                                "0": {
+                                    "High": -1,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                },
+                                "1": {
+                                    "High": -1,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                }
+                            },
+                            "targets": {
+                                "0": {
+                                    "High": 49,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                },
+                                "1": {
+                                    "High": 49,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                }
+                            }
+                        }
+                    },
+                    "pc": {
+                        "3": {
+                            "High": 49,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    }
+                },
+                "s2": {
+                    "ftq_idx": {
+                        "flag": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "value": {
+                            "High": 5,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "full_pred": {
+                        "3": {
+                            "br_taken_mask": {
+                                "0": {
+                                    "High": -1,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                },
+                                "1": {
+                                    "High": -1,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                }
+                            },
+                            "fallThroughAddr": {
+                                "High": 49,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "fallThroughErr": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "hit": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "is_br_sharing": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "offsets": {
+                                "0": {
+                                    "High": 3,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                },
+                                "1": {
+                                    "High": 3,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                }
+                            },
+                            "slot_valids": {
+                                "0": {
+                                    "High": -1,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                },
+                                "1": {
+                                    "High": -1,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                }
+                            },
+                            "targets": {
+                                "0": {
+                                    "High": 49,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                },
+                                "1": {
+                                    "High": 49,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                }
+                            }
+                        }
+                    },
+                    "hasRedirect": {
+                        "3": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "pc": {
+                        "3": {
+                            "High": 49,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "valid": {
+                        "3": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    }
+                },
+                "s3": {
+                    "ftq_idx": {
+                        "flag": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "value": {
+                            "High": 5,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "full_pred": {
+                        "3": {
+                            "br_taken_mask": {
+                                "0": {
+                                    "High": -1,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                },
+                                "1": {
+                                    "High": -1,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                }
+                            },
+                            "fallThroughAddr": {
+                                "High": 49,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "fallThroughErr": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "hit": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "is_br_sharing": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "input",
+                                "_": true
+                            },
+                            "offsets": {
+                                "0": {
+                                    "High": 3,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                },
+                                "1": {
+                                    "High": 3,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                }
+                            },
+                            "slot_valids": {
+                                "0": {
+                                    "High": -1,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                },
+                                "1": {
+                                    "High": -1,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                }
+                            },
+                            "targets": {
+                                "0": {
+                                    "High": 49,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                },
+                                "1": {
+                                    "High": 49,
+                                    "Low": 0,
+                                    "Pin": "input",
+                                    "_": true
+                                }
+                            }
+                        }
+                    },
+                    "hasRedirect": {
+                        "3": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "pc": {
+                        "3": {
+                            "High": 49,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "valid": {
+                        "3": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    }
+                }
+            },
+            "ready": {
+                "High": -1,
+                "Low": 0,
+                "Pin": "output",
+                "_": true
+            },
+            "valid": {
+                "High": -1,
+                "Low": 0,
+                "Pin": "input",
+                "_": true
+            }
+        },
+        "fromIfu_pdWb": {
+            "bits": {
+                "cfiOffset_valid": {
+                    "High": -1,
+                    "Low": 0,
+                    "Pin": "input",
+                    "_": true
+                },
+                "ftqIdx": {
+                    "flag": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "value": {
+                        "High": 5,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    }
+                },
+                "instrRange": {
+                    "0": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "1": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "10": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "11": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "12": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "13": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "14": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "15": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "2": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "3": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "4": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "5": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "6": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "7": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "8": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "9": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    }
+                },
+                "jalTarget": {
+                    "High": 49,
+                    "Low": 0,
+                    "Pin": "input",
+                    "_": true
+                },
+                "misOffset": {
+                    "bits": {
+                        "High": 3,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "valid": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    }
+                },
+                "pc": {
+                    "0": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "1": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "10": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "11": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "12": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "13": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "14": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "15": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "2": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "3": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "4": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "5": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "6": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "7": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "8": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "9": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    }
+                },
+                "pd": {
+                    "0": {
+                        "brType": {
+                            "High": 1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isCall": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRVC": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRet": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "1": {
+                        "brType": {
+                            "High": 1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isCall": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRVC": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRet": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "10": {
+                        "brType": {
+                            "High": 1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isCall": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRVC": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRet": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "11": {
+                        "brType": {
+                            "High": 1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isCall": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRVC": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRet": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "12": {
+                        "brType": {
+                            "High": 1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isCall": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRVC": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRet": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "13": {
+                        "brType": {
+                            "High": 1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isCall": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRVC": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRet": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "14": {
+                        "brType": {
+                            "High": 1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isCall": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRVC": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRet": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "15": {
+                        "brType": {
+                            "High": 1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isCall": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRVC": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRet": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "2": {
+                        "brType": {
+                            "High": 1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isCall": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRVC": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRet": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "3": {
+                        "brType": {
+                            "High": 1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isCall": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRVC": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRet": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "4": {
+                        "brType": {
+                            "High": 1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isCall": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRVC": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRet": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "5": {
+                        "brType": {
+                            "High": 1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isCall": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRVC": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRet": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "6": {
+                        "brType": {
+                            "High": 1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isCall": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRVC": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRet": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "7": {
+                        "brType": {
+                            "High": 1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isCall": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRVC": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRet": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "8": {
+                        "brType": {
+                            "High": 1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isCall": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRVC": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRet": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "9": {
+                        "brType": {
+                            "High": 1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isCall": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRVC": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "isRet": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    }
+                },
+                "target": {
+                    "High": 49,
+                    "Low": 0,
+                    "Pin": "input",
+                    "_": true
+                }
+            },
+            "valid": {
+                "High": -1,
+                "Low": 0,
+                "Pin": "input",
+                "_": true
+            }
+        },
+        "icacheFlush": {
+            "High": -1,
+            "Low": 0,
+            "Pin": "output",
+            "_": true
+        },
+        "mmioCommitRead": {
+            "mmioFtqPtr": {
+                "flag": {
+                    "High": -1,
+                    "Low": 0,
+                    "Pin": "input",
+                    "_": true
+                },
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "input",
+                    "_": true
+                }
+            },
+            "mmioLastCommit": {
+                "High": -1,
+                "Low": 0,
+                "Pin": "output",
+                "_": true
+            }
+        },
+        "perf": {
+            "0": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "1": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "10": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "11": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "12": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "13": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "14": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "15": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "16": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "17": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "18": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "19": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "2": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "20": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "21": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "22": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "23": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "3": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "4": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "5": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "6": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "7": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "8": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "9": {
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            }
+        },
+        "toBackend": {
+            "newest_entry": {
+                "en": {
+                    "High": -1,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                },
+                "ptr_value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                },
+                "target": {
+                    "High": 49,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "pc_mem": {
+                "waddr": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                },
+                "wdata_startAddr": {
+                    "High": 49,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                },
+                "wen": {
+                    "High": -1,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            }
+        },
+        "toBpu": {
+            "enq_ptr": {
+                "flag": {
+                    "High": -1,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                },
+                "value": {
+                    "High": 5,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "redirctFromIFU": {
+                "High": -1,
+                "Low": 0,
+                "Pin": "output",
+                "_": true
+            },
+            "redirect": {
+                "bits": {
+                    "cfiUpdate": {
+                        "NOS": {
+                            "flag": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "output",
+                                "_": true
+                            },
+                            "value": {
+                                "High": 4,
+                                "Low": 0,
+                                "Pin": "output",
+                                "_": true
+                            }
+                        },
+                        "TOSR": {
+                            "flag": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "output",
+                                "_": true
+                            },
+                            "value": {
+                                "High": 4,
+                                "Low": 0,
+                                "Pin": "output",
+                                "_": true
+                            }
+                        },
+                        "TOSW": {
+                            "flag": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "output",
+                                "_": true
+                            },
+                            "value": {
+                                "High": 4,
+                                "Low": 0,
+                                "Pin": "output",
+                                "_": true
+                            }
+                        },
+                        "addIntoHist": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "histPtr": {
+                            "flag": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "output",
+                                "_": true
+                            },
+                            "value": {
+                                "High": 7,
+                                "Low": 0,
+                                "Pin": "output",
+                                "_": true
+                            }
+                        },
+                        "pc": {
+                            "High": 49,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "pd": {
+                            "isCall": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "output",
+                                "_": true
+                            },
+                            "isRVC": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "output",
+                                "_": true
+                            },
+                            "isRet": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "output",
+                                "_": true
+                            }
+                        },
+                        "sctr": {
+                            "High": 2,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "shift": {
+                            "High": 1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "ssp": {
+                            "High": 3,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "taken": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "target": {
+                            "High": 49,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    },
+                    "level": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    }
+                },
+                "valid": {
+                    "High": -1,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "update": {
+                "bits": {
+                    "br_taken_mask": {
+                        "0": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "1": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    },
+                    "cfi_idx": {
+                        "bits": {
+                            "High": 3,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    },
+                    "false_hit": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "ftb_entry": {
+                        "brSlots": {
+                            "0": {
+                                "lower": {
+                                    "High": 11,
+                                    "Low": 0,
+                                    "Pin": "output",
+                                    "_": true
+                                },
+                                "offset": {
+                                    "High": 3,
+                                    "Low": 0,
+                                    "Pin": "output",
+                                    "_": true
+                                },
+                                "sharing": {
+                                    "High": -1,
+                                    "Low": 0,
+                                    "Pin": "output",
+                                    "_": true
+                                },
+                                "tarStat": {
+                                    "High": 1,
+                                    "Low": 0,
+                                    "Pin": "output",
+                                    "_": true
+                                },
+                                "valid": {
+                                    "High": -1,
+                                    "Low": 0,
+                                    "Pin": "output",
+                                    "_": true
+                                }
+                            }
+                        },
+                        "carry": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "isCall": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "isJalr": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "isRet": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "last_may_be_rvi_call": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "pftAddr": {
+                            "High": 3,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "strong_bias": {
+                            "0": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "output",
+                                "_": true
+                            },
+                            "1": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "output",
+                                "_": true
+                            }
+                        },
+                        "tailSlot": {
+                            "lower": {
+                                "High": 19,
+                                "Low": 0,
+                                "Pin": "output",
+                                "_": true
+                            },
+                            "offset": {
+                                "High": 3,
+                                "Low": 0,
+                                "Pin": "output",
+                                "_": true
+                            },
+                            "sharing": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "output",
+                                "_": true
+                            },
+                            "tarStat": {
+                                "High": 1,
+                                "Low": 0,
+                                "Pin": "output",
+                                "_": true
+                            },
+                            "valid": {
+                                "High": -1,
+                                "Low": 0,
+                                "Pin": "output",
+                                "_": true
+                            }
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    },
+                    "full_target": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "jmp_taken": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "meta": {
+                        "High": 259,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "mispred_mask": {
+                        "0": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "1": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "2": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    },
+                    "old_entry": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "pc": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "spec_info_histPtr_value": {
+                        "High": 7,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    }
+                },
+                "valid": {
+                    "High": -1,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            }
+        },
+        "toICache_req": {
+            "bits": {
+                "backendException": {
+                    "High": -1,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                },
+                "pcMemRead": {
+                    "0": {
+                        "nextlineStart": {
+                            "High": 49,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "startAddr": {
+                            "High": 49,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    },
+                    "1": {
+                        "nextlineStart": {
+                            "High": 49,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "startAddr": {
+                            "High": 49,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    },
+                    "2": {
+                        "nextlineStart": {
+                            "High": 49,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "startAddr": {
+                            "High": 49,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    },
+                    "3": {
+                        "nextlineStart": {
+                            "High": 49,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "startAddr": {
+                            "High": 49,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    },
+                    "4": {
+                        "nextlineStart": {
+                            "High": 49,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "startAddr": {
+                            "High": 49,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    }
+                },
+                "readValid": {
+                    "0": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "1": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "2": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "3": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "4": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    }
+                }
+            },
+            "valid": {
+                "High": -1,
+                "Low": 0,
+                "Pin": "output",
+                "_": true
+            }
+        },
+        "toIfu": {
+            "flushFromBpu": {
+                "s2": {
+                    "bits": {
+                        "flag": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "value": {
+                            "High": 5,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    },
+                    "valid": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    }
+                },
+                "s3": {
+                    "bits": {
+                        "flag": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "value": {
+                            "High": 5,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    },
+                    "valid": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    }
+                }
+            },
+            "redirect": {
+                "bits": {
+                    "ftqIdx": {
+                        "flag": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "value": {
+                            "High": 5,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    },
+                    "ftqOffset": {
+                        "High": 3,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "level": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    }
+                },
+                "valid": {
+                    "High": -1,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            },
+            "req": {
+                "bits": {
+                    "ftqIdx": {
+                        "flag": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "value": {
+                            "High": 5,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    },
+                    "ftqOffset": {
+                        "bits": {
+                            "High": 3,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "valid": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    },
+                    "nextStartAddr": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "nextlineStart": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "startAddr": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    }
+                },
+                "ready": {
+                    "High": -1,
+                    "Low": 0,
+                    "Pin": "input",
+                    "_": true
+                },
+                "valid": {
+                    "High": -1,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            }
+        },
+        "toPrefetch": {
+            "backendException": {
+                "High": 1,
+                "Low": 0,
+                "Pin": "output",
+                "_": true
+            },
+            "flushFromBpu": {
+                "s2": {
+                    "bits": {
+                        "flag": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "value": {
+                            "High": 5,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    },
+                    "valid": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    }
+                },
+                "s3": {
+                    "bits": {
+                        "flag": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "value": {
+                            "High": 5,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    },
+                    "valid": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    }
+                }
+            },
+            "req": {
+                "bits": {
+                    "ftqIdx": {
+                        "flag": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "value": {
+                            "High": 5,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    },
+                    "nextlineStart": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "startAddr": {
+                        "High": 49,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    }
+                },
+                "ready": {
+                    "High": -1,
+                    "Low": 0,
+                    "Pin": "input",
+                    "_": true
+                },
+                "valid": {
+                    "High": -1,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                }
+            }
+        }
+    },
+    "reset": {
+        "High": -1,
+        "Low": 0,
+        "Pin": "input",
+        "_": true
+    }
+}

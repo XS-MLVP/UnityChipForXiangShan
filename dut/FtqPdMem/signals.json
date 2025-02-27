@@ -1,0 +1,772 @@
+{
+    "clock": {
+        "High": -1,
+        "Low": 0,
+        "Pin": "input",
+        "_": true
+    },
+    "io": {
+        "raddr": {
+            "0": {
+                "High": 5,
+                "Low": 0,
+                "Pin": "input",
+                "_": true
+            },
+            "1": {
+                "High": 5,
+                "Low": 0,
+                "Pin": "input",
+                "_": true
+            }
+        },
+        "rdata": {
+            "0": {
+                "brMask": {
+                    "0": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "1": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "10": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "11": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "12": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "13": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "14": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "15": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "2": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "3": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "4": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "5": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "6": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "7": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "8": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "9": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    }
+                },
+                "jmpInfo": {
+                    "bits": {
+                        "0": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "1": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "2": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    },
+                    "valid": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    }
+                },
+                "jmpOffset": {
+                    "High": 3,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                },
+                "rvcMask": {
+                    "0": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "1": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "10": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "11": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "12": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "13": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "14": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "15": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "2": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "3": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "4": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "5": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "6": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "7": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "8": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "9": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    }
+                }
+            },
+            "1": {
+                "brMask": {
+                    "0": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "1": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "10": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "11": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "12": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "13": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "14": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "15": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "2": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "3": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "4": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "5": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "6": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "7": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "8": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "9": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    }
+                },
+                "jalTarget": {
+                    "High": 49,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                },
+                "jmpInfo": {
+                    "bits": {
+                        "0": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "1": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        },
+                        "2": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "output",
+                            "_": true
+                        }
+                    },
+                    "valid": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    }
+                },
+                "jmpOffset": {
+                    "High": 3,
+                    "Low": 0,
+                    "Pin": "output",
+                    "_": true
+                },
+                "rvcMask": {
+                    "0": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "1": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "10": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "11": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "12": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "13": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "14": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "15": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "2": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "3": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "4": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "5": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "6": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "7": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "8": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    },
+                    "9": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "output",
+                        "_": true
+                    }
+                }
+            }
+        },
+        "ren": {
+            "0": {
+                "High": -1,
+                "Low": 0,
+                "Pin": "input",
+                "_": true
+            },
+            "1": {
+                "High": -1,
+                "Low": 0,
+                "Pin": "input",
+                "_": true
+            }
+        },
+        "waddr": {
+            "0": {
+                "High": 5,
+                "Low": 0,
+                "Pin": "input",
+                "_": true
+            }
+        },
+        "wdata": {
+            "0": {
+                "brMask": {
+                    "0": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "1": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "10": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "11": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "12": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "13": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "14": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "15": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "2": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "3": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "4": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "5": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "6": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "7": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "8": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "9": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    }
+                },
+                "jalTarget": {
+                    "High": 49,
+                    "Low": 0,
+                    "Pin": "input",
+                    "_": true
+                },
+                "jmpInfo": {
+                    "bits": {
+                        "0": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "1": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        },
+                        "2": {
+                            "High": -1,
+                            "Low": 0,
+                            "Pin": "input",
+                            "_": true
+                        }
+                    },
+                    "valid": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    }
+                },
+                "jmpOffset": {
+                    "High": 3,
+                    "Low": 0,
+                    "Pin": "input",
+                    "_": true
+                },
+                "rvcMask": {
+                    "0": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "1": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "10": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "11": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "12": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "13": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "14": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "15": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "2": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "3": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "4": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "5": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "6": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "7": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "8": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    },
+                    "9": {
+                        "High": -1,
+                        "Low": 0,
+                        "Pin": "input",
+                        "_": true
+                    }
+                }
+            }
+        },
+        "wen": {
+            "0": {
+                "High": -1,
+                "Low": 0,
+                "Pin": "input",
+                "_": true
+            }
+        }
+    },
+    "reset": {
+        "High": -1,
+        "Low": 0,
+        "Pin": "input",
+        "_": true
+    }
+}
