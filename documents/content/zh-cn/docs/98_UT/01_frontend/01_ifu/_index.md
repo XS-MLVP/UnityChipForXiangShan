@@ -708,6 +708,8 @@ select位为0时，当PC和tdata2的数据的关系不满足tdata2的match位时
 
 #### req FTQ取指请求
 
+在f0流水级传入
+
 req是FTQ向IFU的取指令请求，编译后包含以下成员：
 
 | 接口名 | 解释 | 
@@ -719,6 +721,8 @@ req是FTQ向IFU的取指令请求，编译后包含以下成员：
 | nextStartAddr | 下一个预测块的起始地址 |
 
 #### redirect FTQ重定向请求
+
+在f0流水级传入
 
 FTQ会向IFU发送重定向请求，这通过fromFtq\.redirect完成，从而指示IFU应该冲刷的内容。
 
@@ -734,6 +738,8 @@ FTQ会向IFU发送重定向请求，这通过fromFtq\.redirect完成，从而指
 
 #### fromBPUFlush
 
+在f0流水级传入
+
 来自BPU的冲刷请求，这是预测错误引起的，包括s3和s2两个同构成员，指示是否在BPU的s3和s2流水级发现了问题，s3的详细结构如下
 
 | 接口名 | 解释 | 
@@ -742,6 +748,8 @@ FTQ会向IFU发送重定向请求，这通过fromFtq\.redirect完成，从而指
 | ftqIdx | s3流水级请求冲刷的预测块的指针 |
 
 #### toFtq\_pdWb 写回
+
+在WB阶段传出
 
 | 接口名 | 解释 | 
 | ----- | ---- |
@@ -759,10 +767,12 @@ FTQ会向IFU发送重定向请求，这通过fromFtq\.redirect完成，从而指
 #### 控制信号
 | 接口名 | 解释 | 
 | ----- | ---- |
-| icache\_ready | ICache通知IFU自己已经准备好了，可以发送缓存行了。|
+| icache\_ready | ICache通知IFU自己已经准备好了，可以发送缓存行了。f0流水级就要设置。|
 | icache\_stop | IFU在F3流水级之前出现了问题，通知ICache停下。 |
 
 #### ICacheInter\.resp ICache传送给IFU的信息
+
+在f2流水级使用
 
 | 接口名 | 解释 | 
 | ----- | ---- |
@@ -783,7 +793,7 @@ ICachePerf和perf，可以先不关注。
 
 ### ITLBInter
 
-该接口仅在MMIO状态下，IFU重发请求时活跃。
+该接口仅在MMIO状态下，IFU重发请求时活跃（f3流水级用到）。
 
 #### req IFU向ITLB发送的请求
 
