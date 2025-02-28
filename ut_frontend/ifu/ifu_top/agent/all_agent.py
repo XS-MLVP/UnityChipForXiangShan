@@ -19,49 +19,6 @@ class OutsideAgent(Agent):
         self.uncacheInter = self.top.mmio_needed._uncacheInter
 
 
-    async def one_term(self, query: FTQQuery, ftq_flush_info: FTQFlushInfo, icacheStatusResp: ICacheStatusResp, triggerReq: FrontendTriggerReq, ibufferReady):
-        from_uncache = FromUncache()
-        itlb_resp = ITLBResp()
-        pmp_resp = PMPResp()
-        rob_commits = [RobCommit() for i in range(8)]
-        # done at stage 0
-
-        self.query_from_ftq(query)
-        self.from_ftq_flush(ftq_flush_info)
-        self.set_icache_ready(icacheStatusResp.ready)
-        await self.top.step(2)
-        # done at stage 2?
-        self.get_ftq_ready()
-        self.fake_resp(icacheStatusResp)
-        await self.top.step()
-        # done at stage3?
-        self.receive_mmio_ftq_ptr()
-        self.set_mmio_commited(True)
-
-        self.set_touncache_ready(True)
-        self.get_to_uncache_req()
-        self.fake_from_uncache(from_uncache)
-
-        self.set_itlb_req_ready(True)
-        self.fake_get_itlb_req()
-
-        self.get_itlb_resp_ready()
-        self.fake_itlb_resp(itlb_resp)
-
-        self.receive_pmp_req_addr()
-        self.fake_pmp_resp(pmp_resp)
-    
-        self.fake_rob_commits(rob_commits)
-
-        self.set_triggers(triggerReq)
-
-        self.set_ibuffer_ready(ibufferReady)
-
-        self.get_icache_stop()
-        await self.top.step()
-        
-        self.collect_res_backto_ftq()
-
     async def set_icache_ready(self, ready):
         self.icacheInter._icacheReady.value = ready
 
