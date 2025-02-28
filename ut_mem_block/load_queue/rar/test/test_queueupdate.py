@@ -1,91 +1,153 @@
+import os
 import random
-import toffee
 import toffee_test
+import toffee
+from dut.LoadQueueRAR import DUTLoadQueueRAR
+from .checkpoints_rar_static import init_rar_funcov
+from ..util.dataclass import IOQuery, IOldWbPtr, IORedirect, IORelease
+from ..env.LoadQueueRAREnv import LoadQueueRAREnv
 
-from dut.LoadQueueRAR import *
-from ..env.LoadQueueRAR import *
-import toffee.funcov as fc
+# from comm import TAG_LONG_TIME_RUN, TAG_SMOKE, TAG_RARELY_USED, debug
 
-# g = fc.CovGroup(UT_FCOV("../../Group-A"))
-
-from comm import TAG_LONG_TIME_RUN, TAG_SMOKE, TAG_RARELY_USED, debug
-
-@pytest.mark.toffee_tags(TAG_SMOKE)
-def test_can_enqueue_smoke(rar_queue):
+@toffee_test.testcase
+async def test_can_enqueue_smoke(loadqueue_rar_env: LoadQueueRAREnv):
     """
      Test the RVI instruction set. randomly generate instructions for testing
 
      Args:
-         rar_queue(fixure): the fixture of the LoadQueueRAR
+         loadqueue_rar_env(fixure): the fixture of the LoadQueueRAR
     """
     # print(rar_queue.req)
-    query = random.getrandbits(234)
-    bits_to_set = [1, 79, 157]
-    # 创建一个掩码
-    mask = 0
-    for bit in bits_to_set:
-        mask |= (1 << bit)  # 使用 | 运算符设置位
-    query |= mask
-    redirect = random.getrandbits(11)
-    ldWbPtr = random.getrandbits(8)
-    res, inner = rar_queue.Enqueue(query, redirect, ldWbPtr)
+    await loadqueue_rar_env.agent.reset()
+    query = [
+        IOQuery(req_valid=True, uop_robIdx_flag=True, uop_robIdx_value=1,
+             bits_paddr=123456, data_valid=True, is_nc=False, revoke=False),
+    
+        IOQuery(req_valid=False, uop_robIdx_flag=False, uop_robIdx_value=2,
+                bits_paddr=654321, data_valid=False, is_nc=True, revoke=True),
+        
+        IOQuery(req_valid=True, uop_robIdx_flag=True, uop_robIdx_value=3,
+                bits_paddr=111111, data_valid=True, is_nc=True, revoke=False),
+    ]
+    redirect = IORedirect(valid=True, robIdx_flag=True, robIdx_value=5, level=0)
+    ldWbPtr = IOldWbPtr(flag=True, value=100)
+    res, inner = await loadqueue_rar_env.agent.Enqueue(query, redirect, ldWbPtr)
     allocated = []
     for i in range(72):
-        signal_name = f"allocated_{i}"  # 构造信号名称
-        allocated.append(inner[signal_name].value)
+        allocated.append(getattr(inner._allocated, f'_{i}').value)
     allocate = any(allocated)
-    print(allocate)
-    assert (res["ready"].value == 1 and allocate == 1)
+    ready = any(res)
+    assert (ready == 1 and allocate == 1)
     
-@pytest.mark.toffee_tags(TAG_SMOKE)
-def test_can_dequeue_smoke(rar_queue):
+@toffee_test.testcase
+async def test_can_dequeue_smoke(loadqueue_rar_env: LoadQueueRAREnv):
     """
      Test the RVI instruction set. randomly generate instructions for testing
 
      Args:
-         rar_queue(fixure): the fixture of the LoadQueueRAR
+         loadqueue_rar_env(fixure): the fixture of the LoadQueueRAR
     """
-    # 确保已经有一些项入队
-    query = random.getrandbits(234)
-    bits_to_set = [1, 79, 157]
-    mask = 0
-    for bit in bits_to_set:
-        mask |= (1 << bit)  # 使用 | 运算符设置位
-    query |= mask
-    redirect_1 = random.getrandbits(11)
-    ldWbPtr_1 = random.getrandbits(8)
-    _, inner = rar_queue.Enqueue(query, redirect_1, ldWbPtr_1)
+    await loadqueue_rar_env.agent.reset()
+    query = [
+        IOQuery(req_valid=True, uop_robIdx_flag=True, uop_robIdx_value=1,
+             bits_paddr=123456, data_valid=True, is_nc=False, revoke=False),
+    
+        IOQuery(req_valid=False, uop_robIdx_flag=False, uop_robIdx_value=2,
+                bits_paddr=654321, data_valid=False, is_nc=True, revoke=True),
+        
+        IOQuery(req_valid=True, uop_robIdx_flag=True, uop_robIdx_value=3,
+                bits_paddr=111111, data_valid=True, is_nc=True, revoke=False),
+    ]
+    redirect = IORedirect(valid=True, robIdx_flag=True, robIdx_value=5, level=0)
+    ldWbPtr = IOldWbPtr(flag=True, value=100)
+    _ , inner = await loadqueue_rar_env.agent.Enqueue(query, redirect, ldWbPtr)
     # allocated = []
     count = 0
     for i in range(72):
-        signal_name = f"allocated_{i}"  # 构造信号名称
-        # allocated.append(inner[signal_name].value)
-        if inner[signal_name].value == 1:
+        if getattr(inner._allocated, f'_{i}').value == 1:
             count = count + 1
-    ldWbPtr = random.getrandbits(8)
-    redirect = random.getrandbits(11)
-    vecFeedback = random.getrandbits(36)
-    release = random.getrandbits(48)
-    while ldWbPtr and redirect and vecFeedback and release == 0:
-        temp = random.getrandbits(8)
-        ldWbPtr = ldWbPtr + temp
-        temp = random.getrandbits(11)
-        redirect = redirect + temp
-        temp = random.getrandbits(36)
-        vecFeedback = vecFeedback + temp
-        temp = random.getrandbits(48)
-        release = release + temp
-    inner = rar_queue.Dequeue(ldWbPtr, redirect, vecFeedback, release)
+    redirect_new = IORedirect(valid=True, robIdx_flag=True, robIdx_value=3, level=1)
+    ldWbPtr_new = IOldWbPtr(flag=False, value=10)
+    release = IORelease(valid=True, paddr=123456)
+    loadqueue_rar_env.agent.bundle.io._query._0._req._valid.value = 0
+    loadqueue_rar_env.agent.bundle.io._query._1._req._valid.value = 0
+    loadqueue_rar_env.agent.bundle.io._query._2._req._valid.value = 0
+    _, _, inner = await loadqueue_rar_env.agent.Dequeue(ldWbPtr_new, redirect_new, release)
     count_after = 0
     for i in range(72):
-        signal_name = f"allocated_{i}"  # 构造信号名称
-        # allocated.append(inner[signal_name].value)
-        if inner[signal_name].value == 1:
+        if getattr(inner._allocated, f'_{i}').value == 1:
             count_after = count_after + 1
-    # rar_queue.cover_group.add_watch_point(rar_queue., 
-    #                   {
-    #                     "can dequeue successfully": lambda x: x.value > 0,
-    #                   }, name = "RAR_DEQUEUE", dynamic_bin=True)
-    # rar_queue.cover_group.mark_function("RAR_DEQUEUE", test_can_dequeue_smoke, bin_name=["can dequeue successfully"])
     assert (count_after < count)
-
+    
+@toffee_test.testcase
+async def test_can_detect_smoke(loadqueue_rar_env: LoadQueueRAREnv):
+    await loadqueue_rar_env.agent.reset()
+    query = [
+        IOQuery(req_valid=True, uop_robIdx_flag=True, uop_robIdx_value=1,
+             bits_paddr=123456, data_valid=True, is_nc=False, revoke=False),
+    
+        IOQuery(req_valid=False, uop_robIdx_flag=False, uop_robIdx_value=2,
+                bits_paddr=654321, data_valid=False, is_nc=True, revoke=True),
+        
+        IOQuery(req_valid=True, uop_robIdx_flag=True, uop_robIdx_value=3,
+                bits_paddr=111111, data_valid=True, is_nc=True, revoke=False),
+    ]
+    redirect = IORedirect(valid=True, robIdx_flag=True, robIdx_value=5, level=0)
+    ldWbPtr = IOldWbPtr(flag=True, value=100)
+    _ , inner = await loadqueue_rar_env.agent.Enqueue(query, redirect, ldWbPtr)
+    query = [
+        IOQuery(req_valid=True, uop_robIdx_flag=True, uop_robIdx_value=1,
+             bits_paddr=123456, data_valid=True, is_nc=False, revoke=False),
+    
+        IOQuery(req_valid=False, uop_robIdx_flag=True, uop_robIdx_value=2,
+                bits_paddr=654321, data_valid=False, is_nc=True, revoke=True),
+        
+        IOQuery(req_valid=True, uop_robIdx_flag=True, uop_robIdx_value=3,
+                bits_paddr=789654, data_valid=True, is_nc=True, revoke=False),
+    ]
+    resp_flag, inner = await loadqueue_rar_env.agent.detect(query)
+    resp_flag, inner = await loadqueue_rar_env.agent.detect(query)
+    resp_flag, inner = await loadqueue_rar_env.agent.detect(query)
+    print("LLLLL", resp_flag)
+    
+@toffee_test.testcase
+async def test_can_releasedupdate(loadqueue_rar_env: LoadQueueRAREnv):
+    await loadqueue_rar_env.agent.reset()
+    query = [
+        IOQuery(req_valid=True, uop_robIdx_flag=True, uop_robIdx_value=1,
+             bits_paddr=123456, data_valid=True, is_nc=False, revoke=False),
+    
+        IOQuery(req_valid=False, uop_robIdx_flag=False, uop_robIdx_value=2,
+                bits_paddr=654321, data_valid=False, is_nc=True, revoke=True),
+        
+        IOQuery(req_valid=True, uop_robIdx_flag=True, uop_robIdx_value=3,
+                bits_paddr=111111, data_valid=True, is_nc=True, revoke=False),
+    ]
+    redirect = IORedirect(valid=True, robIdx_flag=True, robIdx_value=5, level=0)
+    ldWbPtr = IOldWbPtr(flag=True, value=100)
+    _ , inner = await loadqueue_rar_env.agent.Enqueue(query, redirect, ldWbPtr)
+    _ , inner = await loadqueue_rar_env.agent.Enqueue(query, redirect, ldWbPtr)
+    _ , inner = await loadqueue_rar_env.agent.Enqueue(query, redirect, ldWbPtr)
+    release = IORelease(valid=True, paddr=123456)
+    released = await loadqueue_rar_env.agent.releasedupdate(release)
+    print("TTTTTTT", released)
+      
+  
+@toffee_test.fixture
+async def loadqueue_rar_env(toffee_request: toffee_test.ToffeeRequest):
+    import asyncio
+    dut = toffee_request.create_dut(DUTLoadQueueRAR, "clock")
+    toffee.start_clock(dut)
+    env = LoadQueueRAREnv(dut)
+    toffee_request.add_cov_groups(init_rar_funcov(env))
+    
+    yield env
+    
+    cur_loop = asyncio.get_event_loop()
+    for task in asyncio.all_tasks(cur_loop):
+        if task.get_name() == "__clock_loop":
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                break
