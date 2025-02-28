@@ -4,3 +4,19 @@ Add styles or override variables from the theme here.
 
 */
 
+// these csses are for ifu verify docs
+
+.ifu-ctx table {
+    width: 100% !important;
+    // border-collapse: collapse; /* 合并边框，消除边框间隙 */
+}
+
+.ifu-ctx th, .ifu-ctx td {
+    border: 1px solid #000 !important; /* 确保所有单元格都有边框 */
+    // padding: 12px !important; /* 设置内边距 */
+    text-align: left ; /* 文本左对齐，可根据需求更改 */
+}
+
+.ifu-ctx th {
+    font-weight: bold; /* 加粗表头文本 */
+}

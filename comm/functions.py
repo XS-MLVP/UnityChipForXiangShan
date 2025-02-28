@@ -180,35 +180,49 @@ def download_rtl(base_url, out_dir, version="latest"):
         use_rtl(base_url.split("/")[-1], out_dir)
     return True
 
+def _build_dut(d, cfg):
+    try:
+        module = importlib.import_module(f"scripts.{d}")
+        if not module.build(cfg):
+            warning(f"Build scripts/{d}.py failed")
+        else:
+            info(f"Build scripts/{d}.py success")
+    except Exception as e:
+        warning(f"Failed to build {d}, error: {e}\n{traceback.format_exc()}")
 
 def build_dut(duts, cfg):
-    target_duts = [d.strip() for d in duts.split(",")]
+    target_duts = [d.strip() for d in duts.strip().replace(" ", ",").split(",")]
     if len(target_duts) == 0:
+        warning(f"No dut to build for: {duts}")
         return
     prefix = "build_ut_"
     build_modules = [f.replace(".py", "") for f in 
                      os.listdir(get_root_dir("scripts")) if f.startswith(prefix) and f.endswith(".py")]
     dut_to_build = []
+    searched_dut = []
     for d in target_duts:
+        if d.startswith("ut_"):
+            d = d[3:]
+        if "/" in d:
+            if d.endswith("/"):
+                d = d[:-1]
+            d = d.replace("/", "_") + "*"
         d = prefix + d
         if "*" in d or "?" in d:
             dut_to_build.extend(fnmatch.filter(build_modules, d))
         elif d in build_modules:
             dut_to_build.append(d)
+        searched_dut.append(d)
     dut_to_build = list(set(dut_to_build))
     if len(dut_to_build) == 0:
         warning(f"No dut to build for: {duts}")
         return
-    for d in dut_to_build:
-        debug(f"Build {d}")
-        try:
-            module = importlib.import_module(f"scripts.{d}")
-            if not module.build(cfg):
-                warning(f"Build scripts/{d}.py failed")
-            else:
-                info(f"Build scripts/{d}.py success")
-        except Exception as e:
-            warning(f"Failed to build {d}, error: {e}\n{traceback.format_exc()}")
+    info(f"Build duts: {dut_to_build} with: {searched_dut}")
+    import multiprocessing
+    pool = multiprocessing.Pool()
+    pool.starmap(_build_dut, [(d, cfg) for d in dut_to_build])
+    pool.close()
+    pool.join()
 
 
 def replace_default_vars(input_str, cfg):
@@ -318,7 +332,8 @@ def get_git_url_with_commit():
     url = get_git_remote_url()
     commit = get_git_commit()
     if url != "none" and commit != "none":
-        return f"{url}/commit/{commit}" + (" (dirty)" if is_git_dirty() else "")
+        return f"{url}/tree/{commit}".replace(".git/","/").replace(
+            "git@github.com:", "https://github.com/").strip() + (" (dirty)" if is_git_dirty() else "")
     return "none"
 
 
@@ -368,6 +383,7 @@ def module_name_with(names, prefix=None):
         return [mname + "." + n for n in names]
     raise ValueError("Invalid names type")
 
+<<<<<<< HEAD
 def extract_signals(verilog_file, output_file):
     # 定义匹配 wire 和 reg 的正则表达式
     signal_pattern = re.compile(r'\b(wire|reg)\b\s*(\[[^\]]+\])?\s*([\w, ]+)(;|=)')
@@ -403,6 +419,9 @@ def extract_signals(verilog_file, output_file):
         for signal in extracted_signals:
             file.write(signal + '\n')
             
+=======
+
+>>>>>>> origin
 def get_all_rtl_files(top_module, cfg):
     """
     Returns the file paths of all modules that the `top_module` depends on,

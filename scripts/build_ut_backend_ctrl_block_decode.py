@@ -26,19 +26,19 @@ def build(cfg):
         warning("backend_ctrlblock_decode: %s" % f"Unsupported RTL version {cfg.rtl.version}")
         return False
     # check files
-    f = is_all_file_exist(["rtl/RVCExpander.sv", "rtl/PreDecode.sv", "rtl/DecodeStage.sv"], get_rtl_dir(cfg=cfg))
+    f = is_all_file_exist(["rtl/PreDecode.sv", "rtl/DecodeStage.sv"], get_rtl_dir(cfg=cfg))
     assert f is True, f"File {f} not found"
     # build
-    # export RVCExpander.sv
-    if not os.path.exists(get_root_dir("dut/RVCExpander")):
-        info("Exporting RVCExpander.sv")
-        s, out, err = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/RVCExpander.sv", cfg=cfg)} --lang python --tdir {get_root_dir("dut")}/ -w rvc.fst -c')
-        assert s, "Failed to export RVCExpander.sv: %s\n%s" % (out, err)
+    # # export RVCExpander.sv
+    # if not os.path.exists(get_root_dir("dut/RVCExpander")):
+    #     info("Exporting RVCExpander.sv")
+    #     s, out, err = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/RVCExpander.sv", cfg=cfg)} --lang python --tdir {get_root_dir("dut")}/ -w rvc.fst -c')
+    #     assert s, "Failed to export RVCExpander.sv: %s\n%s" % (out, err)
     # export PreDecode.sv
-    if not os.path.exists(get_root_dir("dut/PreDecode")):
-        info("Exporting PreDecode.sv")
-        s, _, _ = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/PreDecode.sv", cfg=cfg)} --lang python --tdir {get_root_dir("dut")}/ -w predecode.fst -c')
-        assert s, "Failed to export PreDecode.sv"
+    # if not os.path.exists(get_root_dir("dut/PreDecode")):
+    #     info("Exporting PreDecode.sv")
+    #     s, _, _ = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/PreDecode.sv", cfg=cfg)} --lang python --tdir {get_root_dir("dut")}/ -w predecode.fst -c')
+    #     assert s, "Failed to export PreDecode.sv"
     # export DecodeStage.sv
     if not os.path.exists(get_root_dir("dut/DecodeStage")):
         info("Exporting DecodeStage.sv")

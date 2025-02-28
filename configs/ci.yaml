@@ -16,3 +16,16 @@
 test:
   # Skip tags, all test cases with these tags will be skipped
   skip-tags: ["RARELY_USED"]
+<<<<<<< HEAD
+=======
+
+# Test report configuration
+report:
+  information:
+    # Report title
+    title: "XiangShan KMH CI Test"
+    # Report user information
+    user:
+      name: "ci-bot"
+      email: "ci-bot@no-replay.com"
+>>>>>>> origin

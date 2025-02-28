@@ -1,0 +1,62 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  pr_run_tests:
+    runs-on: ubuntu-22.04
+    container:
+      image: ghcr.io/xs-mlvp/uc4xs:latest
+      options: --env GITHUB_TOKEN=$GITHUB_TOKEN
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.WEB_PUSH_KEY }}
+
+    steps:
+    - name: Set Up timezone
+      uses: szenius/set-timezone@v2.0
+      with:
+        timezoneLinux: "Asia/Shanghai"
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+
+    - name: Check changed files
+      run: |
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
+        git fetch origin ${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}
+        git diff --name-only origin/${{ github.event.pull_request.base.ref }} ${{ github.event.pull_request.head.sha }} > changed_files.txt
+        cat changed_files.txt
+      shell: bash
+
+    - name: Analyze changes in ut_* directories
+      id: analyze_changes
+      run: |
+        changed_dirs=$(awk -F'/' '/^ut_/ {print $1"/"$2}' changed_files.txt | sort | uniq)
+        test_duts=$(echo "$changed_dirs" | tr '\n' ' ')
+        if [[ -z "$test_duts" || "$test_duts" =~ ^[[:space:]]+$ ]]; then
+          echo "No changes in ut_* directories. Skipping run tests."
+          exit 0
+        else
+          echo "Changed directories: $test_duts"
+          echo "::set-output name=test_duts::$test_duts"
+        fi
+      shell: bash
+
+    - name: Update picker
+      if: steps.analyze_changes.outputs.test_duts != ''
+      run: |
+        bash /home/update_picker.sh
+      shell: bash
+
+    - name: Run tests in the changed ut_* directories
+      if: steps.analyze_changes.outputs.test_duts != ''
+      run: |
+        make update_python_deps
+        make test target="${{ steps.analyze_changes.outputs.test_duts }}" DUTS="'${{ steps.analyze_changes.outputs.test_duts }}'"
+      shell: bash

@@ -6,8 +6,19 @@ on:
       - main
 
 jobs:
+<<<<<<< HEAD
   build:
     runs-on: self-hosted
+=======
+  build_test_report:
+    runs-on: ubuntu-22.04
+    container:
+      image: ghcr.io/xs-mlvp/uc4xs:latest
+      options: --env GITHUB_TOKEN=$GITHUB_TOKEN
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.WEB_PUSH_KEY }}
+>>>>>>> origin
 
     steps:
     - name: Set Up timezone
@@ -15,6 +26,7 @@ jobs:
       with:
         timezoneLinux: "Asia/Shanghai"
 
+<<<<<<< HEAD
     - name: Checkout UnityChipForXiangShan
       uses: actions/checkout@v4
       with:
@@ -64,3 +76,9 @@ jobs:
         git commit -m reprort`date +%Y%m%d%H%M%S`
         git push
         echo "Sync complete"
+=======
+    - name: Use docker run all tests
+      run: |
+        bash /home/run_ci.sh
+      shell: bash
+>>>>>>> origin

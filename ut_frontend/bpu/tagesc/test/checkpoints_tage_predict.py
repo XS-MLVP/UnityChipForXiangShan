@@ -1,126 +1,113 @@
+__all__ = ["get_coverage_group_of_tage_predict"]
+
 from toffee.funcov import CovGroup
 
 from comm import UT_FCOV
-from dut.Tage_SC import DUTTage_SC
-
-__all__ = ["get_coverage_group_of_tage_predict"]
+from ..env.tage_sc_env import TageSCEnv
 
 
 def is_ti_provider(way: int, ti: int):
-    def ti_provider(dut: DUTTage_SC) -> bool:
-        provided = getattr(dut, f"Tage_SC_s2_provideds_{way}").value
-        provider = getattr(dut, f"Tage_SC_s2_providers_{way}").value
-        return dut.io_s1_ready.value and dut.io_s2_fire_1.value and provided and provider == ti
+    def ti_provider(test_env: TageSCEnv) -> bool:
+        s2_internal = test_env.internal_monitor.s2
+        return test_env.ctrl_bundle.s2_valid_fire(1) and s2_internal.provided(way) and s2_internal.provider(way) == ti
 
     return ti_provider
 
 
 def is_hit_no_table(way: int):
-    def hit_no_table(dut: DUTTage_SC) -> bool:
-        provided = getattr(dut, f"Tage_SC_s2_provideds_{way}").value
-        return dut.io_s1_ready.value != 0 and dut.io_s2_fire_1.value != 0 and provided == 0
+    def hit_no_table(test_env: TageSCEnv) -> bool:
+        s2_internal = test_env.internal_monitor.s2
+        return test_env.ctrl_bundle.s2_valid_fire(1) and (not s2_internal.provided(way))
 
     return hit_no_table
 
 
-def is_all_slots_the_same_provider(dut: DUTTage_SC) -> bool:
-    provided_0 = dut.Tage_SC_s2_provideds_0.value
-    provided_1 = dut.Tage_SC_s2_provideds_1.value
-    valid = provided_0 and provided_1
-    provider_0 = dut.Tage_SC_s2_providers_0.value
-    provider_1 = dut.Tage_SC_s2_providers_1.value
-    return dut.io_s1_ready.value and dut.io_s2_fire_1.value and valid and provider_0 == provider_1
+def is_all_slots_the_same_provider(test_env: TageSCEnv) -> bool:
+    valid = all(test_env.internal_monitor.s2.provided(w) for w in range(2))
+    provider = test_env.internal_monitor.s2.provider
+    return test_env.ctrl_bundle.s2_valid_fire(1) and valid and provider(0) == provider(1)
 
 
 def is_hit_multiple_tables(way: int):
-    def hit_multiple_tables(dut: DUTTage_SC) -> bool:
-        provided = getattr(dut, f"Tage_SC_s2_provideds_{way}").value
-        count = sum([getattr(dut, f"Tage_SC_tables_{i}_io_resps_{way}_valid").value for i in range(4)])
-        return dut.io_s1_ready.value and dut.io_s2_fire_1.value and provided and count > 1
+    def hit_multiple_tables(test_env: TageSCEnv) -> bool:
+        provided = test_env.internal_monitor.s2.provided(way)
+        count = test_env.internal_monitor.tage_table.hit_count(way)
+        return test_env.ctrl_bundle.s2_valid_fire(1) and provided and count > 1
 
     return hit_multiple_tables
 
 
 def is_ti_unconf_provider(way: int, t_i: int, use_alt: int):
-    def ti_unconf_provider(dut: DUTTage_SC) -> bool:
-        provided = getattr(dut, f"Tage_SC_s2_provideds_{way}").value
-        provider = getattr(dut, f"Tage_SC_s2_providers_{way}").value
-        unconfident = getattr(dut, f"Tage_SC_s2_providerResps_{way}_ctr").value in {0b011, 0b100}
-        alt_used = getattr(dut, f"Tage_SC_s2_altUsed_{way}").value
-        return (dut.io_s1_ready.value and dut.io_s2_fire_1.value and provided and provider == t_i
-                and unconfident and alt_used == use_alt)
+    def ti_unconf_provider(test_env: TageSCEnv) -> bool:
+        provided = test_env.internal_monitor.s2.provided(way)
+        provider = test_env.internal_monitor.s2.provider(way)
+        unconfident = test_env.internal_monitor.s2.provider_weak(way)
+        alt_used = test_env.internal_monitor.s2.alt_used(way)
+        return test_env.ctrl_bundle.s2_valid_fire(
+            1) and provided and provider == t_i and unconfident and alt_used == use_alt
 
     return ti_unconf_provider
 
 
 def is_provider_unconf_and_multiple_hit(way: int, use_alt: int):
-    def provider_unconf_and_multiple_hit(dut: DUTTage_SC) -> bool:
-        provided = getattr(dut, f"Tage_SC_s2_provideds_{way}").value
-        # provider = getattr(dut, f"Tage_SC_s2_providers_{way}")
-        unconfident = getattr(dut, f"Tage_SC_s2_providerResps_{way}_ctr").value in {0b011, 0b100}
-        alt_used = getattr(dut, f"Tage_SC_s2_altUsed_{way}").value
-        count = sum([getattr(dut, f"Tage_SC_tables_{i}_io_resps_{way}_valid").value for i in range(4)])
-        return (dut.io_s1_ready.value and dut.io_s2_fire_1.value and provided and count > 0
-                and unconfident and alt_used == use_alt)
+    def provider_unconf_and_multiple_hit(test_env: TageSCEnv) -> bool:
+        provided = test_env.internal_monitor.s2.provided(way)
+        unconfident = test_env.internal_monitor.s2.provider_weak(way)
+        alt_used = test_env.internal_monitor.s2.alt_used(way)
+        count = test_env.internal_monitor.tage_table.hit_count(way)
+        return test_env.ctrl_bundle.s2_valid_fire(1) and provided and count > 1 and unconfident and alt_used == use_alt
 
     return provider_unconf_and_multiple_hit
 
 
 def is_all_slots_use_same_unconf_provider_and_both(use_alt: int):
-    def all_slots_use_same_unconf_provider(dut: DUTTage_SC) -> bool:
-        provided_0 = dut.Tage_SC_s2_provideds_0.value
-        provided_1 = dut.Tage_SC_s2_provideds_1.value
-        provider_0 = dut.Tage_SC_s2_providers_0.value
-        provider_1 = dut.Tage_SC_s2_providers_1.value
-        alt_used_0 = dut.Tage_SC_s2_altUsed_0.value
-        alt_used_1 = dut.Tage_SC_s2_altUsed_1.value
-        valid = provided_0 and provided_1 and alt_used_0 and alt_used_1
-        return dut.io_s1_ready.value and dut.io_s2_fire_1.value and valid and (provider_0 == provider_1)
+    def all_slots_use_same_unconf_provider(test_env: TageSCEnv) -> bool:
+        s2 = test_env.internal_monitor.s2
+        provider = s2.provider
+        valid = all([s2.provided(w) and s2.alt_used(w) == use_alt for w in range(2)])
+        return test_env.ctrl_bundle.s2_valid_fire(1) and valid and (provider(0) == provider(1))
 
     return all_slots_use_same_unconf_provider
 
 
-def get_coverage_group_of_tage_predict(dut: DUTTage_SC) -> CovGroup:
+def get_coverage_group_of_tage_predict(test_env: TageSCEnv) -> CovGroup:
     slot_name = ["br_slot_0", "tail_slot"]
 
     group = CovGroup(UT_FCOV("../UT_Tage_SC"))
 
     # Tn is provider
-    group.add_watch_point(dut, {
+    group.add_watch_point(test_env, {
         "_".join([f"T{i}", "provider", slot_name[w]]): is_ti_provider(w, i) for i in range(4) for w in range(2)
     }, name="Tn is Provider")
 
-    group.add_watch_point(dut, {
+    # Miss all tables
+    group.add_watch_point(test_env, {
         "_".join([slot_name[w], "miss"]): is_hit_no_table(w) for w in range(2)
     }, name="All Tn Miss")
 
     # Multi tables hit
-    group.add_watch_point(dut, {
+    group.add_watch_point(test_env, {
         slot_name[w]: is_hit_multiple_tables(w) for w in range(2)
     }, name="Multi Tables Hit")
 
-    # All slots miss all tables
-    group.add_watch_point(
-        dut, {"no_slot_hits": is_hit_no_table(w) for w in range(2)}, name="No Slot Hits"
-    )
     # All slots are the same provider
     group.add_watch_point(
-        dut, {"same_provider": is_all_slots_the_same_provider},
+        test_env, {"same_provider": is_all_slots_the_same_provider},
         name="All Slots use the Same Provider"
     )
     # Tn is unconfident provider and use/doesn't use alt
     alt_use_str = ["NOT use_alt", "use_alt"]
     for use_alt in range(2):
         group.add_watch_point(
-            dut,
-            {slot_name[w]: is_ti_unconf_provider(w, i, use_alt) for i in range(4) for w in range(2)},
+            test_env,
+            {f"t{i}_{slot_name[w]}": is_ti_unconf_provider(w, i, use_alt) for i in range(4) for w in range(2)},
             name=" ".join(["Tn is Unconfident Provider and ", alt_use_str[use_alt]]),
         )
     # Multi tables hit and provider is unconfident, and use/doesn't use alt.
     for use_alt in range(2):
         point_name = f"Multiple Tables Hit&Provider is Unconf and {alt_use_str[use_alt]}"
         group.add_watch_point(
-            dut,
+            test_env,
             {slot_name[w]: is_provider_unconf_and_multiple_hit(w, use_alt) for w in range(2)},
             name=point_name
         )
@@ -129,7 +116,7 @@ def get_coverage_group_of_tage_predict(dut: DUTTage_SC) -> CovGroup:
     for use_alt in range(2):
         point_name = f"All Slots Use the Same Unconfident Provider and {alt_use_str[use_alt]}"
         group.add_watch_point(
-            dut,
+            test_env,
             {"valid": is_all_slots_use_same_unconf_provider_and_both(use_alt)},
             name=point_name
         )

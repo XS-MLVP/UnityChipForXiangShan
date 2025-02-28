@@ -5,9 +5,10 @@
     display: flex;
     align-items: center;
     text-align: center;
-    justify-content: center;
+    /*justify-content: center;*/
     width: 100%;
     margin: 0 auto;
+    overflow: auto;
 }
 .div-dut-test-report tbody {
     --bs-table-striped-bg: white;
@@ -138,6 +139,7 @@ function updateDUTestStatus(data_url){
         <th>CkRate (%)</th>\
         <th>Lines</th>\
         <th>CvRate (%)</th>\
+        <th>Maintainer</th>\
     </tr>\
   </tbody>");
         var prefix = data.tree.meta.paths;
@@ -273,8 +275,29 @@ function updateDUTestStatus(data_url){
             if (!node.children || node.children.length === 0) {
                 var meta = node.meta
                 var desc = node.desc
+<<<<<<< HEAD
                 console.log("meta infos!")
                 console.log(node)
+=======
+                var maintainer = node.maintainers || "TBD"
+                if (node.maintainers){
+                    maintainers = []
+                    for (let i = 0; i < node.maintainers.length; i++){
+                        let cur = node.maintainers[i]
+                        let tmp_maintainer = cur.name || "TBD";
+                        if (tmp_maintainer.length > 5){
+                            tmp_maintainer = tmp_maintainer.substr(0, 4) + "..."
+                        }
+                        if (cur.page){
+                            tmp_maintainer = "<a style=\"display: block;\" href=\"" + cur.page + "\">" + tmp_maintainer + "</p>"
+                        } else {
+                            tmp_maintainer = "<p>" + tmp_maintainer + "</p>"
+                        }
+                        maintainers.push(tmp_maintainer)
+                    }
+                    maintainer = maintainers.join(' ')
+                }
+>>>>>>> origin
                 $("#dut-test-items").html($("#dut-test-items").html() + 
                     "<tr><td class=\"td-index\">" + index + "</td>" +
                     "<td class=\"td-name\">" + meta.paths.replace(prefix + "/",
@@ -290,6 +313,7 @@ function updateDUTestStatus(data_url){
                     "<td>" + calcRate(meta.functions.cover, meta.functions.total) + "</td>" +
                     "<td>" + getLineCovUrl(meta.paths, meta.lines.cover, meta.lines.total) + "</td>" +
                     "<td>" + calcRate(meta.lines.cover, meta.lines.total) + "</td>" +
+                    "<td>" + maintainer + "</td>" +
                     "</tr>"
                 );
                 index++;

@@ -17,121 +17,16 @@ __all__ = ["build", "line_coverage_files"]
 import os
 
 
-def get_rtl_dependencies(top_module, cfg):
-    """
-    Get the file path of all modules that `top_module` depends on and
-    the first element of the list is the path of `top_module`.
-
-    This function works only when there is **only one module** in the file
-    and the **file name is the module name**.
-    """
-    import re
-    from glob import iglob
-    from collections import OrderedDict
-
-    some_verilog_keywords = {
-        'for', 'real', 'initial', 'input', 'endcase', 'typedef', 'primitive', 'always_comb', 'always_latch', 'negedge',
-        'repeat', 'while', 'endfunction', 'int', 'output', 'wire', 'logic', 'reg', 'assign', 'function', 'case',
-        'always_ff', 'if', 'posedge', 'table', 'end', 'task', 'forever', 'enum', 'endtask', 'module', 'localparam',
-        'timescale', 'endprimitive', 'else', 'endtable', 'always', 'parameter', 'time', 'endmodule', 'begin',
-        "and", "or", "not", "xor"
-    }
-
-    module_pattern = re.compile(r"\bmodule\s+(\w+)\b")
-    instance_pattern = re.compile(r"\b(\w+)\s+(?!module)(\w+)\s*\(")
-    module_path_map = OrderedDict()
-
-    def parser_verilog_file(path):
-        _module_set = set()
-        _inst_set = set()
-
-        def remove_inline_comments(s):
-            # Remove the line comment first
-            s = re.sub(r"//.*$", "", s)
-            # Then remove the block comment
-            return re.sub(r'/\*.*?\*/', "", s)
-
-        def parse_line(line_text: str) -> None:
-            _line = remove_inline_comments(line_text)
-
-            # Extract names of declared modules
-            module_matches = module_pattern.finditer(_line)
-            for match in module_matches:
-                _name = match.group(1)
-                _module_set.add(_name)
-
-            # Extract names of instanced modules
-            instance_matches = instance_pattern.finditer(_line)
-            for match in instance_matches:
-                _name = match.group(1)
-                if _name not in some_verilog_keywords:
-                    _inst_set.add(_name)
-
-        """Code Begin Here"""
-        block_comment_depth = 0
-        pending_line = ''
-
-        with open(path, "r") as file:
-            while True:
-                chunk = file.read(32768)
-                if not chunk:
-                    break
-
-                lines = ("".join((pending_line, chunk))).split("\n")
-                if lines:
-                    pending_line = lines.pop()
-
-                for line in lines:
-                    # for block comment
-                    start_pos = line.find("/*")
-                    end_pos = line.find("*/")
-                    while start_pos != -1 or end_pos != -1:
-                        # if '/*' appears before '*/', increase depth
-                        if start_pos != -1 and (end_pos == -1 or start_pos < end_pos):
-                            block_comment_depth += 1
-                            line = " ".join((line[:start_pos], line[start_pos + 2:]))
-                        # if '*/' appears before '/*', decrease depth
-                        elif end_pos != -1:
-                            block_comment_depth -= 1
-                            line = " ".join((line[:end_pos], line[end_pos + 2:]))
-                        start_pos = line.find("/*")
-                        end_pos = line.find("*/")
-
-                    # skip if content of current line is in block comment
-                    if block_comment_depth > 0:
-                        continue
-                    parse_line(line)
-        if pending_line:
-            parse_line(pending_line)
-        return _module_set, _inst_set
-
-    def get_rtl_dep(top_module_name) -> None:
-        from comm import get_rtl_dir
-        # Walk through the rtl dir
-        rtl_dir = os.path.join(str(get_rtl_dir(cfg=cfg)), f"**/{top_module_name}.*v")
-        for path in iglob(rtl_dir, recursive=True):
-            module_set, inst_set = parser_verilog_file(path)
-            for _name in module_set:
-                module_path_map[_name] = path
-            module_set.clear()
-            for _name in inst_set:
-                if _name not in module_path_map:
-                    get_rtl_dep(_name)
-
-    get_rtl_dep(top_module)
-    return list(module_path_map.values())
-
-
 def build(cfg):
     from tempfile import NamedTemporaryFile
     from toffee_test.markers import match_version
-    from comm import error, info, get_root_dir, exe_cmd
+    from comm import error, info, get_root_dir, exe_cmd, get_all_rtl_files
     # check version
-    if not match_version(cfg.rtl.version, "openxiangshan-kmh-24092701+"):
+    if not match_version(cfg.rtl.version, "openxiangshan-kmh-*"):
         error(f"frontend_bpu_tagesc: Unsupported RTL version {cfg.rtl.version}")
         return False
     # find source files for Tage_SC
-    rtl_files = get_rtl_dependencies("Tage_SC", cfg=cfg)
+    rtl_files = get_all_rtl_files("Tage_SC", cfg=cfg)
     assert rtl_files, "Cannot find RTL files of Frontend.BPU.TageSC"
 
     internal_signals_path = os.path.join(get_root_dir("ut_frontend/bpu/tagesc/internal.yaml"))

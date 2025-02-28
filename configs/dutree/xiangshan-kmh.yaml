@@ -18,6 +18,9 @@ desc: "所有昆明湖DUT"
 children:
   - name: "frontend"
     desc: "前端模块"
+    maintainers: 
+      - name: "Gao-Zeyu"
+        page: "https://github.com/Gao-Zeyu"
     children:
       - name: "bpu"
         desc: "分支预测器 (Branch Prediction Unit)"
@@ -32,6 +35,9 @@ children:
               doc_url: "https://open-verify.cc/xs-bpu/docs/modules/04_ittage"
           - name: "tagesc"
             desc: "分支目标缓冲器+SC预测器 (TAGE-SC)"
+            maintainers:
+              - name: "FrankOu2001"
+                page: "https://github.com/FrankOu2001"
           - name: "ras"
             desc: "返回地址堆栈 (Return Address Stack)"
       - name: "ftq"
@@ -45,6 +51,27 @@ children:
         priority: high
       - name: "ifu"
         desc: "指令单元 (Instruction Fetch Unit)"
+        children:
+          - name: "pred_checker"
+            desc: "预检查器"
+            meta:
+              doc_url: "https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/01_frontend/01_ifu/04_pred_checker/"
+          - name: "rvc_expander"
+            desc: "RVC指令扩充器"
+            meta:
+              doc_url: "https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/01_frontend/01_ifu/03_ifu_rvc_exp/"
+          - name: "predecode"
+            desc: "预译码器"
+            meta:
+              doc_url: "https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/01_frontend/01_ifu/01_predecode/"
+          - name: "f3predecoder"
+            desc: "从预译码器时序优化得到的F3流水级预译码模块"
+            meta:
+              doc_url: "https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/01_frontend/01_ifu/02_f3predecoder/"
+          - name: "frontend_trigger"
+            desc: "前端断点模块"
+            meta:
+              doc_url: "https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/01_frontend/01_ifu/05_frontend_trigger/"
       - name: "instr_uncache"
         priority: high
         desc: "指令非缓存"
@@ -60,6 +87,11 @@ children:
         children:
           - name: "decode"
             desc: "解码"
+            maintainers:
+              - name: "my-mayfly"
+                page: "https://github.com/my-mayfly"
+              - name: "TheKiteRunner24"
+                page: "https://github.com/TheKiteRunner24"
           - name: "rename"
             desc: "重命名"
             children:

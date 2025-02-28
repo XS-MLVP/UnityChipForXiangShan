@@ -90,6 +90,7 @@ copyright = "BOSC"
 privacy_policy = "https://policies.google.com/privacy"
 baiduAnalytics = "6aacb1c7ca0a3ef4e3aa84c1eaa237dd"
 googleAnalytics = "G-4Z2ZY6ZE84"
+customSCSS = ["assets/scss/_variables_project.scss"]
 
 # First one is picked as the Twitter card image if not set on page.
 # images = ["images/project-illustration.png"]
@@ -146,6 +147,7 @@ navbar_logo = true
 navbar_translucent_over_cover_disable = false
 # Enable to show the side bar menu in its compact state.
 sidebar_menu_compact = false
+sidebar_menu_foldable = true
 # Set to true to hide the sidebar search box (the top nav search box will still be displayed if search is enabled)
 sidebar_search_disable = false
 

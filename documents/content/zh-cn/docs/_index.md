@@ -14,14 +14,16 @@ function update_charts(data_url){
 }
 </script>
 
+本项目旨在通过开源众包的方式对[香山处理器](https://github.com/OpenXiangShan/XiangShan)的昆明湖架构进行单元（Unit Test, UT）验证。下图是香山昆明湖架构各个模块验证情况。
+
 <div id="meta_chart" style="width: 100%;height:400px;"></div>
 <div style="text-align: center; width: 100%;">
 {{<list-report  baseurl="../data/reports" label="当前版本：" detail="查看测试报告" id="index" onchange="update_charts">}}
 </div>
 <br>
 
+总统计数据如下：
 
-香山昆明湖架构各个模块验证情况如上图中所示。总统计数据如下：
 <table>
     <ol>
     <tr>
@@ -64,12 +66,12 @@ function update_charts(data_url){
 
 其他内容快捷连接：
 
-- **[DUT文档与功能](https://open-verify.cc/UnityChipForXiangShan/)**
-- **[待确认bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bugc)**
-- **[已发现bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bug)**
-- **[已修复bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bugfixed)**
-- **[正在进行的任务列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/task)**
-- **[已完成的任务列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/taskdone)**
+- **[DUT文档与功能](https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/)**
+- **[待确认bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bug%20need%20to%20confirm)**
+- **[已发现bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bug%20confirmed)**
+- **[已修复bug列表](https://github.com/XS-MLVP/UnityChipForXiangShan/labels/bug%20fixed)**
+- **[正在进行的任务列表](https://open-verify.cc/crowdsourcing/kunming_lake)**
+- **[已完成的任务列表](https://open-verify.cc/crowdsourcing/kunming_lake)**
 
 <br>
 <div style="text-align: center; width: 100%;">

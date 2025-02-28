@@ -5,10 +5,9 @@ linkTitle: 添加测试用例
 weight: 4
 ---
 
-
 ## 命名要求
 
-所有测试用例文件请以`test_*.py`的方式进行命名，`*`用测试目标替换。所有测试用例也需要以`test_`前缀开头。用例名称需要具有明确意义。
+所有测试用例文件请以`test_*.py`的方式进行命名，`*`用测试目标替换（例如`test_rvc_expander.py`）。所有测试用例也需要以`test_`前缀开头。用例名称需要具有明确意义。
 
 命名举例如下：
 
@@ -20,15 +19,41 @@ def test_rvc_expand_16bit_full(): # 合理，可以通过用例名称大体知�
     pass
 ```
 
+## 使用 Assert
 
-## 使用Assert
+在每个测试用例中，都需要通过`assert`来判断本测试是否通过。
+`pytest`统计的是`assert`语句的结果，因此`assert`语句需要保证能够通过。
 
-在每个测试用例中，都需要通过 assert 来判断本测试是否通过。
+以下内容位于`ut_frontend/ifu/rvc_expander/classical_version/test_rvc_expander.py`中：
 
+```python
+def rvc_expand(rvc_expander, ref_insts, is_32bit=False, fsIsOff=False):
+    """compare the RVC expand result with the reference
+
+    Args:
+        rvc_expander (warpper): the fixture of the RVC expander
+        ref_insts (list[int]]): the reference instruction list
+    """
+    find_error = 0
+    for insn in ref_insts:
+        insn_disasm = disasmbly(insn)
+        value, instr_ex = rvc_expander.expand(insn, fsIsOff)
+        if is_32bit:
+            assert value == insn, "RVC expand error, 32bit instruction need to be the same"
+        if (insn_disasm == "unknown") and  (instr_ex == 0):
+            debug(f"find bad inst:{insn}, ref: 1, dut: 0")
+            find_error +=1
+        elif (insn_disasm != "unknown") and  (instr_ex == 1):
+            if (instr_filter(insn_disasm) != 1): 
+                debug(f"find bad inst:{insn},disasm:{insn_disasm}, ref: 0, dut: 1")
+                find_error +=1
+    assert 0 == find_error, "RVC expand error (%d errros)" % find_error
+
+```
 
 ## 编写注释
 
-每个测试用例都需要添加必要的说明和注释，需要满足[Python注释规范]()。
+每个测试用例都需要添加必要的说明和注释，需要满足[Python 注释规范](https://peps.python.org/pep-0257/)。
 
 测试用例说明参考格式：
 
@@ -45,18 +70,19 @@ def test_<name>(a: type_a, b: type_b):
     ...
 ```
 
-
 ## 用例管理
 
-为了方便测试用例管理，可通过toffee-test提供的`@pytest.mark.toffee_tags`标签功能，请参考[此处]()。
-
+为了方便测试用例管理，可通过 toffee-test 提供的`@pytest.mark.toffee_tags`标签功能，请参考
+本网站的[其他](https://open-verify.cc/UnityChipForXiangShan/docs/98_others/)部分和[toffee-test](https://github.com/XS-MLVP/toffee-test/blob/master/README_zh.md#%E7%AE%A1%E7%90%86%E6%B5%8B%E8%AF%95%E7%94%A8%E4%BE%8B%E8%B5%84%E6%BA%90)。
 
 ## 参考用例
 
-如果很多测试用例（Test）具有相同的操作，该公共操作部分可以提炼成一个通用函数。以RVCExpander验证为例，可以把压缩指令的展开与参考模型（disasm）的对比封装成以下函数：
+如果很多测试用例（Test）具有相同的操作，该公共操作部分可以提炼成一个通用函数。以 RVCExpander 验证为例，可以把压缩指令的展开与参考模型（disasm）的对比封装成以下函数：
+
+以下内容位于`ut_frontend/ifu/rvc_expander/classical_version/test_rvc_expander.py`中：
 
 ```python
-def rvc_expand(rvc_expander, ref_insts):
+def rvc_expand(rvc_expander, ref_insts, is_32bit=False, fsIsOff=False):
     """compare the RVC expand result with the reference
 
     Args:
@@ -66,19 +92,23 @@ def rvc_expand(rvc_expander, ref_insts):
     find_error = 0
     for insn in ref_insts:
         insn_disasm = disasmbly(insn)
-        _, instr_ex = rvc_expander.expand(insn)
+        value, instr_ex = rvc_expander.expand(insn, fsIsOff)
+        if is_32bit:
+            assert value == insn, "RVC expand error, 32bit instruction need to be the same"
         if (insn_disasm == "unknown") and  (instr_ex == 0):
             debug(f"find bad inst:{insn}, ref: 1, dut: 0")
             find_error +=1
         elif (insn_disasm != "unknown") and  (instr_ex == 1):
-            debug(f"find bad inst:{insn}, ref: 0, dut: 1")
-            find_error +=1
+            if (instr_filter(insn_disasm) != 1): 
+                debug(f"find bad inst:{insn},disasm:{insn_disasm}, ref: 0, dut: 1")
+                find_error +=1
     assert 0 == find_error, "RVC expand error (%d errros)" % find_error
+
 ```
 
-在上述公共部分中有 assert，因此调用该函数的Test也能提过该 assert 判断运行结果是否提过。
+在上述公共部分中有 assert，因此调用该函数的 Test 也能提过该 assert 判断运行结果是否提过。
 
-在测试用例的开发过程中，通常存在大量的调试工作，为了让验证环境快速就位，需要编写一些“冒烟测试”进行调试。RVCExpander展开16位压缩指令的冒烟测试如下：
+在测试用例的开发过程中，通常存在大量的调试工作，为了让验证环境快速就位，需要编写一些“冒烟测试”进行调试。RVCExpander 展开 16 位压缩指令的冒烟测试如下：
 
 ```python
 @pytest.mark.toffee_tags(TAG_SMOKE)
@@ -87,11 +117,11 @@ def test_rvc_expand_16bit_smoke(rvc_expander):
     rvc_expand(rvc_expander, generate_rvc_instructions(start=100, end=101))
 ```
 
-为了方便进行管理，上述测试用例通过`toffee_tags`标记上了SMOKE标签。它的输入参数为`rvc_expander`，则在在运行时，会自动调用对应同名的`fixture`进行该参数的填充。
+为了方便进行管理，上述测试用例通过`toffee_tags`标记上了 SMOKE 标签。它的输入参数为`rvc_expander`，则在在运行时，会自动调用对应同名的`fixture`进行该参数的填充。
 
+RVCExpander 展开 16 位压缩指令的测试目标是对 2^16 所有压缩指令进行遍历，检测所有情况是否都与参考模型 disasm 一致。在实现上，如果仅仅用一个 Test 进行遍历，则需要耗费大量时间，为此我们可以利用 PyTest 提供的`parametrize`对 test 进行参数化配置，然后通过`pytest-xdist`插件并行执行：
 
-
-RVCExpander展开16位压缩指令的测试目标是对2^16所有压缩指令进行遍历，检测所有情况是否都与参考模型disasm一致。在实现上，如果仅仅用一个Test进行遍历，则需要耗费大量时间，为此我们可以利用PyTest提供的`parametrize`对test进行参数化配置，然后通过`pytest-xdist`插件并行执行：
+以下内容位于`ut_frontend/ifu/rvc_expander/classical_version/test_rvc_expander.py`中：
 
 ```python
 N = 10
@@ -118,4 +148,4 @@ def test_rvc_expand_16bit_full(rvc_expander, start, end):
     rvc_expand(rvc_expander, generate_rvc_instructions(start, end))
 ```
 
-在上述用例中定义了参数化参数`start`, `end`，用来指定压缩指令的开始值和结束值，然后通过装饰器`@pytest.mark.parametrize`对他们进行分组赋值。变量N可以指定将目标数据进行分组的组数，默认设置为10组。在运行时用例`test_rvc_expand_16bit_full`会展开为`test_rvc_expand_16bit_full[0-6553]`至`test_rvc_expand_16bit_full[58977-65536]`10个测试用例运行。
+在上述用例中定义了参数化参数`start`, `end`，用来指定压缩指令的开始值和结束值，然后通过装饰器`@pytest.mark.parametrize`对他们进行分组赋值。变量 N 可以指定将目标数据进行分组的组数，默认设置为 10 组。在运行时用例`test_rvc_expand_16bit_full`会展开为`test_rvc_expand_16bit_full[0-6553]`至`test_rvc_expand_16bit_full[58977-65536]`10 个测试用例运行。

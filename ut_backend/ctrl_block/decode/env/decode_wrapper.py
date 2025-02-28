@@ -100,6 +100,7 @@ class RVCExpander(toffee.Bundle):
 
     def expand(self, instr):
         self.io["in"].value = instr
+        self.io["fsIsOff"].value = False
         self.dut.RefreshComb()
         self.cover_group.sample()
         return self.io["out_bits"].value, self.io["ill"].value
@@ -166,7 +167,8 @@ class Decode(toffee.Bundle):
     def Input_instruction(self, i, valid, instr, isRVC, brType, isCall, isRet, pred_taken, instr_ex):
         self.input_inst[i].valid.value = valid
         self.input_inst[i].bits_instr.value = instr
-        self.input_inst[i].bits_foldpc.value = 0
+        if hasattr(self.input_inst[i], "bits_foldpc"):
+            self.input_inst[i].bits_foldpc.value = 0
         self.input_inst[i].bits_exceptionVec_2.value = instr_ex
         for j in range(24):
             p = getattr(self.dut, f'io_in_{i}_bits_exceptionVec_{j}', None)
