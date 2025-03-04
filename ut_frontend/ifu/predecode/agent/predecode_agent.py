@@ -12,6 +12,12 @@ class PreDecodeDataDef():
     def __str__(self):
         res = f"new instrs: {self.new_instrs}\njump offsets: {self.jmp_offsets}\nrvcs: {self.rvcs}\nvalid_starts: {self.valid_starts}\nhalf_valid_starts: {self.half_valid_starts}\n"
         return res
+    def clear(self):
+        self.new_instrs = []
+        self.jmp_offsets = []
+        self.rvcs = []
+        self.valid_starts = []
+        self.half_valid_starts = []
         
 
 class PreDecodeAgent(Agent):
@@ -25,10 +31,11 @@ class PreDecodeAgent(Agent):
     async def predecode(self, instrs: list[int]) -> PreDecodeDataDef:
         for i in range(17):
             getattr(self.bundle.io._in_bits_data, f"_{i}").value = instrs[i]
-        print("going to step")
+        #print("going to step")
         await self.bundle.step()
-        print("step over")
+        #print("step over")
         ret = PreDecodeDataDef()
+        ret.clear()
 
         for i in range(16):
             ret.new_instrs.append(getattr(self.bundle.io._out._instr, f"_{i}").value)
