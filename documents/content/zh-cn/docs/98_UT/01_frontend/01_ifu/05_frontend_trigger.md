@@ -27,7 +27,6 @@ weight: 12
 
 根据RISCV的debug spec，香山实现的是mcontrol6。
 
-前端的0、6、8号Trigger支持Chain功能。
 当它们对应的Chain位被置时，只有当该Trigger和编号在它后面一位的Trigger同时命中，~~且timing配置相同时~~（在最新的手册中，这一要求已被删除），处理器才会产生异常。其中可以和6,8号trigger实现chain功能的7,9号trigger在后端访存部件中。
 
 
