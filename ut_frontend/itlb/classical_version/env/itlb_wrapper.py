@@ -22,7 +22,7 @@ import toffee.funcov as fc
 from dut.TLB import *
 from .itlb_consts import *
 from queue import Queue
-from comm import get_version_checker, get_out_dir
+from comm import get_version_checker, get_out_dir, UT_FCOV
 from toffee_test.reporter import set_func_coverage, set_line_coverage
 
 # Set the toffee log level to ERROR
@@ -32,7 +32,12 @@ toffee.setup_logging(toffee.ERROR)
 version_check = get_version_checker("openxiangshan-kmh-*")
 
 # Create a function coverage group
-group = fc.CovGroup("itlb_test")
+g = fc.CovGroup(UT_FCOV("../../../CLASSIC"))
+
+def init_itlb_funcov(tlb, g: fc.CovGroup):
+    """Add watch points to collect function coverage"""
+
+    # TODO: add watchpoint here
 
 @pytest.fixture()
 def tlb_fixture(request):
@@ -49,13 +54,14 @@ def tlb_fixture(request):
         waveform_filename=wave_file,
         coverage_filename=coverage_file)
     tlb = TLBWrapper(dut)
+    init_itlb_funcov(tlb, g)
     
     yield tlb
     
     tlb.dut.Finish()
     set_line_coverage(request, coverage_file)
-    set_func_coverage(request, group)
-    group.clear()
+    set_func_coverage(request, g)
+    g.clear()
 
 class ControlBundle(toffee.Bundle):
     signals = [

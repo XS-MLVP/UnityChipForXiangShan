@@ -23,13 +23,13 @@ def test_req_from_icache_min_vaddr(tlb_fixture):
     # set default value
     tlb.set_default_value()
     # add function point
-    group.add_watch_point(tlb.ptw_req_0.vpn, 
+    g.add_watch_point(tlb.ptw_req_0.vpn, 
                           {"ptw_req_0_vpn_1": toffee.funcov.Eq(0)}, name = "ptw_req_0_vpn_1")
-    group.add_watch_point(tlb.ptw_req_1.vpn, 
+    g.add_watch_point(tlb.ptw_req_1.vpn, 
                           {"ptw_req_1_vpn_1": toffee.funcov.Eq(0)}, name = "ptw_req_1_vpn_1")
 
     # add clock
-    tlb.dut.xclock.StepRis(lambda _: group.sample())
+    tlb.dut.xclock.StepRis(lambda _: g.sample())
     # start
     for _ in range(1000):
         # add signal
