@@ -6,7 +6,7 @@ from .predecode_instr_gen import PreDecodeInstrGen
 instrGen = PreDecodeInstrGen()
 @toffee_test.testcase
 async def test_smoke(predecode_env : PreDecodeEnv):
-    fake_instrs = [19212 for i in range(17)]
+    fake_instrs = [54541 for i in range(17)]
 
     res = await predecode_env.agent.predecode(fake_instrs)
     

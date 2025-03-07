@@ -8,9 +8,13 @@ class PreDecodeDataDef():
     rvcs = []
     valid_starts = []
     half_valid_starts = []
+    isRets = []
+    isCalls = []
+    brTypes = []
 
     def __str__(self):
         res = f"new instrs: {self.new_instrs}\njump offsets: {self.jmp_offsets}\nrvcs: {self.rvcs}\nvalid_starts: {self.valid_starts}\nhalf_valid_starts: {self.half_valid_starts}\n"
+        res += f"isRets:{self.isRets}\nisCalls:{self.isCalls}\nbyTypes:{self.brTypes}"
         return res
     def clear(self):
         self.new_instrs = []
@@ -42,6 +46,9 @@ class PreDecodeAgent(Agent):
             ret.jmp_offsets.append(getattr(self.bundle.io._out._jumpOffset, f"_{i}").value)
             ret.rvcs.append(getattr(self.bundle.io._out._pd, f"_{i}")._isRVC.value)
             
+            ret.brTypes.append(getattr(self.bundle.io._out._pd, f"_{i}")._brType.value)
+            ret.isCalls.append(getattr(self.bundle.io._out._pd, f"_{i}")._isCall.value)
+            ret.isRets.append(getattr(self.bundle.io._out._pd, f"_{i}")._isRet.value)
 
             if i == 0: 
                 ret.half_valid_starts.append(0)
