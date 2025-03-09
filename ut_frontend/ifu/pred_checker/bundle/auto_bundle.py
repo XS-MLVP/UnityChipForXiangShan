@@ -79,32 +79,10 @@ class _9Bundle(Bundle):
 	_fixedRange = _0Bundle.from_prefix("_fixedRange")
 	_fixedTaken = _0Bundle.from_prefix("_fixedTaken")
 
-class singleFaultTypeBundle(Bundle):
-	_value = Signal()
-
-class faultTypesBundle(Bundle):
-	_12 = singleFaultTypeBundle.from_prefix("_12")
-	_1 = singleFaultTypeBundle.from_prefix("_1")
-	_9 = singleFaultTypeBundle.from_prefix("_9")
-	_15 = singleFaultTypeBundle.from_prefix("_15")
-	_6 = singleFaultTypeBundle.from_prefix("_6")
-	_5 = singleFaultTypeBundle.from_prefix("_5")
-	_7 = singleFaultTypeBundle.from_prefix("_7")
-	_3 = singleFaultTypeBundle.from_prefix("_3")
-	_4 = singleFaultTypeBundle.from_prefix("_4")
-	_2 = singleFaultTypeBundle.from_prefix("_2")
-	_11 = singleFaultTypeBundle.from_prefix("_11")
-	_8 = singleFaultTypeBundle.from_prefix("_8")
-	_14 = singleFaultTypeBundle.from_prefix("_14")
-	_13 = singleFaultTypeBundle.from_prefix("_13")
-	_10 = singleFaultTypeBundle.from_prefix("_10")
-	_0 = singleFaultTypeBundle.from_prefix("_0")
-
 class _10Bundle(Bundle):
 	_fixedTarget = _0Bundle.from_prefix("_fixedTarget")
 	_fixedMissPred = _0Bundle.from_prefix("_fixedMissPred")
 	_jalTarget = _0Bundle.from_prefix("_jalTarget")
-	_faultType = faultTypesBundle.from_prefix("_faultType")
 
 class _11Bundle(Bundle):
 	_stage2Out = _10Bundle.from_prefix("_stage2Out")
