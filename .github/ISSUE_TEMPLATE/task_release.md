@@ -7,6 +7,11 @@ assignees: ''
 
 ---
 
+请删除下面模板中和您将要发布的模块验证任务无关的内容。
+
+PLEASE delete anything not related to your module verification task in the template below.
+
+
 **验证对象描述**
 简单介绍一下DUT的功能
 A clear and concise description of the function of DUT
