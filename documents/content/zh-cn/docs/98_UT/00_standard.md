@@ -40,15 +40,28 @@ weight: 1
 *详细解释各种接口的含义、来源*
 
 ## 测试点总表
-|序号|对应功能|名称|解释| 
+
+*请用`<mrs-testpoints></mrs-testpoints>`标签包裹下面的测试点总表*
+
+*请用`<mrs-pn></mrs-pn>`标签包裹您的每个测试点名称*
+
+*完成上述两步主要是方便我们后续用脚本提取测试点*
+
+<mrs-testpoints>
+
+|序号|功能名称|测试点名称|解释| 
 |-- | ---- | --- | --- |
-|1.x.x| 链接相应功能 | 用英文大写？| 简单解释输入输出需要的信息 |
+|1.x.x| 用英文大写 | <mrs-pn> 用英文大写？需要链接相应测试点</mrs-pn> | 简单解释输入输出需要的信息 |
+
+</mrs-testpoints>
 
 ## 关键概念表
 
 *列出关键概念，方便读者参考，如果没有或比较简单可以没有*
 
 子模块的文档格式类似
+
+
 
 以下以FIFO为例，展示了一个简单的文档案例
 
@@ -188,13 +201,16 @@ full：1位信号，表示栈已经满了
 
 比如FIFO\_READ的测试点覆盖点可以命名为FIFO\_READ\_NORMAL
 
+<mrs-testpoints>
+
 |序号|功能名称|测试点名称|描述|
 |--|---|---| --- |
-|1\.1|FIFO\_READ| <a href="#FIFO_READ_NORMAL">NORMAL</a> |fifo有数据时，设置读使能，可以读出数据|
-|1\.2|FIFO\_READ| <a href="#FIFO_READ_EMPTY">EMPTY</a> |fifo为空时，设置读使能，无法读出数据|
-|1\.3|FIFO\_READ| <a href="#FIFO_READ_NO_EN">NO\_EN</a>  |fifo有数据时，不设置读使能，无法读出数据|
-|2\.1|FIFO\_WRITE| <a href="#FIFO_WRITE_NORMAL">NORMAL</a>  |fifo未满时，设置写使能，可以写入数据|
-|2\.2|FIFO\_WRITE| <a href="#FIFO_WRITE_FULL">FULL</a>   |fifo已满时，设置写使能，可以写入数据|
-|2\.3|FIFO\_WRITE| <a href="#FIFO_WRITE_NO_EN">NO_EN</a>   |fifo未满时，不设置写使能，无法写入数据|
-|3\.1|FIFO\_RESET| <a href="#FIFO_RESET_RESET">RESET</a>  |重置后，栈为空|
+|1\.1|FIFO\_READ| <a href="#FIFO_READ_NORMAL"><mrs-pn>NORMAL</mrs-pn></a> |fifo有数据时，设置读使能，可以读出数据|
+|1\.2|FIFO\_READ| <a href="#FIFO_READ_EMPTY"><mrs-pn>EMPTY</mrs-pn></a> |fifo为空时，设置读使能，无法读出数据|
+|1\.3|FIFO\_READ| <a href="#FIFO_READ_NO_EN"><mrs-pn>NO\_EN</mrs-pn></a>  |fifo有数据时，不设置读使能，无法读出数据|
+|2\.1|FIFO\_WRITE| <a href="#FIFO_WRITE_NORMAL"><mrs-pn>NORMAL</mrs-pn></a>  |fifo未满时，设置写使能，可以写入数据|
+|2\.2|FIFO\_WRITE| <a href="#FIFO_WRITE_FULL"><mrs-pn>FULL</mrs-pn></a>   |fifo已满时，设置写使能，可以写入数据|
+|2\.3|FIFO\_WRITE| <a href="#FIFO_WRITE_NO_EN"><mrs-pn>NO_EN</mrs-pn></a>   |fifo未满时，不设置写使能，无法写入数据|
+|3\.1|FIFO\_RESET| <a href="#FIFO_RESET_RESET"><mrs-pn>RESET</mrs-pn></a>  |重置后，栈为空|
 
+</mrs-testpoints>
