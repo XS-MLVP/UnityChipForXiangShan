@@ -28,7 +28,7 @@ def build(cfg):
     f = is_all_file_exist(["rtl/LoadQueue.sv"], get_rtl_dir(cfg=cfg))
     assert f is True, f"File {f} not found"
     # build
-    # export LoadQueueRAR
+    # export LoadQueue
     if not os.path.exists(get_root_dir("dut/LoadQueue")):
         info("Exporting LoadQueue.sv")
         rtl_files = get_all_rtl_files("LoadQueue", cfg=cfg)

@@ -29,7 +29,7 @@ def build(cfg):
     f = is_all_file_exist(["rtl/StoreQueue.sv", "rtl/SQDataModule.sv", "rtl/SQAddrModule.sv", "rtl/SQAddrModule_1.sv", "rtl/DatamoduleResultBuffer.sv", "rtl/StoreExceptionBuffer.sv", "rtl/SQData8Module.sv"], get_rtl_dir(cfg=cfg))
     assert f is True, f"File {f} not found"
     # build
-    # export LoadQueueRAR
+    # export StoreQueue
     if not os.path.exists(get_root_dir("dut/StoreQueue")):
         info("Exporting StoreQueue.sv")
         rtl_files = get_all_rtl_files("StoreQueue", cfg=cfg)

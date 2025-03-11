@@ -25,6 +25,8 @@ class LoadQueueRARAgent(Agent):
             query_i._req._bits._uop._robIdx._flag.value = query[i].uop_robIdx_flag
             query_i._req._bits._uop._robIdx._value.value = query[i].uop_robIdx_value
             query_i._req._bits._paddr.value = query[i].bits_paddr
+            query_i._req._bits._is_nc.value = query[i].is_nc
+            query_i._req._bits._data_valid.value = query[i].data_valid
             # self.resp = query.resp
             query_i._revoke.value = query[i].revoke
         self.bundle.io._redirect._valid.value = redirect.valid
@@ -33,59 +35,24 @@ class LoadQueueRARAgent(Agent):
         self.bundle.io._redirect._bits._level.value = redirect.level
         self.bundle.io._ldWbPtr._flag.value = ldWbPtr.flag
         self.bundle.io._ldWbPtr._value.value = ldWbPtr.value
-        await self.bundle.step(2) # 推动电路
-        res = []
+        await self.bundle.step(1) # 推动电路
         for i in range(3):
             query_i = getattr(self.bundle.io._query, f'_{i}')
-            res.append(query_i._req._ready.value)
-        return res, self.bundle.LoadQueueRAR
+            query_i._req._valid.value = False
+        self.bundle.io._redirect._valid.value = False
+        await self.bundle.step(1)
+        return self.bundle.LoadQueueRAR
     
     
     @driver_method()
-    async def Dequeue(self, ldWbPtr: IOldWbPtr, redirect: IORedirect, release: IORelease):
-        # for i in range(3):
-        #     query_i = getattr(self.bundle.io._query, f'_{i}')
-        #     query_i._req._valid.value = query[i].req_valid
-        #     query_i._req._bits._uop._lqIdx._flag.value = query[i].uop_lqIdx_flag
-        #     query_i._req._bits._uop._lqIdx._value.value = query[i].uop_lqIdx_value
-        #     query_i._req._bits._uop._robIdx._flag.value = query[i].uop_robIdx_flag
-        #     query_i._req._bits._uop._robIdx._value.value = query[i].uop_robIdx_value
-        #     query_i._req._bits._paddr.value = query[i].bits_paddr
-        #     # self.resp = query.resp
-        #     query_i._revoke.value = query[i].revoke
+    async def Dequeue(self, ldWbPtr: IOldWbPtr, redirect: IORedirect):
         self.bundle.io._redirect._valid.value = redirect.valid
         self.bundle.io._redirect._bits._robIdx._flag.value = redirect.robIdx_flag
         self.bundle.io._redirect._bits._robIdx._value.value = redirect.robIdx_value
         self.bundle.io._redirect._bits._level.value = redirect.level
         self.bundle.io._ldWbPtr._flag.value = ldWbPtr.flag
         self.bundle.io._ldWbPtr._value.value = ldWbPtr.value
-        self.bundle.io._release._valid.value = release.valid
-        self.bundle.io._release._bits_paddr.value = release.paddr
-        await self.bundle.step(2)
-        return self.bundle.io._redirect, self.bundle.io._ldWbPtr, self.bundle.LoadQueueRAR
-        
-    @driver_method()
-    async def detect(self, query: List[IOQuery]):
-        for i in range(3):
-            query_i = getattr(self.bundle.io._query, f'_{i}')
-            query_i._req._valid.value = query[i].req_valid
-            query_i._req._bits._uop._lqIdx._flag.value = query[i].uop_lqIdx_flag
-            query_i._req._bits._uop._lqIdx._value.value = query[i].uop_lqIdx_value
-            query_i._req._bits._uop._robIdx._flag.value = query[i].uop_robIdx_flag
-            query_i._req._bits._uop._robIdx._value.value = query[i].uop_robIdx_value
-            query_i._req._bits._paddr.value = query[i].bits_paddr
-            # self.resp = query.resp
-            query_i._revoke.value = query[i].revoke
-        await self.bundle.step(3)
-        res = []
-        for i in range(3):
-            query_i = getattr(self.bundle.io._query, f'_{i}')
-            res.append(query_i._resp._bits_rep_frm_fetch.value)
-        return res, self.bundle.LoadQueueRAR
-        
-    @driver_method()
-    async def releasedupdate(self, release: IORelease):
-        self.bundle.io._release._valid.value = release.valid
-        self.bundle.io._release._bits_paddr.value = release.paddr
-        await self.bundle.step(2)
-        return self.bundle.LoadQueueRAR._released
+        await self.bundle.step(1)
+        self.bundle.io._redirect._valid.value = False
+        await self.bundle.step(1)
+        return self.bundle.LoadQueueRAR

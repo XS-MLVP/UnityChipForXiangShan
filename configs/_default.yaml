@@ -80,7 +80,7 @@ log:
 #   After run test, use `make doc` to check the result.
 doc-result:
   # Process result or not
-  disable: False
+  disable: True
   # Target duts and their structure
   dutree: "%{root}/configs/dutree/xiangshan-kmh.yaml"
   # Result path, relative to the current configuration file path

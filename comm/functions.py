@@ -383,7 +383,6 @@ def module_name_with(names, prefix=None):
         return [mname + "." + n for n in names]
     raise ValueError("Invalid names type")
 
-<<<<<<< HEAD
 def extract_signals(verilog_file, output_file):
     # 定义匹配 wire 和 reg 的正则表达式
     signal_pattern = re.compile(r'\b(wire|reg)\b\s*(\[[^\]]+\])?\s*([\w, ]+)(;|=)')
@@ -419,9 +418,6 @@ def extract_signals(verilog_file, output_file):
         for signal in extracted_signals:
             file.write(signal + '\n')
             
-=======
-
->>>>>>> origin
 def get_all_rtl_files(top_module, cfg):
     """
     Returns the file paths of all modules that the `top_module` depends on,

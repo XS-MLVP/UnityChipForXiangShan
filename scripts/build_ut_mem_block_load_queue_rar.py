@@ -20,7 +20,7 @@ def build(cfg):
     # import base modules
     from tempfile import NamedTemporaryFile
     from toffee_test.markers import match_version
-    from comm import is_all_file_exist, get_rtl_dir, exe_cmd, get_root_dir, extract_signals, get_all_rtl_files
+    from comm import is_all_file_exist, get_rtl_dir, exe_cmd, get_root_dir, extract_signals, get_all_rtl_files, get_out_dir
     # check version
     if not match_version(cfg.rtl.version, []):
         warning("memblock_loadstorequeue_rar: %s" % f"Unsupported RTL version {cfg.rtl.version}")

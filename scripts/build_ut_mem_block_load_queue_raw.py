@@ -29,7 +29,7 @@ def build(cfg):
     f = is_all_file_exist(["rtl/LoadQueueRAW.sv", "rtl/LqPAddrModule_1.sv", "rtl/LqMaskModule.sv", "rtl/FreeList_4.sv", "rtl/DelayNWithValid_51.sv", "rtl/DelayNWithValid_54.sv", "rtl/DelayN_220.sv", "rtl/DelayNWithValid_6.sv"], get_rtl_dir(cfg=cfg))
     assert f is True, f"File {f} not found"
     # build
-    # export LoadQueueRAR
+    # export LoadQueueRAW
     if not os.path.exists(get_root_dir("dut/LoadQueueRAW")):
         info("Exporting LoadQueueRAW.sv")
         rtl_files = get_all_rtl_files("LoadQueueRAW", cfg=cfg)
