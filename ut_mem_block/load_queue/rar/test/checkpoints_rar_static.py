@@ -32,6 +32,21 @@ def init_rar_funcov(rarqueue):
                         "have violation": lambda x: x.value > 0,
                         #"can't receive violation query": lambda x: x.value == 0,
                       }, name = "RAR_DETECT_0")
+    g.add_watch_point(rarqueue.agent.bundle.io._query._0._revoke, 
+                      {
+                        "revoke": lambda x: x.value > 0,
+                        #"can't receive violation query": lambda x: x.value == 0,
+                      }, name = "RAR_REVOKE_0")
+    g.add_watch_point(rarqueue.agent.bundle.io._query._1._revoke, 
+                      {
+                        "revoke": lambda x: x.value > 0,
+                        #"can't receive violation query": lambda x: x.value == 0,
+                      }, name = "RAR_REVOKE_1")
+    g.add_watch_point(rarqueue.agent.bundle.io._query._2._revoke, 
+                      {
+                        "revoke": lambda x: x.value > 0,
+                        #"can't receive violation query": lambda x: x.value == 0,
+                      }, name = "RAR_REVOKE_2")
     def _M(name):
         # get the module name
         return module_name_with(name, "../../test_queueupdate")
@@ -41,4 +56,7 @@ def init_rar_funcov(rarqueue):
     g.mark_function("RAR_DETECT_2", _M("test_ctl_releasedupdate"), bin_name=["have violation"])
     g.mark_function("RAR_DETECT_1", _M("test_ctl_releasedupdate"), bin_name=["have violation"])
     g.mark_function("RAR_DETECT_0", _M("test_ctl_releasedupdate"), bin_name=["have violation"])
+    g.mark_function("RAR_REVOKE_2", _M("test_ctl_dequeue"), bin_name=["revoke"])
+    g.mark_function("RAR_REVOKE_1", _M("test_ctl_dequeue"), bin_name=["revoke"])
+    g.mark_function("RAR_REVOKE_0", _M("test_ctl_dequeue"), bin_name=["revoke"])
     return g
