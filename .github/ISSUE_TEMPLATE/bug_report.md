@@ -7,6 +7,10 @@ assignees: ''
 
 ---
 
+请删除下面模板中和您提交的bug无关的内容。
+
+PLEASE delete anything not related to your bug in the template below.
+
 ## Description
 
 A brief description of the issue.
