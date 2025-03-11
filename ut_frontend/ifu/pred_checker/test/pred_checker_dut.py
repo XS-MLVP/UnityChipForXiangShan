@@ -19,8 +19,8 @@ def init_pred_checker_funcov(dut:DUTPredChecker, g:fc.CovGroup, env:PredCheckerE
         g.add_watch_point(dut, {
             "JAL_PRED_VALID": lambda dut: getattr(dut, "io_in_ftqOffset_valid").value == 1,
             "JAL_PRED_INVALID": lambda dut: getattr(dut, "io_in_ftqOffset_valid").value == 0,
-            "JAL_INSTR_VALID": lambda dut: getattr(dut, f"io_in_instrValid_{j}").value == 1,
-            "JAL_INSTR_RANGE": lambda dut: sum(getattr(dut, f"io_in_instrRange_{i}").value for i in range(PREDICT_WIDTH)) == j,
+            f"JAL_INSTR_VALID_{j}": lambda dut: getattr(dut, f"io_in_instrValid_{j}").value == 1,
+            f"JAL_INSTR_RANGE_{j}": lambda dut: sum(getattr(dut, f"io_in_instrRange_{i}").value for i in range(PREDICT_WIDTH)) == j,
             f"JAL_PRED_OFFSET_AT_{j}": lambda dut: getattr(dut, f"io_in_ftqOffset_bits").value == j,
             f"JAL_PDS_INFO_AT_{j}": lambda dut: getattr(dut, f"io_in_pds_{j}_brType").value == 2
         }, name=f"JAL_PRED_COV_{j}")
@@ -30,8 +30,8 @@ def init_pred_checker_funcov(dut:DUTPredChecker, g:fc.CovGroup, env:PredCheckerE
         g.add_watch_point(dut, {
             "RET_PRED_VALID": lambda dut: getattr(dut, "io_in_ftqOffset_valid").value == 1,
             "RET_PRED_INVALID": lambda dut: getattr(dut, "io_in_ftqOffset_valid").value == 0,
-            "RET_INSTR_VALID": lambda dut: getattr(dut, f"io_in_instrValid_{j}").value == 1,
-            "RET_INSTR_RANGE": lambda dut: sum(getattr(dut, f"io_in_instrRange_{i}").value for i in range(PREDICT_WIDTH)) == j,
+            f"RET_INSTR_VALID_{j}": lambda dut: getattr(dut, f"io_in_instrValid_{j}").value == 1,
+            f"RET_INSTR_RANGE_{j}": lambda dut: sum(getattr(dut, f"io_in_instrRange_{i}").value for i in range(PREDICT_WIDTH)) == j,
             f"RET_PRED_OFFSET_AT_{j}": lambda dut: getattr(dut, f"io_in_ftqOffset_bits").value == j,
             f"RET_PDS_INFO_AT_{j}": lambda dut: getattr(dut, f"io_in_pds_{j}_brType").value == 3
         }, name=f"RET_PRED_COV_{j}")
@@ -41,8 +41,8 @@ def init_pred_checker_funcov(dut:DUTPredChecker, g:fc.CovGroup, env:PredCheckerE
         g.add_watch_point(dut, {
             "RET_PRED_VALID": lambda dut: getattr(dut, "io_in_ftqOffset_valid").value == 1,
             "RET_PRED_INVALID": lambda dut: getattr(dut, "io_in_ftqOffset_valid").value == 0,
-            "RET_INSTR_VALID": lambda dut: getattr(dut, f"io_in_instrValid_{j}").value == 1,
-            "RET_INSTR_RANGE": lambda dut: sum(getattr(dut, f"io_in_instrRange_{i}").value for i in range(PREDICT_WIDTH)) == j,
+            f"RET_INSTR_VALID_{j}": lambda dut: getattr(dut, f"io_in_instrValid_{j}").value == 1,
+            f"RET_INSTR_RANGE_{j}": lambda dut: sum(getattr(dut, f"io_in_instrRange_{i}").value for i in range(PREDICT_WIDTH)) == j,
             f"RET_PRED_OFFSET_AT_{j}": lambda dut: getattr(dut, f"io_in_ftqOffset_bits").value == j,
             f"RET_PDS_INFO_AT_{j}": lambda dut: getattr(dut, f"io_in_pds_{j}_brType").value == 3
         }, name=f"JALR_PRED_COV_{j}")
@@ -58,8 +58,8 @@ def init_pred_checker_funcov(dut:DUTPredChecker, g:fc.CovGroup, env:PredCheckerE
         g.add_watch_point(dut,{
             "CFI_PRED_VALID": lambda dut: getattr(dut, "io_in_ftqOffset_valid").value == 1,
             "CFI_PRED_INVALID": lambda dut: getattr(dut, "io_in_ftqOffset_valid").value == 0,
-            "CFI_INSTR_VALID": lambda dut: getattr(dut, f"io_in_instrValid_{j}").value == 1,
-            "CFI_INSTR_RANGE": lambda dut: sum(getattr(dut, f"io_in_instrRange_{i}").value for i in range(PREDICT_WIDTH)) == j,
+            f"CFI_INSTR_VALID_{j}": lambda dut: getattr(dut, f"io_in_instrValid_{j}").value == 1,
+            f"CFI_INSTR_RANGE_{j}": lambda dut: sum(getattr(dut, f"io_in_instrRange_{i}").value for i in range(PREDICT_WIDTH)) == j,
             f"CFI_PRED_OFFSET_AT_{j}": lambda dut: getattr(dut, f"io_in_ftqOffset_bits").value == j,
             f"CFI_PDS_INFO_AT_{j}": lambda dut: getattr(dut, f"io_in_pds_{j}_brType").value  > 0
         }, name=f"CFI_PRED_COV_{j}")
@@ -69,8 +69,8 @@ def init_pred_checker_funcov(dut:DUTPredChecker, g:fc.CovGroup, env:PredCheckerE
         g.add_watch_point(dut,{
             "INV_PRED_VALID": lambda dut: getattr(dut, "io_in_ftqOffset_valid").value == 1,
             "INV_PRED_INVALID": lambda dut: getattr(dut, "io_in_ftqOffset_valid").value == 0,
-            "INV_INSTR_OFFSET": lambda dut: getattr(dut, f"io_in_instrValid_{j}").value == 0,
-            "INV_INSTR_RANGE": lambda dut: sum(getattr(dut, f"io_in_instrRange_{i}").value for i in range(PREDICT_WIDTH)) == j,
+            f"INV_INSTR_OFFSET_{j}": lambda dut: getattr(dut, f"io_in_instrValid_{j}").value == 0,
+            f"INV_INSTR_RANGE_{j}": lambda dut: sum(getattr(dut, f"io_in_instrRange_{i}").value for i in range(PREDICT_WIDTH)) == j,
             f"INV_PRED_OFFSET_AT_{j}": lambda dut: getattr(dut, f"io_in_ftqOffset_bits").value == j,
         }, name=f"INV_PRED_COV_{j}")
     
@@ -81,7 +81,7 @@ def init_pred_checker_funcov(dut:DUTPredChecker, g:fc.CovGroup, env:PredCheckerE
             "TGT_CFI_PRED_VALID": lambda dut: getattr(dut, "io_in_ftqOffset_valid").value == 1,
             "TGT_CFI_PRED_INVALID": lambda dut: getattr(dut, "io_in_ftqOffset_valid").value == 0,
             "TGT_CFI_INSTR_VALID": lambda dut: getattr(dut, f"io_in_instrValid_{j}").value == 1,
-            "TGT_CFI_INSTR_RANGE": lambda dut: sum(getattr(dut, f"io_in_instrRange_{i}").value for i in range(PREDICT_WIDTH)) == j,
+            f"TGT_CFI_INSTR_RANGE_{j}": lambda dut: sum(getattr(dut, f"io_in_instrRange_{i}").value for i in range(PREDICT_WIDTH)) == j,
             f"TGT_CFI_PRED_OFFSET_AT_{j}": lambda dut: getattr(dut, f"io_in_ftqOffset_bits").value == j,
             f"TGT_CFI_PDS_INFO_AT_{j}": lambda dut: getattr(dut, f"io_in_pds_{j}_brType").value  > 0,
             f"TGT_CFI_JMPOFFSET_VAL_{j}": lambda dut: getattr(dut, f"io_in_jumpOffset_{j}").value > 0,
