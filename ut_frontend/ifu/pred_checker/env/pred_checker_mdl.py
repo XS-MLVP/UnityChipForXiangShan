@@ -70,6 +70,11 @@ class PredCheckerModel(Model):
                         self.fixedRange[i] = 1
                     for i in range(PREDICT_WIDTH):
                         self.fixedTaken[i] = 0
+                    if(pds[cfi_idx[0]][BRTYPE_LABEL] == 3) and (not pds[cfi_idx[0]][RET_LABEL]):
+                        for i in range(PREDICT_WIDTH):
+                            if(instrRange[i]):
+                                self.fixedRange[i] = 1
+                        self.fixedTaken[cfi_idx[0]] = 1
             if not ftqValid:
                 self.fixedRange = [1 for _ in range(cfi_idx[0] + 1)]
                 self.fixedRange.extend([0 for _ in range(PREDICT_WIDTH - cfi_idx[0] - 1)])

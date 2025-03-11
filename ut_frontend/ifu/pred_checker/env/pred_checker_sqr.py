@@ -184,12 +184,10 @@ class pred_checker_sqr:
             #print("Case 3.2.2: generate test vector")
             pc_0 = random.randint(0, 2**50 - 2**6)
             ftqValid = True
-            ftqOffBits = 10
-            randOffset = 12
-            #ftqOffBits = random.randint(1, 15)
-            #randOffset = random.randint(0, 14)
-            #while randOffset >= ftqOffBits:
-            #    randOffset = random.randint(0, 14)
+            ftqOffBits = random.randint(1, 15)
+            randOffset = random.randint(0, 14)
+            while randOffset >= ftqOffBits:
+                randOffset = random.randint(0, 14)
             pds = [{RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 0 } for i in range(PREDICT_WIDTH)]
             pds[randOffset] = {RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 3}
             instrRange = [True for _ in range(PREDICT_WIDTH)]
