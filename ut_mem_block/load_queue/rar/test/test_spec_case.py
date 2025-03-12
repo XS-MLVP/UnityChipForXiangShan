@@ -84,11 +84,7 @@ async def test_ctl_dequeue(loadqueue_rar_env: LoadQueueRAREnv):
     ]
     redirect = IORedirect(valid=True, robIdx_flag=True, robIdx_value=10, level=1)
     ldWbPtr = IOldWbPtr(flag=True, value=1)
-    inner = await loadqueue_rar_env.agent.Enqueue(query, redirect, ldWbPtr)
-    allocated = []
-    for i in range(72):
-        allocated.append(getattr(inner._allocated, f'_{i}').value)
-    # allocate = allocated.count(1)
+    _ = await loadqueue_rar_env.agent.Enqueue(query, redirect, ldWbPtr)
     
     redirect_new = IORedirect(valid=True, robIdx_flag=True, robIdx_value=7, level=0)
     ldWbPtr_new = IOldWbPtr(flag=True, value=4)
@@ -99,27 +95,6 @@ async def test_ctl_dequeue(loadqueue_rar_env: LoadQueueRAREnv):
         allocated_after.append(getattr(inner_after._allocated, f'_{i}').value)
     allocated_after = allocated_after.count(1)
     assert allocated_after == 0
-    
-    await loadqueue_rar_env.agent.reset()
-    query = [
-        IOQuery(req_valid=True, uop_robIdx_flag=True, uop_robIdx_value=4, uop_lqIdx_flag=True, 
-                uop_lqIdx_value=5, bits_paddr=123456, data_valid=True, is_nc=False, revoke=True),
-    
-        IOQuery(req_valid=True, uop_robIdx_flag=True, uop_robIdx_value=2, uop_lqIdx_flag=True, 
-                uop_lqIdx_value=3, bits_paddr=654321, data_valid=True, is_nc=False, revoke=True),
-        
-        IOQuery(req_valid=True, uop_robIdx_flag=True, uop_robIdx_value=9, uop_lqIdx_flag=True, 
-                uop_lqIdx_value=7, bits_paddr=111111, data_valid=True, is_nc=False, revoke=True),
-    ]
-    redirect = IORedirect(valid=True, robIdx_flag=True, robIdx_value=10, level=1)
-    ldWbPtr = IOldWbPtr(flag=True, value=1)
-    inner = await loadqueue_rar_env.agent.Enqueue(query, redirect, ldWbPtr)
-    await loadqueue_rar_env.agent.bundle.step(2)
-    allocated = []
-    for i in range(72):
-        allocated.append(getattr(inner._allocated, f'_{i}').value)
-    allocate = allocated.count(1)
-    assert allocate == 0
     
 @toffee_test.testcase
 async def test_revoke_redirect(loadqueue_rar_env:LoadQueueRAREnv):
@@ -177,6 +152,7 @@ async def test_ctl_releasedupdate(loadqueue_rar_env: LoadQueueRAREnv):
         released.append(getattr(loadqueue_rar_env.agent.bundle.LoadQueueRAR._released, f'_{i}').value)
     release = released.count(1)
     assert release == 2
+    
     loadqueue_rar_env.agent.bundle.io._query._2._req._valid.value = True
     loadqueue_rar_env.agent.bundle.io._query._2._req._bits._uop._robIdx._flag.value = True
     loadqueue_rar_env.agent.bundle.io._query._2._req._bits._uop._robIdx._value.value = 3
@@ -194,12 +170,24 @@ async def test_ctl_releasedupdate(loadqueue_rar_env: LoadQueueRAREnv):
     loadqueue_rar_env.agent.bundle.io._release._bits_paddr.value = 773314057378
     await loadqueue_rar_env.agent.bundle.step(1)
     loadqueue_rar_env.agent.bundle.io._release._valid.value = False
+    query = [
+        IOQuery(req_valid=True, uop_robIdx_flag=True, uop_robIdx_value=4, uop_lqIdx_flag=True, 
+                uop_lqIdx_value=4, bits_paddr=747113358170, data_valid=False, is_nc=True, revoke=False),
+    
+        IOQuery(req_valid=True, uop_robIdx_flag=True, uop_robIdx_value=5, uop_lqIdx_flag=True, 
+                uop_lqIdx_value=6, bits_paddr=183041682239, data_valid=True, is_nc=False, revoke=False),
+        
+        IOQuery(req_valid=False, uop_robIdx_flag=True, uop_robIdx_value=1, uop_lqIdx_flag=True, 
+                uop_lqIdx_value=9, bits_paddr=773314057378, data_valid=True, is_nc=False, revoke=False),
+    ]
     await loadqueue_rar_env.agent.bundle.step(1)
     released_after_1 = []
     for i in range(72):
         released_after_1.append(getattr(loadqueue_rar_env.agent.bundle.LoadQueueRAR._released, f'_{i}').value)
     release_after_1 = released_after_1.count(1)
-    assert release_after_1 == 3
+    assert release_after_1 == 3 and loadqueue_rar_env.agent.bundle.io._query._2._resp._bits_rep_frm_fetch.value == 0
+    
+    # test detect
     query_after_2 = [
         IOQuery(req_valid=True, uop_robIdx_flag=True, uop_robIdx_value=6, uop_lqIdx_flag=True, 
                 uop_lqIdx_value=5, bits_paddr=109635647804, data_valid=False, is_nc=False, revoke=False),

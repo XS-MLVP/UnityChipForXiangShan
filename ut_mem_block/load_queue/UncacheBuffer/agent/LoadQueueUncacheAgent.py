@@ -245,7 +245,7 @@ class LoadQueueUncacheAgent(Agent):
             req_i._bits._rep._info._cause._8.value = req[i].bits_rep_info_cause_8
             req_i._bits._rep._info._cause._9.value = req[i].bits_rep_info_cause_9
             req_i._bits._rep._info._cause._10.value = req[i].bits_rep_info_cause_10
-        await self.bundle.Step()
+        await self.bundle.step()
         return  self.bundle.LoadQueueUncache, self.bundle.LoadQueueUncache_
         
     @driver_method
@@ -313,7 +313,7 @@ class LoadQueueUncacheAgent(Agent):
             req_i._bits._rep._info._cause._8.value = req[i].bits_rep_info_cause_8
             req_i._bits._rep._info._cause._9.value = req[i].bits_rep_info_cause_9
             req_i._bits._rep._info._cause._10.value = req[i].bits_rep_info_cause_10
-        await self.bundle.Step()
+        await self.bundle.step()
         return self.bundle.LoadQueueUncache, self.bundle.LoadQueueUncache_
     
     @driver_method
@@ -385,7 +385,7 @@ class LoadQueueUncacheAgent(Agent):
             req_i._bits._rep._info._cause._8.value = req[i].bits_rep_info_cause_8
             req_i._bits._rep._info._cause._9.value = req[i].bits_rep_info_cause_9
             req_i._bits._rep._info._cause._10.value = req[i].bits_rep_info_cause_10
-        await self.bundle.Step()
+        await self.bundle.step()
         return self.bundle.io._uncache._req, self.bundle.LoadQueueUncache, self.bundle.LoadQueueUncache_
     
     @driver_method
@@ -454,7 +454,7 @@ class LoadQueueUncacheAgent(Agent):
             req_i._bits._rep._info._cause._8.value = req[i].bits_rep_info_cause_8
             req_i._bits._rep._info._cause._9.value = req[i].bits_rep_info_cause_9
             req_i._bits._rep._info._cause._10.value = req[i].bits_rep_info_cause_10
-        await self.bundle.Step()
+        await self.bundle.step()
         return self.bundle.LoadQueueUncache, self.bundle.LoadQueueUncache_
     
     @driver_method
@@ -518,7 +518,7 @@ class LoadQueueUncacheAgent(Agent):
             req_i._bits._rep._info._cause._8.value = req[i].bits_rep_info_cause_8
             req_i._bits._rep._info._cause._9.value = req[i].bits_rep_info_cause_9
             req_i._bits._rep._info._cause._10.value = req[i].bits_rep_info_cause_10
-        await self.bundle.Step()
+        await self.bundle.step()
         return self.bundle.LoadQueueUncache, self.bundle.LoadQueueUncache_
     
     @driver_method
@@ -586,6 +586,6 @@ class LoadQueueUncacheAgent(Agent):
             req_i._bits._rep._info._cause._8.value = req[i].bits_rep_info_cause_8
             req_i._bits._rep._info._cause._9.value = req[i].bits_rep_info_cause_9
             req_i._bits._rep._info._cause._10.value = req[i].bits_rep_info_cause_10
-        await self.bundle.Step()
+        await self.bundle.step()
         return self.bundle.io._rollback
     
