@@ -326,7 +326,7 @@ class CtrlBundle(Bundle):
 	io_csr_fsIsOff = Signal()
 
 class InternalFlushesBundle(Bundle):
-	_f2_flush, _f3_flush, _f1_flush = Signals(3)
+	_f2_flush, _f3_flush = Signals(2)
 
 class IFUTopBundle(Bundle):
 	# io = _56Bundle.from_prefix("io")
