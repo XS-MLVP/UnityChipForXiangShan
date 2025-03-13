@@ -18,7 +18,7 @@ def build(cfg):
     # assert os.path.exists(internal_signals_path), "Cannot find internal signal files"
 
     # export FrontendTrigger.sv
-    if not os.path.exists(get_root_dir("dut/IFU")):
+    if not os.path.exists(get_root_dir("dut/NewIFU")):
         info("Exporting IFU.sv")
         with NamedTemporaryFile("w+", encoding="utf-8", suffix=".txt") as filelist:
             filelist.write("\n".join(rtl_files))

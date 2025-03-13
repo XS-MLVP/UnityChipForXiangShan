@@ -1,0 +1,4 @@
+NewIFU:
+  - "wire f1_flush"
+  - "wire f2_flush"
+  - "wire f3_flush"
