@@ -6,6 +6,7 @@ from dut.LoadQueueRAW import DUTLoadQueueRAW
 from .checkpoints_raw_static import init_raw_funcov
 from ..util.dataclass import IOQuery, IORedirect, Ptr, StoreIn
 from ..env.LoadQueueRAWEnv import LoadQueueRAWEnv
+from toffee import Executor
 
 @toffee_test.testcase
 async def test_ctl_upadte(loadqueue_raw_env: LoadQueueRAWEnv):
@@ -242,11 +243,6 @@ async def test_freelist_full(loadqueue_raw_env: LoadQueueRAWEnv):
         allocated.append(getattr(loadqueue_raw_env.agent.bundle.LoadQueueRAW._allocated, f'_{i}').value)
     allocate = allocated.count(1)
     assert allocate == 32
-    # stores = [
-    #     StoreIn(valid=True, robIdx_flag=True, robIdx_value=255, paddr=12345678901234, mask=65535, miss=False),
-    #     StoreIn(valid=True, robIdx_flag=False, robIdx_value=128, paddr=98765432109876, mask=32768, miss=True),
-    #     StoreIn(valid=False, robIdx_flag=True, robIdx_value=0, paddr=11223344556677, mask=0, miss=False)
-    # ]
     
 @toffee_test.testcase
 async def test_ctl_revoke(loadqueue_raw_env: LoadQueueRAWEnv):
@@ -280,8 +276,124 @@ async def test_ctl_revoke(loadqueue_raw_env: LoadQueueRAWEnv):
     allocate = allocated.count(1)
     assert allocate == 0
     
-# @toffee_test.testcase
-# async def test_ctl_raw_violation(loadqueue_raw_env: LoadQueueRAWEnv):
+@toffee_test.testcase
+async def test_ctl_raw_violation(loadqueue_raw_env: LoadQueueRAWEnv):
+    await loadqueue_raw_env.agent.reset()
+    for i in range(10):
+        query = [
+            IOQuery(valid=True, uop_preDecodeInfo_isRVC=False, uop_ftqPtr_flag=True, uop_ftqPtr_value=10, 
+                    uop_ftqOffset=1, uop_robIdx_flag=True, uop_robIdx_value=generate_random_bit_integer(7), uop_sqIdx_flag=True, uop_sqIdx_value=i*3, 
+                    mask=generate_random_bit_integer(16), bits_paddr=generate_random_bit_integer(48), datavalid=True, revoke=False),
+
+            IOQuery(valid=True, uop_preDecodeInfo_isRVC=False, uop_ftqPtr_flag=True, uop_ftqPtr_value=10, 
+                    uop_ftqOffset=1, uop_robIdx_flag=True, uop_robIdx_value=78 + i, uop_sqIdx_flag=True, uop_sqIdx_value=i*3+1, 
+                    mask=63415, bits_paddr=5678901234, datavalid=True, revoke=False),
+
+            IOQuery(valid=True, uop_preDecodeInfo_isRVC=False, uop_ftqPtr_flag=True, uop_ftqPtr_value=10, 
+                    uop_ftqOffset=1, uop_robIdx_flag=True, uop_robIdx_value=generate_random_bit_integer(7), uop_sqIdx_flag=True, uop_sqIdx_value=i*3+2, 
+                    mask=32768, bits_paddr=5432109876, datavalid=True, revoke=False)
+        ]
+        redirect = IORedirect(valid=False, robIdx_flag=True, robIdx_value=200, level=0)
+        stIssuePtr = Ptr(flag=True, value=4)
+        stAddrReadySqPtr = Ptr(flag=True, value=0)
+        await loadqueue_raw_env.agent.update(query, redirect, stIssuePtr, stAddrReadySqPtr)
+    stores = [
+        StoreIn(valid=True, robIdx_flag=True, robIdx_value=3, paddr=5678901234, mask=63415, miss=False),
+        StoreIn(valid=True, robIdx_flag=True, robIdx_value=145, paddr=5432109876, mask=32768, miss=False)
+    ]
+    rollback, inner = await loadqueue_raw_env.agent.detect(stores)
+    assert rollback[0]._valid.value == 1 and rollback[1]._valid.value == 0
+    
+    await loadqueue_raw_env.agent.reset()
+    for i in range(10):
+        query = [
+            IOQuery(valid=True, uop_preDecodeInfo_isRVC=False, uop_ftqPtr_flag=True, uop_ftqPtr_value=10, 
+                    uop_ftqOffset=1, uop_robIdx_flag=True, uop_robIdx_value=generate_random_bit_integer(7), uop_sqIdx_flag=True, uop_sqIdx_value=i*3, 
+                    mask=generate_random_bit_integer(16), bits_paddr=generate_random_bit_integer(48), datavalid=True, revoke=False),
+
+            IOQuery(valid=True, uop_preDecodeInfo_isRVC=False, uop_ftqPtr_flag=True, uop_ftqPtr_value=10, 
+                    uop_ftqOffset=1, uop_robIdx_flag=True, uop_robIdx_value=78 + i, uop_sqIdx_flag=True, uop_sqIdx_value=i*3+1, 
+                    mask=63415, bits_paddr=5678901234, datavalid=True, revoke=False),
+
+            IOQuery(valid=True, uop_preDecodeInfo_isRVC=False, uop_ftqPtr_flag=True, uop_ftqPtr_value=10, 
+                    uop_ftqOffset=1, uop_robIdx_flag=True, uop_robIdx_value=46+i, uop_sqIdx_flag=True, uop_sqIdx_value=i*3+2, 
+                    mask=32768, bits_paddr=5432109876, datavalid=True, revoke=False)
+        ]
+        redirect = IORedirect(valid=False, robIdx_flag=True, robIdx_value=200, level=0)
+        stIssuePtr = Ptr(flag=True, value=4)
+        stAddrReadySqPtr = Ptr(flag=True, value=0)
+        await loadqueue_raw_env.agent.update(query, redirect, stIssuePtr, stAddrReadySqPtr)
+    stores = [
+        StoreIn(valid=True, robIdx_flag=True, robIdx_value=3, paddr=5678901234, mask=63415, miss=False),
+        StoreIn(valid=True, robIdx_flag=True, robIdx_value=4, paddr=5432109876, mask=32768, miss=False)
+    ]
+    rollback, inner = await loadqueue_raw_env.agent.detect(stores)
+    assert rollback[0]._valid.value == 1 and rollback[1]._valid.value == 1
+    
+    await loadqueue_raw_env.agent.reset()
+    query = [
+        IOQuery(valid=True, uop_preDecodeInfo_isRVC=False, uop_ftqPtr_flag=True, uop_ftqPtr_value=10, 
+                uop_ftqOffset=1, uop_robIdx_flag=True, uop_robIdx_value=generate_random_bit_integer(7), uop_sqIdx_flag=True, uop_sqIdx_value=i*3, 
+                mask=63423, bits_paddr=5678901234, datavalid=True, revoke=False),
+
+        IOQuery(valid=True, uop_preDecodeInfo_isRVC=False, uop_ftqPtr_flag=True, uop_ftqPtr_value=10, 
+                uop_ftqOffset=1, uop_robIdx_flag=True, uop_robIdx_value=78 + i, uop_sqIdx_flag=True, uop_sqIdx_value=i*3+1, 
+                mask=63415, bits_paddr=5678901234, datavalid=True, revoke=False),
+
+        IOQuery(valid=True, uop_preDecodeInfo_isRVC=False, uop_ftqPtr_flag=True, uop_ftqPtr_value=10, 
+                uop_ftqOffset=1, uop_robIdx_flag=True, uop_robIdx_value=46+i, uop_sqIdx_flag=True, uop_sqIdx_value=i*3+2, 
+                mask=32768, bits_paddr=5432109876, datavalid=True, revoke=False)
+    ]
+    redirect = IORedirect(valid=False, robIdx_flag=True, robIdx_value=200, level=0)
+    stIssuePtr = Ptr(flag=True, value=4)
+    stAddrReadySqPtr = Ptr(flag=True, value=0)
+    await loadqueue_raw_env.agent.update(query, redirect, stIssuePtr, stAddrReadySqPtr)
+    stores = [
+        StoreIn(valid=True, robIdx_flag=True, robIdx_value=3, paddr=5678901234, mask=63415, miss=False),
+        StoreIn(valid=True, robIdx_flag=True, robIdx_value=200, paddr=5432109876, mask=32768, miss=False)
+    ]
+    rollback, inner = await loadqueue_raw_env.agent.detect(stores)
+    assert rollback[0]._valid.value == 1 and rollback[1]._valid.value == 0
+
+@toffee_test.testcase
+async def test_random(loadqueue_raw_env: LoadQueueRAWEnv):
+    random.seed(os.urandom(128))
+    await loadqueue_raw_env.agent.reset()
+    num_queries = 3
+    for _ in range(5000):
+        query = [
+            IOQuery(
+            valid=random.choice([True, False]),
+            uop_preDecodeInfo_isRVC=random.choice([True, False]),
+            uop_ftqPtr_flag=random.choice([True, False]),
+            uop_ftqPtr_value=generate_random_bit_integer(6),
+            uop_ftqOffset=generate_random_bit_integer(4),
+            uop_robIdx_flag=random.choice([True, False]),
+            uop_robIdx_value=generate_random_bit_integer(8),
+            uop_sqIdx_flag=random.choice([True, False]),
+            uop_sqIdx_value = generate_random_bit_integer(6),
+            mask=generate_random_bit_integer(16), 
+            bits_paddr=generate_random_bit_integer(48),
+            datavalid=random.choice([True, False]),
+            revoke=random.choice([True, False]),
+        )
+            for i in range(num_queries)
+        ]
+        redirect = IORedirect(
+            valid=random.choice([True, False]),
+            robIdx_flag=random.choice([True, False]),
+            robIdx_value=generate_random_bit_integer(8),
+            level=random.randint(0, 1)
+        )
+        stIssuePtr = Ptr(flag=random.choice([True, False]), value=generate_random_bit_integer(6))
+        stAddrReadySqPtr = Ptr(flag=random.choice([True, False]), value=generate_random_bit_integer(6))
+        stores = [
+            StoreIn(valid=random.choice([True, False]), robIdx_flag=random.choice([True, False]), robIdx_value=generate_random_bit_integer(8), paddr=generate_random_bit_integer(48), mask=generate_random_bit_integer(16), miss=random.choice([True, False])),
+            StoreIn(valid=random.choice([True, False]), robIdx_flag=random.choice([True, False]), robIdx_value=generate_random_bit_integer(8), paddr=generate_random_bit_integer(48), mask=generate_random_bit_integer(16), miss=random.choice([True, False]))
+        ]
+        async with Executor() as exec:
+            exec(loadqueue_raw_env.agent.update(query, redirect, stIssuePtr, stAddrReadySqPtr))
+            exec(loadqueue_raw_env.agent.detect(stores))
 
 @toffee_test.fixture
 async def loadqueue_raw_env(toffee_request: toffee_test.ToffeeRequest):

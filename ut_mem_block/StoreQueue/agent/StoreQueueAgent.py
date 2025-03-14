@@ -2,153 +2,7 @@ from toffee import Agent, driver_method
 from typing import List
 
 from ..bundle.StoreQueueBundle import StoreQueueBundle
-
-class EnqReq:
-    valid = False
-    fuType = 0
-    fuOpType = 0
-    uopIdx = 0
-    lastUop = False
-    robIdx_flag = False
-    robIdx_value = 0
-    sqIdx_flag = False
-    sqIdx_value = 0
-    numLsElem = 0
-    
-class IORedirect:
-    valid = False
-    robIdx_flag = False
-    # 8 bits
-    robIdx_value = 0
-    level = False
-    
-class VecFeedback:
-    valid = False
-    robidx_flag = False
-    robidx_value = 0  # 8 bits
-    uopidx = 0        # 7 bits
-    vaddr = 0         # 64 bits
-    vaNeedExt = False
-    gpaddr = 0        # 50 bits
-    isForVSnonLeafPTE = False
-    feedback_0 = False
-    feedback_1 = False
-    exceptionVec_3 = False
-    exceptionVec_6 = False
-    exceptionVec_7 = False
-    exceptionVec_15 = False
-    exceptionVec_23 = False
-    
-class StoreAddrIn:
-    valid = False
-    uop_exceptionVec_3 = False
-    uop_exceptionVec_6 = False
-    uop_exceptionVec_7 = False
-    uop_exceptionVec_15 = False
-    uop_exceptionVec_23 = False
-    uop_fuOpType = 0  # 9 bits
-    uop_uopIdx = 0     # 7 bits
-    uop_robIdx_flag = False
-    uop_robIdx_value = 0  # 8 bits
-    uop_sqIdx_value = 0    # 6 bits
-    vaddr = 0              # 50 bits
-    fullva = 0             # 64 bits
-    vaNeedExt = False
-    isHyper = False
-    paddr = 0              # 48 bits
-    gpaddr = 0             # 64 bits
-    isForVSnonLeafPTE = False
-    mask = 0               # 16 bits
-    wlineflag = False
-    miss = False
-    nc = False
-    isFrmMisAlignBuf = False
-    isvec = False
-    isMisalign = False
-    misalignWith16Byte = False
-    updateAddrValid = False
-    
-class StoreAddrInRe:
-    uop_exceptionVec_3 = False
-    uop_exceptionVec_6 = False
-    uop_exceptionVec_15 = False
-    uop_exceptionVec_23 = False
-    uop_uopIdx = 0  # 7 bits
-    uop_robIdx_flag = False
-    uop_robIdx_value = 0  # 8 bits
-    fullva = 0             # 64 bits
-    vaNeedExt = False
-    isHyper = False
-    gpaddr = 0             # 64 bits
-    isForVSnonLeafPTE = False
-    af = False
-    mmio = False
-    memBackTypeMM = False
-    hasException = False
-    isvec = False
-    updateAddrValid = False
-    
-class StoreDataIn:
-    valid = False
-    bits_uop_fuType = 0  # 35 bits
-    bits_uop_fuOpType = 0  # 9 bits
-    bits_uop_sqIdx_value = 0  # 6 bits
-    bits_data = 0  # 128 bits
-    
-class Forward:
-    vaddr = 0            # 50 bits
-    paddr = 0            # 48 bits
-    mask = 0             # 16 bits
-    uop_waitForRobIdx_flag = False
-    uop_waitForRobIdx_value = 0  # 8 bits
-    uop_loadWaitBit = False
-    uop_loadWaitStrict = False
-    uop_sqIdx_flag = False
-    uop_sqIdx_value = 0  # 6 bits
-    valid = False
-    forwardMask = []  # 16 outputs
-    forwardData = []  # 16 outputs
-    sqIdx_flag = False
-    dataInvalid = False
-    matchInvalid = False
-    addrInvalid = False
-    sqIdxMask = 0        # 56 bits
-    dataInvalidSqIdx_flag = False
-    dataInvalidSqIdx_value = 0  # 6 bits
-    addrInvalidSqIdx_flag = False
-    addrInvalidSqIdx_value = 0  # 6 bits
-    
-class IORob:
-    rob_scommit = 0        # 4 bits
-    pendingst = False
-    pendingPtr_flag = False
-    pendingPtr_value = 0    # 8 bits
-
-class Uncache:
-    req_ready = False
-    req_valid = False
-    req_bits_addr = 0          # 48 bits
-    req_bits_vaddr = 0         # 50 bits
-    req_bits_data = 0          # 64 bits
-    req_bits_mask = 0          # 8 bits
-    req_bits_id = 0            # 7 bits
-    req_bits_nc = False
-    req_bits_memBackTypeMM = False
-    resp_valid = False
-    resp_bits_id = 0           # 7 bits
-    resp_bits_nc = False
-    resp_bits_nderr = False
-    
-class MaControlInput:
-    crossPageWithHit = False
-    crossPageCanDeq = False
-    paddr = 0  # 48 bits
-    withSameUop = False
-    
-class StoreMaskIn:
-    valid = False
-    sqIdx_value = 0
-    mask = 0
+from ..util.dataclass import EnqReq, IORedirect, VecFeedback, StoreAddrIn, StoreAddrInRe, StoreDataIn, Forward, IORob, Uncache, MaControlInput, StoreMaskIn
 
 class StoreQueueAgent(Agent):
     def __init__(self, bundle: StoreQueueBundle):
@@ -179,7 +33,12 @@ class StoreQueueAgent(Agent):
         self.bundle.io._brqRedirect._bits._robIdx._flag.value = brqRedirect.robIdx_flag
         self.bundle.io._brqRedirect._bits._robIdx._value.value = brqRedirect.robIdx_value
         self.bundle.io._brqRedirect._bits._level.value = brqRedirect.level
-        await self.bundle.step()
+        await self.bundle.step(1)
+        for i in range(6):
+            enq_i = getattr(self.bundle.io._enq_req, f'_{i}')
+            enq_i._valid.value = False
+        self.bundle.io._brqRedirect._valid.value = False
+        await self.bundle.step(1)
         stAddrReadyVec = []
         stDataReadyVec = []
         for i in range(56):
@@ -272,7 +131,11 @@ class StoreQueueAgent(Agent):
             forward_i._valid.value = forward[i].valid
             forward_i._sqIdx_flag.value = forward[i].sqIdx_flag
             forward_i._sqIdxMask.value = forward[i].sqIdxMask
-        await self.bundle.step()
+        await self.bundle.step(1)
+        for i in range(2):
+            forward_i = getattr(self.bundle.io._forward, f'_{i}')
+            forward_i._valid.value = False
+        await self.bundle.step(1)
         return self.bundle.io._forward
     
     @driver_method
@@ -288,7 +151,10 @@ class StoreQueueAgent(Agent):
         self.bundle.io._rob._pendingPtr._value.value = rob.pendingPtr_value
         self.bundle.io._cmoOpResp._valid.value = cmoOpResp_valid
         self.bundle.io._mmioStout._ready.value = mmioStout_ready
-        await self.bundle.step()
+        await self.bundle.step(1)
+        self.bundle.io._uncache._resp._valid.value = False
+        self.bundle.io._cmoOpResp._valid.value = False
+        await self.bundle.step(1)
         return self.bundle.StoreQueue._mmioState
     
     @driver_method
@@ -302,7 +168,9 @@ class StoreQueueAgent(Agent):
         self.bundle.io._cmoOpReq._ready.value = cmoOpReq_ready
         self.bundle.io._mmioStout._ready.value = mmioStout_ready
         self.bundle.io._flushSbuffer._empty.value = flushSbuffer_empty
-        await self.bundle.step()
+        await self.bundle.step(1)
+        self.bundle.io._uncache._resp._valid.value = False
+        await self.bundle.step(1)
         return self.bundle.StoreQueue._ncState
     
     @driver_method
@@ -317,21 +185,9 @@ class StoreQueueAgent(Agent):
         self.bundle.io._maControl._toStoreQueue._withSameUop.value = maControl.withSameUop
         for j in range(2):
                 getattr(self.bundle.io._sbuffer, f'_{j}')._ready.value = sbuffer_ready[j]
-        await self.bundle.step()
+        await self.bundle.step(2)
         return self.bundle.StoreQueue._committed
-    
-    @driver_method
-    async def predictionfalse(self, brqRedirect: IORedirect):
-        self.bundle.io._brqRedirect._valid.value = brqRedirect.valid
-        self.bundle.io._brqRedirect._bits._robIdx._flag.value = brqRedirect.robIdx_flag
-        self.bundle.io._brqRedirect._bits._robIdx._value.value = brqRedirect.robIdx_value
-        self.bundle.io._brqRedirect._bits._level.value = brqRedirect.level
-        await self.bundle.step()
-        allocated = []
-        for i in range(56):
-            allocated.append(getattr(self.bundle.io._allocated, f"_{i}").value)
-        return allocated
-    
+
     
     
     
