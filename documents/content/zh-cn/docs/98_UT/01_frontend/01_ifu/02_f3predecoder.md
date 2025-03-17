@@ -31,6 +31,12 @@ weight: 12
 
 ![links](linkjal.png)
 
+## F3Predecoder接口说明
+
+in\_instr: 传递 16 x 4B的拼接指令码
+
+out\_pd：每条指令的预译码信息，在F3Predecoder分析得到的是brType、isCall和isRet
+
 ## F3PreDecoder子模块测试点和功能点
 
 ### 功能点1 CFI指令类型判定

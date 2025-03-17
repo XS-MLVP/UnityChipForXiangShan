@@ -1,4 +1,4 @@
-# 万众一芯之香山处理器
+# 香山处理器万众一芯验证活动
 
 中文|[English](/README.en.md)
 
@@ -12,9 +12,9 @@
 
 本项目欢迎多方面的贡献，并将在一定期限内以特定方式给予奖励（如奖金、证书、实习机会等）。具体贡献类型包括：
 
-- **贡献一**：编写验证文档，包括设计对象（Design Under Test，DUT）的规范文档、说明文档、功能描述文档等。
-- **贡献二**：开发测试用例，包括针对各个功能点的测试代码与注释，以及相关的说明文档。
-- **贡献三**：发现并报告香山处理器中的bug，并提供原因分析和修复建议。
+- **贡献一**：开发测试用例，包括针对各个功能点的测试代码与注释，以及相关的说明文档。
+- **贡献二**：发现并报告香山处理器中的bug（提供原因分析和修复建议可获得额外奖励）。
+- **贡献三**：编写验证文档，包括设计对象（Design Under Test，DUT）的规范文档、说明文档、功能描述文档等。
 - **贡献四**：其他方面的贡献，例如为本项目提供的工具增加新功能等。
 
 万众一芯项目网址：[https://open-verify.cc](https://open-verify.cc)
@@ -48,7 +48,7 @@ make CFG=configs/noskip.yaml
 
 #### 如何本地展示文档和数据
 
-按照[文档部署说明](https://github.com/XS-MLVP/UnityChipForXiangShan/blob/main/documents/README.md)配置`hugo`环境，然后执行：
+按照[文档部署说明](https://github.com/XS-MLVP/UnityChipForXiangShan/blob/main/documents/README.zh.md)配置`hugo`环境，然后执行：
 
 ```bash
 cd UnityChipForXiangShan
@@ -81,9 +81,26 @@ sudo docker run -p 1313:1313 -it --rm ghcr.io/xs-mlvp/uc4xs:latest /home/run_ci.
 1. 执行 `make CFG=configs/ci.yaml args="-n auto"` 运行测试
 1. 执行 `make doc` 可视化文档（测试报告）
 
+docker镜像中包含了`cmake, verilator, verible, swig`等环境，因此可以使用docker作为测试用例的开发环境：
+
+```bash
+sudo docker pull ghcr.io/xs-mlvp/uc4xs:latest                  # 拉取docker镜像
+# 运行doker中的bash，并挂载工作目录
+sudo docker run -v /path/to/your/local/workspace:/home/workspace -it ghcr.io/xs-mlvp/uc4xs:latest /bin/bash
+# 在docker的bash环境中执行
+bash /home/update_picker.sh                                    # 更新picker到最新
+cd /home/workspace                                             # 切换工作目录
+git clone https://github.com/XS-MLVP/UnityChipForXiangShan.git # 下载仓库代码
+cd UnityChipForXiangShan                                       # 进入仓库
+pip3 install --force-reinstall -r requirements.txt             # 更新python依赖
+make all                                                       # 测试docker用例开发环境是否正常
+```
+
+更多docker命令请参考：[https://docs.docker.com/reference/cli/docker/](https://docs.docker.com/reference/cli/docker/)
+
 #### 维护
 
-在提交Issue、Pull Request、Discussion 时，如果指定对应模块的 Maintainer 能更及时的得到回应。目前已有的维护人员请参考[本连接](https://open-verify.cc/UnityChipForXiangShan/docs/99_maintain/)。
+在提交Issue、Pull Request、Discussion 时（请根据需要删除模板中不相关部分），指定对应模块的 Maintainer 能更及时的得到回应。目前已有的维护人员请参考[本链接](https://open-verify.cc/UnityChipForXiangShan/docs/99_maintain/)。
 
 如果您对本项目感兴趣，欢迎成为本项目中的维护者。
 

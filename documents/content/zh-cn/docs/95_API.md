@@ -217,3 +217,28 @@ print(comm.module_name_with(["X", "Y"], ,"../../x"))
 # out
 ["a.b.c.x.X", "a.b.c.x.Y"]
 ```
+
+
+#### `get_all_rtl_files(top_module, cfg)`
+
+获取名称为 `top_module` 的模块所依赖的所有 RTL 文件（`.v` 或 `.sv`）的列表，并确保列表的第一个元素是 `top_module` 所在文件的绝对路径。所有 RTL 文件均位于 `UnityChipForXiangShan/rtl/rtl` 目录下。
+
+- 输入：
+  - `top_module`：模块名称，类型为 `str`。  
+  - `cfg`：配置信息，类型为 `CfgObject`。  
+
+- 输出：
+  - 返回一个包含字符串的列表，列表中的每个字符串为模块依赖的 RTL 文件的绝对路径。列表的第一个元素为 `top_module` 所在文件的路径。  
+
+假设 `top_module` 为 `"ALU"`，且其依赖的 RTL 文件包括 `ALU.sv`、`adder.v` 和 `multiplier.v`：  
+```python
+paths = get_all_rtl_files("ALU", cfg)
+
+"""
+paths可能的内容：
+[
+    "/path/to/UnityChipForXiangShan/rtl/rtl/ALU.sv",
+    "/path/to/UnityChipForXiangShan/rtl/rtl/adder.v",
+    "/path/to/UnityChipForXiangShan/rtl/rtl/multiplier.v"
+]
+"""

@@ -7,12 +7,13 @@ weight: 13
 
 #### 基础环境需求
 
-本项目基于`Python`编程语言进行UT验证，采用的工具和测试框架为[picker](https://github.com/XS-MLVP/picker)和[toffe](https://github.com/XS-MLVP/toffe)，**环境需求**如下：
+本项目基于`Python`编程语言进行UT验证，采用的工具和测试框架为[picker](https://github.com/XS-MLVP/picker)和[toffee](https://github.com/XS-MLVP/toffee)，**环境需求**如下：
 
 1. Linux操作系统。建议WSL2下安装Ubuntu22.04。
 1. Python。建议Python3.11。
 1. picker。按照[快速开始](https://open-verify.cc/mlvp/docs/quick-start/installer/)中的提示安装最新版本。
-1. lcov 用于后续test阶段报告生成。使用包管理器即可下载：sudo apt install lcov
+1. toffee。将在后面自动安装。也可按照[快速开始](https://open-verify.cc/mlvp/docs/mlvp/quick-start/)中的提示手动安装最新版本。
+1. lcov。用于后续test阶段报告生成。使用包管理器即可下载：`sudo apt install lcov`
 
 **环境配置完成**后，clone仓库：
 ```bash

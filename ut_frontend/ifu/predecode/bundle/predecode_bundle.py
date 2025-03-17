@@ -20,7 +20,7 @@ class _5Bundle(Bundle):
 	_h = _3Bundle.from_prefix("_h")
 	_lastIsValidEnd = _1Bundle.from_prefix("_lastIsValidEnd")
 	_validEnd = _4Bundle.from_prefix("_validEnd")
-	_currentIsRVC = _0Bundle.from_prefix("_currentIsRVC")
+	# _currentIsRVC = _0Bundle.from_prefix("_currentIsRVC")
 
 class _6Bundle(Bundle):
 	_2, _1, _10, _15, _16, _4, _7, _8, _0, _11, _6, _5, _12, _14, _9, _3, _13 = Signals(17)
@@ -30,9 +30,11 @@ class _7Bundle(Bundle):
 
 class _8Bundle(Bundle):
 	_isRVC = Signal()
+	_brType, _isCall, _isRet = Signals(3)
 
 class _9Bundle(Bundle):
 	_isRVC, _valid = Signals(2)
+	_brType, _isCall, _isRet = Signals(3)
 
 class _10Bundle(Bundle):
 	_2 = _9Bundle.from_prefix("_2")

@@ -12,10 +12,10 @@ This project aims to perform unit testing (Unit Test, UT) on the Kunminghu archi
 
 This project welcomes contributions in various aspects and will provide rewards (such as bonuses, certificates, internship opportunities, etc.) within a certain period. Specific types of contributions include:
 
-- **# 1**: Write verification documents, including specification documents, instruction documents, functional description documents, etc., for the Design Under Test (DUT).
-- **# 2**: Develop test cases, including test code and comments for each functional point, as well as related instruction documents.
-- **# 3**: Discover and report bugs in the XiangShan Processor, and provide cause analysis and repair suggestions.
-- **# 4**: Other contributions, such as adding new features to the tools provided by this project.
+- **# 1**: Create test cases, including functional point-specific test code with annotations, as well as accompanying documentation.
+- **# 2**: Identify and report bugs in the Xiangshan Processor (additional rewards may be granted for root cause analysis and repair suggestions).
+- **# 3**: Develop verification documentation, including specification documents, user manuals, functional description documents for the Design Under Test (DUT), and related materials.
+- **# 4**: Miscellaneous contributions, such as implementing new features or enhancements for tools used in this project.
 
 UnityChip project website: [https://open-verify.cc](https://open-verify.cc)
 
@@ -49,7 +49,7 @@ make all CFG=configs/noskip.yaml
 
 #### Display Docs and Data Locally
 
-Follow the [Documentation Deployment Instructions](https://github.com/XS-MLVP/UnityChipForXiangShan/blob/main/documents/README.md) to set up the `hugo` environment, and then execute:
+Follow the [Documentation Deployment Instructions](https://github.com/XS-MLVP/UnityChipForXiangShan/blob/main/documents/README.en.md) to set up the `hugo` environment, and then execute:
 
 ```bash
 cd UnityChipForXiangShan
@@ -81,9 +81,28 @@ The `run_ci.sh` script in the container will perform the following actions:
 1. Run `make doc` to generate documentation (test report)
 
 
+The Docker image includes tools such as `cmake`, `verilator`, `verible`, and `swig`, so you can use the Docker image as a development environment for test cases:
+
+```bash
+sudo docker pull ghcr.io/xs-mlvp/uc4xs:latest                  # Pull the Docker image
+# Run bash in Docker and mount your working directory
+sudo docker run -v /path/to/your/local/workspace:/home/workspace -it ghcr.io/xs-mlvp/uc4xs:latest /bin/bash
+# Execute in Docker's bash environment
+bash /home/update_picker.sh                                    # Update picker to the latest version
+cd /home/workspace                                             # Change to the working directory
+git clone https://github.com/XS-MLVP/UnityChipForXiangShan.git # Clone the repository
+cd UnityChipForXiangShan                                       # Enter the repository
+pip3 install --force-reinstall -r requirements.txt             # Update Python dependencies
+# Test if the Docker development environment is working properly
+make all
+```
+
+For more Docker commands, please refer to: [https://docs.docker.com/reference/cli/docker/](https://docs.docker.com/reference/cli/docker/)
+
+
 #### Maintenance
 
-When submitting an Issue, Pull Request, or Discussion, specifying the corresponding module's maintainer can help get a quicker response. For the current list of maintainers, please refer to [this link](https://open-verify.cc/UnityChipForXiangShan/docs/99_maintain/).
+When submitting an Issue, Pull Request, or Discussion (Please delete irrelevant parts of the template as needed), specifying the corresponding module's maintainer can help get a quicker response. For the current list of maintainers, please refer to [this link](https://open-verify.cc/UnityChipForXiangShan/docs/99_maintain/).
 
 If you are interested in this project, you are welcome to become a maintainer.
 
