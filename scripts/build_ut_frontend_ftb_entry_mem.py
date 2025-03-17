@@ -33,6 +33,6 @@ def build(cfg):
 
     return True
 
-##行覆盖率文件暂且不指定先
+## set coverage
 def line_coverage_files(cfg):
     return ["FtbEntryMem.v"]
