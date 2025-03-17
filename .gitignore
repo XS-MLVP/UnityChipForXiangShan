@@ -6,8 +6,8 @@ __pycache__/
 
 # results
 out/
-# dut/*
-# !dut/__init__.py
+dut/*
+!dut/__init__.py
 documents/public/
 documents/resources/_gen/
 rtl/*
@@ -16,7 +16,7 @@ documents/static/data/*
 !documents/static/data/README.txt
 
 # C extensions
-# *.so
+*.so
 
 # Distribution / packaging
 .Python
@@ -164,16 +164,6 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
-
-# node modules
-node_modules/
-
-# some package.json
-package-lock.json
-package.json
-
-
-
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
