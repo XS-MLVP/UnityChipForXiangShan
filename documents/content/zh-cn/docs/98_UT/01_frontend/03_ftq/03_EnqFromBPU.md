@@ -1,3 +1,9 @@
+---
+title: 从BPU进入FTQ
+linkTitle: 从BPU进入FTQ
+weight: 12
+---
+
 # 来自BPU
 
 ## 新的预测块进队条件：

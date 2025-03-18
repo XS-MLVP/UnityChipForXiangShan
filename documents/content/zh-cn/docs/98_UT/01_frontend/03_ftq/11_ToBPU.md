@@ -1,3 +1,9 @@
+---
+title: 发往BPU
+linkTitle: 发往BPU
+weight: 12
+---
+
 # 简介
 FTQ将已提交指令的更新信息发往BPU进行训练，同时转发重定向信息。
 # 涉及的顶层IO接口

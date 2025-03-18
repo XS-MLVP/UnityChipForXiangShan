@@ -1,3 +1,9 @@
+---
+title: 从IFU写回
+linkTitle: 从IFU写回
+weight: 12
+---
+
 # 简介
 除了后端，IFU也会发送重定向相关消息，和后端不同，IFU的重定向信息来自于预译码写回信息。相同的是，它们都是通过BranchPredictionRedirect的接口传递重定向信息。
 # 流程
