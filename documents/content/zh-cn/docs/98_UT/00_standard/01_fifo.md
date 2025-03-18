@@ -2,7 +2,7 @@
 title: FIFO文档案例
 linkTitle: FIFO文档案例
 weight: 5
-draft: true
+draft: false
 ---
 
 以下以FIFO为例，展示了一个简单的文档案例
