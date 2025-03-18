@@ -27,8 +27,11 @@ clean_dut:
 clean_rtl:
 	cd rtl && ls | grep -v README.md | xargs rm -rf
 
-test_all: dut
+test_all: check_all_dut
 	@python3 run.py --config $(CFG) $(KV) -- $(REPORT) -vs ut_*/ $(args)
+
+check_all_dut:
+	@python3 run.py --config $(CFG) --build $(DUTS) $(args)
 
 test: check_dut
 	@python3 run.py --config $(CFG) $(KV) -- $(REPORT) -vs $(target) $(args)
@@ -36,7 +39,8 @@ test: check_dut
 check_dut:
 	@if [ -n "$(target)" ]; then \
 		for t in $(target); do \
-			MATCHED_LINE=$$(grep ".* --> .* --> $$t" dir_map.f | head -1); \
+			CLEANED_TARGET=$$(echo "$$t" | sed 's/\/$$//'); \
+			MATCHED_LINE=$$(grep ".* --> .* --> $$CLEANED_TARGET" dir_map.f | head -1); \
 			if [ -n "$$MATCHED_LINE" ]; then \
 				DUT_NAME=$$(echo "$$MATCHED_LINE" | awk -F' --> ' '{print $$1}'); \
 				DUT_DIR=dut/$$(echo "$$MATCHED_LINE" | awk -F' --> ' '{print $$2}'); \

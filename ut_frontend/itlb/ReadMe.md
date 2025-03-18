@@ -1,6 +1,7 @@
 # **Translation Lookaside Buffer (TLB)**
 
 ## 一、TLB.sv 接口说明
+
 ### 基本控制信号
 
 1. **`clock`**: 时钟信号，驱动 TLB 的时序逻辑。
@@ -239,3 +240,34 @@
         - `entry_level`
         - `gpf`
         - `gaf`
+
+## 三、测试用例格式（方便复制粘贴）
+
+def test_TODO(tlb_fixture):
+    """
+    Func: TODO
+        subfunc1: TODO
+    """
+    # connect to fixture
+    tlb = tlb_fixture
+    # add watch point
+    case_name = inspect.currentframe().f_back.f_code.co_name
+    g.add_watch_point(tlb.TODO, {
+                        "TODO": fc.Eq(TODO),
+                        "TODO": lambda TODO: TODO.value == TODO,
+    }, name = f"{case_name}: TODO")
+    # set default value
+    tlb.set_default_value()
+    # reset
+    tlb.reset()
+
+    # add clock
+    tlb.dut.xclock.StepRis(lambda _: g.sample())
+    # start
+    for _ in range(TODO):
+        # add signal and assign to dut
+
+        # step to next cycle
+        tlb.dut.Step(2)
+
+        # assert result
