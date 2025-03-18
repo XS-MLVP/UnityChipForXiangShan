@@ -2,7 +2,7 @@
 title: 验证文档规范
 linkTitle: 验证文档规范
 weight: 1
-draft: true
+draft: false
 ---
 
 {{% pageinfo %}}
@@ -35,6 +35,34 @@ draft: true
 | QoS	| Quality of Service | 服务质量，用于总线仲裁中优先级控制机制 |
 
 如果有其他补充情况请在此说明，例如：上述命名描述仅针对香山处理器，不代表RISC-V标准或者其他处理器。
+
+## 前置知识
+
+前置知识标题请用二号标题格式（两个#）。
+
+**【可选项】** 在阅读文档或进行验证之前，建议掌握一些关键前置知识，以便更深入理解相关内容。例如，在撰写LoadStoreQueue（LSQ）文档时，讲述RAW（Read After Write）违例有助于理解操作之间的依赖关系。在撰写Icache或L2Cache文档时，介绍缓存层级、替换策略和一致性模型等基本概念也有助于读者理解。如果涉及复杂算法，也应对其进行简要描述。
+
+基本要求：
+1. 该部分内容应简洁，易于理解。如篇幅较长，可将内容移至附录。
+2. 针对较为复杂的内容，可以通过图像、伪代码和案例进行解释，以降低理解难度。
+
+下面是一个举例：
+
+## 前置知识
+### st-ld违例
+在现代处理器中，Load 和 Store 指令通常采用乱序执行的方式进行处理。这种执行策略旨在提高处理器的并行性和整体性能。然而，由于 Load 和 Store 指令在流水线中的乱序执行，常常会出现 Load 指令越过更早的相同地址的 Store 指令的情况。这意味着，Load 指令本应通过前递（forwarding）机制从 Store 指令获取数据，但由于 Store 指令的地址或数据尚未准备好，导致 Load 指令未能成功前递到 Store 的数据，而 Store 指令已被提交。由此，后续依赖于该 Load 指令结果的指令可能会出现错误，这就是 st-ld 违例。
+
+考虑以下伪代码示例：
+
+```mips
+ST R1, 0(R2)  ; 将 R1 的值存储到 R2 指向的内存地址
+LD R3, 0(R2)  ; 从 R2 指向的内存地址加载值到 R3
+ADD R4, R3, R5 ; 使用 R3 的值进行计算
+```
+
+假设在这个过程中，Store 指令由于某种原因（如缓存未命中）未能及时完成，而 Load 指令已经执行并读取了旧的数据（例如，从内存中读取到的值为 `0`）。此时，Load 指令并未获得 Store 指令更新后的值，导致后续计算的数据错误。
+
+通过上述例子，可以清楚地看到 Store-to-Load 违例如何在乱序执行的环境中导致数据一致性问题。这种问题强调了在指令调度和执行过程中，确保正确的数据流动的重要性。现代处理器通过多种机制来检测和解决这种违例，以维护程序的正确性和稳定性。
 
 ## 整体框图
 
@@ -185,7 +213,7 @@ IFU应当能向FTQ报告自己已ready。
 ### FTQ 请求接口时序示例
 
 <p align="center">
-    <img src="port1.png" alt="FTQ请求接口时序示例" />
+    <img src="port1.png" alt="port1" />
 </p>
 
 上图示意了三个 FTQ 请求的示例，req1 只请求缓存行 line0，紧接着 req2 请求 line1 和 line2，当到 req3 时，由于指令缓存 SRAM 写优先，此时指令缓存的读请求 ready 被指低，req3 请求的 valid 和地址保持直到请求被接收。
@@ -193,7 +221,7 @@ IFU应当能向FTQ报告自己已ready。
 ### ICache 返回接口以及到 Ibuffer 和写回 FTQ 接口时序示例
 
 <p align="center">
-    <img src="port2.png" alt="ICache返回接口以及到Ibuffer和写回FTQ接口时序示例" />
+    <img src="port2.png" alt="port2" />
 </p>
 
 上图展示了指令缓存返回数据到 IFU 发现误预测直到 FTQ 发送正确地址的时序，group0 对应的请求在 f2 阶段了两个缓存行 line0 和 line1，下一拍 IFU 做误预测检查并同时把指令给 Ibuffer，但此时后端流水线阻塞导致 Ibuffer 满，Ibuffer 接收端的 ready 置低，goup0 相关信号保持直到请求被 Ibuffer 接收。但是 IFU 到 FTQ 的写回在 tio_toIbuffer_valid 有效的下一拍就拉高，因为此时请求已经无阻塞地进入 wb 阶段，这个阶段锁存的了 PredChecker 的检查结果，报告 group0 第 4（从 0 开始）个 2 字节位置对应的指令发生了错误预测，应该重定向到 vaddrA，之后经过 4 拍（冲刷和重新走预测器流水线），FTQ 重新发送给 IFU 以 vaddrA 为起始地址的预测块。
@@ -214,7 +242,7 @@ IFU应当能向FTQ报告自己已ready。
 
 **表格示例**：
 
-以下是节选自IFU top文档的一个例子
+以下是节选自IFU top文档的一个例子:
 
 <mrs-testpoints>
 
@@ -226,4 +254,41 @@ IFU应当能向FTQ报告自己已ready。
 | 2\.2\.1 | IFU_F2_INFOS |  EXCP_VEC | IFU接收ICache内容后，会根据ICache的结果生成属于每个指令的异常向量  |
 
 </mrs-testpoints>
+
+## 附录
+
+附录标题请用二号标题格式（两个#）。
+
+**【可选项】** 此部分用于存放正文的补充内容，以便进行扩展和详细说明，旨在使文档格式更加清晰，排版更加合理。
+
+以下是节选自IFU RVCExpander文档的一个例子:
+
+## RVC扩展辅助阅读材料
+
+为方便参考模型的书写，在这里根据20240411版本的手册内容整理了部分指令扩展的思路。
+
+对于RVC指令来说，op \= instr\(1, 0\)；funct \= instr\(15, 13\)
+
+| op\\funct | 000 | 001 | 010 | 011 | 100 | 101 | 110 | 111 |
+| ----- | --- | --- | --- | --- | --- | --- | ---| --- |
+| 00 | addi4spn | fld | lw | ld | lbu<br>lhu;lh<br>sb;sh | fsd | sw | sd |
+| 01 | addi | addiw | li | lui<br>addi16sp<br>zcmop | ARITHs<br>zcb | j | beqz | bnez |
+| 10 | slli | fldsp | lwsp | ldsp | jr;mv<br>ebreak<br>jalr;add | fsdsp | fwsp | sdsp |
+
+在开始阅读各指令的扩展规则时，需要了解一些RVC扩展的前置知识，比如：
+
+rd', rs1'和rs2'寄存器：受限于16位指令的位宽限制，这几个寄存器只有3位来表示，他们对应到x8~x15寄存器。
+
+###  op \= b'00'
+
+#### funct \= b'000': ADDI4SPN
+
+<p align="center">
+    <img src="Caddi4spn.png" alt="addi4spn" />
+</p>
+
+该指令将一个0扩展的非0立即数加到栈指针寄存器x2上，并将结果写入rd'
+
+其中，nzuimm\[5\:4\|9\:6\|2\|3\]的含义是：
+···
 
