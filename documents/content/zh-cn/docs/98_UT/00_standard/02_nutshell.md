@@ -4,7 +4,7 @@ linkTitle: 果壳Cache文档案例
 weight: 10
 ---
 
-本文档将以[果壳L1Cache](https://github.com/OSCPU/NutShell/blob/fc12171d929e7e589fab9f794ab63ce12e6c594e/src/main/scala/nutcore/mem/Cache.scala)作为案例，展示一个具有相当复杂度的模块的验证文档例子。
+本文档将以[果壳L1Cache](https://github.com/OSCPU/NutShell/blob/fc12171d929e7e589fab9f794ab63ce12e6c594e/src/main/scala/nutcore/mem/Cache.scala)作为案例，展示一个具有相当复杂度的模块的验证说明文档例子（请一定同提交的验证报告区分开来）。
 
 # 果壳L1Cache验证文档
 
@@ -19,14 +19,11 @@ weight: 10
 
 ## 术语说明
 
-优先解释模块专有缩写（如TLB， FIFO等）
-对容易混淆的概念请务必明确（如虚拟地址和物理地址等）
-
-| 缩写	| 全称 | 定义 |
-| -- | ----- | ---|
-| MMIO | Memory-Mapped Input/Output	| 描述1 |
-| 缩写2	| FULL_NAME_2	| 描述2 |
-| 缩写3	| FULL_NAME_3	| 描述3 |
+| 名称 | 定义 |
+| ------- | ---|
+| MMIO（Memory-Mapped Input/Output）	| 内存映射IO |
+| 写回 | Cache需要进行替换时，会将脏替换块写回内存 |
+|关键字优先方案 | 缺失发生时，系统会优先获取CPU所需要的当前指令或数据所对应的字 |
 
 ## 前置知识
 
@@ -46,11 +43,10 @@ Cache有三种主要的组织方式：直接映射（Direct-Mapped）Cache、组
 
 D-Cache处理写缺失一般有两种策略：
 
-（1）非写分配（Non-Write Allocate）：直接将数据写入下级存储器，而不将其写入D-Cache。这意味着当发生写缺失时，数据会直接写入到下级存储器，而不会经过D-Cache。
-（2）写分配（Write Allocate）：在发生写缺失时，会先将相应地址的整个数据块从下级存储器中读取到D-Cache中，然后再将要写入的数据合并到这个数据块中，最终将整个数据块写回到D-Cache中。这样做的好处是可以在D-Cache中进行更多的操作，但同时也增加了对内存的访问次数和延迟。
-写通（Write Through）和非写分配（Non-Write Allocate）将数据直接写入下级存储器，而写回（Write Back）和写分配（Write Allocate）则会将数据写入到D-Cache中。通常情况下，D-Cache的写策略搭配为写通+非写分配或写回+写分配。
+（1）**非写分配（Non-Write Allocate）**：直接将数据写入下级存储器，而不将其写入D-Cache。这意味着当发生写缺失时，数据会直接写入到下级存储器，而不会经过D-Cache。
 
-## 附录
+（2）**写分配（Write Allocate）**：在发生写缺失时，会先将相应地址的整个数据块从下级存储器中读取到D-Cache中，然后再将要写入的数据合并到这个数据块中，最终将整个数据块写回到D-Cache中。这样做的好处是可以在D-Cache中进行更多的操作，但同时也增加了对内存的访问次数和延迟。
+写通（Write Through）和非写分配（Non-Write Allocate）将数据直接写入下级存储器，而写回（Write Back）和写分配（Write Allocate）则会将数据写入到D-Cache中。通常情况下，D-Cache的写策略搭配为写通+非写分配或写回+写分配。
 
 **写通示意图**：
 
@@ -60,7 +56,15 @@ D-Cache处理写缺失一般有两种策略：
 
 <img src="Write-back_with_write-allocation.png" alt="write-back" width="400" />
 
-## 整体框图和流水级示意
+### 替换策略
+
+读写D-Cache发生缺失时，需要从对应的Cache Set中找到一个cache行，来存放从下级存储器中读出的数据，如果此时这个Cache Set内的所有Cache行都已经被占用了，那么就需要替换掉其中一个，如何从这些有效的Cache行找到一个并替换它，这就是替换策略，本节介绍几种最常用的替换策略。
+
+**近期最少使用法**会选择最近被使用次数最少的Cache行，因此这个算法需要追踪每个Cache行的使用情况，这需要为每个Cache行都设置一个年龄（age）部分，每当一个Cache行被访问时，它对应的年龄部分就会增加，或者减少其他Cache行的年龄值，这样当进行替换时，年龄值最小的那个Cache行就是被使用次数最少的了，会选择它进行替换。
+
+**随机替换算法**硬件实现简单，这种方法发生缺失的频率会更高一些，但是随着Cache容量的增大，这个差距是越来越小的。在实际的设计中，很难实现严格的随机，一般采用一种称为时钟算法（clock algorithm）的方法实现近似的随机，它的工作原理本质上是一个时钟计数器，计数器的宽度由Cache的路的个数决定，当要替换时，就根据这个计数器选择相应的行进行替换。这种方法硬件复杂度较低，也不会损失较多的性能，因此是一种折中的方法。
+
+## 整体框图和流水级
 
 以下是L1Cache的整体框图和流水级示意：
 
@@ -110,8 +114,8 @@ Cache会根据地址所在的区间，判断是否发生MMIO请求。
 
 | 序号 |  功能名称 | 测试点名称      | 描述                  |
 | ----- |-----------------|---------------------|------------------------------------|
-| 2\.1 | CACHE_MMIO_RW | FORWARD | Cache接收到MMIO空间的请求时，不应发生读写，而是直接转发给MMIO端口 | 
-| 2\.2 | CACHE_MMIO_RW | NO_BURST | Cache接收到MMIO空间的请求时，MMIO端口接收到的Cache请求不应为BURST类型 |
+| 2\.1\.1 | CACHE_MMIO_RW | FORWARD | Cache接收到MMIO空间的请求时，不应发生读写，而是直接转发给MMIO端口 | 
+| 2\.1\.2 | CACHE_MMIO_RW | NO_BURST | Cache接收到MMIO空间的请求时，MMIO端口接收到的Cache请求不应为BURST类型 |
 
 ### 2.2. MMIO阻塞
 
@@ -133,10 +137,12 @@ NutShell的Cache采用写回策略，因此，在写命中时，需要标记脏�
 
 命中发生时，即使是写命中，也无需写回或者重填，因此，回复的时间会更短一些。
 
+以下是本功能点的所有测试点：
+
 | 序号 |  功能名称 | 测试点名称      | 描述                  |
 | ----- |-----------------|----------------|----------------|
-| 3\.1 | CACHE_HIT | WRITE | Cache写命中时，应设置脏位 | 
-| 3\.2 | CACHE_HIT | SHORTER | Cache写命中时，回复的周期应该更少 | 
+| 3\.2\.1 | CACHE_HIT | WRITE | Cache写命中时，应设置脏位 | 
+| 3\.2\.2 | CACHE_HIT | SHORTER | Cache写命中时，回复的周期应该更少 | 
 
 ### 4. Cache缺失
 
@@ -167,36 +173,23 @@ NutShell的Cache采用写回策略，因此，在写命中时，需要标记脏�
 
 </mrs-functions>
 
-## 常量说明 \[可选项\] 需列出模块中所有可配置参数及其物理意义
+## 常量说明
 
 | 常量名 | 常量值 | 解释 |
 | ---- | ---- | ---- |
 | 缓存行大小 | 64 | 以字节为单位的缓存行大小 |
 | L1Cache大小 | 32 | L1Cache的总容量，单位为千字节 |
 
-## 接口说明 \[必填项\] 详细解释各种接口的含义、来源
+## 接口说明 
+
 |信号|说明|
 | --- | --- |
 | clock<br>reset   | 时钟<br>复位信号|
 | io\_flush<br>io\_empty <br> io\_in\_* |<br><br> 请求总线信号(req \& resp) |
-| io\_out\_mem\_* & cache向内存请求的总线信号\\
-    \hline
-    io\_mmio\_*     & cache向MMIO请求的总线信号\\
-    \hline
-    io\_out\_coh\_* & 一致性相关的信号\\
-    \hline
-    victim\_way\_mask   & 受害者相关信号，即被替换的cache块相关信息\\
-## 接口时序 \[可选项\] 对复杂接口，提供波形图的案例
+| io\_out\_mem\_* <br> io\_mmio\_* <br> io\_out\_coh\_* <br>victim\_way\_mask  | cache向内存请求的总线信号<br>cache向MMIO请求的总线信号 <br> 一致性相关的信号 <br> 受害者相关信号，即被替换的cache块相关信息 |
 
-### 案例1
 
-请在这里填充时序案例1
-
-### 案例2
-
-请在这里填充时序案例2
-
-## 测试点总表 (\[必填项\] 针对细分的测试点，列出表格)
+## 测试点总表 
 
 实际使用下面的表格时，请用有意义的英文大写的功能名称和测试点名称替换下面表格中的名称
 
@@ -204,12 +197,16 @@ NutShell的Cache采用写回策略，因此，在写命中时，需要标记脏�
 
 | 序号 |  功能名称 | 测试点名称      | 描述                  |
 | ----- |-----------------|---------------------|------------------------------------|
-| 1\.1\.1 | FUNCTION_1_1 | TESTPOINT_A | 功能1\.1的测试点A，使用时请替换为您的测试点的输入输出和判断方法 | 
-| 1\.1\.2 | FUNCTION_1_1 | TESTPOINT_B | 功能1\.1的测试点B，使用时请替换为您的测试点的输入输出和判断方法 | 
-| 1\.1\.3 | FUNCTION_1_1 | TESTPOINT_C | 功能1\.1的测试点C，使用时请替换为您的测试点的输入输出和判断方法 | 
-| 1\.2\.1 | FUNCTION_1_2 | TESTPOINT_X | 功能1\.2的测试点X，使用时请替换为您的测试点的输入输出和判断方法 | 
-| 1\.2\.2 | FUNCTION_1_2 | TESTPOINT_Y | 功能1\.2的测试点Y，使用时请替换为您的测试点的输入输出和判断方法 | 
-| 2\.1 | FUNCTION_2 | TESTPOINT_2A | 功能2的测试点2A，使用时请替换为您的测试点的输入输出和判断方法 | 
-| 2\.2 | FUNCTION_2 | TESTPOINT_2B | 功能2的测试点2B，使用时请替换为您的测试点的输入输出和判断方法 | 
+| 1 | CACHE_BACKUP | BACKUP | 对Cache的存取应该同对内存的存取一致 | 
+| 2\.1\.1 | CACHE_MMIO_RW | FORWARD | Cache接收到MMIO空间的请求时，不应发生读写，而是直接转发给MMIO端口 | 
+| 2\.1\.2 | CACHE_MMIO_RW | NO_BURST || 1\.2\.2 | FUNCTION_1_2 | TESTPOINT_Y | 功能1\.2的测试点Y，使用时请替换为您的测试点的输入输出和判断方法 |  Cache接收到MMIO空间的请求时，MMIO端口接收到的Cache请求不应为BURST类型 |
+| 2\.2 | CACHE_MMIO | BLOCK | MMIO请求发生时，应当阻塞流水线 | 
+| 3\.1 | CACHE_HIT | WRITE | Cache写命中时，应设置脏位 | 
+| 3\.2 | CACHE_HIT | SHORTER | Cache写命中时，回复的周期应该更少 | 
+| 4\.1\.1 | CACHE_MISS_COMMON | BLOCK | 发生缺失时，也会阻塞流水线 | 
+| 4\.1\.2 | CACHE_MISS_COMMON | CRITICAL_WORD | Cache缺失时，Cache发出请求的首个地址应当是向Cache请求的地址 | 
+| 4\.1\.3 | CACHE_MISS_COMMON | LONGER | Cache缺失时，回复的时间会更长 | 
+| 4\.2 | CACHE_MISS | DIRTY | Cache缺失时，Cache发出请求的首个地址应当是向Cache请求的地址 | 
+| 4\.3 | CACHE_MISS | CLEAN | Cache缺失时，回复的时间会更长 | 
 
 </mrs-testpoints>

@@ -16,17 +16,17 @@ weight: 12
 
 ## 术语说明
 
-| 缩写         | 全称                                     | 描述                                       |
-| ------------ | ---------------------------------------- | ------------------------------------------ |
-| RVC          | RISC-V Compressed Instructions           | RISC-V 手册"C"扩展规定的 16 位长度压缩指令 |
-| RVI          | RISC-V Integer Instructions              | RISC-V 手册规定的 32 位基本整型指令        |
-| IFU          | Instruction Fetch Unit                   | 取指令单元                                 |
-| FTQ          | Fetch Target Queue                       | 取指目标队列                               |
-| ICache       | L1 Instruction Cache                     | 一级指令缓存                               |
-| IBuffer      | Instruction Buffer                       | 指令缓冲                                   |
-| CFI          | Control Flow Instruction                 | 控制流指令                                 |
-| ITLB         | Instruction Translation Lookaside Buffer | 指令地址转译后备缓冲器                     |
-| InstrUncache | Instruction Ucache Module                | 指令 MMIO 取指处理单元                     |
+| 名称                             | 描述                                       |
+| ------------------------------- | ------------------------------------------ |
+| RVC（RISC-V Compressed Instructions）           | RISC-V 手册"C"扩展规定的 16 位长度压缩指令 |
+| RVI（RISC-V Integer Instructions）              | RISC-V 手册规定的 32 位基本整型指令        |
+| IFU（Instruction Fetch Unit）  | 取指令单元                                 |
+| FTQ（Fetch Target Queue）      | 取指目标队列                               |
+| ICache（L1 Instruction Cache）   | 一级指令缓存                               |
+| IBuffer（Instruction Buffer）   | 指令缓冲                                   |
+| CFI（Control Flow Instruction）  | 控制流指令          |
+| ITLB（Instruction Translation Lookaside Buffer） | 指令地址转译后备缓冲器                     |
+| InstrUncache（Instruction Ucache Module） | 指令 MMIO 取指处理单元      |
 
 ## 整体框图
 
