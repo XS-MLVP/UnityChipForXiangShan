@@ -8,15 +8,16 @@ weight: 10
 
 # 果壳L1Cache验证文档
 
-Cache是一种小容量、高速度的存储器，用于在CPU和主存之间提供快速数据访问。
 
-果壳（NutShell）是一款由5位中国科学院大学本科生设计的基于RISC-V RV64开放指令集的顺序单发射处理器([NutShell·Github](https://github.com/OSCPU/NutShell)), 隶属于国科大与计算所“一生一芯”项目。
+## 文档概述
 
-果壳Cache（NutShell Cache）是其缓存模块，采用可定制化设计（L1 Cache和L2 Cache采用相同的模板生成，只需要调整参数），具体来说，L1 Cache（指令Cache和数据Cache）大小为32KB，L2 Cache大小为128KB, 在整体结构上，果壳Cache采用三级流水的结构。
+本文档针对NutShell L1Cache的验证需求撰写，通过对其功能进行描述并依据功能给出参考测试点，从而帮助验证人员编制测试用例。
+
+果壳（NutShell）是一款由5位中国科学院大学本科生设计的基于RISC-V RV64开放指令集的顺序单发射处理器([NutShell·Github](https://github.com/OSCPU/NutShell)), 隶属于国科大与计算所“一生一芯”项目。而果壳Cache（NutShell Cache）是其缓存模块，采用可定制化设计（L1 Cache和L2 Cache采用相同的模板生成，只需要调整参数），具体来说，L1 Cache（指令Cache和数据Cache）大小为32KB，L2 Cache大小为128KB, 在整体结构上，果壳Cache采用三级流水的结构。
 
 本次验证的目标是L1 Cache，即一级缓存。
 
-## 术语说明 \[必填项\] 列出术语和关键概念解释，方便读者参考
+## 术语说明
 
 优先解释模块专有缩写（如TLB， FIFO等）
 对容易混淆的概念请务必明确（如虚拟地址和物理地址等）
@@ -26,6 +27,38 @@ Cache是一种小容量、高速度的存储器，用于在CPU和主存之间提
 | MMIO | Memory-Mapped Input/Output	| 描述1 |
 | 缩写2	| FULL_NAME_2	| 描述2 |
 | 缩写3	| FULL_NAME_3	| 描述3 |
+
+## 前置知识
+
+### Cache的层次结构 
+
+Cache有三种主要的组织方式：直接映射（Direct-Mapped）Cache、组相连（Set-Associative）Cache和全相连（Fully-Associative）Cache。对于物理内存中的一个数据，如果在Cache中只有一个位置可以存放它，这就是直接映射Cache；如果有多个位置可以存放这个数据，这就是组相连Cache；如果Cache中的任何位置都可以存放这个数据，这就是全相连Cache。
+
+直接映射Cache和全相连Cache实际上是组相连Cache的两种特殊情况。现代处理器中的Cache通常属于这三种方式中的一种。例如，翻译后备缓冲区（TLB）和Victim Cache多采用全相连结构，而普通的指令缓存（I-Cache）和数据缓存（D-Cache）则采用组相连结构。当处理器需要执行一个指令时，它会首先查找该指令是否在I-Cache中。如果在，则直接从I-Cache中读取指令并执行；如果不在，则需要从内存中读取指令到I-Cache中，再执行。与I-Cache类似，当处理器需要读取或写入数据时，会首先查找D-Cache。如果数据在D-Cache中，则直接读取或写入；如果不在，则需要从内存中加载数据到D-Cache中。与I-Cache不同的是，D-Cache需要考虑数据的一致性和写回策略。为了保证数据的一致性，当数据在D-Cache中被修改后，需要同步更新到内存中。
+
+![composition](composition.png)
+
+### Cache的写入
+
+在执行写数据时，如果只是向D-Cache中写入数据而不改变其下级存储器中的数据，就会导致D-Cache和下级存储器对于同一地址的数据不一致（non-consistent）。为了保持一致性，一般Cache在写命中状态下采用两种写入方式：
+（1）写通（Write Through）：数据写入D-Cache的同时也写入其下级存储器。然而，由于下级存储器的访问时间较长，而存储指令的频率较高，频繁地向这种较慢的存储器中写入数据会降低处理器的执行效率。
+（2）写回（Write Back）：数据写入D-Cache后，只是在Cache line上做一个标记，并不立即将数据写入更下级的存储器。只有当Cache中这个被标记的line要被替换时，才将其写入下级存储器。这种方式能够减少向较慢存储器写入数据的频率，从而获得更好的性能。然而，这种方式会导致D-Cache和下级存储器中许多地址的数据不一致，给存储器的一致性管理带来一定的负担。
+
+D-Cache处理写缺失一般有两种策略：
+
+（1）非写分配（Non-Write Allocate）：直接将数据写入下级存储器，而不将其写入D-Cache。这意味着当发生写缺失时，数据会直接写入到下级存储器，而不会经过D-Cache。
+（2）写分配（Write Allocate）：在发生写缺失时，会先将相应地址的整个数据块从下级存储器中读取到D-Cache中，然后再将要写入的数据合并到这个数据块中，最终将整个数据块写回到D-Cache中。这样做的好处是可以在D-Cache中进行更多的操作，但同时也增加了对内存的访问次数和延迟。
+写通（Write Through）和非写分配（Non-Write Allocate）将数据直接写入下级存储器，而写回（Write Back）和写分配（Write Allocate）则会将数据写入到D-Cache中。通常情况下，D-Cache的写策略搭配为写通+非写分配或写回+写分配。
+
+## 附录
+
+**写通示意图**：
+
+<img src="Write-through_with_no-write-allocation.png" alt="write-through" width="400" />
+
+**写回示意图**：
+
+<img src="Write-back_with_write-allocation.png" alt="write-back" width="400" />
 
 ## 整体框图和流水级示意
 
