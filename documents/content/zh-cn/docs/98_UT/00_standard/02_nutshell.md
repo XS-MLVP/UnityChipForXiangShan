@@ -48,13 +48,23 @@ D-Cache处理写缺失一般有两种策略：
 （2）**写分配（Write Allocate）**：在发生写缺失时，会先将相应地址的整个数据块从下级存储器中读取到D-Cache中，然后再将要写入的数据合并到这个数据块中，最终将整个数据块写回到D-Cache中。这样做的好处是可以在D-Cache中进行更多的操作，但同时也增加了对内存的访问次数和延迟。
 写通（Write Through）和非写分配（Non-Write Allocate）将数据直接写入下级存储器，而写回（Write Back）和写分配（Write Allocate）则会将数据写入到D-Cache中。通常情况下，D-Cache的写策略搭配为写通+非写分配或写回+写分配。
 
-**写通示意图**：
+**写通示意图**
+
+<div style="text-align:center">
 
 <img src="Write-through_with_no-write-allocation.png" alt="write-through" width="400" />
 
-**写回示意图**：
+<b>写通示意图</b>
+
+</div>
+
+<div style="text-align:center">
 
 <img src="Write-back_with_write-allocation.png" alt="write-back" width="400" />
+
+<b>写回示意图</b>
+
+</div>
 
 ### 替换策略
 
