@@ -23,6 +23,10 @@ class PreDecodeDataDef():
         self.valid_starts = []
         self.half_valid_starts = []
         
+        self.isRets = []
+        self.isCalls = []
+        self.brTypes = []
+        
 
 class PreDecodeAgent(Agent):
     def __init__(self, bundle:PreDecodeBundle):
