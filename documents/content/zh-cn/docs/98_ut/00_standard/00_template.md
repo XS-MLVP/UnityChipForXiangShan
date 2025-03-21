@@ -1,6 +1,6 @@
 ---
-title: FIFO文档模板
-linkTitle: FIFO文档模板
+title: 文档模板
+linkTitle: 文档模板
 weight: 2
 # draft: true
 ---
