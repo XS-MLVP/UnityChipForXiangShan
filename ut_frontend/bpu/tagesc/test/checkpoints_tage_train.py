@@ -153,9 +153,9 @@ def get_coverage_group_of_tage_train(test_env: TageSCEnv) -> CovGroup:
         test_env,
         {
             slot_name[0]: lambda status: test_env.internal_monitor.update.valid(
-                0) and test_env.ctrl_bundle.s0_fire_1.value,
+                0) and test_env.ctrl_bundle.s1_fire_1.value,
             slot_name[1]: lambda status: test_env.internal_monitor.update.valid(
-                1) and test_env.ctrl_bundle.s0_fire_1.value,
+                1) and test_env.ctrl_bundle.s1_fire_1.value,
         },
         name="Update When Predict"
     )

@@ -9,7 +9,7 @@ ITTage:
   - "logic [2:0] s3_provider"
   - "logic [40:0] s3_providerTarget"
   - "logic [7:0] tickCtr"
-  - "logic updateValid"
+  - "logic updateValid_probe"
   - tables_0:
     - "wire io_resp_valid"
     - "wire io_update_valid"

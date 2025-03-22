@@ -43,14 +43,18 @@ class SCFoldedHistoryBundle(Bundle):
     hist_2_folded_hist, hist_11_folded_hist, hist_12_folded_hist = Signals(3)
 
 
-class FTBSlotBundle(Bundle):
+class FTBBranchSlotBundle(Bundle):
+    valid = Signal()
+
+
+class FTBTailSlotBundle(Bundle):
     valid, sharing = Signals(2)
 
 
 class FTBEntryBundle(Bundle):
     strong_bias_0, strong_bias_1 = Signals(2)
-    br_slot = FTBSlotBundle.from_prefix("brSlots_0_")
-    tail_slot = FTBSlotBundle.from_prefix("tailSlot_")
+    br_slot = FTBBranchSlotBundle.from_prefix("brSlots_0_")
+    tail_slot = FTBTailSlotBundle.from_prefix("tailSlot_")
 
     def get_strong_bias(self, way: int):
         return (self.strong_bias_0, self.strong_bias_1)[way].value
@@ -62,6 +66,7 @@ class BranchPredictionBundle(Bundle):
 
 class BranchPredictDriver(Bundle):
     bits_s0_pc_0, bits_s0_pc_1, bits_s0_pc_2, bits_s0_pc_3 = Signals(4)
+    bits_ghist = Signal()
     fh_tage = TageFoldedHistoryBundle.from_prefix("bits_folded_hist_1_")
     fh_sc = SCFoldedHistoryBundle.from_prefix("bits_folded_hist_3_")
 

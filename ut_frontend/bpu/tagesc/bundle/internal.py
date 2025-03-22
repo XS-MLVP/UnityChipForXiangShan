@@ -99,7 +99,7 @@ class ScTables(Bundle):
 class InternalUpdate(Bundle):
     Valids_0, Valids_1 = Signals(2)
     ProviderCorrect, ProviderCorrect_1 = Signals(2)
-    ResetU_0, ResetU_1 = Signals(2)
+    ResetU_0_probe, ResetU_1_probe = Signals(2)
 
     def valid(self, way) -> int:
         return (self.Valids_0, self.Valids_1)[way].value
@@ -108,7 +108,7 @@ class InternalUpdate(Bundle):
         return (self.ProviderCorrect, self.ProviderCorrect_1)[way].value
 
     def reset_u(self, way) -> int:
-        return (self.ResetU_0, self.ResetU_1)[way].value
+        return (self.ResetU_0_probe, self.ResetU_1_probe)[way].value
 
 
 class S2Status(Bundle):

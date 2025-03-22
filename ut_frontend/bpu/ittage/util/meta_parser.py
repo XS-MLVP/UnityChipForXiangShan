@@ -19,119 +19,119 @@ class MetaParser:
 
     @property
     def provided(self) -> int:
-        return self.bit(117)
+        return self.bit(181)
 
     @provided.setter
     def provided(self, value: int):
-        mask = ~(1 << 117)
-        self.value = (self.value & mask) | (value << 117)
+        mask = ~(1 << 181)
+        self.value = (self.value & mask) | (value << 181)
 
     @property
     def provider(self):
         """The provider property."""
-        return self.bits(116, 114)
+        return self.bits(180, 178)
 
     @provider.setter
     def provider(self, value):
-        mask = ~(0b111 << 114)
-        self.value = (self.value & mask) | (value << 114)
+        mask = ~(0b111 << 178)
+        self.value = (self.value & mask) | (value << 178)
 
     @property
     def altProvided(self):
         """The altProvided property."""
-        return self.bit(113)
+        return self.bit(177)
 
     @altProvided.setter
     def altProvided(self, value):
-        mask = ~(1 << 113)
-        self.value = (self.value & mask) | (value << 113)
+        mask = ~(1 << 177)
+        self.value = (self.value & mask) | (value << 177)
 
     @property
     def altProvider(self):
         """The altProvider property."""
-        return self.bits(112, 110)
+        return self.bits(176, 174)
 
     @altProvider.setter
     def altProvider(self, value):
-        mask = ~(0b111 << 110)
-        self.value = (self.value & mask) | (value << 110)
+        mask = ~(0b111 << 174)
+        self.value = (self.value & mask) | (value << 174)
 
     @property
     def altDiffers(self):
         """The altDiffers property."""
-        return self.bit(109)
+        return self.bit(173)
 
     @altDiffers.setter
     def altDiffers(self, value):
-        mask = ~(1 << 109)
-        self.value = (self.value & mask) | (value << 109)
+        mask = ~(1 << 173)
+        self.value = (self.value & mask) | (value << 173)
 
     @property
     def providerU(self):
         """The providerU property."""
-        return self.bit(108)
+        return self.bit(172)
 
     @providerU.setter
     def providerU(self, value):
-        mask = ~(1 << 108)
-        self.value = (self.value & mask) | (value << 108)
+        mask = ~(1 << 172)
+        self.value = (self.value & mask) | (value << 172)
 
     @property
     def providerCtr(self):
         """The providerCtr property."""
-        return self.bits(107, 106)
+        return self.bits(171, 170)
 
     @providerCtr.setter
     def providerCtr(self, value):
-        mask = ~(0b11 << 106)
-        self.value = (self.value & mask) | (value << 106)
+        mask = ~(0b11 << 170)
+        self.value = (self.value & mask) | (value << 170)
 
     @property
     def altProviderCtr(self):
         """The altProviderCtr property."""
-        return self.bits(105, 104)
+        return self.bits(169, 168)
 
     @altProviderCtr.setter
     def altProviderCtr(self, value):
-        mask = ~(0b11 << 104)
-        self.value = (self.value & mask) | (value << 104)
+        mask = ~(0b11 << 168)
+        self.value = (self.value & mask) | (value << 168)
 
     @property
     def allocate_valid(self):
         """The allocate_valid property."""
-        return self.bit(103)
+        return self.bit(167)
 
     @allocate_valid.setter
     def allocate_valid(self, value):
-        mask = ~(1 << 103)
-        self.value = (self.value & mask) | (value << 103)
+        mask = ~(1 << 167)
+        self.value = (self.value & mask) | (value << 167)
 
     @property
     def allocate_bits(self):
         """The allocate_bits property."""
-        return self.bits(102, 100)
+        return self.bits(166, 164)
 
     @allocate_bits.setter
     def allocate_bits(self, value):
-        mask = ~(0b111 << 100)
-        self.value = (self.value & mask) | (value << 100)
+        mask = ~(0b111 << 164)
+        self.value = (self.value & mask) | (value << 164)
 
     @property
     def providerTarget(self):
         """The providerTarget property."""
-        return self.bits(95, 50)
+        return self.bits(163, 114)
 
     @providerTarget.setter
     def providerTarget(self, value):
-        mask = ~(0X3FFFFFFFFFFFF << 50)
-        self.value = (self.value & mask) | (value << 50)
+        mask = ~(0X3FFFFFFFFFFFF << 114)
+        self.value = (self.value & mask) | (value << 114)
 
     @property
     def altProviderTarget(self):
         """The altProviderTarget property."""
-        return self.bits(49, 0)
+        return self.bits(113, 64)
 
     @altProviderTarget.setter
     def altProviderTarget(self, value):
-        mask = ~(0X3FFFFFFFFFFFF << 0)
-        self.value = (self.value & mask) | (value << 0)
+        mask = ~(0X3FFFFFFFFFFFF << 64)
+        self.value = (self.value & mask) | (value << 64)

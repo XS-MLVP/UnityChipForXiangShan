@@ -6,6 +6,7 @@ from ut_frontend.bpu.tagesc.agent import PredictAgent
 from ut_frontend.bpu.tagesc.agent.update_agent import UpdateAgent
 from ut_frontend.bpu.tagesc.bundle import BranchPredictDriver, BranchPredictMonitor, ControlBundle, BranchUpdateDriver
 from ut_frontend.bpu.tagesc.bundle.internal import InternalMonitor
+from xspcomm import XData
 
 
 class TageSCEnv(toffee.Env):
@@ -21,10 +22,20 @@ class TageSCEnv(toffee.Env):
         self.predict_agent = PredictAgent(self.predict_driver, self.predict_monitor, self.ctrl_bundle)
         self.update_agent = UpdateAgent(self.update_driver)
 
+        # set imm mode
+        self.dut.reset.SetWriteMode(XData.Imme)
+
+        # set agent size
+        self.predict_agent.start_monitor("get_tage_prediction", 10)
+        self.predict_agent.start_monitor("get_sc_prediction", 10)
+        self.predict_agent.start_monitor("get_meta_value", 10)
+
         # initial state
         self.ctrl_bundle.set_all(0)
         self.ctrl_bundle.ctrl.tage_enable.value = 1
         self.ctrl_bundle.ctrl.sc_enable.value = 1
+        self.predict_driver.set_all(0)
+        self.update_driver.set_all(0)
 
     async def reset_dut(self):
         self.dut.reset.value = 1

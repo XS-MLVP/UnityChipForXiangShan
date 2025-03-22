@@ -1,5 +1,3 @@
-from typing import Any
-
 from toffee import driver_method, monitor_method
 from toffee.agent import Agent
 
@@ -62,11 +60,12 @@ class PredictAgent(Agent):
 
 
 def __create_input_dict__(pc: int, global_hist: int):
-    return {
+    d = {
         'bits_s0_pc_0': pc,
         'bits_s0_pc_1': pc,
         'bits_s0_pc_2': pc,
         'bits_s0_pc_3': pc,
+        'bits_ghist': global_hist,
         'fh_tage': {
             'hist_17_folded_hist': FakeGlobalHistory.calc_fh(global_hist, 11, 32),
             'hist_16_folded_hist': FakeGlobalHistory.calc_fh(global_hist, 11, 119),
@@ -86,3 +85,4 @@ def __create_input_dict__(pc: int, global_hist: int):
             'hist_2_folded_hist': FakeGlobalHistory.calc_fh(global_hist, 8, 16)
         }
     }
+    return d

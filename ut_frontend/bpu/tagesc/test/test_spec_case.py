@@ -21,7 +21,8 @@ async def test_tage_tn_saturing_ctr_update(tage_sc_env: TageSCEnv):
             x.value = 1
         for x in parser.providerResps_ctr:
             x.value = 0
-
+        for x in parser.allocates:
+            x.value = 0
         # ctr down saturing
         for ti in range(4):
             for x in parser.providers:
@@ -32,7 +33,6 @@ async def test_tage_tn_saturing_ctr_update(tage_sc_env: TageSCEnv):
                 assert getattr(tage_sc_env.dut,
                                f"Tage_SC_tables_{ti}_per_bank_update_wdata_0_{logic_way}_ctr").value == 0, \
                     f"TageTable{ti} down saturation-update failed!"
-
     # ctr up saturing
     pc += 0x32
     await env.predict_agent.exec_predict(pc, 0x13)
@@ -183,11 +183,9 @@ async def test_sc_table_saturation(tage_sc_env: TageSCEnv):
     pc = 0x1919810
     # SC Table down saturation update
     with GetMetaParser(0) as parser:
-        parser.sc_ctrs[1][1].value = 0x20
-        for i in [0, 2, 3]:
-            parser.sc_ctrs[1][i].value = 0x20
-        for x in parser.sc_ctrs[0]:
-            x.value = 0x20
+        for i in range(2):
+            for x in parser.sc_ctrs[i]:
+                x.value = -32
 
         for x in parser.sc_preds:
             x.value = 1
@@ -200,7 +198,6 @@ async def test_sc_table_saturation(tage_sc_env: TageSCEnv):
         for w in range(2):
             update_write_val = getattr(tage_sc_env.dut, f"Tage_SC_scTables_{i}_update_wdata_{w}").S()  # read as signed
             assert update_write_val == -32, f"Slot{w} of SC Table{i} is not signed down saturation update"
-
     # SC Table up saturation update
     with GetMetaParser(0) as parser:
         parser.sc_ctrs[1][1].value = 31
