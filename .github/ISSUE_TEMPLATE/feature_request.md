@@ -7,6 +7,10 @@ assignees: ''
 
 ---
 
+请删除下面模板中和您提交的feature无关的内容。
+
+PLEASE delete anything not related to your feature in the template below.
+
 **Is your feature request related to a problem? Please describe.**
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 

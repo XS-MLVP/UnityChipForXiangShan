@@ -35,9 +35,30 @@ version_check = get_version_checker("openxiangshan-kmh-*")
 g = fc.CovGroup(UT_FCOV("../../../CLASSIC"))
 
 def init_itlb_funcov(tlb, g: fc.CovGroup):
-    """Add watch points to collect function coverage"""
-
-    # TODO: add watchpoint here
+    """
+    Add watch points to collect function coverage
+    """
+    # TODO: add global watchpoint here
+    g.add_watch_point(tlb.ctrl.io_ptw_req_0_valid, {
+                            "invalid": fc.Eq(0),
+                            "valid": fc.Eq(1),
+                        }, name = "PTW_REQ_0_VALID_GLOBAL")
+    g.add_watch_point(tlb.ctrl.io_ptw_req_1_valid, {
+                            "invalid": fc.Eq(0),
+                            "valid": fc.Eq(1),
+                        }, name = "PTW_REQ_1_VALID_GLOBAL")
+    g.add_watch_point(tlb.ptw_req_0.vpn, {
+                            "zero": fc.Eq(0),
+                        }, name = "PTW_REQ_0_VPN_IS_ZERO_GLOBAL")
+    g.add_watch_point(tlb.ptw_req_0.vpn, {
+                            "max": fc.Eq(2 ** 38 - 1),
+                        }, name = "PTW_REQ_0_VPN_IS_MAX_GLOBAL")
+    g.add_watch_point(tlb.ptw_req_1.vpn, {
+                            "zero": fc.Eq(0),
+                        }, name = "PTW_REQ_1_VPN_IS_ZERO_GLOBAL")
+    g.add_watch_point(tlb.ptw_req_1.vpn, {
+                            "max": fc.Eq(2 ** 38 - 1),
+                        }, name = "PTW_REQ_1_VPN_IS_MAX_GLOBAL")
 
 @pytest.fixture()
 def tlb_fixture(request):
@@ -140,6 +161,9 @@ class TLBWrapper(toffee.Bundle):
         self.bind(self.dut)
 
     def connect_check(self):
+        """
+        Verify if the DUT interface signals are properly bound to the Python signal pins.
+        """
         print("----------------------------- CONNECT CHECK -----------------------------")
         print(">>> unconnected signals  : ", self.detect_unconnected_signals(self.dut))
         print(">>> muticonnected signals: ", self.detect_multiple_connections(self.dut))
@@ -148,6 +172,12 @@ class TLBWrapper(toffee.Bundle):
         print("-------------------------------------------------------------------------")
 
     def set_default_value(self):
+        """
+        To eliminate interference caused by randomly initialized signal values 
+        at simulation startup, you must first zeroize all signals (set to 0) 
+        before asserting the reset signal. This ensures clean initialization 
+        of the module's internal state.
+        """
     # sfence
         self.ctrl.io_sfence_valid.value = 0
         self.sfence.rs1.value = 0
@@ -237,41 +267,61 @@ class TLBWrapper(toffee.Bundle):
         self.ptw_resp_s2.gpf.value = 0
         self.ptw_resp_s2.gaf.value = 0
         self.ctrl.io_ptw_resp_bits_getGpa.value = 0
-        self.dut.Step(10)
+        self.dut.Step(2)
 
 ####################### TLB Basic Function Start From Here #######################
     def reset(self):
-        # reset
+        """
+        reset
+        """
         self.dut.reset.value = 1
         self.dut.Step(10)
         self.dut.reset.value = 0
         # print(">>> RESET FINISHED !")
 
     def gene_rand_TLBreq(self):
+        """
+        generate random TLB request
+        """
         req_valid = random.choice([0, 1])
         req_vaddr = random.randint(0, 2 ** 50 - 1)
         return req_valid, req_vaddr
 
-    def TLBreq0(self):
+    def rand_req0(self):
+        """
+        send random TLB request from requestor0
+        """
         req_0_valid, req_0_vaddr = self.gene_rand_TLBreq()
-        self.dut.requestor_0.req.valid.value = req_0_valid
-        self.dut.requestor_0.req.vaddr.value = req_0_vaddr
+        self.requestor_0.req.valid.value = req_0_valid
+        self.requestor_0.req.bits_vaddr.value = req_0_vaddr
+        return req_0_valid, req_0_vaddr
 
-    def TLBreq1(self):
+    def rand_req1(self):
+        """
+        send random TLB request from requestor1
+        """
         req_1_valid, req_1_vaddr = self.gene_rand_TLBreq()
-        self.dut.requestor_1.req.valid.value = req_1_valid
-        self.dut.requestor_1.req.vaddr.value = req_1_vaddr
+        self.requestor_1.req.valid.value = req_1_valid
+        self.requestor_1.req.bits_vaddr.value = req_1_vaddr
+        return req_1_valid, req_1_vaddr
 
-    def TLBreq2(self):
+    def rand_req2(self):
+        """
+        send random TLB request from requestor2
+        """
         req_2_valid, req_2_vaddr = self.gene_rand_TLBreq()
-        self.dut.requestor_2.req.valid.value = req_2_valid
-        self.dut.requestor_2.req.vaddr.value = req_2_vaddr
+        self.requestor_2.req.valid.value = req_2_valid
+        self.requestor_2.req.bits_vaddr.value = req_2_vaddr
+        return req_2_valid, req_2_vaddr
 
-    def TLBrandreq(self):
-        for _ in range(1000):
-            self.TLBreq0()
-            self.TLBreq1()
-            self.TLBreq2()
+    def rand_req(self):
+        """
+        send random TLB request from all requestors
+        """
+        req_0_valid, req_0_vaddr = self.rand_req0()
+        req_1_valid, req_1_vaddr = self.rand_req1()
+        req_2_valid, req_2_vaddr = self.rand_req2()
+        return req_0_valid, req_0_vaddr, req_1_valid, req_1_vaddr, req_2_valid, req_2_vaddr
 
 class TLBrwWrapper(toffee.Bundle):
     """
