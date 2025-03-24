@@ -18,7 +18,7 @@ def build(cfg):
     assert rtl_files, "Cannot find RTL files of Frontend.IPrefetchPipe"
 
     # additional internal signal files
-    # internal_signals_path = os.path.join(get_root_dir("scripts/icache_related/iprefetchpipe_internals.yaml"))
+    internal_signals_path = os.path.join(get_root_dir("scripts/icache_related/icache_iprefetchpipe_internals.yaml"))
     # assert os.path.exists(internal_signals_path), "Cannot find internal signal files"
 
     # export IPrefetchPipe.sv
@@ -29,8 +29,7 @@ def build(cfg):
             filelist.flush()
             s, _, err = exe_cmd(
                 f"picker export --cp_lib false {rtl_files[0]} --fs {filelist.name} --lang python --tdir "
-    #           f"{get_root_dir('dut')}/ -w IPrefetchPipe.fst -c --internal={internal_signals_path}")
-                f"{get_root_dir('dut')}/ -w IPrefetchPipe.fst -c "
+                f"{get_root_dir('dut')}/ -w IPrefetchPipe.fst -c --internal={internal_signals_path}"
             )
         assert s, err
     return True
