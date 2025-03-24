@@ -15,7 +15,11 @@ def build(cfg):
     dp_file_names = [
     "SRAMTemplate_65.sv", 
     "array_0_0.sv",
-    "ClockGate.v"
+    "ClockGate.sv",
+    "MbistClockGateCell.sv",
+    "sram_array_2p64x576m192s1h0l1b_ftq.sv",
+    "array_8.sv",
+    "array_8_ext.v"
     ]
     dp_fpaths = [f"rtl/rtl/{dp_file_name}" for dp_file_name in dp_file_names]
     dp_fpaths_after_get_root = [get_root_dir(dp_fpath) for dp_fpath in dp_fpaths]
