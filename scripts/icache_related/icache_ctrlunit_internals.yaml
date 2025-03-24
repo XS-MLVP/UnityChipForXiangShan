@@ -1,0 +1,3 @@
+ICacheCtrlUnit:
+  - "wire io_injecting_0"
+  - "wire eccctrl_istatus"
