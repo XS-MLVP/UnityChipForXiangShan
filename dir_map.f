@@ -13,4 +13,9 @@ frontend_tlb_fa --> TLBFA --> ut_frontend/itlb/submodules/TLBFA
 frontend_tlb_nonblock --> TLBNonBlock --> ut_frontend/itlb/submodules/TLBNonBlock
 frontend_tlb_storage_wrapper --> TlbStorageWrapper --> ut_frontend/itlb/submodules/TlbStorageWrapper
 frontend_tlbuffer --> TLBuffer --> ut_frontend/itlb/submodules/TLBuffer
+frontend_icache_ctrlunit --> CtrlUnit --> ut_frontend/icache/ctrlunit
+frontend_icache_iprefetchpipe --> IPrefetchPipe --> ut_frontend/icache/iprefechpipe
+frontend_icache_mainpipe --> ICacheMainPipe --> ut_frontend/icache/mainpipe
+frontend_icache_missunit --> ICacheMissUnit --> ut_frontend/icache/missunit
+frontend_icache --> ICache --> ut_frontend/icache/icache
 frontend_icache_waylookup --> WayLookup --> ut_frontend/icache/waylookup
