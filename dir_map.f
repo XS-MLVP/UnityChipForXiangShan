@@ -13,3 +13,4 @@ frontend_tlb_fa --> TLBFA --> ut_frontend/itlb/submodules/TLBFA
 frontend_tlb_nonblock --> TLBNonBlock --> ut_frontend/itlb/submodules/TLBNonBlock
 frontend_tlb_storage_wrapper --> TlbStorageWrapper --> ut_frontend/itlb/submodules/TlbStorageWrapper
 frontend_tlbuffer --> TLBuffer --> ut_frontend/itlb/submodules/TLBuffer
+frontend_icache_waylookup --> WayLookup --> ut_frontend/icache/waylookup
