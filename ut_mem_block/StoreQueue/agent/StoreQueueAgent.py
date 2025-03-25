@@ -139,7 +139,7 @@ class StoreQueueAgent(Agent):
         return self.bundle.io._forward
     
     @driver_method
-    async def mmio(self, uncache: Uncache, rob: IORob, cmoOpResp_valid: bool, mmioStout_ready: bool):
+    async def mmio(self, uncache: Uncache, rob: IORob, cmoOpResp_valid: bool):
         self.bundle.io._uncache._req._ready.value = uncache.req_ready
         self.bundle.io._uncache._resp._valid.value = uncache.resp_valid
         self.bundle.io._uncache._resp._bits._nc.value = uncache.resp_bits_nc
@@ -150,7 +150,6 @@ class StoreQueueAgent(Agent):
         self.bundle.io._rob._pendingPtr._flag.value = rob.pendingPtr_flag
         self.bundle.io._rob._pendingPtr._value.value = rob.pendingPtr_value
         self.bundle.io._cmoOpResp._valid.value = cmoOpResp_valid
-        self.bundle.io._mmioStout._ready.value = mmioStout_ready
         await self.bundle.step(1)
         self.bundle.io._uncache._resp._valid.value = False
         self.bundle.io._cmoOpResp._valid.value = False
@@ -158,15 +157,13 @@ class StoreQueueAgent(Agent):
         return self.bundle.StoreQueue._mmioState
     
     @driver_method
-    async def ncstore(self, uncacheOutstanding: bool, uncache: Uncache, cmoOpReq_ready:bool, flushSbuffer_empty: bool, mmioStout_ready: bool):
+    async def ncstore(self, uncacheOutstanding: bool, uncache: Uncache, flushSbuffer_empty: bool):
         self.bundle.io._uncache._req._ready.value = uncache.req_ready
         self.bundle.io._uncache._resp._valid.value = uncache.resp_valid
         self.bundle.io._uncache._resp._bits._nc.value = uncache.resp_bits_nc
         self.bundle.io._uncache._resp._bits._id.value = uncache.resp_bits_id
         self.bundle.io._uncache._resp._bits._nderr.value = uncache.resp_bits_nderr
         self.bundle.io._uncacheOutstanding.value = uncacheOutstanding
-        self.bundle.io._cmoOpReq._ready.value = cmoOpReq_ready
-        self.bundle.io._mmioStout._ready.value = mmioStout_ready
         self.bundle.io._flushSbuffer._empty.value = flushSbuffer_empty
         await self.bundle.step(1)
         self.bundle.io._uncache._resp._valid.value = False
@@ -174,7 +171,7 @@ class StoreQueueAgent(Agent):
         return self.bundle.StoreQueue._ncState
     
     @driver_method
-    async def commit(self, rob: IORob, maControl: MaControlInput, sbuffer_ready: List[int]):
+    async def commit(self, rob: IORob, maControl: MaControlInput, vecFeedback: List[VecFeedback]):
         self.bundle.io._rob._scommit.value = rob.rob_scommit
         self.bundle.io._rob._pendingst.value = rob.pendingst
         self.bundle.io._rob._pendingPtr._flag.value = rob.pendingPtr_flag
@@ -183,8 +180,23 @@ class StoreQueueAgent(Agent):
         self.bundle.io._maControl._toStoreQueue._crossPageCanDeq.value = maControl.crossPageCanDeq
         self.bundle.io._maControl._toStoreQueue._paddr.value = maControl.paddr
         self.bundle.io._maControl._toStoreQueue._withSameUop.value = maControl.withSameUop
-        for j in range(2):
-                getattr(self.bundle.io._sbuffer, f'_{j}')._ready.value = sbuffer_ready[j]
+        for i in range(2):
+            vecFeedback_i = getattr(self.bundle.io._vecFeedback, f'_{i}')
+            vecFeedback_i._valid.value = vecFeedback[i].valid
+            vecFeedback_i._bits._robidx._flag.value = vecFeedback[i].robidx_flag
+            vecFeedback_i._bits._robidx._value.value = vecFeedback[i].robidx_value
+            vecFeedback_i._bits._uopidx.value = vecFeedback[i].uopidx
+            vecFeedback_i._bits._vaddr.value = vecFeedback[i].vaddr
+            vecFeedback_i._bits._vaNeedExt.value = vecFeedback[i].vaNeedExt
+            vecFeedback_i._bits._gpaddr.value = vecFeedback[i].gpaddr
+            vecFeedback_i._bits._isForVSnonLeafPTE.value = vecFeedback[i].isForVSnonLeafPTE
+            vecFeedback_i._bits._feedback._0.value = vecFeedback[i].feedback_0
+            vecFeedback_i._bits._feedback._1.value = vecFeedback[i].feedback_1
+            vecFeedback_i._bits._exceptionVec._3.value = vecFeedback[i].exceptionVec_3
+            vecFeedback_i._bits._exceptionVec._6.value = vecFeedback[i].exceptionVec_6
+            vecFeedback_i._bits._exceptionVec._7.value = vecFeedback[i].exceptionVec_7
+            vecFeedback_i._bits._exceptionVec._15.value = vecFeedback[i].exceptionVec_15
+            vecFeedback_i._bits._exceptionVec._23.value = vecFeedback[i].exceptionVec_23
         await self.bundle.step(2)
         return self.bundle.StoreQueue._committed
 

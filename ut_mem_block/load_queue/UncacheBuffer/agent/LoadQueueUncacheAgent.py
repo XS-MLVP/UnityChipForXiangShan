@@ -3,7 +3,7 @@ from typing import List
 
 from ..bundle.LoadQueueUncacheBundle import LoadQueueUncacheBundle
 
-from ..util.dataclass import IORedirect, RobIO, ReqIO, MmioOut, NcOut, Uncache
+from ..util.dataclass import IORedirect, RobIO, ReqIO, Uncache
 
 class LoadQueueUncacheAgent(Agent):
     def __init__(self, bundle: LoadQueueUncacheBundle):
@@ -16,7 +16,7 @@ class LoadQueueUncacheAgent(Agent):
         self.bundle.reset.value = 0
         await self.bundle.step()
         
-    @driver_method
+    @driver_method()
     async def update(self, req:List[ReqIO], rob:RobIO, redirect: IORedirect):
         self.bundle.io._rob._pendingMMIOld.value = rob.pendingMMIOld
         self.bundle.io._rob._pendingPtr._flag.value = rob.pendingPtr_flag
@@ -34,7 +34,7 @@ class LoadQueueUncacheAgent(Agent):
             req_i._bits._uop._exceptionVec._13.value = req[i].bits_uop_exceptionVec_13
             req_i._bits._uop._exceptionVec._21.value = req[i].bits_uop_exceptionVec_21
             req_i._bits._uop._trigger.value = req[i].bits_uop_trigger
-            req_i._bits._uop._preDecodeInfo._isRVC.value = req[i].bits_uop_preDecodeInfo_isRVC
+            req_i._bits._uop._preDecodeInfo_isRVC.value = req[i].bits_uop_preDecodeInfo_isRVC
             req_i._bits._uop._ftqPtr._flag.value = req[i].bits_uop_ftqPtr_flag
             req_i._bits._uop._ftqPtr._value.value = req[i].bits_uop_ftqPtr_value
             req_i._bits._uop._ftqOffset.value = req[i].bits_uop_ftqOffset
@@ -48,7 +48,7 @@ class LoadQueueUncacheAgent(Agent):
             req_i._bits._uop._robIdx._flag.value = req[i].bits_uop_robIdx_flag
             req_i._bits._uop._robIdx._value.value = req[i].bits_uop_robIdx_value
             req_i._bits._uop._storeSetHit.value = req[i].bits_uop_storeSetHit
-            req_i._bits._uop._waitForRobIdx._flag.value = req[i].bits_uop_waitForRobIdx_value
+            req_i._bits._uop._waitForRobIdx._flag.value = req[i].bits_uop_waitForRobIdx_flag
             req_i._bits._uop._waitForRobIdx._value.value = req[i].bits_uop_waitForRobIdx_value
             req_i._bits._uop._loadWaitBit.value = req[i].bits_uop_loadWaitBit
             req_i._bits._uop._loadWaitStrict.value = req[i].bits_uop_loadWaitStrict
@@ -70,17 +70,17 @@ class LoadQueueUncacheAgent(Agent):
             req_i._bits._is128bit.value = req[i].bits_is128bit
             req_i._bits._vecActive.value = req[i].bits_vecActive
             req_i._bits._schedIndex.value = req[i].bits_schedIndex
-            req_i._bits._rep._info._cause._0.value = req[i].bits_rep_info_cause_0
-            req_i._bits._rep._info._cause._1.value = req[i].bits_rep_info_cause_1
-            req_i._bits._rep._info._cause._2.value = req[i].bits_rep_info_cause_2
-            req_i._bits._rep._info._cause._3.value = req[i].bits_rep_info_cause_3
-            req_i._bits._rep._info._cause._4.value = req[i].bits_rep_info_cause_4
-            req_i._bits._rep._info._cause._5.value = req[i].bits_rep_info_cause_5
-            req_i._bits._rep._info._cause._6.value = req[i].bits_rep_info_cause_6
-            req_i._bits._rep._info._cause._7.value = req[i].bits_rep_info_cause_7
-            req_i._bits._rep._info._cause._8.value = req[i].bits_rep_info_cause_8
-            req_i._bits._rep._info._cause._9.value = req[i].bits_rep_info_cause_9
-            req_i._bits._rep._info._cause._10.value = req[i].bits_rep_info_cause_10
+            req_i._bits._rep_info_cause._0.value = req[i].bits_rep_info_cause_0
+            req_i._bits._rep_info_cause._1.value = req[i].bits_rep_info_cause_1
+            req_i._bits._rep_info_cause._2.value = req[i].bits_rep_info_cause_2
+            req_i._bits._rep_info_cause._3.value = req[i].bits_rep_info_cause_3
+            req_i._bits._rep_info_cause._4.value = req[i].bits_rep_info_cause_4
+            req_i._bits._rep_info_cause._5.value = req[i].bits_rep_info_cause_5
+            req_i._bits._rep_info_cause._6.value = req[i].bits_rep_info_cause_6
+            req_i._bits._rep_info_cause._7.value = req[i].bits_rep_info_cause_7
+            req_i._bits._rep_info_cause._8.value = req[i].bits_rep_info_cause_8
+            req_i._bits._rep_info_cause._9.value = req[i].bits_rep_info_cause_9
+            req_i._bits._rep_info_cause._10.value = req[i].bits_rep_info_cause_10
         await self.bundle.step(1)
         self.bundle.io._redirect._valid.value = False
         for i in range(3):
@@ -89,17 +89,12 @@ class LoadQueueUncacheAgent(Agent):
         await self.bundle.step(1)
         return  self.bundle.LoadQueueUncache
         
-    @driver_method
-    async def uncache(self, uncache: Uncache, mmioOut: MmioOut, ncOut: List[NcOut]):
-        self.bundle.io._uncache._req._ready.value = uncache.req_ready
+    @driver_method()
+    async def uncache(self, uncache: Uncache):
         self.bundle.io._uncache._resp._valid.value = uncache.resp_valid
         self.bundle.io._uncache._resp._bits._data.value = uncache.resp_bits_data
         self.bundle.io._uncache._resp._bits._id.value = uncache.resp_bits_id
         self.bundle.io._uncache._resp._bits._nderr.value = uncache.resp_bits_nderr
-        self.bundle.io._mmioOut._2._ready.value = mmioOut.ready
-        for i in range(3):
-            ncOut_i = getattr(self.bundle.io._ncOut, f'_{i}')
-            ncOut_i._ready.value = ncOut[i].ready
         await self.bundle.step(1)
         self.bundle.io._uncache._resp._valid.value = False
         await self.bundle.step(2)

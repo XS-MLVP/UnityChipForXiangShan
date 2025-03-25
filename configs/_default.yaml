@@ -20,7 +20,7 @@ rtl:
   # RTL download URL, fetch all *.gz.tar files from this URL as target RTL
   base-url: https://raw.githubusercontent.com/XS-MLVP/UnityChipXiangShanRTLs/refs/heads/main/README.md
   # RTL version to download e.g., openxiangshan-kmh-97e37a2237-24092701
-  version: latest
+  version: openxiangshan-kmh-ca892e73-25010301
   # Directory to store RTL, relative to the current configuration file path
   cache-dir: "%{root}/rtl"
 

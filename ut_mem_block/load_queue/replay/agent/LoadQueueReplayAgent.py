@@ -15,7 +15,7 @@ class LoadQueueReplayAgent(Agent):
         self.bundle.reset.value = 0
         await self.bundle.step()
     
-    @driver_method
+    @driver_method()
     async def Update_queue(self, enq: List[IOEnq], redirect: IORedirect):
         for i in range(3):
             enq_i = getattr(self.bundle.io._enq, f'_{i}')
@@ -25,7 +25,7 @@ class LoadQueueReplayAgent(Agent):
             enq_i._bits._uop._exceptionVec._5.value = enq[i].exceptionVec[2]
             enq_i._bits._uop._exceptionVec._13.value = enq[i].exceptionVec[3]
             enq_i._bits._uop._exceptionVec._21.value = enq[i].exceptionVec[4]
-            enq_i._bits._uop._preDecodeInfo._isRVC.value = enq[i].isRVC
+            enq_i._bits._uop._preDecodeInfo_isRVC.value = enq[i].isRVC
             enq_i._bits._uop._ftqPtr._flag.value = enq[i].ftqPtr_flag
             enq_i._bits._uop._ftqPtr._value.value = enq[i].ftqPtr_value
             enq_i._bits._uop._ftqOffset.value = enq[i].ftqOffset
@@ -38,7 +38,7 @@ class LoadQueueReplayAgent(Agent):
             enq_i._bits._uop._pdest.value = enq[i].pdest
             enq_i._bits._uop._robIdx._flag.value = enq[i].robIdx_flag
             enq_i._bits._uop._robIdx._value.value = enq[i].robIdx_value
-            enq_i._bits._uop._storeSetHit.value = enq[i].schedIndex
+            enq_i._bits._uop._storeSetHit.value = enq[i].storeSetHit
             enq_i._bits._uop._waitForRobIdx._flag.value = enq[i].waitForRobIdx_flag
             enq_i._bits._uop._waitForRobIdx._value.value = enq[i].waitForRobIdx_value
             enq_i._bits._uop._loadWaitBit.value = enq[i].loadWaitBit
@@ -55,7 +55,7 @@ class LoadQueueReplayAgent(Agent):
             enq_i._bits._elemIdx.value = enq[i].elemIdx
             enq_i._bits._alignedType.value = enq[i].alignedType
             enq_i._bits._mbIndex.value = enq[i].mbIndex
-            enq_i._bits._reg._offset.value = enq[i].reg_offset
+            enq_i._bits._reg_offset.value = enq[i].reg_offset
             enq_i._bits._elemIdxInsideVd.value = enq[i].elemIdxInsideVd
             enq_i._bits._vecActive.value = enq[i].vecActive
             enq_i._bits._isLoadReplay.value = enq[i].isLoadReplay
@@ -86,11 +86,11 @@ class LoadQueueReplayAgent(Agent):
         #     self.bundle.LoadQueueReplay._newEnqueue, self.bundle.LoadQueueReplay._freeMaskVec
         return self.bundle.LoadQueueReplay
     
-    @driver_method
+    @driver_method()
     async def Update_blocking(self, stDataReadySqPtr: ReadySqPtr, stAddrReadySqPtr: ReadySqPtr, 
                       sqEmpty: bool, storeAddrIn: List[StoreAddrIn], storeDataIn: List[StoreDataIn], 
                       stAddrReadyVec: List[bool], stDataReadyVec: List[bool], tlb_hint: TlbHint, tl_channel: TLChannel, rarFull: bool, 
-                     ldWbPtr: IOldWbPtr, rawFull: bool):
+                      ldWbPtr: IOldWbPtr, rawFull: bool):
         self.bundle.io._stDataReadySqPtr._flag.value = stDataReadySqPtr.flag
         self.bundle.io._stDataReadySqPtr._value.value = stDataReadySqPtr.value
         self.bundle.io._sqEmpty.value = sqEmpty
@@ -107,8 +107,8 @@ class LoadQueueReplayAgent(Agent):
             storeDataIn_i._valid.value = storeDataIn[i].valid
             storeDataIn_i._bits_uop_sqIdx._flag.value = storeDataIn[i].sqIdx_flag
             storeDataIn_i._bits_uop_sqIdx._value.value = storeDataIn[i].sqIdx_value
-        self.bundle.io.stAddrReadySqPtr._flag.value = stAddrReadySqPtr.flag
-        self.bundle.io.stAddrReadySqPtr._value.value = stAddrReadySqPtr.value
+        self.bundle.io._stAddrReadySqPtr._flag.value = stAddrReadySqPtr.flag
+        self.bundle.io._stAddrReadySqPtr._value.value = stAddrReadySqPtr.value
         self.bundle.io._tlb_hint_resp._valid.value = tlb_hint.valid
         self.bundle.io._tlb_hint_resp._bits._id.value = tlb_hint.id
         self.bundle.io._tlb_hint_resp._bits._replay_all.value = tlb_hint.replay_all
@@ -124,8 +124,8 @@ class LoadQueueReplayAgent(Agent):
             enq_i._valid.value = False
         return self.bundle.LoadQueueReplay._blocking
     
-    @driver_method
-    async def replay(self, replay_ready: List[bool], l2_hint: L2Hint):
+    @driver_method()
+    async def replay(self, l2_hint: L2Hint):
         self.bundle.io._l2_hint._valid.value = l2_hint.valid
         self.bundle.io._l2_hint._bits._sourceId = l2_hint.sourceId
         self.bundle.io._l2_hint._bits._isKeyword = l2_hint.isKeyword

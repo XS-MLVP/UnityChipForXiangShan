@@ -11,11 +11,11 @@ class VirtualLoadQueueAgent(Agent):
         
     async def reset(self):
         self.bundle.reset.value = 1
-        await self.bundle.step()
+        await self.bundle.step(1)
         self.bundle.reset.value = 0
-        await self.bundle.step()
+        await self.bundle.step(1)
         
-    @driver_method
+    @driver_method()
     async def update(self, enq: List[EnqReq], redirect: IORedirect):
         for i in range(6):
             enq_i = getattr(self.bundle.io._enq_req, f'_{i}')
@@ -39,7 +39,7 @@ class VirtualLoadQueueAgent(Agent):
         await self.bundle.step(1)
         return self.bundle.VirtualLoadQueue
     
-    @driver_method
+    @driver_method()
     async def commit(self, veccommit: List[VecCommit]):
         for i in range(2):
             veccommit_i = getattr(self.bundle.io._vecCommit, f'_{i}')
@@ -48,21 +48,18 @@ class VirtualLoadQueueAgent(Agent):
             veccommit_i._bits._robidx._value.value = veccommit[i].robidx_value
             veccommit_i._bits._uopidx.value = veccommit[i].uopidx
         await self.bundle.step(1)
-        for i in range(6):
-            enq_i = getattr(self.bundle.io._enq_req, f'_{i}')
-            enq_i._valid.value = False
         for i in range(2):
             veccommit_i = getattr(self.bundle.io._vecCommit, f'_{i}')
             veccommit_i._valid.value = False
-        await self.bundle.step(1)
+        await self.bundle.step(2)
         return self.bundle.VirtualLoadQueue
     
-    @driver_method
+    @driver_method()
     async def writeback(self, ldin: List[LdIn]):
         for i in range(3):
             ldin_i = getattr(self.bundle.io._ldin, f'_{i}')
             ldin_i._valid.value = ldin[i].valid
-            ldin_i._bits._uop._lqIdx._value.value = ldin[i].uop_lqIdx_value
+            ldin_i._bits._uop_lqIdx_value.value = ldin[i].uop_lqIdx_value
             ldin_i._bits._isvec.value = ldin[i].isvec
             ldin_i._bits._updateAddrValid.value = ldin[i].updateAddrValid
             for j in range(11):
@@ -71,5 +68,5 @@ class VirtualLoadQueueAgent(Agent):
         for i in range(3):
             ldin_i = getattr(self.bundle.io._ldin, f'_{i}')
             ldin_i._valid.value = False
-        await self.bundle.step(1)
-        return self.bundle.VirtualLoadQueue._committed
+        await self.bundle.step(2)
+        return self.bundle.VirtualLoadQueue
