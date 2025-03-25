@@ -15,10 +15,11 @@ async def icachemissunit_env(toffee_request: toffee_test.ToffeeRequest):
     icachemissunit_env = ICacheMissUnitEnv(dut)
     yield icachemissunit_env
 
-    cur = asyncio.get_event_loop()
-    for task in asyncio.all_tasks(cur):
-        task.cancel()
-        try:
-            await task
-        except asyncio.CancelledError:
-            break
+    cur_loop = asyncio.get_event_loop()
+    for task in asyncio.all_tasks(cur_loop):
+        if task.get_name() == "__clock_loop":
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                break
