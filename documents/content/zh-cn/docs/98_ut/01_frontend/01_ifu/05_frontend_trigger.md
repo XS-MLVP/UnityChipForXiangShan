@@ -7,6 +7,7 @@ weight: 12
 <div class="ifu-ctx">
 
 # FrontendTrigger子模块
+
 该子模块的主要作用是在前端设置硬件断点和检查。
 
 该模块的输入pc有一个隐含条件，那就是这个pc是通过ftq传递的startAddr计算出来的。
@@ -16,18 +17,20 @@ weight: 12
 ### 断点设置和断点检查
 在IFU的FrontendTrigger模块里共4个Trigger，编号为0,1,2,3，每个Trigger的配置信息（断点类型、匹配地址等）保存在tdata寄存器中。
 
-当软件向CSR寄存器tselect、tdata1/2写入特定的值时，CSR会向IFU发送tUpdate请求，更新FrontendTrigger内的tdata寄存器中的配置信息。
-目前前端的Trigger仅可以配置成PC断点（mcontrol(tdata1)寄存器的select位为0；当select=1时，该Trigger将永远不会命中，且不会产生异常）。
+当软件向CSR寄存器`tselect`、`tdata1/2`写入特定的值时，CSR会向IFU发送tUpdate请求，更新FrontendTrigger内的`tdata`寄存器中的配置信息。
+目前前端的Trigger仅可以配置成PC断点`mcontrol.tdata1`寄存器的select位为0；当select=1时，该Trigger将永远不会命中，且不会产生异常）。
 
 在取指时，IFU的F3流水级会向FrontendTrigger模块发起查询并在同一周期得到结果。后者会对取指块内每一条指令在每一个Trigger上做检查，
-当指令的PC和tdata2寄存器内容的关系满足mcontrol的match位所指示的关系（香山支持match位为0、2、3，对应等于、大于等于、小于）时，
+当指令的PC和`tdata2`寄存器内容的关系满足`mcontrol.match`位所指示的关系（香山支持match位为0、2、3，对应等于、大于等于、小于）时，
 该指令会被标记为Trigger命中，随着执行在后端产生断点异常，进入M-Mode或调试模式。
 
 ### 链式断点
 
 根据RISCV的debug spec，香山实现的是mcontrol6。
 
-当它们对应的Chain位被置时，只有当该Trigger和编号在它后面一位的Trigger同时命中，~~且timing配置相同时~~（在最新的手册中，这一要求已被删除），处理器才会产生异常。其中可以和6,8号trigger实现chain功能的7,9号trigger在后端访存部件中。
+当它们对应的Chain位被置时，只有当该Trigger和编号在它后面一位的Trigger同时命中，~~且timing配置相同时~~（在最新的手册中，这一要求已被删除），处理器才会产生异常。
+
+在过去（riscv-debug-spec-draft，对应 XiangShan 2024.10.05 合入的 [PR#3693](https://github.com/OpenXiangShan/XiangShan/pull/3693) 前）的版本中，Chain 还需要满足两个 Trigger 的 `mcontrol.timing` 是相同的。而在新版（riscv-debug-spec-v1.0.0）中，`mcontrol.timing` 被移除。目前 XiangShan 的 scala 实现仍保留了这一位，但其值永远为 0 且不可写入，编译生成的 verilog 代码中没有这一位。
 
 
 ## FrontendTrigger 接口说明

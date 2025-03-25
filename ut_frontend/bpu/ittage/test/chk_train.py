@@ -24,7 +24,7 @@ def is_table_ctr_saturing(i: int, up_or_down: int):
 
 def is_update_provider(update_alt: int):
     def update_provider(dut: DUTITTage):
-        valid = dut.io_update_valid.value and dut.ITTage_updateValid.value
+        valid = dut.io_update_valid.value and dut.ITTage_updateValid_probe.value
         provided = dut.ITTage_s3_provided.value
         alt_provided = dut.ITTage_s3_altProvided.value
         if valid and provided:
@@ -36,7 +36,7 @@ def is_update_provider(update_alt: int):
 
 def is_update_table_as_provider(i: int):
     def update_table_as_provider(dut: DUTITTage):
-        valid = dut.io_update_valid.value and dut.ITTage_updateValid.value
+        valid = dut.io_update_valid.value and dut.ITTage_updateValid_probe.value
         provided = dut.ITTage_s3_provided.value
         provider = dut.ITTage_s3_provider.value
         return valid and provided and (provider == i)
@@ -46,7 +46,7 @@ def is_update_table_as_provider(i: int):
 
 def is_update_table_as_alt(i: int):
     def update_table_as_alt(dut: DUTITTage):
-        valid = dut.io_update_valid.value and dut.ITTage_updateValid.value
+        valid = dut.io_update_valid.value and dut.ITTage_updateValid_probe.value
         alt_provided = dut.ITTage_s3_altProvided.value
         alt_provider = dut.ITTage_s3_altProvider.value
         return valid and alt_provided and (alt_provider == i)
@@ -67,7 +67,7 @@ def is_reset_us(dut: DUTITTage):
 
 def is_allocate_succeed_or_fail(success_or_fail: int):
     def allocate_succeed_or_fail(dut: DUTITTage):
-        valid = dut.io_update_valid.value and dut.ITTage_updateValid.value
+        valid = dut.io_update_valid.value and dut.ITTage_updateValid_probe.value
         allocate_valid = MetaParser(dut.io_update_bits_meta.value).allocate_valid
         return valid and (allocate_valid == success_or_fail)
 
@@ -102,7 +102,7 @@ def is_set_us_correct(dut: DUTITTage):
     real_target = dut.io_update_bits_full_target.value
     provider_correct = provider_target == real_target
 
-    valid = dut.io_update_valid.value and dut.ITTage_updateValid.value
+    valid = dut.io_update_valid.value and dut.ITTage_updateValid_probe.value
     set_us_true = (getattr(dut, f"ITTage_tables_{provider}_io_update_uValid").value and
                    getattr(dut, f"ITTage_tables_{provider}_io_update_u").value)
 

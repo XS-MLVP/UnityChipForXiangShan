@@ -14,17 +14,23 @@
 
 
 import os
-from comm import warning, info
+from comm import warning, info, get_all_rtl_files
 
 
 def build(cfg):
     # import base modules
+    from tempfile import NamedTemporaryFile
     from toffee_test.markers import match_version
     from comm import is_all_file_exist, get_rtl_dir, exe_cmd, get_root_dir
     # check version
     if not match_version(cfg.rtl.version, "openxiangshan-kmh-*"):
-        warning("frontend_itlb: %s" % f"Unsupported RTL version {cfg.rtl.version}")
+        warning("frontend_tlbuffer: %s" % f"Unsupported RTL version {cfg.rtl.version}")
         return False
+    # find source files for TLBuffer
+    rtl_files = get_all_rtl_files("TLBuffer", cfg=cfg)
+    info(f"rtl_files: {rtl_files}")
+    assert rtl_files, "Cannot find RTL files of TLBuffer"
+
     # check files
     f = is_all_file_exist(["rtl/TLBuffer.sv"], get_rtl_dir(cfg=cfg))
     assert f is True, f"File {f} not found"
@@ -32,13 +38,13 @@ def build(cfg):
     # export TLBuffer.sv
     if not os.path.exists(get_root_dir("dut/TLBuffer")):
         info("Exporting TLBuffer.sv")
-        s, _, _ = exe_cmd(f'picker export --cp_lib false {get_rtl_dir("rtl/TLBuffer.sv", cfg=cfg)} --fs {get_root_dir("scripts/frontend_itlb/tlbuffer_rtl_files.f")} --lang python --tdir {get_root_dir("dut")}/ -w TLBuffer.fst -c')
-        assert s, "Failed to export TLBuffer.sv"
-    # build disasm
-    if not os.path.exists(get_root_dir("tools/disasm/build")):
-        info("Building disasm")
-        s, _, _ = exe_cmd("make -C %s" % get_root_dir("tools/disasm"))
-        assert s, "Failed to build disasm"
+        with NamedTemporaryFile("w+", encoding="utf-8", suffix=".txt") as filelist:
+            filelist.write("\n".join(rtl_files))
+            filelist.flush()
+            s, _, err = exe_cmd(
+                f"picker export --cp_lib false {rtl_files[0]} --fs {filelist.name} --lang python --tdir " 
+                f"{get_root_dir('dut')}/ -w TLBuffer.fst -c")
+        assert s, err
     return True
 
 
