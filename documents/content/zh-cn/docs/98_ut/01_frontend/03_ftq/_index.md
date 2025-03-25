@@ -1,10 +1,10 @@
 ---
 title: FTQ概述
-linkTitle: FTQ概述
+linkTitle: FTQ
 weight: 12
 ---
 
-*下文（包括所有的FTQ文档）中会提到一些关于BPU和IFU的相关知识，详情需要去查看对应的文档: *
+下文（包括所有的FTQ文档）中会提到一些关于BPU和IFU的相关知识，详情需要去查看对应的文档: 
 - [BPU文档链接](https://open-verify.cc/xs-bpu/docs/)
 - [IFU文档链接](https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/01_frontend/01_ifu/)
 
@@ -67,7 +67,4 @@ FTQ的全名叫取值目标队列，队列中的一个项叫做FTQ项，BPU写�
 
 ## 循环队列
 FTQ队列实际上是一个循环队列，所有类型的FTQ指针都是同一类型，ftqPtr的value字段用来表示索引，flag字段则用来表示循环轮数，flag只有一位，进入新的循环时flag位翻转。
-这样，我们就可以在一个有限的队列空间内不断更新新的项，以及正确进行比较，判断哪个项在队列中更靠前。
-*在香山的代码中，设计了isAfter和isBefore的函数来比较指针大小，字面上的意思是指针在队列靠后还是在队列靠前的位置，但从取指令块来说*
-### 最新项
-有几个内部信号我想在这里提一下，newest_entry_ptr，newest_entry_target这几个内部信号，表明我们当前最新的有效FTQ项。BPU新的写入，重定向等等都会对最新FTQ项进行新的安排，在相应的文档中，对其生成方式做具体的描述。
+这样，我们就可以在一个有限的队列空间内不断更新新的项，以及正确进行比较，判断哪个项在队列中更靠前或者更靠后。

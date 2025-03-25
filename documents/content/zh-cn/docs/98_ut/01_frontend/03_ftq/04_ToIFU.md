@@ -1,11 +1,8 @@
 ---
 title: FTQ向IFU发送取指目标
-linkTitle: FTQ向IFU发送取指目标
+linkTitle: 04_FTQ向IFU发送取指目标
 weight: 12
 ---
-
-
-# FTQ向IFU发送取指目标
 
 ## 文档概述
 IFU需要取FTQ中的项进行取指令操作，同时也会简单地对指令进行解析，并写回错误的指令
