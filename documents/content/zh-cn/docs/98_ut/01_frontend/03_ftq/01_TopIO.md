@@ -1,6 +1,6 @@
 ---
 title: FTQ顶层
-linkTitle: FTQ顶层
+linkTitle: 01_FTQ顶层
 weight: 12
 ---
 
@@ -14,7 +14,7 @@ weight: 12
 - **fromBackend：接受后端执行结果和commit信号的接口（CtrlToFtqIO）**
 - **toBpu：向BPU发送训练信息和重定向信息的接口（FtqToBpuIO）**
 - **toIfu：向IFU发送取值目标和重定向信息的接口（FtqToIfuIO）**
-- toICache：向ICache发送取值目标的接口（FtqToICacheIO)
+- toICache：向ICache发送取值目标的接口（FtqToICacheIO）
 - **toBackend：向后端发送取值目标的接口（FtqToCtrlIO）**
 - toPrefetch：向Prefetch发送取值目标的接口（FtqToPrefetchIO）
 - mmio

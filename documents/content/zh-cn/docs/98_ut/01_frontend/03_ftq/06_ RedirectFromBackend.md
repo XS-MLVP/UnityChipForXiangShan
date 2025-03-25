@@ -1,10 +1,8 @@
 ---
 title: FTQ接收后端重定向
-linkTitle: FTQ接收后端重定向
+linkTitle: 06_FTQ接收后端重定向
 weight: 12
 ---
-
-# FTQ接收后端重定向
 
 ## 文档概述
 
