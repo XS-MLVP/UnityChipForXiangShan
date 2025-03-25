@@ -4,9 +4,6 @@ linkTitle: 04_FTQ向IFU发送取指目标
 weight: 12
 ---
 
-
-# FTQ向IFU发送取指目标
-
 ## 文档概述
 IFU需要取FTQ中的项进行取指令操作，同时也会简单地对指令进行解析，并写回错误的指令
 FTQ发送给IFU的信号同时也需发送给ICache一份，ICache是指令缓存，帮助快速读取指令。

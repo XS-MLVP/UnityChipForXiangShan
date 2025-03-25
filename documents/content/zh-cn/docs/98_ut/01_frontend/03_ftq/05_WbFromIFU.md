@@ -4,9 +4,6 @@ linkTitle: 05_IFU向FTQ写回预译码信息
 weight: 12
 ---
 
-
-# IFU向FTQ写回预译码信息
-
 ## 文档概述
 
 IFU获取来自BPU的预测信息之后，会执行预译码，并将FTQ项写回FTQ中去。我们会比对FTQ中原BPU预测项和预译码的结果，判断是否有预测错误
