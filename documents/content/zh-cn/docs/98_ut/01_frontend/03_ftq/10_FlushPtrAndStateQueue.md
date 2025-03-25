@@ -67,11 +67,7 @@ rob_commits的valid字段有效，可以根据其中信息对指令进行提交�
 | fromIfu     | 接收IFU重定向          |
 | icacheFlush | 将flush信号转发到icache |
 | toIFU       | 将后端重定向转发到IFU      |
-<<<<<<< HEAD
 
-=======
-所有顶层信号均在FTQ顶层IO一文中详述。
->>>>>>> 0de46c2 (init FTQ documents (#93))
 ## 测试点总表
 
 | 序号   | 功能名称                         | 测试点名称              | 描述                                                                        |
