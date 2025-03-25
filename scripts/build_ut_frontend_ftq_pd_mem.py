@@ -1,6 +1,3 @@
-#未写完的脚本
-#未写完的脚本
-
 import os
 from comm import warning, info
 
