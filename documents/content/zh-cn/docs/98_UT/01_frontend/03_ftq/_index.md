@@ -1,8 +1,3 @@
----
-title: FTQ
-linkTitle: FTQ
-weight: 12
----
 
 *下文（包括所有的FTQ文档）中会提到一些关于BPU和IFU的相关知识，详情需要去查看对应的文档: *
 - [BPU文档链接](https://open-verify.cc/xs-bpu/docs/)
