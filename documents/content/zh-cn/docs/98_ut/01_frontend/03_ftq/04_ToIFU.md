@@ -1,6 +1,6 @@
 ---
 title: FTQ向IFU发送取指目标
-linkTitle: FTQ向IFU发送取指目标
+linkTitle: 04_FTQ向IFU发送取指目标
 weight: 12
 ---
 

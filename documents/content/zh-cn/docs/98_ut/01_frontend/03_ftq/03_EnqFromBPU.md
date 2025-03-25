@@ -1,6 +1,6 @@
 ---
 title: FTQ接收BPU分支预测结果
-linkTitle: FTQ接收BPU分支预测结果
+linkTitle: 03_FTQ接收BPU分支预测结果
 weight: 12
 ---
 

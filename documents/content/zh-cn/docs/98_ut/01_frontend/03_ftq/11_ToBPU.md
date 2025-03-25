@@ -1,6 +1,6 @@
 ---
 title: FTQ向BPU发送更新与重定向信息
-linkTitle: FTQ向BPU发送更新与重定向信息
+linkTitle: 11_FTQ向BPU发送更新与重定向信息
 weight: 12
 ---
 

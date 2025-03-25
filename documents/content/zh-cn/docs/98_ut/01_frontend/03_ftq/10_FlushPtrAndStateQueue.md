@@ -1,6 +1,6 @@
 ---
 title: 冲刷指针和状态队列
-linkTitle: 冲刷指针和状态队列
+linkTitle: 10_冲刷指针和状态队列
 weight: 12
 ---
 

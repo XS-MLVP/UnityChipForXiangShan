@@ -1,6 +1,6 @@
 ---
 title: FTQ顶层
-linkTitle: FTQ顶层
+linkTitle: 01_FTQ顶层
 weight: 12
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: FTQ向后端发送取指目标
-linkTitle: FTQ向后端发送取指目标
+linkTitle: 08_FTQ向后端发送取指目标
 weight: 12
 ---
 

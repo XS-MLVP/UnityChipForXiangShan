@@ -1,6 +1,6 @@
 ---
 title: FTQ接收IFU重定向
-linkTitle: FTQ接收IFU重定向
+linkTitle: 07_FTQ接收IFU重定向
 weight: 12
 ---
 

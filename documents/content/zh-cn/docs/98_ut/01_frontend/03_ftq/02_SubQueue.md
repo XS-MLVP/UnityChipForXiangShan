@@ -1,6 +1,6 @@
 ---
 title: FTQ子队列
-linkTitle: FTQ子队列
+linkTitle: 02_FTQ子队列
 weight: 12
 ---
 
