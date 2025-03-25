@@ -11,14 +11,16 @@ def build(cfg):
     if not match_version(cfg.rtl.version, "openxiangshan-kmh-*"):
         error(f"frontend_icache_mainpipe: Unsupported RTL version {cfg.rtl.version}")
         return False
-    
+
     # find source files for ICacheMainPipe
     rtl_files = get_all_rtl_files("ICacheMainPipe", cfg=cfg)
     info(f"rtl_files: {rtl_files}")
     assert rtl_files, "Cannot find RTL files of Frontend.ICacheMainPipe"
 
     # additional internal signal files
-    # internal_signals_path = os.path.join(get_root_dir("scripts/icache_related/mainpipe_internals.yaml"))
+    internal_signals_path = os.path.join(
+        get_root_dir("scripts/icache_related/icache_mainpipe_internals.yaml")
+    )
     # assert os.path.exists(internal_signals_path), "Cannot find internal signal files"
 
     # export ICacheMainPipe.sv
@@ -29,9 +31,9 @@ def build(cfg):
             filelist.flush()
             s, _, err = exe_cmd(
                 f"picker export --cp_lib false {rtl_files[0]} --fs {filelist.name} --lang python --tdir "
-    #           f"{get_root_dir('dut')}/ -w ICacheMainPipe.fst -c --internal={internal_signals_path}")
-                f"{get_root_dir('dut')}/ -w ICacheMainPipe.fst -c "
+                f"{get_root_dir('dut')}/ -w ICacheMainPipe.fst -c --internal={internal_signals_path}"
             )
+
         assert s, err
     return True
 
