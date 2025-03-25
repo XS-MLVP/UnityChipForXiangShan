@@ -1,6 +1,6 @@
 ---
 title: FTQ概述
-linkTitle: FTQ概述
+linkTitle: FTQ
 weight: 12
 ---
 
