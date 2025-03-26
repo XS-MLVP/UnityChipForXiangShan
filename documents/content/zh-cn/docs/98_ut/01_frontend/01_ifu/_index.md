@@ -4,7 +4,7 @@ linkTitle: IFU
 weight: 12
 ---
 
-**本文档参考[香山IFU设计文档](https://github.com/OpenXiangShan/XiangShan-Design-Doc/blob/master/docs/frontend/IFU/IFU.md)写成**
+**本文档参考[香山IFU设计文档](https://github.com/OpenXiangShan/XiangShan-Design-Doc/blob/master/docs/frontend/IFU/index.md)写成**
 
 本文档撰写的内容截至[c670557]
 
