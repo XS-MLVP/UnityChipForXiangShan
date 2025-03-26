@@ -2,7 +2,7 @@
 title: FIFO文档案例
 linkTitle: FIFO文档案例
 weight: 5
-draft: true
+draft: false
 ---
 
 以下以FIFO为例，展示了一个简单的文档案例
@@ -57,6 +57,10 @@ endmodule
 ```
 
 # FIFO 模块验证文档
+
+## 文档概述
+
+本文档描述FIFO的功能，并根据功能给出测试点参考，方便测试的参与者理解测试需求，编写相关测试用例。
 
 ## 术语说明
 

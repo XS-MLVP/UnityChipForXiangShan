@@ -14,19 +14,25 @@ weight: 12
 
 <div class="ifu-ctx">
 
+## 文档概述
+
+本文档描述IFU的功能，并根据功能给出测试点参考，方便测试的参与者理解测试需求，编写相关测试用例。
+
+为方便验证参与者，本文档中还额外给出了整体框图和流水级的示意图，以及各个rtl接口的详细说明。此外，本文档还给出了两个时序示例。
+
 ## 术语说明
 
-| 缩写         | 全称                                     | 描述                                       |
-| ------------ | ---------------------------------------- | ------------------------------------------ |
-| RVC          | RISC-V Compressed Instructions           | RISC-V 手册"C"扩展规定的 16 位长度压缩指令 |
-| RVI          | RISC-V Integer Instructions              | RISC-V 手册规定的 32 位基本整型指令        |
-| IFU          | Instruction Fetch Unit                   | 取指令单元                                 |
-| FTQ          | Fetch Target Queue                       | 取指目标队列                               |
-| ICache       | L1 Instruction Cache                     | 一级指令缓存                               |
-| IBuffer      | Instruction Buffer                       | 指令缓冲                                   |
-| CFI          | Control Flow Instruction                 | 控制流指令                                 |
-| ITLB         | Instruction Translation Lookaside Buffer | 指令地址转译后备缓冲器                     |
-| InstrUncache | Instruction Ucache Module                | 指令 MMIO 取指处理单元                     |
+| 名称                             | 描述                                       |
+| ------------------------------- | ------------------------------------------ |
+| RVC（RISC-V Compressed Instructions）           | RISC-V 手册"C"扩展规定的 16 位长度压缩指令 |
+| RVI（RISC-V Integer Instructions）              | RISC-V 手册规定的 32 位基本整型指令        |
+| IFU（Instruction Fetch Unit）  | 取指令单元                                 |
+| FTQ（Fetch Target Queue）      | 取指目标队列                               |
+| ICache（L1 Instruction Cache）   | 一级指令缓存                               |
+| IBuffer（Instruction Buffer）   | 指令缓冲                                   |
+| CFI（Control Flow Instruction）  | 控制流指令          |
+| ITLB（Instruction Translation Lookaside Buffer） | 指令地址转译后备缓冲器                     |
+| InstrUncache（Instruction Ucache Module） | 指令 MMIO 取指处理单元      |
 
 ## 整体框图
 
@@ -409,7 +415,7 @@ PredChecker还需要负责生成跳转和顺序目标。
 
 | 序号 | 功能名称 | 测试点名称     | 描述                             |
 |------|---------|-------------|---------------------------------|
-| 5\.8\.1| IFU_PREDCHECK_TARGETS  | TARGETS | 随机提供译码信息，检测生成的跳转目标和顺序目标。 |
+| 5\.8 | IFU_PREDCHECK_TARGETS  | TARGETS | 随机提供译码信息，检测生成的跳转目标和顺序目标。 |
 
 
 ### 6. 前端重定向（WB阶段）
@@ -448,21 +454,13 @@ PredChecker还需要负责生成跳转和顺序目标。
 #### 7.1. 跨预测块32位指令处理
 如果发现当前预测块的最后两个字节是一条RVI指令的开始，则设置一个标识f3\_lastHalf\_valid，告诉接下来的预测块含有后半条指令。
 
-我们没有办法直接观察到这个标识，但是可以通过下一预测块来判定：
-
-| 序号 | 功能名称 | 测试点名称     | 描述                             |
-|------|---------|-------------|---------------------------------|
-| 7\.1\.1 | IFU_CROSS_BLOCK  | NORMAL | 连续传入两个预测块，其中有一条32位指令跨两个预测块，后一个预测块的指令开始向量的首位应该为False |
+我们没有办法直接观察到这个标识，但是可以通过下一预测块的开始向量的首位来判断。
 
 #### 7.2. 跨预测块指令误判
 
 但是，如果这一判断出现问题（比如当前预测块存在跳转），则需要进行流水线冲刷。
 
-这一功能需要PredChecker子模块“配合”（仅仅通过外部IO的修改很难触发这个防御机制），实现起来比较麻烦，但是还是列举一个测试点：
-
-| 序号 | 功能名称 | 测试点名称     | 描述                             |
-|------|---------|-------------|---------------------------------|
-| 7\.2\.1 | IFU_CROSS_BLOCK  | ERROR | 当IFU根据PredChecker修复的指令有效范围错判了跨预测块指令时，需要将F3以外的流水级全部冲刷 |
+这一功能需要PredChecker子模块“配合”（仅仅通过外部IO的修改很难触发这个防御机制），实现起来比较麻烦，但是还是列举一个测试点（见后文总表）
 
 ### 8. 将指令码和前端信息送入IBuffer（F3流水级）
 
@@ -708,6 +706,8 @@ select位为0时，当PC和tdata2的数据的关系不满足tdata2的match位时
 
 #### req FTQ取指请求
 
+在f0流水级传入
+
 req是FTQ向IFU的取指令请求，编译后包含以下成员：
 
 | 接口名 | 解释 | 
@@ -719,6 +719,8 @@ req是FTQ向IFU的取指令请求，编译后包含以下成员：
 | nextStartAddr | 下一个预测块的起始地址 |
 
 #### redirect FTQ重定向请求
+
+在f0流水级传入
 
 FTQ会向IFU发送重定向请求，这通过fromFtq\.redirect完成，从而指示IFU应该冲刷的内容。
 
@@ -734,6 +736,8 @@ FTQ会向IFU发送重定向请求，这通过fromFtq\.redirect完成，从而指
 
 #### fromBPUFlush
 
+在f0流水级传入
+
 来自BPU的冲刷请求，这是预测错误引起的，包括s3和s2两个同构成员，指示是否在BPU的s3和s2流水级发现了问题，s3的详细结构如下
 
 | 接口名 | 解释 | 
@@ -742,6 +746,8 @@ FTQ会向IFU发送重定向请求，这通过fromFtq\.redirect完成，从而指
 | ftqIdx | s3流水级请求冲刷的预测块的指针 |
 
 #### toFtq\_pdWb 写回
+
+在WB阶段传出
 
 | 接口名 | 解释 | 
 | ----- | ---- |
@@ -759,10 +765,12 @@ FTQ会向IFU发送重定向请求，这通过fromFtq\.redirect完成，从而指
 #### 控制信号
 | 接口名 | 解释 | 
 | ----- | ---- |
-| icache\_ready | ICache通知IFU自己已经准备好了，可以发送缓存行了。|
+| icache\_ready | ICache通知IFU自己已经准备好了，可以发送缓存行了。f0流水级就要设置。|
 | icache\_stop | IFU在F3流水级之前出现了问题，通知ICache停下。 |
 
 #### ICacheInter\.resp ICache传送给IFU的信息
+
+在f2流水级使用
 
 | 接口名 | 解释 | 
 | ----- | ---- |
@@ -783,7 +791,7 @@ ICachePerf和perf，可以先不关注。
 
 ### ITLBInter
 
-该接口仅在MMIO状态下，IFU重发请求时活跃。
+该接口仅在MMIO状态下，IFU重发请求时活跃（f3流水级用到）。
 
 #### req IFU向ITLB发送的请求
 
@@ -946,7 +954,7 @@ tdata包括下列成员：
 
 | 序号 |  功能名称 | 测试点名称      | 描述                  |
 | ----- |-----------------|---------------------|------------------------------------|
-| 1\.1 | [IFU_RCV_REQ](#1-接收ftq取指令请求f0流水级) | READY | IFU接收FTQ请求后，设置ready |
+| 1 | [IFU_RCV_REQ](#1-接收ftq取指令请求f0流水级) | READY | IFU接收FTQ请求后，设置ready |
 | 2\.1\.1| [IFU_F1_INFOS](#21-f1流水级计算信息和切分指针) | PC | IFU接收FTQ请求后，在F1流水级生成PC         |
 | 2\.1\.2| IFU_F1_INFOS | CUT_PTR | IFU接收FTQ请求后，在F1流水级生成后续切取缓存行的指针 |
 | 2\.2\.1 | [IFU_F2_INFOS](#22-f2流水级获取指令信息) |  EXCP_VEC | IFU接收ICache内容后，会根据ICache的结果生成属于每个指令的异常向量  |
@@ -1008,15 +1016,15 @@ tdata包括下列成员：
 | 5\.7\.1\.1 | [IFU_PREDCHECK_TARGET_MISS](#57-目标地址预测错误检查)   | NOP | 构造不存在跳转指令并且未预测跳转的预测信息作输入，测试PredChecker是否会错检目标地址预测错误                  |
 | 5\.7\.1\.2 | IFU_PREDCHECK_TARGET_MISS  | CORRECT  | 构造存在有效跳转指令并且正确预测跳转的预测信息作为输入，测试PredChecker是否会错检目标地址预测错误          |
 | 5\.7\.2   | IFU_PREDCHECK_TARGET_CHECK | ERROR  | 构造存在有效跳转指令的预测块和预测跳转但跳转目标计算错误的预测信息作为输入，测试PredChecker能否检出目标地址预测错误 |
-| 5\.8\.1| [IFU_PREDCHECK_TARGETS](#58-生成跳转和顺序目标)  | TARGETS | 随机提供译码信息，检测生成的跳转目标和顺序目标。 |
+| 5\.8 | [IFU_PREDCHECK_TARGETS](#58-生成跳转和顺序目标)  | TARGETS | 随机提供译码信息，检测生成的跳转目标和顺序目标。 |
 | 6\.1\.1 | [IFU_REDIRECT](#61-预测错误重定向)  | JAL | 预测请求中存在JAL预测错误，需要冲刷流水线  |
 | 6\.1\.2 | IFU_REDIRECT  | RET | 预测请求中存在RET预测错误，需要冲刷流水线  |
 | 6\.1\.3 | IFU_REDIRECT  | JALR | 预测请求中存在JALR预测错误，需要冲刷流水线  |
 | 6\.1\.4 | IFU_REDIRECT  | NON_CFI | 预测请求中存在非CFI预测错误，需要冲刷流水线 |
 | 6\.1\.5 | IFU_REDIRECT  | INVALID | 预测请求中存在无效指令预测错误，需要冲刷流水线 |
 | 6\.1\.6 | IFU_REDIRECT  | TARGET_FAULT | 预测请求中存在跳转目标错误，需要冲刷流水线   |
-| 7\.1\.1 | [IFU_CROSS_BLOCK](#71-跨预测块32位指令处理)  | NORMAL | 连续传入两个预测块，其中有一条32位指令跨两个预测块，后一个预测块的指令开始向量的首位应该为False |
-| 7\.2\.1 | IFU_CROSS_BLOCK  | ERROR | 当IFU根据PredChecker修复的指令有效范围错判了跨预测块指令时，需要将F3以外的流水级全部冲刷 |
+| 7\.1 | [IFU_CROSS_BLOCK](#71-跨预测块32位指令处理)  | NORMAL | 连续传入两个预测块，其中有一条32位指令跨两个预测块，后一个预测块的指令开始向量的首位应该为False |
+| 7\.2 | IFU_CROSS_BLOCK  | ERROR | 当IFU根据PredChecker修复的指令有效范围错判了跨预测块指令时，需要将F3以外的流水级全部冲刷 |
 | 8\.1\.1 | [IFU_TO_IBUFFER](#81-传送指令码和前端信息)  | INSTRS   | IFU向IBuffer传送扩展后的指令码 |
 | 8\.1\.2 |  IFU_TO_IBUFFER  | EXCP | IFU向IBuffer传送每个指令的异常信息 |
 | 8\.1\.3 | IFU_TO_IBUFFER  |  PD_INFO | IFU向IBuffer传递每个指令的预译码信息 |
