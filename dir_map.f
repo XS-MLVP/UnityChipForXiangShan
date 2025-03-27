@@ -6,7 +6,7 @@ frontend_ifu_frontend_trigger --> FrontendTrigger --> ut_frontend/ifu/frontend_t
 frontend_ifu_pred_checker --> PredChecker --> ut_frontend/ifu/pred_checker
 frontend_ifu_predecode --> PreDecode --> ut_frontend/ifu/predecode
 frontend_ifu_rvc_expander --> RVCExpander --> ut_frontend/ifu/rvc_expander
-frontend_ifu_top --> NewIFU --> 
+frontend_ifu_top --> NewIFU --> ut_frontend/ifu/ifu_top
 frontend_itlb --> TLB --> ut_frontend/itlb/classical_version
 frontend_itlb --> TLB --> ut_frontend/itlb/toffee_version
 frontend_tlb_fa --> TLBFA --> ut_frontend/itlb/submodules/TLBFA

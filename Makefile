@@ -49,7 +49,7 @@ check_dut:
 					$(MAKE) dut DUTS="$$DUT_NAME"; \
 				fi; \
 			else \
-				echo "No DUT mapping found for target: $$t, skipping..." >&2; \
+				echo "No mapping found for target: $$t in dir_map.f, skipping check" >&2; \
 			fi; \
 		done; \
 	fi
@@ -61,7 +61,7 @@ dut: rtl
 		for d in $(PROCESSED_DUTS); do \
 			dir=$$(awk -F' --> ' -v dut="$$d" '$$1 == dut {print $$2; exit}' dir_map.f); \
 			if [ -z "$$dir" ]; then \
-				echo "No mapping found for '$$d' in dir_map.f, skipping deletion" >&2; \
+				echo "No mapping found for DUT: $$d in dir_map.f, skipping deletion" >&2; \
 				continue; \
 			fi; \
 			echo "Cleaning dut/$$dir"; \

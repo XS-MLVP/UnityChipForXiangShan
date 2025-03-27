@@ -12,7 +12,6 @@ weight: 13
 1. Linux操作系统。建议WSL2下安装Ubuntu22.04。
 1. Python。建议Python3.11。
 1. picker。按照[快速开始](https://open-verify.cc/mlvp/docs/quick-start/installer/)中的提示安装最新版本。
-1. toffee。将在后面自动安装。也可按照[快速开始](https://open-verify.cc/mlvp/docs/mlvp/quick-start/)中的提示手动安装最新版本。
 1. lcov。用于后续test阶段报告生成。使用包管理器即可下载：`sudo apt install lcov`
 
 **环境配置完成**后，clone仓库：
