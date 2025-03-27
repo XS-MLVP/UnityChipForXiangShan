@@ -21,12 +21,12 @@ import inspect
 # request to TLB. TLB is expected to return a miss in the next cycle and initiate 
 # a request to the PTW. At this point, you can simultaneously verify whether the 
 # vpn in the PTW request is correct.
-def test_req_from_icache_rand_vaddr_rand_valid_single_port(tlb_fixture):
+def test_req_from_ifu_and_icache_rand_vaddr_rand_valid_single_port(tlb_fixture):
     """
-    Compare the PTW request with the reference:
-        rand vaddr
-        rand valid
-        single port 0 / 1
+    Func: Compare the PTW request with the reference:
+        subfunc1: rand vaddr
+        subfunc2: rand valid
+        subfunc3: single port 0 / 1 / 2
     """
     # connect to fixture
     tlb = tlb_fixture
@@ -90,6 +90,7 @@ def test_req_from_icache_rand_vaddr_rand_valid_single_port(tlb_fixture):
     ######################################################################################
 
 ### CASE EXAMPLE
+# Running the following test case will show a pass:
 def test_req_from_icache_rand_vaddr_rand_valid_muti_port(tlb_fixture):
     """
     Func: compare the PTW request with the reference:

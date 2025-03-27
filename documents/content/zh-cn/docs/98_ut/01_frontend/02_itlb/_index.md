@@ -58,8 +58,8 @@ TLB 应当正常接收来自 IFU 与 ICache 的取指令请求，查找自身页
 
 | No.    | 名称              | 说明                    |
 |--------|-------------------|------------------------|
-| 1.1    | 接收来自 IFU 请求（requestor0、1） | ITLB 根据请求查找自身缓存 TLBuffer，返回 hit/miss 结果 |
-| 1.2    | 接收来自 ICache 请求（requestor2） | 注意此处为阻塞式访问，每次访问后若 miss 应当 reset 后再次访问 |
+| 1.1    | 接收来自 ICache 请求（requestor0、1） | ITLB 根据请求查找自身缓存 TLBuffer，返回 hit/miss 结果 |
+| 1.2    | 接收来自 IFU 请求（requestor2） | 注意此处为阻塞式访问，每次访问后若 miss 应当 reset 后再次访问 |
 | 1.3    | 接收条件判断（requestor0、1）    | valid 信号 |
 | 1.4    | 接受条件判断（requestor2）       | valid-ready 信号 |
 
