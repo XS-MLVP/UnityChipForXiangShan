@@ -37,7 +37,7 @@ weight: 12
 | AF         | Access Fault                                   | 访问错误                         | 当 CPU 试图访问一个不允许的物理地址时，会触发访问错误。                                                              |
 | PMP        | Physical Memory Protection                     | 物理内存保护模块                 | RISC-V 架构中提供的一种硬件机制，用于控制不同内存区域的读、写和执行权限，主要目的是提供对物理内存的保护和隔离。      |
 | PMA        | Physical Memory Attribute                      | 物理内存属性模块（PMP 的一部分） | RISC-V 系统中，机器物理地址空间的每个区域的这些属性和能力称为物理内存属性。                                          |
-| PBMT       | Page-Base Memory Type                          | 基于页面的内存类型               | 一种内存管理机制，它使用分页（paging）技术来管理虚拟内存。                                                           |
+| PBMT       | Page-Base Memory Type                          | 基于页面的内存类型               | 一种内存管理机制，它使用分页（paging）技术来管理虚拟内存。见特权手册 Svpbmt 扩展。                                   |
 | MMIO       | Memory-Mapped Input/Output                     | 内存映射输入/输出                | 在 MMIO 中，外设的寄存器和内存被映射到同一个地址空间。                                                               |
 | cacheline  | cacheline                                      | 缓存行                           | 缓存中的最小存储单位。                                                                                               |
 | MetaArray  | MetaArray                                      | 元数据数组                       | 用于存储指令的元数据信息，包括指令的地址、访问权限、是否有效等。                                                     |
@@ -189,17 +189,60 @@ FTQ 分别把取指/预取指请求发送到对应的取指/预取指流水线�
 
 详细的取指过程见[MainPipe](02_mainpipe)、[IPrefetchPipe](01_iprefetchpipe)和[WayLookup](03_waylookup)。
 
+#### 硬件预取与软件预取
+
+V2R2 后，ICache 可能接受两个来源的预取请求：
+
+1. 来自 Ftq 的硬件预取请求，基于 FDIP 算法。
+2. 来自 Memblock 中 LoadUint 的软件预取请求，其本质是 Zicbop 扩展中的 prefetch.i 指令，请参考 RISC-V CMO 手册。
+
+然而，PrefetchPipe 每周期仅可以处理一个预取请求，故需要进行仲裁。ICache 顶层负责缓存软件预取请求，并与来自 Ftq 的硬件预取请求二选一送往 PrefetchPipe，软件预取请求的优先级高于硬件预取请求。
+
+逻辑上来说，每个 LoadUnit 都有可能发出软件预取请求，因此每周期至多会有 LoadUnit 数量（目前默认参数为 LduCnt=3）个软件预取请求。但出于实现成本和性能收益考量，ICache 每周期至多仅接收并处理一个，多余的会被丢弃，端口下标最小的优先。此外，若 PrefetchPipe 阻塞，而 ICache 内已经缓存了一个软件预取请求，那么原先的软件预取请求将被覆盖。
+
+<div>			
+    <center>	
+    <img src="prefetch_mux.png"
+         alt="ICache 预取请求接收与仲裁"
+         style="zoom:100%"/>
+    <br>		
+    ICache 预取请求接收与仲裁	
+    </center>
+</div>
+
+<br>
+发送到 PrefetchPipe 后，软件预取请求的处理和硬件预取请求的处理几乎是一致的，除了：
+
+- 软件预取请求不会影响控制流，即**不会**发送到 MainPipe（和后续的 Ifu、IBuffer 等环节），仅做：1) 判断是否 miss 或异常；2) 若 miss 且无异常，发送到 MissUnit 做预取指并重填 SRAM。
+
+关于 PrefetchPipe 的细节请查看子模块文档。
+
 ### 异常传递/特殊情况处理
 
 ICache 负责对取指请求的地址进行权限检查（通过 ITLB 和 PMP），可能的异常和特殊情况有：
 
-| 来源     | 异常       | 描述                                                                                             | 处理                                                                                                     |
-| -------- | ---------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
-| ITLB     | af         | 虚拟地址翻译过程出现访问错误                                                                     | 禁止取指，标记取指块为 af，经 IFU、IBuffer 发送到后端处理                                                |
-| ITLB     | gpf        | 客户机页错误                                                                                     | 禁止取指，标记取指块为 gpf，经 IFU、IBuffer 发送到后端处理，将有效的 gpaddr 发送到后端的 GPAMem 以备使用 |
-| ITLB     | pf         | 页错误                                                                                           | 禁止取指，标记取指块为 pf，经 IFU、IBuffer 发送到后端处理                                                |
-| PMP      | af         | 物理地址无权限访问                                                                               | 同 ITLB af                                                                                               |
-| MissUnit | L2 corrupt | L2 cache 响应 tilelink corrupt （可能是 L2 ECC 错误，亦可能是无权限访问总线地址空间导致 denied） | 同 ITLB af                                                                                               |
+| 来源     | 异常       | 描述                         | 处理                                                                                                                           |
+| -------- | ---------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| ITLB     | af         | 虚拟地址翻译过程出现访问错误 | 禁止取指，标记取指块为 af，经 IFU、IBuffer 发送到后端处理                                                                      |
+| ITLB     | gpf        | 客户机页错误                 | 禁止取指，标记取指块为 gpf，经 IFU、IBuffer 发送到后端处理，将有效的 `gpaddr` 和 `isForNonLeafPTE`发送到后端的 GPAMem 以备使用 |
+| ITLB     | pf         | 页错误                       | 禁止取指，标记取指块为 pf，经 IFU、IBuffer 发送到后端处理                                                                      |
+| backend  | af/pf/gpf  | 同 ITLB 的 af/pf/gpf         | 同 ITLB 的 af/pf/gpf                                                                                                           |
+| PMP      | af         | 物理地址无权限访问           | 同 ITLB af                                                                                                                     |
+| MissUnit | L2 corrupt | L2 cache 响应 corrupt        | 标记取指块为 af，经 IFU、IBuffer 发送到后端处理                                                                                |
+
+需要指出，对于一般的取指流程来说，并不存在 backend 异常这一项。但 XiangShan 出于节省硬件资源的考虑，在前端传递的 pc 只有 41 / 50 bit（Sv39*4 / Sv48*4），而对于 `jr`、`jalr` 等指令，跳转目标来源于 64 bit 寄存器。根据 RISC-V 规范，高位非全 0 或全 1 时的地址不合法，需要引发异常，这一检查只能由后端完成，并随同后端重定向信号一起发送到 Ftq，进而随同取指请求一起发送到 ICache。其本质是一种 ITLB 异常，因此解释描述和处理方式与 ITLB 相同。
+
+另外，L2 cache 通过 tilelink 总线响应 corrupt 可能是 L2 ECC 错误（`d.corrupt`），亦可能是无权限访问总线地址空间导致拒绝访问（`d.denied`）。tilelink 手册规定，当拉高 `d.denied` 时必须同时拉高 `d.corrupt`。而这两种情况都需要将取指块标记为 access fault，因此目前在 ICache 中无需区分这两种情况（即无需关注 `d.denied`，其可能被 chisel 自动优化掉而导致 verilog 中看不到）。
+
+这些异常间存在优先级：backend 异常 > ITLB 异常 > PMP 异常 > MissUnit 异常。这是自然的：
+
+1. 当出现 backend 异常时，发送到前端的 vaddr 不完整且不合法，故 ITLB 地址翻译过程无意义，检查出的异常无效；
+2. 当出现 ITLB 异常时，翻译得到的 paddr 无效，故 PMP 检查过程无意义，检查出的异常无效；
+3. 当出现 PMP 异常时，paddr 无权限访问，不会发送（预）取指请求，故不会从 MissUnit 得到响应。
+
+而对于 backend 的三种异常、ITLB 的三种异常，由 backend 和 ITLB 内部进行有优先级的选择，保证同时至多只有一种拉高。
+
+此外，一些机制还会引发一些特殊情况，在旧版文档/代码中也称为异常，但其实际上并不引发 RISC-V 手册定义的 `exception`，为了避免混淆，此后将称为特殊情况：
 
 | 来源     | 特殊情况  | 描述                                        | 处理                                                     |
 | -------- | --------- | ------------------------------------------- | -------------------------------------------------------- |
@@ -1120,250 +1163,800 @@ DataArray 主要存储了每个 Cache 行的标签和 ECC 校验码。
 
 为方便测试开展，需要对 ICache 的接口进行进一步的说明，以明确各个接口的含义。
 
-### FTQ 交互接口
+\*注意：源文件编译成 verilog/system verilog 后，部分接口会被优化，实际接口以编译后的为准。
 
-编译后可用的接口包括：
+### IPrefetch 模块接口
 
-#### req FTQ 取指请求
+#### 控制接口
 
-在 f0 流水级传入
+| 接口名        | 解释                                |
+| ------------- | ----------------------------------- |
+| csr_pf_enable | 控制 s1_real_fire，软件控制预取开关 |
+| ecc_enable    | 编译后被优化 ，控制 ecc 开启        |
+| flush         | 刷新信号                            |
 
-req 是 FTQ 向 IFU 的取指令请求，编译后包含以下成员：
+#### req:FTQ 预取请求
 
-| 接口名        | 解释                                                   |
-| ------------- | ------------------------------------------------------ |
-| ftqIdx        | 指示当前预测块在 FTQ 中的位置。                        |
-| ftqOffset     | 指示预测块的大小                                       |
-| startAddr     | 当前预测块的起始地址。                                 |
-| nextlineStart | 起始地址所在 cacheline 的下一个 cacheline 的开始地址。 |
-| nextStartAddr | 下一个预测块的起始地址                                 |
-
-#### redirect FTQ 重定向请求
-
-在 f0 流水级传入
-
-FTQ 会向 IFU 发送重定向请求，这通过 fromFtq\.redirect 完成，从而指示 IFU 应该冲刷的内容。
-
-编译后，redirect 包含以下接口成员：
-
-| 接口名     | 解释                                                   |
+由于 BPU 基本无阻塞，它经常能走到 IFU 的前面，于是 BPU 提供的这些还没发到 IFU 的取指请求就可以用作指令预取，FTQ 中实现了这部分逻辑，直接给 ICache 发送预取请求。
+预取请求来自 FTQ，在 S0 流水级传入。
+| 接口名 | 解释 |
 | ---------- | ------------------------------------------------------ |
-| ftqIdx     | 需要冲刷的 ftq 预测块序号，包含 flag 和 value 两个量。 |
-| level      | 重定向等级                                             |
-| ftq_offset | ftq 预测块中跳转指令的位置                             |
+|ready||指示 s0 能否继续|
+|valid|指示软件预取或者硬件预取是否有效。|
+|startAddr | 预测块起始地址。 |
+|nextlineStart | 预测块下一个缓存行的起始地址。 |
+|ftqIdx| 指示当前预测块在 FTQ 中的位置，包含 flag 和 value 两个量。|
+|isSoftPrefetch|是否为软件预取(来自 Memblock 中 LoadUint 的软件预取请求)。|
+|backendException| ICache 向 IFU 报告后端存在的异常类型。|
+
+#### flushFromBpu:来自 BPU 的刷新信息
+
+由 FTQ 传递而来的 BPU 刷新信息，在 S0 流水级传入。
+这是预测错误引起的，包括 s2 和 s3 两个同构成员，指示是否在 BPU 的 s2 和 s3 流水级发现了问题。
+s2 的详细结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|valid|指示 s2 是否有效。|
+|ftqIdx|指示 s2 流水级请求冲刷的预测块在 FTQ 中的位置，包含 flag 和 value 两个量。|
+
+#### itlb:请求和响应 itlb 的信息
+
+在 s0 流水级，发送 itlb_req；在 s1 流水级，如果 itlb 命中则直接接收 itlb_resp，否则重发 itlb_req。
+
+req 的结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|valid|指示 req 请求是否有效。|
+|Tlbreq|有多个子结构，这里我们只用上了 vaddr,即 req 请求的虚拟地址|
 
-此外，还有 valid 变量指示是否需要重定向。
+resp 的结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|paddr|指令物理地址。|
+|gpaddr|客户页地址。|
+|pbmt|基于页面的内存类型。|
+|miss|指示 itlb 是否未命中。|
+|isForVSnonLeafPTE|指示是否为非叶 PTE。|
+|excp|ITLB 可能产生的异常，包括：访问异常指令 af_instr、客户页错误指令 gpf_instr、页错误指令 pf_instr。见[异常传递/特殊情况处理](#异常传递特殊情况处理)|
 
-#### fromBPUFlush
+#### itlbFlushPipe:itlb 刷新信号
 
-在 f0 流水级传入
+在 itlb 中，如果出现 gpf 的取指请求处于推测路径上，且发现出现错误的推测，则会通过 flushPipe 信号进行刷新（包括后端 redirect、或前端多级分支预测器出现后级预测器的预测结果更新前级预测器的预测结果等）。
+当 iprefetchpipe 的 s1 被刷新时，itlb 也应该被刷新，该信号会在 s1 流水被置位。
 
-来自 BPU 的冲刷请求，这是预测错误引起的，包括 s3 和 s2 两个同构成员，指示是否在 BPU 的 s3 和 s2 流水级发现了问题，s3 的详细结构如下
+#### pmp: 物理内存保护相关的信息
 
-| 接口名 | 解释                            |
-| ------ | ------------------------------- |
-| valid  | 是否存在 s3 流水级冲刷要求      |
-| ftqIdx | s3 流水级请求冲刷的预测块的指针 |
+在 s1 流水级做 pmp 检查。
+pmp 包含 req 和 resp 两个子结构。
 
-#### toFtq_pdWb 写回
+req 的结构如下（编译后）：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|addr|pmp 检查的地址。|
 
-在 WB 阶段传出
+resp 的结构如下（编译后）：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|instr|指示物理地址是否有权限访问，没有则会引起 pmp 的 af 异常。|
+|mmio|地址在 mmio 空间。|
 
-| 接口名     | 解释                                                                                                                                   |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| cfioffset  | 经由 PredChecker 修复的跳转指令的预测位置。但经过编译后，cfioffset 的数值已经被优化了，只剩下了 cfioffset_valid 表示是否存在编译优化。 |
-| ftqIdx     | 表明预测块在 FTQ 中的位置，这条信息主要是对 FTQ 有用，要和 FTQ 传入的请求保持一致。                                                    |
-| instrRange | 可以看作是一个 bool 数组，表示该条指令是不是在这个预测块的有效指令范围内（即第一条有效跳转指令之前的指令）。                           |
-| jalTarget  | 表明该预测块跳转指令的跳转目标。                                                                                                       |
-| misOffset  | 表明错误预测的指令在预测块中的位置。                                                                                                   |
-| pc         | 预测块中所有指令的 PC 指针。                                                                                                           |
-| pd         | 每条指令的预测信息，包括 CFI 指令的类型、isCall、isRet 和 isRVC。                                                                      |
-| target     | 该预测块最后一条指令的下一条指令的 pc。                                                                                                |
+#### metaRead： 和 MetaArray 交互的读请求和读响应
 
-### ICache 交互接口
+在 s1 流水级读 meta。
 
-#### 控制信号
+metaRead 包含 toIMeta 和 fromIMeta 两个子结构，即读请求和读响应。
 
-| 接口名       | 解释                                                                    |
-| ------------ | ----------------------------------------------------------------------- |
-| icache_ready | ICache 通知 IFU 自己已经准备好了，可以发送缓存行了。f0 流水级就要设置。 |
-| icache_stop  | IFU 在 F3 流水级之前出现了问题，通知 ICache 停下。                      |
+toIMeta 的结构如下（编译后）：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|vSetIdx|虚拟地址的缓存组索引（Virtual Set Index）。|
+|isDoubleLine|预测块是否跨缓存行。|
 
-#### ICacheInter\.resp ICache 传送给 IFU 的信息
+fromIMeta 的结构如下（编译后）：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|metas|MetaArray 的本身，包含 tag 量。tag，即 cache 的标签。|
+|codes|ptag 的 ecc 校验码。|
+|entryValid|指示 meta 是否有效。|
+
+#### MSHRReq： MSHR 请求
 
-在 f2 流水级使用
+预取逻辑检测到未命中时，在 s2 流水级，向 MissUnit 发送请求。
+
+| 接口名   | 解释                                   |
+| -------- | -------------------------------------- |
+| blkPaddr | 要从 tilelink 获取的缓存行的物理地址。 |
+| vSetIdx  | 虚拟地址的缓存组索引。                 |
+
+#### MSHRResp: MSHR 响应
 
-| 接口名            | 解释                                                                           |
-| ----------------- | ------------------------------------------------------------------------------ |
-| data              | ICache 传送的缓存行。                                                          |
-| doubleLine        | 指示 ICache 传来的预测块是否跨缓存行。                                         |
-| exception         | ICache 向 IFU 报告每个缓存行上的异常情况，方便 ICache 生成每个指令的异常向量。 |
-| backendException  | ICache 向 IFU 报告后端是否存在异常                                             |
-| gpaddr            | 客户页地址                                                                     |
-| isForVSnonLeafPTE | 是否为非叶的 PTE，这个数据最终会流向写回 gpaddrMem 的信号                      |
-| itlb_pbmt         | ITLB 基于客户页的内存类型，对 MMIO 状态有用                                    |
-| paddr             | 指令块的起始物理地址                                                           |
-| vaddr             | 指令块起始虚拟地址、下一个缓存行的虚拟地址                                     |
-| pmp_mmio          | 指示当前指令块是否在 MMIO 空间                                                 |
+用于在 s1 流水级更新 waymasks 和 meta_codes 以及 s2 流水级判断返回的响应是否命中。
 
-### 性能相关接口
+| 接口名   | 解释                                                                              |
+| -------- | --------------------------------------------------------------------------------- |
+| blkPaddr | 已从 tilelink 获取的缓存行的物理地址。                                            |
+| vSetIdx  | 虚拟地址的缓存组索引。                                                            |
+| waymask  | 标识由 MSHR 处理的缺失（miss）请求完成后，返回的数据块应该写入到哪个路（way）中。 |
+| corrupt  | 返回的数据块是否损坏。                                                            |
+
+#### wayLookupWrite： 向 waylookup 写数据
+
+在 s1 流水级，向 waylookup 写数据。
+包含 entry（WayLookupEntry）和 gpf（WayLookupGPFEntry）两个子结构。
+
+entry 的结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|vSetIdx|虚拟地址的缓存组索引。|
+|waymask|来自 MSHR 的 waymask。|
+|ptag|物理地址标签。|
+|itlb_exception|指示 itlb 是否产生了异常 pf/gpf/af|
+|itlb_pbmt|指示 itlb 是否产生 pbmt。|
+|meta_codes|meta 的 ecc 校验码。|
 
-ICachePerf 和 perf，可以先不关注。
+gpf 的结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|gpaddr|客户页地址。|
+|isForVSnonLeafPTE|指示是否为非叶 PTE。|
+
+### MainPipe 模块接口
+
+#### 不需要关注的接口
+
+`hartId`硬件线程 ID，difftest 使用，不需要关注。
 
-### ITLBInter
+`perfInfo`性能信息，不需要关注。
 
-该接口仅在 MMIO 状态下，IFU 重发请求时活跃（f3 流水级用到）。
+#### dataArray：和 DataArray 交互的读请求和读响应
 
-#### req IFU 向 ITLB 发送的请求
+在 s0 流水级读请求。
 
-这是 IFU 向 ITLB 发送的查询请求，只有一个量：bits_vaddr，传递需要让 ITLB 查询的虚拟地址。
+dataArray 包含 toData 和 fromData 两个子结构，即读请求和读响应。
 
-#### resp ITLB 返回给 IFU 的查询结果
+toData 的结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|vSetIdx|虚拟地址的缓存组索引。|
+|waymask|标识由 MSHR 处理的缺失（miss）请求完成后，返回的数据块应该写入到哪个路（way）中。通过 MissUnit 写给 prefetch，prefetch 写入 waylookup，mainpipe 从 waylookup 中读出。|
+|blkOffset|指令在块中的偏移。|
+|isDoubleLine|预测块是否跨缓存行。|
 
-这是 ITLB 返回给 IFU 的查询结果，包含如下接口：
+fromData 的结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|datas|DataArray 本身的数据。|
+|codes|data 的 ecc 校验码。|
 
-| 接口名            | 解释                                                                                             |
-| ----------------- | ------------------------------------------------------------------------------------------------ |
-| excp              | 指令的异常信息，包含三个量：访问异常指令 af_instr、客户页错误指令 gpf_instr、页错误指令 pf_instr |
-| gpaddr            | 客户页地址                                                                                       |
-| isForVSnonLeafPTE | 指示传入的是否是非叶 PTE                                                                         |
-| paddr             | 指令物理地址                                                                                     |
-| pbmt              | 指令的基于页的内存类型                                                                           |
+#### metaArrayFlush： 刷新 metaArray
 
-### UncacheInter
+在 s2 流水级，向 metaArray 发送刷新请求, 为重新取指做准备。
 
-该接口在 MMIO 状态下活跃，负责接收 IFU 并返回指令码。
+| 接口名  | 解释                     |
+| ------- | ------------------------ |
+| virIdx  | 需要刷新的虚拟地址索引。 |
+| waymask | 需要刷新的路。           |
 
-#### toUncache
+#### touch: 更新 replacer
 
-这是 IFU 向 Uncache 发送的请求，除了 ready 和 valid 以外，还传送了一个 48 位数据，即需要获取的指令的物理地址。
+在 s1 流水级，更新 replacer，向 replacer 发送 touch 请求。
+把一次访问告诉 replacer，让它更新 plru 状态。
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|vSetIdx|被访问的缓存行的虚拟组索引。|
+|way|被访问的缓存行在集合中的路。|
 
-#### fromUncache
+#### wayLookupRead： 读取预取流水写入 waylookup 的信息
 
-这是 Uncache 给 IFU 的回复，除了 valid 以外，还传送一个 32 位数据，即指令码（可为 RVC 或 RVI 指令）
+在 s0 流水级，从 waylookup 获取元信息。
+包含 entry（WayLookupEntry）和 gpf（WayLookupGPFEntry）两个子结构。
 
-### toIbuffer
+entry 的结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|waymask|来自 MSHR 的 waymask。|
+|ptag|物理地址标签。|
+|itlb_exception|指示 itlb 是否产生了异常 pf/gpf/af|
+|itlb_pbmt|指示 itlb 是否产生 pbmt。|
+|meta_codes|meta 的 ecc 校验码。|
 
-IFU 通过这个接口向 Ibuffer 写入取指结果。包含以下成员:
+gpf 的结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|gpaddr|客户页地址。|
+|isForVSnonLeafPTE|指示是否为非叶 PTE。|
 
-| 接口名           | 解释                                                                                           |
-| ---------------- | ---------------------------------------------------------------------------------------------- | --- |
-| backendException | 是否存在后端异常                                                                               |
-| crossPageIPFFix  | 表示跨页异常向量                                                                               |
-| valid            | 和一般意义上的 valid 相区别，表示每条指令是否是合法指令的开始（RVI 指令的上半条或者 RVC 指令） | 、  |
-| enqable          | 对每条指令，其为 valid 并且在预测块的范围内                                                    |
-| exceptionType    | 每个指令的异常类型                                                                             |
-| foldpc           | 压缩过后的 pc                                                                                  |
-| ftqOffset        | 指令是否在预测块范围中                                                                         |
-| ftqPtr           | ftq 预测块在 FTQ 的位置                                                                        |
-| illegalInstr     | 这条指令是否为非法指令                                                                         |
-| instrs           | 拼接后的指令码                                                                                 |
-| isLastInFtqEntry | 判断该指令是否为这个预测块中最后一条有效指令的开始                                             |
-| pd               | 指令控制信息，包括 CFI 指令的类型和 RVC 指令的判定                                             |
-| triggered        | 指令是否触发前端的 trigger                                                                     |
+#### mshr: 对 MissUnit 中的 mshr 的请求和响应
 
-### toBackend_gpaddrMem
+在 s1 流水级，监听 MSHR 的响应。
+在 s2 流水级，缺失时将请求发送至 MissUnit，同时对 MSHR 的响应进行监听，命中时寄存 MSHR 响应的数据。
 
-这组接口在 gpfault 发生时使用，由 IFU 向 gpaddrMem 传递预测块指针和页错误地址。
+包含 req 和 resp 两个子结构。
 
-| 接口名                   | 解释                                             |
-| ------------------------ | ------------------------------------------------ |
-| waddr                    | 传递 ftq 指针                                    |
-| wdata\.gpaddr            | 传递出错的客户页地址                             |
-| wdata\.isForVSnonLeafPTE | 指示是否为非叶 PTE                               |
-| wen                      | 类似 valid，指示 gpaddrMem 存在 gpfault 需要处理 |
+req 的结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|blkPaddr|要从 tilelink 获取的缓存行的物理地址。|
+|vSetIdx|虚拟地址的缓存组索引。|
+resp 的结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|blkPaddr|已从 tilelink 获取的缓存行的物理地址。|
+|vSetIdx|虚拟地址的缓存组索引。|
+|waymask|标识由 MSHR 处理的缺失（miss）请求完成后，返回的数据块应该写入到哪个路（way）中。|
+|data|返回的数据块。|
+|corrupt|返回的数据块是否损坏。|
 
-### io_csr_fsIsOff
+#### fetch: 与 FTQ 交互和 IFU 交互接口
 
-指示是否使能了 fs\.CSR，对非法指令的判断很关键。
+包含 req 和 resp 两个子结构。
 
-### rob_commits 来自 ROB 的提交信息
+##### req： FTQ 取指请求
 
-共分为 8 个相同结构的 rob_commit，包含以下成员
+在 s0 流水级，接收 FTQ 的取指请求。
+包含 pcMemRead,readValid 和 backendException 三个子结构。
 
-| 接口名    | 解释         |
-| --------- | ------------ |
-| ftqIdx    | 预测块指针   |
-| ftqOffset | 预测块的大小 |
+其中 pcMemRead 的结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|startAddr|预测块起始地址。|
+|nextlineStart|预测块下一个缓存行的起始地址。|
 
-### pmp
+readValid:读取请求的有效性。
 
-和物理内存保护相关，在 mmio 状态下重发请求时使用。
+backendException：是否有来自后端的 Exception。
 
-#### req
+##### resp: IFU 取指响应
 
-IFU 向 pmp 发起的请求，传递前一步从 ITLB 查询得到的物理地址。
+在 s2 流水级，向 IFU 发送取指响应。
 
-#### resp
+| 接口名 | 解释 |
+| ------ | ---- |
 
-PMP 给 IFU 的回复结果，包含以下成员
+|doubleLine| 指示预测块是否跨缓存行。|
+|vaddr |指令块起始虚拟地址、下一个缓存行的虚拟地址。|
+|data |要传送的缓存行。|
+|paddr |指令块的起始物理地址|
+|exception| 向 IFU 报告每个缓存行上的异常情况，方便 ICache 生成每个指令的异常向量。|
+|pmp_mmio| 指示当前指令块是否在 MMIO 空间。|
+|itlb_pbmt |ITLB 基于客户页的内存类型，对 MMIO 状态有用。|
+|backendException| 后端是否存在异常。|
+|gpaddr| 客户页地址。|
+|isForVSnonLeafPTE| 是否为非叶的 PTE，来自 itlb。|
 
-| 接口名 | 解释                                            |
-| ------ | ----------------------------------------------- |
-| mmio   | 在 MMIO 空间                                    |
-| instr  | 对指令的判断结果，当指令不可执行时，该值为 true |
+#### flush：全局刷新信号
 
-### mmio_commits
+来自 FTQ。
 
-#### mmioFtqPtr
+#### pmp: 物理内存保护相关的信息
 
-IFU 传递给 FTQ 的 idx，用于查询上一个预测块的 MMIO 状态
+在 s1 流水级做 pmp 检查。
+pmp 包含 req 和 resp 两个子结构。
 
-#### mmioLastCommit
+req 的结构如下（编译后）：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|addr|需要检查的地址|
 
-上一个请求是 MMIO 请求
+resp 的结构如下（编译后）：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|instr|指示物理地址是否有权限访问，没有则会引起 pmp 的 af 异常。|
+|mmio|地址在 mmio 空间。|
 
-### frontendTrigger
+#### respStall
 
-用于设置前端断点
+IFU 的 f3_ready 为低时会被置位,表示 IFU 没有准备好接收数据，此时需要 stall。
 
-包含以下成员：
+#### errors: 向 BEU 报告指令缓存中检测到的错误
 
-#### debugMode
+在 s2 流水级，综合 data 的 ECC 校验加上从 s1 传来的 meta 的 ECC 校验结果，决定是否向 BEU 报告错误。
 
-debug 的模式
+编译后：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|valid|指示 errors 是否有效。|
+|bits|有两个量。paddr 表示错误的物理地址，report_to_beu 表示是否向 beu 报告错误|
 
-#### triggerCanRaiseBpExp
+#### perfInfo： 性能相关信息，不关注
 
-trigger 是否可以引起断点异常
+### WayLookup 模块接口
 
-#### tEnableVec
+#### flush：全局刷新信号
 
-信号数组，表示是否使能对应的 trigger
+来自 FTQ。
 
-#### tupdate
+#### read：Mainpipe 的读接口
 
-表示更新的断点信息，其中包含 tdata 和 addr，addr 是请求设置的断点 idx。
+包含 entry（WayLookupEntry）和 gpf（WayLookupGPFEntry）两个子结构。
 
-tdata 包括下列成员：
+entry 的结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|waymask|来自 MSHR 的 waymask。|
+|ptag|物理地址标签。|
+|itlb_exception|指示 itlb 是否产生了异常 pf/gpf/af|
+|itlb_pbmt|指示 itlb 是否产生 pbmt。|
+|meta_codes|meta 的 ecc 校验码。|
 
-| 接口名    | 解释                           |
-| --------- | ------------------------------ |
-| matchType | 断点匹配类型，等于、大于、小于 |
-| action    | 触发执行的动作                 |
-| tdata2    | 触发端点的基准数值             |
-| select    | 是否选择                       |
-| chain     | 是否传导                       |
+gpf 的结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|gpaddr|客户页地址。|
+|isForVSnonLeafPTE|指示是否为非叶 PTE。|
 
-## 接口时序
+#### write：IprefetchPipe 的写接口
 
-### FTQ 请求接口时序示例
+包含 entry（WayLookupEntry）和 gpf（WayLookupGPFEntry）两个子结构。
 
-![FTQ请求接口时序示例](port1.png)
+entry 的结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|vSetIdx|虚拟地址的缓存组索引。|
+|waymask|来自 MSHR 的 waymask。|
+|ptag|物理地址标签。|
+|itlb_exception|指示 itlb 是否产生了异常 pf/gpf/af|
+|itlb_pbmt|指示 itlb 是否产生 pbmt。|
+|meta_codes|meta 的 ecc 校验码。|
 
-上图示意了三个 FTQ 请求的示例，req1 只请求缓存行 line0，紧接着 req2 请求 line1 和 line2，当到 req3 时，由于指令缓存 SRAM 写优先，此时指令缓存的读请求 ready 被指低，req3 请求的 valid 和地址保持直到请求被接收。
+gpf 的结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|gpaddr|客户页地址。|
+|isForVSnonLeafPTE|指示是否为非叶 PTE。|
 
-### ICache 返回接口以及到 Ibuffer 和写回 FTQ 接口时序示例
+#### update：MissUnit 的更新接口
 
-![ICache返回接口以及到Ibuffer和写回FTQ接口时序示例](port2.png)
+在 IPrefetchPipe 中等待入队 WayLookup 阶段和在 WayLookup 中等待出队阶段，可能会发生 MSHR 对 Meta/DataArray 的更新。也就是命中状态可能在出入队 WayLookup 时不同。
 
-上图展示了指令缓存返回数据到 IFU 发现误预测直到 FTQ 发送正确地址的时序，group0 对应的请求在 f2 阶段了两个缓存行 line0 和 line1，下一拍 IFU 做误预测检查并同时把指令给 Ibuffer，但此时后端流水线阻塞导致 Ibuffer 满，Ibuffer 接收端的 ready 置低，goup0 相关信号保持直到请求被 Ibuffer 接收。但是 IFU 到 FTQ 的写回在 tio_toIbuffer_valid 有效的下一拍就拉高，因为此时请求已经无阻塞地进入 wb 阶段，这个阶段锁存的了 PredChecker 的检查结果，报告 group0 第 4（从 0 开始）个 2 字节位置对应的指令发生了错误预测，应该重定向到 vaddrA，之后经过 4 拍（冲刷和重新走预测器流水线），FTQ 重新发送给 IFU 以 vaddrA 为起始地址的预测块。
+| 接口名   | 解释                                                                              |
+| -------- | --------------------------------------------------------------------------------- |
+| blkPaddr | 已从 tilelink 获取的缓存行的物理地址。                                            |
+| vSetIdx  | 虚拟地址的缓存组索引。                                                            |
+| waymask  | 标识由 MSHR 处理的缺失（miss）请求完成后，返回的数据块应该写入到哪个路（way）中。 |
+| corrupt  | 返回的数据块是否损坏。                                                            |
 
-### MMIO 请求接口时序示例
+### MissUnit 模块接口
 
-![MMIO请求接口时序示例](port3.png)
+#### fencei： 软件刷新信号
 
-上图展示了一个 MMIO 请求 req1 的取指令时序，首先 ICache 返回的 tlbExcp 信息报告了这是一条 MMIO 空间的指令（其他例外信号必须为低），过两拍 IFU 向 InstrUncache 发送请求，一段时间后收到响应和 32 位指令码，同拍 IFU 将这条指令作为一个预测块发送到 Ibuffer，同时发送对 FTQ 的写回，复用误预测信号端口，重定向地址为紧接着下一条指令的地址。此时 IFU 进入等待指令执行完成。一段时间后 rob_commits 端口报告此条指令执行完成，并且没有后端重定向。则 IFU 重新发起下一条 MMIO 指令的取指令请求。
+#### flush：全局刷新信号
+
+来自 FTQ。
+
+#### fetch_req：MainPipe 的取指请求缺失时的请求
+
+| 接口名   | 解释                                   |
+| -------- | -------------------------------------- |
+| blkPaddr | 要从 tilelink 获取的缓存行的物理地址。 |
+| vSetIdx  | 虚拟地址的缓存组索引。                 |
+
+#### fetch_respf: MainPipe 的取指响应缺失时的响应
+
+| 接口名   | 解释                                                                              |
+| -------- | --------------------------------------------------------------------------------- |
+| blkPaddr | 已从 tilelink 获取的缓存行的物理地址。                                            |
+| vSetIdx  | 虚拟地址的缓存组索引。                                                            |
+| waymask  | 标识由 MSHR 处理的缺失（miss）请求完成后，返回的数据块应该写入到哪个路（way）中。 |
+| data     | 返回的数据块。                                                                    |
+| corrupt  | 返回的数据块是否损坏。                                                            |
+
+#### prefetch_req: IPrefetchPipe 的预取请求缺失时的请求
+
+| 接口名   | 解释                                   |
+| -------- | -------------------------------------- |
+| blkPaddr | 要从 tilelink 获取的缓存行的物理地址。 |
+| vSetIdx  | 虚拟地址的缓存组索引。                 |
+
+#### meta_write: MetaArray 的写请求接口
+
+| 接口名  | 解释                       |
+| ------- | -------------------------- |
+| virIdx  | 需要写入的虚拟地址索引。   |
+| phyTag  | 需要写入的物理地址标签。   |
+| waymask | 指示写入哪一路。           |
+| bankIdx | 指示写入哪一个存储体索引。 |
+
+#### data_write: DataArray 的写请求接口
+
+| 接口名  | 解释                     |
+| ------- | ------------------------ |
+| virIdx  | 需要写入的虚拟地址索引。 |
+| data    | 需要写入的数据块。       |
+| waymask | 需要写入的路。           |
+
+#### victim：与缓存的替换器（replacer）交互，获取需要被替换的缓存路（way）的信息
+
+| 接口名  | 解释                   |
+| ------- | ---------------------- |
+| vSetIdx | 虚拟地址的缓存组索引。 |
+| way     | 被替换的路。           |
+
+#### mem_acquire：Tilelink a 通道发送请求
+
+L2 的总线空闲时，发送请求。
+
+| 接口名  | 解释                         |
+| ------- | ---------------------------- |
+| source  | 标识发起此请求的源。         |
+| address | 要访问的内存的起始物理地址。 |
+
+#### mem_grant：Tilelink d 通道返回数据
+
+| 接口名  | 解释                                                                                               |
+| ------- | -------------------------------------------------------------------------------------------------- |
+| opcode  | 标识响应消息类型的关键字段，它指示了响应的性质和意图。针对 acquire 请求的响应是 GrantData (5,授予) |
+| source  | 请求的源标识。                                                                                     |
+| data    | 返回的数据块。                                                                                     |
+| corrupt | 返回的数据块是否损坏。                                                                             |
+
+### FIFO 模块接口
+
+#### enq: 入队信号
+
+| 接口名 | 解释                |
+| ------ | ------------------- |
+| valid  | 指示 enq 是否有效。 |
+| bits   | 要入队的数据。      |
+
+#### deq: 出队信号
+
+| 接口名 | 解释                |
+| ------ | ------------------- |
+| ready  | 指示 deq 是否就绪。 |
+| bits   | 要出队的数据。      |
+
+### Replacer 模块接口
+
+#### touch： 更新 replacer
+
+| 接口名  | 解释                         |
+| ------- | ---------------------------- |
+| vSetIdx | 被访问的缓存行的虚拟组索引。 |
+| way     | 被访问的缓存行在集合中的路。 |
+
+#### victim： 与缓存的替换器（replacer）交互，获取需要被替换的缓存路（way）的信息
+
+| 接口名  | 解释                   |
+| ------- | ---------------------- |
+| vSetIdx | 虚拟地址的缓存组索引。 |
+| way     | 被替换的路。           |
+
+### MetaArray 模块接口
+
+#### write: MetaArray 的写请求接口
+
+写请求来自 MissUnit 或者 CtrlUnit。
+
+| 接口名  | 解释                       |
+| ------- | -------------------------- |
+| virIdx  | 需要写入的虚拟地址索引。   |
+| phyTag  | 需要写入的物理地址标签。   |
+| waymask | 指示写入哪一路。           |
+| bankIdx | 指示写入哪一个存储体索引。 |
+| poison  | 指示是否为毒化位。         |
+
+#### read: MetaArray 的读请求接口
+
+| 接口名       | 解释                                        |
+| ------------ | ------------------------------------------- |
+| vSetIdx      | 虚拟地址的缓存组索引（Virtual Set Index）。 |
+| isDoubleLine | 预测块是否跨缓存行。                        |
+
+#### readResp： MetaArray 的读响应接口
+
+fromIMeta 的结构如下（编译后）：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|metas|MetaArray 的本身，包含 tag 量。tag，即 cache 的标签。|
+|codes|ptag 的 ecc 校验码。|
+|entryValid|指示 meta 是否有效。|
+
+#### flush：双端刷新信号
+
+来自 MainPipe 的刷新信号。可以只刷新指定的某一个端口，也可以都刷新。
+
+| 接口名  | 解释                     |
+| ------- | ------------------------ |
+| virIdx  | 需要刷新的虚拟地址索引。 |
+| waymask | 需要刷新的路。           |
+
+#### flushAll：刷新所有 MetaArray
+
+来自软件刷新信号 fencei。
+
+### DataArray 模块接口
+
+#### write：DataArray 的写请求接口
+
+来自 MissUnit 或者 CtrlUnit 的写请求。
+
+| 接口名  | 解释                     |
+| ------- | ------------------------ |
+| virIdx  | 需要写入的虚拟地址索引。 |
+| data    | 需要写入的数据块。       |
+| waymask | 需要写入的路。           |
+| poison  | 指示是否为毒化位。       |
+
+#### read：DataArray 的读请求接口
+
+来自 MainPipe 的读请求。
+
+| 接口名    | 解释                                                                                                                                                                  |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| vSetIdx   | 虚拟地址的缓存组索引。                                                                                                                                                |
+| waymask   | 标识由 MSHR 处理的缺失（miss）请求完成后，返回的数据块应该写入到哪个路（way）中。通过 MissUnit 写给 prefetch，prefetch 写入 waylookup，mainpipe 从 waylookup 中读出。 |
+| blkOffset | 指令在块中的偏移。                                                                                                                                                    |
+
+#### readResp：DataArray 的读响应接口
+
+| 接口名 | 解释                   |
+| ------ | ---------------------- |
+| datas  | DataArray 本身的数据。 |
+| codes  | data 的 ecc 校验码。   |
+
+### CtrlUnit 模块接口
+
+#### auto_in: Tilelink 相关接口
+
+CtrlUnit 和 Tilelink 交互，分为 a 通道和 d 通道。
+
+a 通道：
+| 接口名 | 解释 |
+| ------- | ---------------------------- |
+|opcode|标识携带消息类型。|
+|size|传输的数据大小对数，表示操作的字节数为$2^n$。|
+|source| 标识发起此请求的源，主设备源标识符。 |
+|address|传输的目标字节地址。|
+|mask|要读的字节通道。|
+|data|忽略。|
+
+d 通道：
+| 接口名 | 解释 |
+| ------- | ---------------------------- |
+|opcode|标识携带消息类型。|
+|size|传输的数据大小对数，表示操作的字节数为$2^n$。|
+|source| 标识发起此请求的源，主设备源标识符。 |
+|data|数据载荷。|
+
+#### ecc_enable： ecc 控制信号
+
+指示 ecc 是否开启。
+
+#### injecting： ecc 注入信号
+
+指示 eccctrl 的 istatus 域是否处于 working 状态，即收到注入请求，注入中
+
+#### metaRead： 对 MetaArray 的读请求
+
+在对应读状态机 is_readMetaReq 中，对 MetaArray 发起读请求。
+| 接口名 | 解释 |
+| ------------ | ------------------------------------------- |
+| vSetIdx | 要读取的拟地址的缓存组索引。 |
+
+#### metaReadResp： 对 MetaArray 的读响应
+
+在状态机 is_readMetaResp 中，接收 MetaArray 的读响应。
+
+| 接口名     | 解释                                                  |
+| ---------- | ----------------------------------------------------- |
+| metas      | MetaArray 的本身，包含 tag 量。tag，即 cache 的标签。 |
+| entryValid | 指示 meta 是否有效。                                  |
+
+#### metaWrite： 对 MetaArray 的写
+
+在状态机 is_writeMeta 中，对 MetaArray 发起写。
+
+| 接口名  | 解释                       |
+| ------- | -------------------------- |
+| virIdx  | 需要写入的虚拟地址索引。   |
+| phyTag  | 需要写入的物理地址标签。   |
+| waymask | 指示写入哪一路。           |
+| bankIdx | 指示写入哪一个存储体索引。 |
+
+#### dataWrite： 对 DataArray 的写请求
+
+在状态机 is_writeData 中，对 DataArray 发起写请求。
+
+| 接口名  | 解释                     |
+| ------- | ------------------------ |
+| virIdx  | 需要写入的虚拟地址索引。 |
+| waymask | 需要写入的路。           |
+
+### ICache 顶层模块接口
+
+在 scala 代码中，顶层模块除了包含对外的接口，实际上还包括了 MetaArray、DataArray 和 Replacer。在编译成 verilog 后，这三个模块会被编译成三个独立的模块，然后再通过顶层模块的接口连接起来。
+
+#### 不需要关注的接口
+
+`hartId`硬件线程 ID，difftest 使用，不需要关注。
+`perfInfo`性能信息，不需要关注。
+
+#### auto_ctrlUnitOpt_in：CtrlUnit 和 Tilelink 交互的接口
+
+CtrlUnit 和 Tilelink 交互，分为 a 通道和 d 通道。
+
+a 通道：
+| 接口名 | 解释 |
+| ------- | ---------------------------- |
+|opcode|标识携带消息类型。|
+|size|传输的数据大小对数，表示操作的字节数为$2^n$。|
+|source| 标识发起此请求的源，主设备源标识符。 |
+|address|传输的目标字节地址。|
+|mask|要读的字节通道。|
+|data|忽略。|
+
+d 通道：
+| 接口名 | 解释 |
+| ------- | ---------------------------- |
+|opcode|标识携带消息类型。|
+|size|传输的数据大小对数，表示操作的字节数为$2^n$。|
+|source| 标识发起此请求的源，主设备源标识符。 |
+|data|数据载荷。|
+
+#### auto_client_out： MissUnit 和 Tilelink 交互的接口
+
+MissUnit 和 Tilelink 交互，分为 a 通道和 d 通道。
+a 通道：
+| 接口名 | 解释 |
+| ------- | ---------------------------- |
+| source | 标识发起此请求的源。 |
+| address | 要访问的内存的起始物理地址。 |
+
+d 通道：
+
+| 接口名  | 解释                                                                                               |
+| ------- | -------------------------------------------------------------------------------------------------- |
+| opcode  | 标识响应消息类型的关键字段，它指示了响应的性质和意图。针对 acquire 请求的响应是 GrantData (5,授予) |
+| source  | 请求的源标识。                                                                                     |
+| data    | 返回的数据块。                                                                                     |
+| corrupt | 返回的数据块是否损坏。                                                                             |
+
+#### fetch: 与 FTQ 交互和 IFU 交互接口
+
+包含 req 和 resp 两个子结构。
+
+##### req： FTQ 取指请求
+
+在 s0 流水级，接收 FTQ 的取指请求。
+包含 pcMemRead,readValid 和 backendException 三个子结构。
+
+其中 pcMemRead 的结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|startAddr|预测块起始地址。|
+|nextlineStart|预测块下一个缓存行的起始地址。|
+
+readValid:读取请求的有效性。
+
+backendException：是否有来自后端的 Exception。
+
+##### resp: IFU 取指响应
+
+在 s2 流水级，向 IFU 发送取指响应。
+
+| 接口名            | 解释                                                                    |
+| ----------------- | ----------------------------------------------------------------------- |
+| doubleLine        | 指示预测块是否跨缓存行。                                                |
+| vaddr             | 指令块起始虚拟地址、下一个缓存行的虚拟地址。                            |
+| data              | 要传送的缓存行。                                                        |
+| paddr             | 指令块的起始物理地址                                                    |
+| exception         | 向 IFU 报告每个缓存行上的异常情况，方便 ICache 生成每个指令的异常向量。 |
+| pmp_mmio          | 指示当前指令块是否在 MMIO 空间。                                        |
+| itlb_pbmt         | ITLB 基于客户页的内存类型，对 MMIO 状态有用。                           |
+| backendException  | 后端是否存在异常。                                                      |
+| gpaddr            | 客户页地址。                                                            |
+| isForVSnonLeafPTE | 是否为非叶的 PTE，来自 itlb。                                           |
+
+#### ftqPrefetch:FTQ 预取相关信息
+
+包含三个子结构：
+req： 来自 FTQ 的预取请求
+flushFromBpu:来自 BPU 的刷新信息
+bakckendException:来自后端的异常信息
+
+##### req： 来自 FTQ 的预取请求
+
+由于 BPU 基本无阻塞，它经常能走到 IFU 的前面，于是 BPU 提供的这些还没发到 IFU 的取指请求就可以用作指令预取，FTQ 中实现了这部分逻辑，直接给 ICache 发送预取请求。
+预取请求来自 FTQ，在 MainPipe 的 S0 流水级传入。
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|ready||指示 s0 能否继续|
+|valid|指示软件预取或者硬件预取是否有效。|
+|startAddr | 预测块起始地址。 |
+|nextlineStart | 预测块下一个缓存行的起始地址。 |
+|ftqIdx| 指示当前预测块在 FTQ 中的位置，包含 flag 和 value 两个量。|
+
+##### flushFromBpu:来自 BPU 的刷新信息
+
+由 FTQ 传递而来的 BPU 刷新信息，在 MainPipe 的 S0 流水级传入。
+这是预测错误引起的，包括 s2 和 s3 两个同构成员，指示是否在 BPU 的 s2 和 s3 流水级发现了问题。
+s2 的详细结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|valid|指示 s2 是否有效。|
+|ftqIdx|指示 s2 流水级请求冲刷的预测块在 FTQ 中的位置，包含 flag 和 value 两个量。|
+
+##### backendException： 后端异常信息
+
+ICache 向 IFU 报告后端存在的异常类型
+
+#### softPrefetch： 来自 Memblock 的软件预取信息
+
+| 接口名 | 解释                 |
+| ------ | -------------------- |
+| vaddr  | 软件预取的虚拟地址。 |
+
+#### stop： IFU 发送到 ICache 的停止信号
+
+IFU 在 F3 流水级之前出现了问题，通知 ICache 停下。
+
+#### ToIFU： 发送给 I FU 的就绪信号
+
+由 MainPipe 的 s0 流水级 s0_can_go 生成。该信号用于提醒 IFU，Icache 的流水可用，可以发送换存行了。
+
+#### pmp： MainPipe 和 PrefetchPipe 的 pmp 信息
+
+0,1 通道为 MainPipe 的 pmp 信息，2,3 通道为 PrefetchPipe 的 pmp 信息。
+pmp 包含 req 和 resp 两个子结构。
+
+req 的结构如下（编译后）：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|addr|需要检查的地址|
+
+resp 的结构如下（编译后）：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|instr|指示物理地址是否有权限访问，没有则会引起 pmp 的 af 异常。|
+|mmio|地址在 mmio 空间。|
+
+#### itlb：PrefetchPipe 的 itlb 信息
+
+在 PrefetchPipe 的 s0 流水级，发送 itlb_req；在 PrefetchPipe 的 s1 流水级，如果 itlb 命中则直接接收 itlb_resp，否则重发 itlb_req。
+
+itlb 包含 req 和 resp 两个子结构。
+
+req 的结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|valid|指示 req 请求是否有效。|
+|Tlbreq|有多个子结构，这里我们只用上了 vaddr,即 req 请求的虚拟地址|
+
+resp 的结构如下：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|paddr|指令物理地址。|
+|gpaddr|客户页地址。|
+|pbmt|基于页面的内存类型。|
+|miss|指示 itlb 是否未命中。|
+|isForVSnonLeafPTE|指示是否为非叶 PTE。|
+|excp|ITLB 可能产生的异常，包括：访问异常指令 af_instr、客户页错误指令 gpf_instr、页错误指令 pf_instr。见[异常传递/特殊情况处理](#异常传递特殊情况处理)|
+
+#### itlbFlushPipe： itlb 刷新信号
+
+在 itlb 中，如果出现 gpf 的取指请求处于推测路径上，且发现出现错误的推测，则会通过 flushPipe 信号进行刷新（包括后端 redirect、或前端多级分支预测器出现后级预测器的预测结果更新前级预测器的预测结果等）。
+当 iprefetchpipe 的 s1 被刷新时，itlb 也应该被刷新，该信号会在 iprefetchpipe 的 s1 流水被置位。
+
+#### error：向 BEU 报告指令缓存中检测到的错误
+
+将 MainPipe 中收集到的 errors 多个错误信息，使用优先级选择器选择索引最小且有效的错误信息，然后通过 error 信号发送给 BEU。接口结构和 MainPipe 中相同，区别在于 MainPipe 中有两个端口，所以有两个 errors,而这里要发送的只有一个。
+
+编译后：
+| 接口名 | 解释 |
+| ---------- | ------------------------------------------------------ |
+|valid|指示 errors 是否有效。|
+|bits|有两个量。paddr 表示错误的物理地址，report_to_beu 表示是否向 beu 报告错误|
+
+#### csr_pf_enable
+
+控制 s1_real_fire，软件控制预取开关
+
+#### fencei： 软件刷新信号
+
+#### flush： 全局刷新信号
+
+在 FTQ 中，有后端重新定向或者 IFU 重定向时，会将其 icacheFlush 信号拉高，触发 icache 的刷新。
 
 ## **<a id="ifu_functions">测试点汇总 </a>**
 
