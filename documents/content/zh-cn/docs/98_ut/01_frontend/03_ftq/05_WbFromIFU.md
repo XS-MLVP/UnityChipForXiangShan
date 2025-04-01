@@ -1,11 +1,8 @@
 ---
 title: IFU向FTQ写回预译码信息
-linkTitle: IFU向FTQ写回预译码信息
+linkTitle: 05_IFU向FTQ写回预译码信息
 weight: 12
 ---
-
-
-# IFU向FTQ写回预译码信息
 
 ## 文档概述
 

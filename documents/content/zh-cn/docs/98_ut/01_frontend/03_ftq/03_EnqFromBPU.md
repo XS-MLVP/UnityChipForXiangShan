@@ -1,10 +1,8 @@
 ---
 title: FTQ接收BPU分支预测结果
-linkTitle: FTQ接收BPU分支预测结果
+linkTitle: 03_FTQ接收BPU分支预测结果
 weight: 12
 ---
-
-# FTQ接收BPU分支预测结果
 
 ## 文档概述
 
@@ -22,7 +20,7 @@ BPU会将分支预测结果和meta数据发给FTQ。
 | RAS (Return Address Stack)   | 返回地址堆       |
 | FTQ Entry                    | FTQ队列中的单个表项 |
 
-## 模块功能说明 。
+## 模块功能说明
 
 ### 1. 新的预测块进队条件
 #### **1.1 成功接收数据**
