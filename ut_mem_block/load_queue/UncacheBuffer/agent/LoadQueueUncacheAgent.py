@@ -95,7 +95,8 @@ class LoadQueueUncacheAgent(Agent):
         self.bundle.io._uncache._resp._bits._data.value = uncache.resp_bits_data
         self.bundle.io._uncache._resp._bits._id.value = uncache.resp_bits_id
         self.bundle.io._uncache._resp._bits._nderr.value = uncache.resp_bits_nderr
-        await self.bundle.step(1)
-        self.bundle.io._uncache._resp._valid.value = False
         await self.bundle.step(2)
-        return self.bundle.io._uncache._req, self.bundle.LoadQueueUncache, self.bundle.io._rollback
+        if(self.bundle.LoadQueueUncache_._entries._0._io._flush.value == False and self.bundle.LoadQueueUncache_._entries._1._io._flush.value == False and self.bundle.LoadQueueUncache_._entries._2._io._flush.value == False):
+            await self.bundle.step(2)
+        self.bundle.io._uncache._resp._valid.value = False
+        return self.bundle.io._rollback
