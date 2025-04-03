@@ -1,0 +1,2 @@
+IPrefetchPipe:
+  - "wire s1_flush"

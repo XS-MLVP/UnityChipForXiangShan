@@ -1,0 +1,7 @@
+WayLookup:
+  - "reg readPtr_flag"
+  - "reg readPtr_value"
+  - "reg writePtr_flag"
+  - "reg writePtr_value"
+  - "wire io_write_ready_0"
+  - "reg entries_30_waymask_0"

@@ -1,0 +1,5 @@
+ICacheMainPipe:
+  - "wire s2_fire"
+  - "wire _toMSHRArbiter_io_in_0_valid_T_4"
+  - "wire _toMSHRArbiter_io_in_1_valid_T_4"
+  - "reg s2_valid"
