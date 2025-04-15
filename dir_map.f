@@ -19,5 +19,5 @@ frontend_icache_icache --> ICache --> ut_frontend/icache/icache
 frontend_icache_mainpipe --> ICacheMainPipe --> ut_frontend/icache/mainpipe
 frontend_icache_missunit --> ICacheMissUnit --> ut_frontend/icache/missunit
 frontend_icache_waylookup --> WayLookup --> ut_frontend/icache/waylookup
-frontend_icache_instruncache --> InstrUncache --> ut_frontend/icache/instruncache
+frontend_instruncache --> InstrUncache --> ut_frontend/instruncache
 

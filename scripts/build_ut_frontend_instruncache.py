@@ -9,7 +9,7 @@ def build(cfg):
 
     # check version
     if not match_version(cfg.rtl.version, "openxiangshan-kmh-*"):
-        error(f"frontend_icache_instruncache: Unsupported RTL version {cfg.rtl.version}")
+        error(f"frontend_instruncache: Unsupported RTL version {cfg.rtl.version}")
         return False
 
     # find source files for InstrUncache
@@ -19,7 +19,7 @@ def build(cfg):
 
     # additional internal signal files
     internal_signals_path = os.path.join(
-        get_root_dir("scripts/icache_related/icache_instruncache_internals.yaml")
+        get_root_dir("scripts/instruncache_related/instruncache_internals.yaml")
     )
     # assert os.path.exists(internal_signals_path), "Cannot find internal signal files"
 
