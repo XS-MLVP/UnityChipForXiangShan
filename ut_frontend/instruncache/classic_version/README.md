@@ -81,7 +81,7 @@ async def _request_data(instruncache_bundle, req_addr, l2_resp_source, l2_resp_d
 
 `````python
     io_resp_valid, \
-    io_resp_bits_data = await _request_data(instruncache_bundle, 0xF0000002, 0, 0, 0xAAAAAAAABBBBBBBB)
+    io_resp_bits_data = await _request_data(instruncache_bundle, 0xF0000002, 0, 0xAAAAAAAABBBBBBBB)
 
     assert 1 == io_resp_valid
     assert 0xAAAABBBB == io_resp_bits_data
