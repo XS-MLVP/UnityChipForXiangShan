@@ -43,5 +43,17 @@ def build(cfg):
     return True
 
 
+def get_metadata():
+    return {
+        "dut_name": "frontend_ifu_pred_checker",
+        "dut_dir": "PredChecker",
+        "test_targets": [
+            "ut_frontend/ifu/pred_checker",
+            "ut_frontend/ifu",
+            "ut_frontend"
+        ]
+    }
+
+
 def line_coverage_files(cfg):
     return ["PredChecker.v"]

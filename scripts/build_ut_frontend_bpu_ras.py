@@ -20,5 +20,17 @@ def build(cfg):
     return False
 
 
+def get_metadata():
+    return {
+        "dut_name": "frontend_bpu_ras",
+        "dut_dir": "RAS",
+        "test_targets": [
+            "ut_frontend/bpu/ras",
+            "ut_frontend/bpu",
+            "ut_frontend"
+        ]
+    }
+
+
 def line_coverage_files(cfg):
     return []

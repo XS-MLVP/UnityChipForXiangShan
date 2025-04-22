@@ -46,5 +46,17 @@ def build(cfg):
     return True
 
 
+def get_metadata():
+    return {
+        "dut_name": "frontend_bpu_ittage",
+        "dut_dir": "ITTage",
+        "test_targets": [
+            "ut_frontend/bpu/ittage",
+            "ut_frontend/bpu",
+            "ut_frontend"
+        ]
+    }
+
+
 def line_coverage_files(cfg):
     return ["ITTage.v"]

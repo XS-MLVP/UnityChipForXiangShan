@@ -12,6 +12,12 @@ space:= $(empty) $(empty)
 
 PROCESSED_DUTS := $(subst $(comma),$(space),$(strip $(DUTS)))
 
+TIMESTAMP := $(shell date +'%Y-%m-%d %H:%M:%S,%3N')
+CURDIR := $(abspath .)
+
+INFO_PREFIX := [$(TIMESTAMP),$(CURDIR)/Makefile,INFO]
+WARN_PREFIX := [$(TIMESTAMP),$(CURDIR)/Makefile,Warning]
+
 all: rtl dut test_all
 
 update_python_deps:
@@ -36,39 +42,39 @@ check_all_dut:
 test: check_dut
 	@python3 run.py --config $(CFG) $(KV) -- $(REPORT) -vs $(target) $(args)
 
-check_dut:
+check_dut: generate_dirmap
 	@if [ -n "$(target)" ]; then \
 		for t in $(target); do \
 			CLEANED_TARGET=$$(echo "$$t" | sed 's/\/$$//'); \
-			MATCHED_LINE=$$(grep ".* --> .* --> $$CLEANED_TARGET" dir_map.f | head -1); \
-			if [ -n "$$MATCHED_LINE" ]; then \
+			grep ".* --> .* --> $$CLEANED_TARGET$$" .dirmap.autogen | while read -r MATCHED_LINE; do \
 				DUT_NAME=$$(echo "$$MATCHED_LINE" | awk -F' --> ' '{print $$1}'); \
 				DUT_DIR=dut/$$(echo "$$MATCHED_LINE" | awk -F' --> ' '{print $$2}'); \
 				if [ ! -d "$$DUT_DIR" ]; then \
-					echo "Building missing DUT for target $$t: $$DUT_NAME"; \
-					$(MAKE) dut DUTS="$$DUT_NAME"; \
+					echo "$(INFO_PREFIX) Building missing DUT for target $$t: $$DUT_NAME"; \
+					$(MAKE) dut DUTS="$$DUT_NAME" NO_GEN_DIRMAP=1; \
 				fi; \
-			else \
-				echo "No mapping found for target: $$t in dir_map.f, skipping check" >&2; \
-			fi; \
+			done; \
 		done; \
 	fi
 
-dut: rtl
+dut: rtl $(if $(NO_GEN_DIRMAP),,generate_dirmap)
 	@if [ "$(PROCESSED_DUTS)" = "*" ]; then \
 		$(MAKE) clean_dut; \
 	else \
 		for d in $(PROCESSED_DUTS); do \
-			dir=$$(awk -F' --> ' -v dut="$$d" '$$1 == dut {print $$2; exit}' dir_map.f); \
+			dir=$$(awk -F' --> ' -v dut="$$d" '$$1 == dut {print $$2; exit}' .dirmap.autogen); \
 			if [ -z "$$dir" ]; then \
-				echo "No mapping found for DUT: $$d in dir_map.f, skipping deletion" >&2; \
+				echo "$(WARN_PREFIX) No mapping found for DUT: $$d in .dirmap.autogen, skipping deletion" >&2; \
 				continue; \
 			fi; \
-			echo "Cleaning dut/$$dir"; \
+			echo "$(INFO_PREFIX) Cleaning dut/$$dir"; \
 			rm -rf "dut/$$dir"; \
 		done; \
 	fi
 	@python3 run.py --config $(CFG) --build $(DUTS) $(args)
+
+generate_dirmap:
+	@python3 -c "from comm.functions import generate_dirmap; generate_dirmap()"
 
 rtl:
 	@python3 run.py --config $(CFG)  --download-rtl $(args)

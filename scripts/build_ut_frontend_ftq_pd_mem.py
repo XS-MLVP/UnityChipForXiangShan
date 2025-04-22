@@ -33,6 +33,18 @@ def build(cfg):
 
     return True
 
+
+def get_metadata():
+    return {
+        "dut_name": "frontend_ftq_pd_mem",
+        "dut_dir": "FtqPdMem",
+        "test_targets": [
+            "ut_frontend/ftq",
+            "ut_frontend"
+        ]
+    }
+
+
 ## set coverage
 def line_coverage_files(cfg):
     return ["FtqPdMem.v"]
