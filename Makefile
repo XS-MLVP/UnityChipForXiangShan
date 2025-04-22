@@ -56,6 +56,7 @@ check_dut: generate_dirmap
 			done; \
 		done; \
 	fi
+	@rm -f .dirmap.autogen
 
 dut: rtl $(if $(NO_GEN_DIRMAP),,generate_dirmap)
 	@if [ "$(PROCESSED_DUTS)" = "*" ]; then \
@@ -72,6 +73,7 @@ dut: rtl $(if $(NO_GEN_DIRMAP),,generate_dirmap)
 		done; \
 	fi
 	@python3 run.py --config $(CFG) --build $(DUTS) $(args)
+	@if [ -z "$(NO_GEN_DIRMAP)" ]; then rm -f .dirmap.autogen; fi
 
 generate_dirmap:
 	@python3 -c "from comm.functions import generate_dirmap; generate_dirmap()"
