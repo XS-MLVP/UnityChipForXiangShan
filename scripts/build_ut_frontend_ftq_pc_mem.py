@@ -40,6 +40,7 @@ def get_metadata():
         "dut_name": "frontend_ftq_pc_mem",
         "dut_dir": "FtqPcMem",
         "test_targets": [
+            "ut_frontend/ftq/ftq_pc_mem",
             "ut_frontend/ftq",
             "ut_frontend"
         ]
