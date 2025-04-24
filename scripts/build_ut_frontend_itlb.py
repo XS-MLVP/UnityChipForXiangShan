@@ -48,5 +48,18 @@ def build(cfg):
     return True
 
 
+def get_metadata():
+    return {
+        "dut_name": "frontend_itlb",
+        "dut_dir": "TLB",
+        "test_targets": [
+            "ut_frontend/itlb/classical_version",
+            "ut_frontend/itlb/toffee_version",
+            "ut_frontend/itlb",
+            "ut_frontend"
+        ]
+    }
+
+
 def line_coverage_files(cfg):
     return ["TLB.v"]

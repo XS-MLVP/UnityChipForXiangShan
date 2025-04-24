@@ -33,6 +33,19 @@ def build(cfg):
 
     return True
 
+
+def get_metadata():
+    return {
+        "dut_name": "frontend_ftq_redirect_mem",
+        "dut_dir": "FtqRedirectMem",
+        "test_targets": [
+            "ut_frontend/ftq/ftq_redirect_mem",
+            "ut_frontend/ftq",
+            "ut_frontend"
+        ]
+    }
+
+
 ## set coverage
 def line_coverage_files(cfg):
     return ["FtqRedirectMem.v"]

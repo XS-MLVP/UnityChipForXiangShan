@@ -26,42 +26,42 @@ import inspect
 # the bug occurs. In practice, initiating a request (req) simultaneously with 
 # a reset signal constitutes an invalid input and violates the protocol 
 # specification.
-def test_reset_when_request(tlb_fixture):
-    """
-    Check reset
-        Request & reset in the same cycle
-    """
-    # connect to fixture
-    tlb = tlb_fixture
-    # add watch point
-    case_name = inspect.currentframe().f_back.f_code.co_name
-    g.add_watch_point(tlb.ctrl.reset, {
-                        "reset": fc.Eq(1),
-                        "notreset": fc.Eq(0),
-    }, name = f"{case_name}: RESET")
-    # set default value
-    tlb.set_default_value()
-    # reset
-    tlb.reset()
+# def test_reset_when_request(tlb_fixture):
+#     """
+#     Check reset
+#         Request & reset in the same cycle
+#     """
+#     # connect to fixture
+#     tlb = tlb_fixture
+#     # add watch point
+#     case_name = inspect.currentframe().f_back.f_code.co_name
+#     g.add_watch_point(tlb.ctrl.reset, {
+#                         "reset": fc.Eq(1),
+#                         "notreset": fc.Eq(0),
+#     }, name = f"{case_name}: RESET")
+#     # set default value
+#     tlb.set_default_value()
+#     # reset
+#     tlb.reset()
 
-    # add clock
-    tlb.dut.xclock.StepRis(lambda _: g.sample())
-    # start
-    for _ in range(10000):
-        # add signal and assign to dut
-        _, _, _, _, _, _ = tlb.rand_req()
-        tlb.ctrl.reset.value = 1
+#     # add clock
+#     tlb.dut.xclock.StepRis(lambda _: g.sample())
+#     # start
+#     for _ in range(10000):
+#         # add signal and assign to dut
+#         _, _, _, _, _, _ = tlb.rand_req()
+#         tlb.ctrl.reset.value = 1
 
-        # step to next cycle
-        tlb.dut.Step(10)
+#         # step to next cycle
+#         tlb.dut.Step(10)
 
-        # add signal and assign to dut
-        tlb.ctrl.reset.value = 0
-        # step to next cycle
-        tlb.dut.Step(5)
+#         # add signal and assign to dut
+#         tlb.ctrl.reset.value = 0
+#         # step to next cycle
+#         tlb.dut.Step(5)
 
-        # assert result
-        assert (tlb.requestor_0.resp.miss.value == 0)
-        assert (tlb.requestor_1.resp.miss.value == 0)
-        assert (tlb.ctrl.io_ptw_req_0_valid.value == 0)
-        assert (tlb.ctrl.io_ptw_req_1_valid.value == 0)
+#         # assert result
+#         assert (tlb.requestor_0.resp.miss.value == 0)
+#         assert (tlb.requestor_1.resp.miss.value == 0)
+#         assert (tlb.ctrl.io_ptw_req_0_valid.value == 0)
+#         assert (tlb.ctrl.io_ptw_req_1_valid.value == 0)

@@ -54,6 +54,19 @@ def build(cfg):
 
     return True
 
+
+def get_metadata():
+    return {
+        "dut_name": "frontend_ftq_top",
+        "dut_dir": "FtqTop",
+        "test_targets": [
+            "ut_frontend/ftq/ftq_top",
+            "ut_frontend/ftq",
+            "ut_frontend"
+        ]
+    }
+
+
 ## set coverage
 def line_coverage_files(cfg):
     return ["Ftq.v"]

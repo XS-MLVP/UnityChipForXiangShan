@@ -37,5 +37,18 @@ def build(cfg):
     return True
 
 
+def get_metadata():
+    return {
+        "dut_name": "frontend_instruncache",
+        "dut_dir": "InstrUncache",
+        "test_targets": [
+            "ut_frontend/instruncache/classical_version",
+            "ut_frontend/instruncache/toffee_version",
+            "ut_frontend/instruncache",
+            "ut_frontend"
+        ]
+    }
+
+
 def line_coverage_files(cfg):
     return ["InstrUncache.v"]

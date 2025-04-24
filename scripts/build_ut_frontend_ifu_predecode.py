@@ -28,5 +28,17 @@ def build(cfg):
     return True
 
 
+def get_metadata():
+    return {
+        "dut_name": "frontend_ifu_predecode",
+        "dut_dir": "PreDecode",
+        "test_targets": [
+            "ut_frontend/ifu/predecode",
+            "ut_frontend/ifu",
+            "ut_frontend"
+        ]
+    }
+
+
 def line_coverage_files(cfg):
     return ["PreDecode.v"]

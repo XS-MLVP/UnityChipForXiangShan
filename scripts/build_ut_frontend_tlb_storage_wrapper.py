@@ -48,5 +48,18 @@ def build(cfg):
     return True
 
 
+def get_metadata():
+    return {
+        "dut_name": "frontend_tlb_storage_wrapper",
+        "dut_dir": "TlbStorageWrapper",
+        "test_targets": [
+            "ut_frontend/itlb/submodules/TlbStorageWrapper",
+            "ut_frontend/itlb/submodules",
+            "ut_frontend/itlb",
+            "ut_frontend"
+        ]
+    }
+
+
 def line_coverage_files(cfg):
     return ["TlbStorageWrapper.v"]

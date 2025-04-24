@@ -35,5 +35,17 @@ def build(cfg):
     return True
 
 
+def get_metadata():
+    return {
+        "dut_name": "frontend_icache_iprefetchpipe",
+        "dut_dir": "IPrefetchPipe",
+        "test_targets": [
+            "ut_frontend/icache/iprefetchpipe",
+            "ut_frontend/icache",
+            "ut_frontend"
+        ]
+    }
+
+
 def line_coverage_files(cfg):
     return ["IPrefetchPipe.v"]

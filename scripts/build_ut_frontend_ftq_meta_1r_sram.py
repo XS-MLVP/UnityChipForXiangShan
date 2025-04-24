@@ -39,6 +39,19 @@ def build(cfg):
 
     return True
 
+
+def get_metadata():
+    return {
+        "dut_name": "frontend_ftq_meta_1r_sram",
+        "dut_dir": "FtqMetairSram",
+        "test_targets": [
+            "ut_frontend/ftq/meta_1r_sram",
+            "ut_frontend/ftq",
+            "ut_frontend"
+        ]
+    }
+
+
 ## set coverage
 def line_coverage_files(cfg):
     return ["FtqMetairSram.v"]
