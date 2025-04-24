@@ -13,7 +13,7 @@ class PredCheckerModel(Model):
         self.jalTarget = [0 for _ in range(PREDICT_WIDTH)]
 
     @driver_hook(agent_name="predCheckerAgent", driver_name="agent_pred_check")
-    async def ref_pred_check(self, ftqValid, ftqOffbits, instrRange, instrValid, jumpOffset, pc, pds, tgt, fire):
+    def ref_pred_check(self, ftqValid, ftqOffbits, instrRange, instrValid, jumpOffset, pc, pds, tgt, fire):
         # Store input
         self.ftqValid = ftqValid
         self.ftqOffbits = ftqOffbits
