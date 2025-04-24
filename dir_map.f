@@ -20,4 +20,5 @@ frontend_icache_mainpipe --> ICacheMainPipe --> ut_frontend/icache/mainpipe
 frontend_icache_missunit --> ICacheMissUnit --> ut_frontend/icache/missunit
 frontend_icache_waylookup --> WayLookup --> ut_frontend/icache/waylookup
 frontend_instruncache --> InstrUncache --> ut_frontend/instruncache
+frontend_l2tlb_ptw --> PTW --> ut_frontend/l2tlb/ptw
 
