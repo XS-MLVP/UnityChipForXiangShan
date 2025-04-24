@@ -15,6 +15,9 @@ rtl/*
 documents/static/data/*
 !documents/static/data/README.txt
 
+# Auto-generated mapping file
+.dirmap.autogen
+
 # C extensions
 *.so
 

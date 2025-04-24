@@ -45,5 +45,17 @@ def build(cfg):
     return True
 
 
+def get_metadata():
+    return {
+        "dut_name": "frontend_bpu_tagesc",
+        "dut_dir": "Tage_SC",
+        "test_targets": [
+            "ut_frontend/bpu/tagesc",
+            "ut_frontend/bpu",
+            "ut_frontend"
+        ]
+    }
+
+
 def line_coverage_files(cfg):
     return ["Tage_SC.v"]

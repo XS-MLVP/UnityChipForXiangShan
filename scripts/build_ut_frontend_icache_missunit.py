@@ -37,5 +37,17 @@ def build(cfg):
     return True
 
 
+def get_metadata():
+    return {
+        "dut_name": "frontend_icache_missunit",
+        "dut_dir": "ICacheMissUnit",
+        "test_targets": [
+            "ut_frontend/icache/missunit",
+            "ut_frontend/icache",
+            "ut_frontend"
+        ]
+    }
+
+
 def line_coverage_files(cfg):
     return ["ICacheMissUnit.v"]

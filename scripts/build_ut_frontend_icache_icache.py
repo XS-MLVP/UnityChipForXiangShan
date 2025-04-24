@@ -37,5 +37,17 @@ def build(cfg):
     return True
 
 
+def get_metadata():
+    return {
+        "dut_name": "frontend_icache_icache",
+        "dut_dir": "ICache",
+        "test_targets": [
+            "ut_frontend/icache/icache",
+            "ut_frontend/icache",
+            "ut_frontend"
+        ]
+    }
+
+
 def line_coverage_files(cfg):
     return ["ICache.v"]

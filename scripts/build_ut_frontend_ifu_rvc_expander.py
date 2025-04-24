@@ -27,5 +27,19 @@ def build(cfg):
     return True
 
 
+def get_metadata():
+    return {
+        "dut_name": "frontend_ifu_rvc_expander",
+        "dut_dir": "RVCExpander",
+        "test_targets": [
+            "ut_frontend/ifu/rvc_expander/classical_version",
+            "ut_frontend/ifu/rvc_expander/toffee_version",
+            "ut_frontend/ifu/rvc_expander",
+            "ut_frontend/ifu",
+            "ut_frontend"
+        ]
+    }
+
+
 def line_coverage_files(cfg):
     return ["RVCExpander.v"]

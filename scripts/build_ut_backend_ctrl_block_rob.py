@@ -20,5 +20,17 @@ def build(cfg):
     return False
 
 
+def get_metadata():
+    return {
+        "dut_name": "backend_ctrl_block_rob",
+        "dut_dir": "Rob",
+        "test_targets": [
+            "ut_backend/ctrl_block/rob",
+            "ut_backend/ctrl_block",
+            "ut_backend"
+        ]
+    }
+
+
 def line_coverage_files(cfg):
     return []

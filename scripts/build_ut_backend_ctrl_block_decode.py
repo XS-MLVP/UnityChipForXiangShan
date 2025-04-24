@@ -52,5 +52,17 @@ def build(cfg):
     return True
 
 
+def get_metadata():
+    return {
+        "dut_name": "backend_ctrl_block_decode",
+        "dut_dir": "DecodeStage",
+        "test_targets": [
+            "ut_backend/ctrl_block/decode",
+            "ut_backend/ctrl_block",
+            "ut_backend"
+        ]
+    }
+
+
 def line_coverage_files(cfg):
     return ["PreDecode.v", "DecodeStage.v"]

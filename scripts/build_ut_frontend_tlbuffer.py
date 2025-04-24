@@ -48,5 +48,18 @@ def build(cfg):
     return True
 
 
+def get_metadata():
+    return {
+        "dut_name": "frontend_tlbuffer",
+        "dut_dir": "TLBuffer",
+        "test_targets": [
+            "ut_frontend/itlb/submodules/TLBuffer",
+            "ut_frontend/itlb/submodules",
+            "ut_frontend/itlb",
+            "ut_frontend"
+        ]
+    }
+
+
 def line_coverage_files(cfg):
     return ["TLBuffer.v"]

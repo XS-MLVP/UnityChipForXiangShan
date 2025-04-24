@@ -33,6 +33,19 @@ def build(cfg):
 
     return True
 
+
+def get_metadata():
+    return {
+        "dut_name": "frontend_ftb_entry_mem",
+        "dut_dir": "FtbEntryMem",
+        "test_targets": [
+            "ut_frontend/ftq/ftb_entry_mem",
+            "ut_frontend/ftq",
+            "ut_frontend"
+        ]
+    }
+
+
 ## set coverage
 def line_coverage_files(cfg):
     return ["FtbEntryMem.v"]
