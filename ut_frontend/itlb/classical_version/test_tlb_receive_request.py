@@ -31,6 +31,7 @@ def test_req_from_ifu_and_icache_rand_vaddr_rand_valid_single_port(tlb_fixture):
     # connect to fixture
     tlb = tlb_fixture
     # add watch point
+    
     case_name = inspect.currentframe().f_back.f_code.co_name
     g.add_watch_point(tlb.requestor_0.resp.miss, {
                         "miss": fc.Eq(1),
@@ -52,7 +53,7 @@ def test_req_from_ifu_and_icache_rand_vaddr_rand_valid_single_port(tlb_fixture):
     tlb.set_default_value()
     # reset
     tlb.reset()
-
+    print(tlb)
     # add clock
     tlb.dut.xclock.StepRis(lambda _: g.sample())
     # start
