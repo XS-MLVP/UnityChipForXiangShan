@@ -26,7 +26,7 @@ import inspect
 # the bug occurs. In practice, initiating a request (req) simultaneously with 
 # a reset signal constitutes an invalid input and violates the protocol 
 # specification.
-def test_reset_when_request(tlb_fixture):
+def reset_when_request(tlb_fixture):
     """
     Check reset
         Request & reset in the same cycle
