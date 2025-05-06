@@ -4,7 +4,7 @@ linkTitle: ICache
 weight: 12
 ---
 
-**本文档参考[香山 IFU 设计文档](https://github.com/OpenXiangShan/XiangShan-Design-Doc/blob/master/docs/frontend/ICache/index.md)写成**
+**本文档参考[香山 ICache 设计文档](https://github.com/OpenXiangShan/XiangShan-Design-Doc/blob/master/docs/frontend/ICache/index.md)写成**
 
 本次验证对象是昆明湖前端指令缓存（ICache）的模块。验证的代码版本为[XiangShan_20250307_4b2c87ba](https://github.com/OpenXiangShan/XiangShan/tree/4b2c87ba1d7965f6f2b0a396be707a6e2f6fb345)
 
@@ -1201,7 +1201,7 @@ DataArray 主要存储了每个 Cache 行的标签和 ECC 校验码。
 预取请求来自 FTQ，在 S0 流水级传入。
 | 接口名 | 解释 |
 | ---------- | ------------------------------------------------------ |
-|ready||指示 s0 能否继续|
+|ready|指示 s0 能否继续|
 |valid|指示软件预取或者硬件预取是否有效。|
 |startAddr | 预测块起始地址。 |
 |nextlineStart | 预测块下一个缓存行的起始地址。 |
