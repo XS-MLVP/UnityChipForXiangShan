@@ -123,8 +123,8 @@ def init_rvc_expander_funcov(expander, g: fc.CovGroup):
     #    - bin ERROR. The instruction is not illegal
     #    - bin SUCCE. The instruction is not expanded
     g.add_watch_point(expander, {
-                                "ERROR": lambda x: x.stat()["ilegal"] == False,
-                                "SUCCE": lambda x: x.stat()["ilegal"] != False,
+                                "ERROR": lambda x: x.stat()["illegal"] == False,
+                                "SUCCE": lambda x: x.stat()["illegal"] != False,
                           }, name = "RVC_EXPAND_RET")
     ...
     # 5. Reverse mark function coverage to the check point
@@ -139,7 +139,7 @@ def init_rvc_expander_funcov(expander, g: fc.CovGroup):
     ...
 ```
 
-在上述代码中添加了名为`RVC_EXPAND_RET`的功能检查点来检查`RVCExpander`模块是否具有返回非法指令的能力。需要满足`ERROR`和`SUCCE`两个条件，即`stat()`中的`ileage`需要有`True`也需要有`False`值。在定义完检查点后，通过`mark_function`方法，对会覆盖到该检查的测试用例进行了标记。
+在上述代码中添加了名为`RVC_EXPAND_RET`的功能检查点来检查`RVCExpander`模块是否具有返回非法指令的能力。需要满足`ERROR`和`SUCCE`两个条件，即`stat()`中的`illegal`需要有`True`也需要有`False`值。在定义完检查点后，通过`mark_function`方法，对会覆盖到该检查的测试用例进行了标记。
 
 ### 3. 定义必要fixture
 
@@ -221,7 +221,7 @@ toffee的官方教程可以参考[这里](https://open-verify.cc/mlvp/docs/mlvp/
 
 ### bundle：快捷DUT封装
 
-toffee通过Bundle实现了对DUT的绑定。toffee提供了多种建立Bundle与DUT绑定的方法。相关代码
+toffee通过Bundle实现了对DUT的绑定。toffee提供了多种建立Bundle与DUT绑定的方法。相关代码参照`ut_frontend/ifu/rvc_expander/toffee_version/bundle`。
 
 #### 手动绑定
 
