@@ -3,7 +3,7 @@ from ..bundle import IPrefetchPipeBundle
 
 
 class IPrefetchPipeAgent(Agent):
-    def __inti__(self, bundle: IPrefetchPipeBundle):
+    def __init__(self, bundle: IPrefetchPipeBundle):
         super().__init__(bundle)
         bundle.set_all(0)
         self.bundle = bundle
