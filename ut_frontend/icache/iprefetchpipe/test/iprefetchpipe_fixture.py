@@ -4,6 +4,7 @@ import toffee_test
 from toffee import start_clock
 from dut.IPrefetchPipe import DUTIPrefetchPipe
 from ..env import IPrefetchPipeEnv
+from .watch_point import get_cover_group_of_receive_prefetch_quest
 
 @toffee_test.fixture
 async def iprefetchpipe_env(toffee_request: toffee_test.ToffeeRequest):
@@ -12,8 +13,9 @@ async def iprefetchpipe_env(toffee_request: toffee_test.ToffeeRequest):
     dut.InitClock("clock")
     start_clock(dut)
     iprefetchpipe_env = IPrefetchPipeEnv(dut)
+    toffee_request.add_cov_groups([get_cover_group_of_receive_prefetch_quest(dut)])
     yield iprefetchpipe_env
-    
+
     cur = asyncio.get_event_loop()
     for task in asyncio.all_tasks(cur):
         if task.get_name() == "__clock_loop":
