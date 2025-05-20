@@ -5,11 +5,11 @@ from comm import warning, info, get_all_rtl_files
 def build(cfg):
     from tempfile import NamedTemporaryFile
     from toffee_test.markers import match_version
-    from comm import error, info, get_root_dir, exe_cmd
+    from comm import  get_root_dir, exe_cmd
 
     # check version
     if not match_version(cfg.rtl.version, "openxiangshan-kmh-*"):
-        error(f"frontend_icache_iprefetchpipe: Unsupported RTL version {cfg.rtl.version}")
+        warning(f"frontend_icache_iprefetchpipe: Unsupported RTL version {cfg.rtl.version}")
         return False
     
     # find source files for IPrefetchPipe
@@ -21,6 +21,9 @@ def build(cfg):
     internal_signals_path = os.path.join(get_root_dir("scripts/icache_related/icache_iprefetchpipe_internals.yaml"))
     # assert os.path.exists(internal_signals_path), "Cannot find internal signal files"
 
+    # verilator arguments
+    verilator_args = "'--x-initial;0'"
+
     # export IPrefetchPipe.sv
     if not os.path.exists(get_root_dir("dut/IPrefetchPipe")):
         info("Exporting IPrefetchPipe.sv")
@@ -29,7 +32,8 @@ def build(cfg):
             filelist.flush()
             s, _, err = exe_cmd(
                 f"picker export --cp_lib false {rtl_files[0]} --fs {filelist.name} --lang python --tdir "
-                f"{get_root_dir('dut')}/ -w IPrefetchPipe.fst -c --internal={internal_signals_path}"
+                f"{get_root_dir('dut')}/ -w IPrefetchPipe.fst -c --internal={internal_signals_path} "
+                f"-V {verilator_args}"
             )
         assert s, err
     return True

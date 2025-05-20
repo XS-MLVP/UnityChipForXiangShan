@@ -10,4 +10,3 @@ class IPrefetchPipeEnv(Env):
         self.dut = dut
         self.bundle = IPrefetchPipeBundle.from_prefix("").bind(dut)
         self.agent = IPrefetchPipeAgent(self.bundle)
-        self.bundle.set_all(0)
