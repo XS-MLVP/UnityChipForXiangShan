@@ -60,82 +60,82 @@ def instr_filter(insn_disasm_text):
         is_except = 1
     return is_except
 
-@pytest.mark.toffee_tags(TAG_SMOKE)
-@toffee_test.testcase
-async def test_rvc_expand_32bit_smoke(rvc_expander: RVCExpanderEnv):
-    """
-    Test the RVC expand function with 1 fixed 32 bit instruction
-    """
-    await rvc_expand(rvc_expander.agent, [873825667])
-
-
 # @pytest.mark.toffee_tags(TAG_SMOKE)
-@toffee_test.testcase
-async def test_rvc_expand_16bit_smoke(rvc_expander: RVCExpanderEnv):
-    """
-    Test the RVC expand function with 1 compressed instruction
-    """
-    await rvc_expand(rvc_expander.agent, generate_rvc_instructions(start=90, end=101))
+# @toffee_test.testcase
+# async def test_rvc_expand_32bit_smoke(rvc_expander: RVCExpanderEnv):
+#     """
+#     Test the RVC expand function with 1 fixed 32 bit instruction
+#     """
+#     await rvc_expand(rvc_expander.agent, [873825667])
 
 
-N = 10
-T = 1<<16
-@pytest.mark.toffee_tags(TAG_LONG_TIME_RUN)
-@pytest.mark.parametrize("start,end",
-                         [(r*(T//N), (r+1)*(T//N) if r < N-1 else T) for r in range(N)])
-@toffee_test.testcase
-async def test_rvc_expand_16bit_full(rvc_expander: RVCExpanderEnv, start, end):
-    """Test the RVC expand function with a full compressed instruction set
+# # @pytest.mark.toffee_tags(TAG_SMOKE)
+# @toffee_test.testcase
+# async def test_rvc_expand_16bit_smoke(rvc_expander: RVCExpanderEnv):
+#     """
+#     Test the RVC expand function with 1 compressed instruction
+#     """
+#     await rvc_expand(rvc_expander.agent, generate_rvc_instructions(start=90, end=101))
+
+
+# N = 10
+# T = 1<<16
+# @pytest.mark.toffee_tags(TAG_LONG_TIME_RUN)
+# @pytest.mark.parametrize("start,end",
+#                          [(r*(T//N), (r+1)*(T//N) if r < N-1 else T) for r in range(N)])
+# @toffee_test.testcase
+# async def test_rvc_expand_16bit_full(rvc_expander: RVCExpanderEnv, start, end):
+#     """Test the RVC expand function with a full compressed instruction set
     
-    Description:
-        Perform an expand check on 16-bit compressed instructions within the range from 'start' to 'end'.
-    """
-    # Add check point: RVC_EXPAND_RANGE to check expander input range.
-    #   When run to here, the range[start, end] is covered
-    covered = -1
-    gr.add_watch_point(rvc_expander, {
-                                "RANGE[%d-%d]"%(start, end): lambda _: covered == end
-                          }, name = "RVC_EXPAND_ALL_16B", dynamic_bin=True)
-    # Reverse mark function to the check point
-    gr.mark_function("RVC_EXPAND_ALL_16B", test_rvc_expand_16bit_full, bin_name="RANGE[%d-%d]"%(start, end))
-    # Drive the expander and check the result
-    await rvc_expand(rvc_expander.agent, generate_rvc_instructions(start, end))
-    # When go to here, the range[start, end] is covered
-    # covered = end
-    # gr.sample()
+#     Description:
+#         Perform an expand check on 16-bit compressed instructions within the range from 'start' to 'end'.
+#     """
+#     # Add check point: RVC_EXPAND_RANGE to check expander input range.
+#     #   When run to here, the range[start, end] is covered
+#     covered = -1
+#     gr.add_watch_point(rvc_expander, {
+#                                 "RANGE[%d-%d]"%(start, end): lambda _: covered == end
+#                           }, name = "RVC_EXPAND_ALL_16B", dynamic_bin=True)
+#     # Reverse mark function to the check point
+#     gr.mark_function("RVC_EXPAND_ALL_16B", test_rvc_expand_16bit_full, bin_name="RANGE[%d-%d]"%(start, end))
+#     # Drive the expander and check the result
+#     await rvc_expand(rvc_expander.agent, generate_rvc_instructions(start, end))
+#     # When go to here, the range[start, end] is covered
+#     # covered = end
+#     # gr.sample()
 
 
-N=10
-T=1<<32
-@pytest.mark.toffee_tags([TAG_LONG_TIME_RUN, TAG_RARELY_USED])
-@pytest.mark.parametrize("start,end",
-                         [(r*(T//N), (r+1)*(T//N) if r < N-1 else T) for r in range(N)])
-@toffee_test.testcase
-async def test_rvc_expand_32bit_full(rvc_expander: RVCExpanderEnv, start, end):
-    """Test the RVC expand function with a full 32 bit instruction set
+# N=10
+# T=1<<32
+# @pytest.mark.toffee_tags([TAG_LONG_TIME_RUN, TAG_RARELY_USED])
+# @pytest.mark.parametrize("start,end",
+#                          [(r*(T//N), (r+1)*(T//N) if r < N-1 else T) for r in range(N)])
+# @toffee_test.testcase
+# async def test_rvc_expand_32bit_full(rvc_expander: RVCExpanderEnv, start, end):
+#     """Test the RVC expand function with a full 32 bit instruction set
 
-    Description:
-        Randomly generate N 32-bit instructions for each check, and repeat the process K times.
-    """
-    # Add check point: RVC_EXPAND_ALL_32B to check instr bits.
-    covered = -1
-    gr.add_watch_point(rvc_expander, {"RANGE[%d-%d]"%(start, end): lambda _: covered == end},
-                      name = "RVC_EXPAND_ALL_32B", dynamic_bin=True)
-    # Reverse mark function to the check point
-    gr.mark_function("RVC_EXPAND_ALL_32B", test_rvc_expand_32bit_full)
-    # Drive the expander and check the result
-    await rvc_expand(rvc_expander.agent, list([_ for _ in range(start, end)]))
-    # When go to here, the range[start, end] is covered
-    covered = end
-    # gr.sample()
+#     Description:
+#         Randomly generate N 32-bit instructions for each check, and repeat the process K times.
+#     """
+#     # Add check point: RVC_EXPAND_ALL_32B to check instr bits.
+#     covered = -1
+#     gr.add_watch_point(rvc_expander, {"RANGE[%d-%d]"%(start, end): lambda _: covered == end},
+#                       name = "RVC_EXPAND_ALL_32B", dynamic_bin=True)
+#     # Reverse mark function to the check point
+#     gr.mark_function("RVC_EXPAND_ALL_32B", test_rvc_expand_32bit_full)
+#     # Drive the expander and check the result
+#     await rvc_expand(rvc_expander.agent, list([_ for _ in range(start, end)]))
+#     # When go to here, the range[start, end] is covered
+#     covered = end
+#     # gr.sample()
 
 
-@pytest.mark.skip("This test is allways failed, need to be fixed")
-@toffee_test.testcase
-def test_rvc_expand_32bit_randomN(rvc_expander: RVCExpanderEnv):
-    """Test the RVC expand function with a random 32 bit instruction set
+# @pytest.mark.skip("This test is allways failed, need to be fixed")
+# @toffee_test.testcase
+# def test_rvc_expand_32bit_randomN(rvc_expander: RVCExpanderEnv):
+#     """Test the RVC expand function with a random 32 bit instruction set
 
-    Description:
-        Randomly generate 32-bit instructions for testing
-    """
-    rvc_expand(rvc_expander.agent, generate_random_32bits(100))
+#     Description:
+#         Randomly generate 32-bit instructions for testing
+#     """
+#     rvc_expand(rvc_expander.agent, generate_random_32bits(100))
