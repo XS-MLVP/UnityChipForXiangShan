@@ -48,7 +48,31 @@ children:
         priority: high
       - name: "icache"
         desc: "指令缓存 (Instruction Cache)"
-        priority: high
+        children: 
+          - name: "iprefetchpipe"
+            desc: "预取指模块"
+            meta:
+              doc_url: "https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/01_frontend/04_icache/01_iprefetchpipe/"  
+          - name: "mainpipe"
+            desc: "取指模块"
+            meta:
+              doc_url: "https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/01_frontend/04_icache/02_mainpipe/"
+          - name: "waylookup"
+            desc: "元数据缓冲队列"
+            meta:
+              doc_url: "https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/01_frontend/04_icache/03_waylookup/"
+          - name: "missunit"
+            desc: "缺失处理单元"
+            meta:
+              doc_url: "https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/01_frontend/04_icache/04_missunit/"
+          - name: "ctrlunit"
+            desc: "控制单元"
+            meta:
+              doc_url: "https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/01_frontend/04_icache/05_ctrlunit/"                                            
+          - name: "icache"
+            desc: "icache顶层模块"
+            meta:
+              doc_url: "https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/01_frontend/04_icache/06_icache/"
       - name: "ifu"
         desc: "指令单元 (Instruction Fetch Unit)"
         children:
