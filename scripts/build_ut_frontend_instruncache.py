@@ -42,7 +42,7 @@ def get_metadata():
         "dut_name": "frontend_instruncache",
         "dut_dir": "InstrUncache",
         "test_targets": [
-            "ut_frontend/instruncache/classical_version",
+            "ut_frontend/instruncache/classic_version",
             "ut_frontend/instruncache/toffee_version",
             "ut_frontend/instruncache",
             "ut_frontend"
