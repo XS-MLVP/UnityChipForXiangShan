@@ -88,7 +88,7 @@ class ControlBundle(toffee.Bundle):
     signals = [
         "reset",
         "io_sfence_valid",
-        "io_hartiId",
+        "io_hartId",
         "io_requestor_2_resp_ready",
         "io_requestor_2_resp_valid",
         "io_ptw_req_0_valid",
