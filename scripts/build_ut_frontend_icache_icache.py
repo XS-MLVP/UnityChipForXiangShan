@@ -13,7 +13,7 @@ def build(cfg):
         return False
 
     # find source files for ICache
-    rtl_files = get_all_rtl_files("ICache", cfg=cfg)
+    rtl_files = get_all_rtl_files("rtl/ICache", cfg=cfg)
     info(f"rtl_files: {rtl_files}")
     assert rtl_files, "Cannot find RTL files of Frontend.ICache"
 
