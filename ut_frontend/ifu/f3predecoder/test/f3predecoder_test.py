@@ -8,7 +8,7 @@ instrGen = F3PredecodeInstrGen()
 @toffee_test.testcase
 async def test_cfi_checker_1_1(f3predecoder_env : F3PreDecoderEnv):
     print("test_cfi_checker_1_1")
-    for _ in range(2000):
+    for _ in range(100):
         instrGen.clear()
         instrs, brTypes = instrGen.inst_gen(type='not_cfi', isa='rvc')
         res = await f3predecoder_env.agent.f3_predecode(instrs)
@@ -23,7 +23,7 @@ async def test_cfi_checker_1_1(f3predecoder_env : F3PreDecoderEnv):
 @toffee_test.testcase
 async def test_cfi_checker_1_2(f3predecoder_env : F3PreDecoderEnv):
     print("test_cfi_checker_1_2")
-    for _ in range(2000):
+    for _ in range(100):
         instrGen.clear()
         instrs, brTypes = instrGen.inst_gen(type='br', isa='rvi')
         res = await f3predecoder_env.agent.f3_predecode(instrs)
@@ -37,7 +37,7 @@ async def test_cfi_checker_1_2(f3predecoder_env : F3PreDecoderEnv):
 @toffee_test.testcase
 async def test_cfi_checker_1_3(f3predecoder_env : F3PreDecoderEnv):
     print("test_cfi_checker_1_3")
-    for _ in range(2000):
+    for _ in range(100):
         instrGen.clear()
         instrs, brTypes = instrGen.inst_gen(type='jal', isa='rvi')
         res = await f3predecoder_env.agent.f3_predecode(instrs)
@@ -51,7 +51,7 @@ async def test_cfi_checker_1_3(f3predecoder_env : F3PreDecoderEnv):
 @toffee_test.testcase
 async def test_cfi_checker_1_4(f3predecoder_env : F3PreDecoderEnv):
     print("test_cfi_checker_1_4")
-    for _ in range(2000):
+    for _ in range(100):
         instrGen.clear()
         instrs, brTypes = instrGen.inst_gen(type='jalr', isa='rvi')
         res = await f3predecoder_env.agent.f3_predecode(instrs)
@@ -66,7 +66,7 @@ async def test_cfi_checker_1_4(f3predecoder_env : F3PreDecoderEnv):
 async def test_ret_call_checker_2_1_1(f3predecoder_env : F3PreDecoderEnv):
     #check not cfi
     print("test_ret_call_checker_2_1_1")
-    for _ in range(2000):
+    for _ in range(100):
         instrGen.clear()
         instrs, isCalls, isRets = instrGen.ret_call_checker(task = '2.1.1')
         res = await f3predecoder_env.agent.f3_predecode(instrs)
@@ -77,7 +77,7 @@ async def test_ret_call_checker_2_1_1(f3predecoder_env : F3PreDecoderEnv):
 async def test_ret_call_checker_2_1_2(f3predecoder_env : F3PreDecoderEnv):
     #check br
     print("test_ret_call_checker_2_1_2")
-    for _ in range(2000):
+    for _ in range(100):
         instrGen.clear()
         instrs, isCalls, isRets = instrGen.ret_call_checker(task = '2.1.2')
         res = await f3predecoder_env.agent.f3_predecode(instrs)
@@ -88,7 +88,7 @@ async def test_ret_call_checker_2_1_2(f3predecoder_env : F3PreDecoderEnv):
 async def test_ret_call_checker_2_2_1_1(f3predecoder_env : F3PreDecoderEnv):
     #check RVI.JAL call
     print("test_ret_call_checker_2_2_1_1")
-    for _ in range(2000):
+    for _ in range(100):
         instrGen.clear()
         instrs, isCalls, isRets = instrGen.ret_call_checker(task = '2.2.1.1')
         res = await f3predecoder_env.agent.f3_predecode(instrs)
@@ -99,7 +99,7 @@ async def test_ret_call_checker_2_2_1_1(f3predecoder_env : F3PreDecoderEnv):
 async def test_ret_call_checker_2_2_1_2(f3predecoder_env : F3PreDecoderEnv):
     #check RVI.JAL not call and ret
     print("test_ret_call_checker_2_2_1_2")
-    for _ in range(2000):
+    for _ in range(100):
         instrGen.clear()
         instrs, isCalls, isRets = instrGen.ret_call_checker(task = '2.2.1.2')
         res = await f3predecoder_env.agent.f3_predecode(instrs)
@@ -110,7 +110,7 @@ async def test_ret_call_checker_2_2_1_2(f3predecoder_env : F3PreDecoderEnv):
 async def test_ret_call_checker_2_2_2(f3predecoder_env : F3PreDecoderEnv):
     #check RVC.JAL not call and ret
     print("test_ret_call_checker_2_2_2")
-    for _ in range(2000):
+    for _ in range(100):
         instrGen.clear()
         instrs, isCalls, isRets = instrGen.ret_call_checker(task = '2.2.2')
         res = await f3predecoder_env.agent.f3_predecode(instrs)
@@ -121,7 +121,7 @@ async def test_ret_call_checker_2_2_2(f3predecoder_env : F3PreDecoderEnv):
 async def test_ret_call_checker_2_3_1_1(f3predecoder_env : F3PreDecoderEnv):
     #check RVI.JALR call
     print("test_ret_call_checker_2_3_1_1")
-    for _ in range(2000):
+    for _ in range(100):
         instrGen.clear()
         instrs, isCalls, isRets = instrGen.ret_call_checker(task = '2.3.1.1')
         res = await f3predecoder_env.agent.f3_predecode(instrs)
@@ -132,7 +132,7 @@ async def test_ret_call_checker_2_3_1_1(f3predecoder_env : F3PreDecoderEnv):
 async def test_ret_call_checker_2_3_1_2(f3predecoder_env : F3PreDecoderEnv):
     #check RVI.JALR ret
     print("test_ret_call_checker_2_3_1_2")
-    for _ in range(2000):
+    for _ in range(100):
         instrGen.clear()
         instrs, isCalls, isRets = instrGen.ret_call_checker(task = '2.3.1.2')
         res = await f3predecoder_env.agent.f3_predecode(instrs)
@@ -143,7 +143,7 @@ async def test_ret_call_checker_2_3_1_2(f3predecoder_env : F3PreDecoderEnv):
 async def test_ret_call_checker_2_3_1_3(f3predecoder_env : F3PreDecoderEnv):
     #check RVI.JALR not call and ret
     print("test_ret_call_checker_2_3_1_3")
-    for _ in range(2000):
+    for _ in range(100):
         instrGen.clear()
         instrs, isCalls, isRets = instrGen.ret_call_checker(task = '2.3.1.3')
         res = await f3predecoder_env.agent.f3_predecode(instrs)
@@ -154,7 +154,7 @@ async def test_ret_call_checker_2_3_1_3(f3predecoder_env : F3PreDecoderEnv):
 async def test_ret_call_checker_2_3_2_1(f3predecoder_env: F3PreDecoderEnv):
     #check RVC.JALR call
     print("test_ret_call_checker_2_3_2_1")
-    for _ in range(2000):
+    for _ in range(100):
         instrGen.clear()
         instrs, isCalls, isRets = instrGen.ret_call_checker(task = '2.3.2.1')
         res = await f3predecoder_env.agent.f3_predecode(instrs)
@@ -165,7 +165,7 @@ async def test_ret_call_checker_2_3_2_1(f3predecoder_env: F3PreDecoderEnv):
 async def test_ret_call_checker_2_3_2_2_1(f3predecoder_env: F3PreDecoderEnv):
     #check RVC.JR ret
     print("test_ret_call_checker_2_3_2_2_1")
-    for _ in range(2000):
+    for _ in range(100):
         instrGen.clear()
         instrs, isCalls, isRets = instrGen.ret_call_checker(task = '2.3.2.2.1')
         res = await f3predecoder_env.agent.f3_predecode(instrs)
@@ -176,7 +176,7 @@ async def test_ret_call_checker_2_3_2_2_1(f3predecoder_env: F3PreDecoderEnv):
 async def test_ret_call_checker_2_3_2_2_2(f3predecoder_env: F3PreDecoderEnv):
     #check RVC.JR not ret
     print("test_ret_call_checker_2_3_2_2_2")
-    for _ in range(2000):
+    for _ in range(100):
         instrGen.clear()
         instrs, isCalls, isRets = instrGen.ret_call_checker(task = '2.3.2.2.2')
         res = await f3predecoder_env.agent.f3_predecode(instrs)

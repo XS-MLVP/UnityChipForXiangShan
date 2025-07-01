@@ -21,7 +21,7 @@ async def test_splice_checker(predecode_env : PreDecodeEnv):
         assert res.new_instrs == new_instrs
 @toffee_test.testcase
 async def test_precoding_checker_2_1_1(predecode_env : PreDecodeEnv):
-    ##RVC判定
+    ##RVC判定 传入RVC指令
     print('test_precoding_checker_2_1_1')
     for _ in range(100):
         instrGen.clear()
@@ -31,7 +31,7 @@ async def test_precoding_checker_2_1_1(predecode_env : PreDecodeEnv):
 
 @toffee_test.testcase
 async def test_precoding_checker_2_1_2(predecode_env : PreDecodeEnv):
-    #RVI判定
+    #RVI判定 传入RVI指令
     print('test_precoding_checker_2_1_2')
     for _ in range(100):
         instrGen.clear()
