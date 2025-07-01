@@ -1,282 +1,231 @@
 from toffee import Bundle, Signals, Signal
 
-
 class _0Bundle(Bundle):
-    _4 = Signal()
-
+	_fire, _valid = Signals(2)
 
 class _1Bundle(Bundle):
-    _valid_T = _0Bundle.from_prefix("_valid_T")
-
+	_s2 = _0Bundle.from_prefix("_s2")
+	_s0_fire = Signal()
 
 class _2Bundle(Bundle):
-    _0 = _1Bundle.from_prefix("_0")
-    _1 = _1Bundle.from_prefix("_1")
-
+	_4 = Signal()
 
 class _3Bundle(Bundle):
-    _fire, _valid = Signals(2)
-
+	_valid_T = _2Bundle.from_prefix("_valid_T")
 
 class _4Bundle(Bundle):
-    _6, _7, _3, _5, _4, _1, _2, _0 = Signals(8)
-
+	_1 = _3Bundle.from_prefix("_1")
+	_0 = _3Bundle.from_prefix("_0")
 
 class _5Bundle(Bundle):
-    _datas = _4Bundle.from_prefix("_datas")
-    _codes = _4Bundle.from_prefix("_codes")
-
+	_1, _7, _3, _4, _6, _2, _5, _0 = Signals(8)
 
 class _6Bundle(Bundle):
-    _1, _0 = Signals(2)
-
+	_datas = _5Bundle.from_prefix("_datas")
+	_codes = _5Bundle.from_prefix("_codes")
 
 class _7Bundle(Bundle):
-    _1, _0, _2, _3 = Signals(4)
-
+	_1, _0 = Signals(2)
 
 class _8Bundle(Bundle):
-    _1 = _7Bundle.from_prefix("_1")
-    _0 = _7Bundle.from_prefix("_0")
-
+	_1, _2, _3, _0 = Signals(4)
 
 class _9Bundle(Bundle):
-    _waymask = _8Bundle.from_prefix("_waymask")
-    _vSetIdx = _6Bundle.from_prefix("_vSetIdx")
-    _blkOffset = Signal()
-
+	_0 = _8Bundle.from_prefix("_0")
+	_1 = _8Bundle.from_prefix("_1")
 
 class _10Bundle(Bundle):
-    _bits = _9Bundle.from_prefix("_bits")
-    _valid = Signal()
-
+	_waymask = _9Bundle.from_prefix("_waymask")
+	_vSetIdx = _7Bundle.from_prefix("_vSetIdx")
+	_blkOffset = Signal()
 
 class _11Bundle(Bundle):
-    _bits_vSetIdx = _6Bundle.from_prefix("_bits_vSetIdx")
-    _valid = Signal()
-
+	_bits = _10Bundle.from_prefix("_bits")
+	_valid = Signal()
 
 class _12Bundle(Bundle):
-    _bits_vSetIdx = _6Bundle.from_prefix("_bits_vSetIdx")
-    _ready, _valid = Signals(2)
-
+	_bits_vSetIdx = _7Bundle.from_prefix("_bits_vSetIdx")
+	_valid = Signal()
 
 class _13Bundle(Bundle):
-    _3 = _12Bundle.from_prefix("_3")
-    _1 = _11Bundle.from_prefix("_1")
-    _2 = _11Bundle.from_prefix("_2")
-    _0 = _10Bundle.from_prefix("_0")
-
+	_bits_vSetIdx = _7Bundle.from_prefix("_bits_vSetIdx")
+	_valid, _ready = Signals(2)
 
 class _14Bundle(Bundle):
-    _fromIData = _5Bundle.from_prefix("_fromIData")
-    _toIData = _13Bundle.from_prefix("_toIData")
-
+	_3 = _13Bundle.from_prefix("_3")
+	_1 = _12Bundle.from_prefix("_1")
+	_2 = _12Bundle.from_prefix("_2")
+	_0 = _11Bundle.from_prefix("_0")
 
 class _15Bundle(Bundle):
-    _report_to_beu, _paddr = Signals(2)
-
+	_toIData = _14Bundle.from_prefix("_toIData")
+	_fromIData = _6Bundle.from_prefix("_fromIData")
 
 class _16Bundle(Bundle):
-    _bits = _15Bundle.from_prefix("_bits")
-    _valid = Signal()
-
+	_paddr, _report_to_beu = Signals(2)
 
 class _17Bundle(Bundle):
-    _0 = _16Bundle.from_prefix("_0")
-    _1 = _16Bundle.from_prefix("_1")
-
+	_bits = _16Bundle.from_prefix("_bits")
+	_valid = Signal()
 
 class _18Bundle(Bundle):
-    _startAddr, _nextlineStart = Signals(2)
-
+	_0 = _17Bundle.from_prefix("_0")
+	_1 = _17Bundle.from_prefix("_1")
 
 class _19Bundle(Bundle):
-    _1 = _18Bundle.from_prefix("_1")
-    _3 = _18Bundle.from_prefix("_3")
-    _0 = _18Bundle.from_prefix("_0")
-    _4 = _18Bundle.from_prefix("_4")
-    _2 = _18Bundle.from_prefix("_2")
-
+	_nextlineStart, _startAddr = Signals(2)
 
 class _20Bundle(Bundle):
-    _3, _4, _1, _2, _0 = Signals(5)
-
+	_0 = _19Bundle.from_prefix("_0")
+	_1 = _19Bundle.from_prefix("_1")
+	_4 = _19Bundle.from_prefix("_4")
+	_2 = _19Bundle.from_prefix("_2")
+	_3 = _19Bundle.from_prefix("_3")
 
 class _21Bundle(Bundle):
-    _readValid = _20Bundle.from_prefix("_readValid")
-    _pcMemRead = _19Bundle.from_prefix("_pcMemRead")
-    _backendException = Signal()
-
+	_1, _3, _4, _2, _0 = Signals(5)
 
 class _22Bundle(Bundle):
-    _bits = _21Bundle.from_prefix("_bits")
-    _ready, _valid = Signals(2)
-
+	_pcMemRead = _20Bundle.from_prefix("_pcMemRead")
+	_readValid = _21Bundle.from_prefix("_readValid")
+	_backendException = Signal()
 
 class _23Bundle(Bundle):
-    _0 = Signal()
-
+	_bits = _22Bundle.from_prefix("_bits")
+	_valid, _ready = Signals(2)
 
 class _24Bundle(Bundle):
-    _exception = _6Bundle.from_prefix("_exception")
-    _itlb_pbmt = _6Bundle.from_prefix("_itlb_pbmt")
-    _vaddr = _6Bundle.from_prefix("_vaddr")
-    _pmp_mmio = _6Bundle.from_prefix("_pmp_mmio")
-    _paddr = _23Bundle.from_prefix("_paddr")
-    _data, _doubleline, _gpaddr, _backendException, _isForVSnonLeafPTE = Signals(5)
-
+	_0 = Signal()
 
 class _25Bundle(Bundle):
-    _bits = _24Bundle.from_prefix("_bits")
-    _valid = Signal()
-
+	_vaddr = _7Bundle.from_prefix("_vaddr")
+	_itlb_pbmt = _7Bundle.from_prefix("_itlb_pbmt")
+	_exception = _7Bundle.from_prefix("_exception")
+	_pmp_mmio = _7Bundle.from_prefix("_pmp_mmio")
+	_paddr = _24Bundle.from_prefix("_paddr")
+	_data, _doubleline, _isForVSnonLeafPTE, _gpaddr, _backendException = Signals(5)
 
 class _26Bundle(Bundle):
-    _resp = _25Bundle.from_prefix("_resp")
-    _req = _22Bundle.from_prefix("_req")
-    _topdownIcacheMiss, _topdownItlbMiss = Signals(2)
-
+	_bits = _25Bundle.from_prefix("_bits")
+	_valid = Signal()
 
 class _27Bundle(Bundle):
-    _virIdx, _waymask = Signals(2)
-
+	_resp = _26Bundle.from_prefix("_resp")
+	_req = _23Bundle.from_prefix("_req")
+	_topdownIcacheMiss, _topdownItlbMiss = Signals(2)
 
 class _28Bundle(Bundle):
-    _bits = _27Bundle.from_prefix("_bits")
-    _valid = Signal()
-
+	_waymask, _virIdx = Signals(2)
 
 class _29Bundle(Bundle):
-    _0 = _28Bundle.from_prefix("_0")
-    _1 = _28Bundle.from_prefix("_1")
-
+	_bits = _28Bundle.from_prefix("_bits")
+	_valid = Signal()
 
 class _30Bundle(Bundle):
-    _blkPaddr, _vSetIdx = Signals(2)
-
+	_1 = _29Bundle.from_prefix("_1")
+	_0 = _29Bundle.from_prefix("_0")
 
 class _31Bundle(Bundle):
-    _bits = _30Bundle.from_prefix("_bits")
-    _valid, _ready = Signals(2)
-
+	_blkPaddr, _vSetIdx = Signals(2)
 
 class _32Bundle(Bundle):
-    _corrupt, _blkPaddr, _vSetIdx, _data = Signals(4)
-
+	_bits = _31Bundle.from_prefix("_bits")
+	_valid, _ready = Signals(2)
 
 class _33Bundle(Bundle):
-    _bits = _32Bundle.from_prefix("_bits")
-    _valid = Signal()
-
+	_data, _blkPaddr, _vSetIdx, _corrupt = Signals(4)
 
 class _34Bundle(Bundle):
-    _resp = _33Bundle.from_prefix("_resp")
-    _req = _31Bundle.from_prefix("_req")
-
+	_bits = _33Bundle.from_prefix("_bits")
+	_valid = Signal()
 
 class _35Bundle(Bundle):
-    _1 = Signal()
-
+	_resp = _34Bundle.from_prefix("_resp")
+	_req = _32Bundle.from_prefix("_req")
 
 class _36Bundle(Bundle):
-    _miss = _35Bundle.from_prefix("_miss")
-    _hit = _35Bundle.from_prefix("_hit")
-    _except = _35Bundle.from_prefix("_except")
-
+	_1 = Signal()
 
 class _37Bundle(Bundle):
-    _0 = _36Bundle.from_prefix("_0")
-
+	_hit = _36Bundle.from_prefix("_hit")
+	_except = _36Bundle.from_prefix("_except")
+	_miss = _36Bundle.from_prefix("_miss")
 
 class _38Bundle(Bundle):
-    _hit, _miss = Signals(2)
-
+	_0 = _37Bundle.from_prefix("_0")
 
 class _39Bundle(Bundle):
-    _0 = _38Bundle.from_prefix("_0")
-
+	_miss, _hit = Signals(2)
 
 class _40Bundle(Bundle):
-    _except = _23Bundle.from_prefix("_except")
-    _miss = _37Bundle.from_prefix("_miss")
-    _bank_hit = _6Bundle.from_prefix("_bank_hit")
-    _only = _39Bundle.from_prefix("_only")
-    _hit = Signal()
-
+	_0 = _39Bundle.from_prefix("_0")
 
 class _41Bundle(Bundle):
-    _mmio, _instr = Signals(2)
-
+	_bank_hit = _7Bundle.from_prefix("_bank_hit")
+	_miss = _38Bundle.from_prefix("_miss")
+	_except = _24Bundle.from_prefix("_except")
+	_only = _40Bundle.from_prefix("_only")
+	_hit = Signal()
 
 class _42Bundle(Bundle):
-    _resp = _41Bundle.from_prefix("_resp")
-    _req_bits_addr = Signal()
-
+	_instr, _mmio = Signals(2)
 
 class _43Bundle(Bundle):
-    _0 = _42Bundle.from_prefix("_0")
-    _1 = _42Bundle.from_prefix("_1")
-
+	_resp = _42Bundle.from_prefix("_resp")
+	_req_bits_addr = Signal()
 
 class _44Bundle(Bundle):
-    _way, _vSetIdx = Signals(2)
-
+	_1 = _43Bundle.from_prefix("_1")
+	_0 = _43Bundle.from_prefix("_0")
 
 class _45Bundle(Bundle):
-    _bits = _44Bundle.from_prefix("_bits")
-    _valid = Signal()
-
+	_way, _vSetIdx = Signals(2)
 
 class _46Bundle(Bundle):
-    _0 = _45Bundle.from_prefix("_0")
-    _1 = _45Bundle.from_prefix("_1")
-
+	_bits = _45Bundle.from_prefix("_bits")
+	_valid = Signal()
 
 class _47Bundle(Bundle):
-    _pbmt = _6Bundle.from_prefix("_pbmt")
-    _exception = _6Bundle.from_prefix("_exception")
-
+	_0 = _46Bundle.from_prefix("_0")
+	_1 = _46Bundle.from_prefix("_1")
 
 class _48Bundle(Bundle):
-    _waymask = _6Bundle.from_prefix("_waymask")
-    _ptag = _6Bundle.from_prefix("_ptag")
-    _vSetIdx = _6Bundle.from_prefix("_vSetIdx")
-    _meta_codes = _6Bundle.from_prefix("_meta_codes")
-    _itlb = _47Bundle.from_prefix("_itlb")
-
+	_pbmt = _7Bundle.from_prefix("_pbmt")
+	_exception = _7Bundle.from_prefix("_exception")
 
 class _49Bundle(Bundle):
-    _gpaddr, _isForVSnonLeafPTE = Signals(2)
-
+	_ptag = _7Bundle.from_prefix("_ptag")
+	_meta_codes = _7Bundle.from_prefix("_meta_codes")
+	_waymask = _7Bundle.from_prefix("_waymask")
+	_vSetIdx = _7Bundle.from_prefix("_vSetIdx")
+	_itlb = _48Bundle.from_prefix("_itlb")
 
 class _50Bundle(Bundle):
-    _entry = _48Bundle.from_prefix("_entry")
-    _gpf = _49Bundle.from_prefix("_gpf")
-
+	_isForVSnonLeafPTE, _gpaddr = Signals(2)
 
 class _51Bundle(Bundle):
-    _bits = _50Bundle.from_prefix("_bits")
-    _ready, _valid = Signals(2)
-
+	_entry = _49Bundle.from_prefix("_entry")
+	_gpf = _50Bundle.from_prefix("_gpf")
 
 class _52Bundle(Bundle):
-    _dataArray = _14Bundle.from_prefix("_dataArray")
-    _pmp = _43Bundle.from_prefix("_pmp")
-    _mshr = _34Bundle.from_prefix("_mshr")
-    _wayLookupRead = _51Bundle.from_prefix("_wayLookupRead")
-    _perfInfo = _40Bundle.from_prefix("_perfInfo")
-    _errors = _17Bundle.from_prefix("_errors")
-    _fetch = _26Bundle.from_prefix("_fetch")
-    _metaArrayFlush = _29Bundle.from_prefix("_metaArrayFlush")
-    _touch = _46Bundle.from_prefix("_touch")
-    _flush, _respStall, _ecc_enable, _hartId = Signals(4)
+	_bits = _51Bundle.from_prefix("_bits")
+	_valid, _ready = Signals(2)
 
+class _53Bundle(Bundle):
+	_perfInfo = _41Bundle.from_prefix("_perfInfo")
+	_pmp = _44Bundle.from_prefix("_pmp")
+	_errors = _18Bundle.from_prefix("_errors")
+	_metaArrayFlush = _30Bundle.from_prefix("_metaArrayFlush")
+	_wayLookupRead = _52Bundle.from_prefix("_wayLookupRead")
+	_dataArray = _15Bundle.from_prefix("_dataArray")
+	_mshr = _35Bundle.from_prefix("_mshr")
+	_fetch = _27Bundle.from_prefix("_fetch")
+	_touch = _47Bundle.from_prefix("_touch")
+	_hartId, _flush, _ecc_enable, _respStall = Signals(4)
 
 class ICacheMainPipeBundle(Bundle):
-    ICacheMainPipe_s2 = _3Bundle.from_prefix("ICacheMainPipe_s2")
-    io = _52Bundle.from_prefix("io")
-    ICacheMainPipe__toMSHRArbiter_io_in = _2Bundle.from_prefix(
-        "ICacheMainPipe__toMSHRArbiter_io_in"
-    )
-    clock, reset = Signals(2)
+	ICacheMainPipe = _1Bundle.from_prefix("ICacheMainPipe")
+	ICacheMainPipe__toMSHRArbiter_io_in = _4Bundle.from_prefix("ICacheMainPipe__toMSHRArbiter_io_in")
+	io = _53Bundle.from_prefix("io")
+	reset, clock = Signals(2)
+

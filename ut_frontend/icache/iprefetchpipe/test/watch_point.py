@@ -13,7 +13,10 @@ def check_prefetch_is_soft_prefetch(dut: DUTIPrefetchPipe) -> bool:
     return dut.IPrefetchPipe_s1_isSoftPrefetch.value == dut.io_req_bits_isSoftPrefetch.value
 
 def check_prefetch_double_line(dut: DUTIPrefetchPipe) -> bool:
-    return dut.IPrefetchPipe_s1_doubleline.value == int((bin(dut.io_req_bits_startAddr.value)[2:])[-6])
+    if dut.io_req_bits_startAddr.value:
+        return dut.IPrefetchPipe_s1_doubleline.value == int((bin(dut.io_req_bits_startAddr.value)[2:])[-6])
+    else:
+        return False
 
 def check_prefetch_ftq_idx_flag(dut: DUTIPrefetchPipe) -> bool:
     return dut.IPrefetchPipe_s1_req_ftqIdx_flag.value == dut.io_req_bits_ftqIdx_flag.value
