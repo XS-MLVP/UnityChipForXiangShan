@@ -4,4 +4,4 @@ import toffee_test
 
 @toffee_test.testcase
 async def test_smoke(icachemainpipe_env: ICacheMainPipeEnv):
-    await icachemainpipe_env.agent.set_flush()
+    await icachemainpipe_env.agent.flush_s0_fire()
