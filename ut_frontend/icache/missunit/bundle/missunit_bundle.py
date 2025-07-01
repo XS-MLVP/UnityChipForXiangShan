@@ -94,7 +94,9 @@ class _21Bundle(Bundle):
 	_prefetch_req = _8Bundle.from_prefix("_prefetch_req")
 	_fencei, _flush, _hartId = Signals(3)
 
+
 class ICacheMissUnitBundle(Bundle):
 	io = _21Bundle.from_prefix("io")
 	ICacheMissUnit_ = _4Bundle.from_prefix("ICacheMissUnit_")
+	fetchHit,prefetchHit = Signals(2)
 	reset, clock = Signals(2)
