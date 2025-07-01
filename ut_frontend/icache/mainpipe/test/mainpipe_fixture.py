@@ -13,6 +13,10 @@ async def icachemainpipe_env(toffee_request: toffee_test.ToffeeRequest):
     dut.InitClock("clock")
     start_clock(dut)
     icachemainpipe_env = ICacheMainPipeEnv(dut)
+    icachemainpipe_env.dut.reset.value = 1
+    icachemainpipe_env.dut.Step(10)
+    icachemainpipe_env.dut.reset.value = 0
+    icachemainpipe_env.dut.Step(10)
     yield icachemainpipe_env
 
     cur_loop = asyncio.get_event_loop()
