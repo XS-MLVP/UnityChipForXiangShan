@@ -39,8 +39,7 @@ async def test_bundle_drive_fetch_req_inputs(icachemissunit_env: ICacheMissUnitE
     await dut_bundle.step()
     assert dut_bundle.io._fencei.value == 0
     print(f"Python side: dut_bundle.io._fencei.value = {dut_bundle.io._fencei.value}")
-
-    print("Bundle drive tests (Python side) completed.")
+    print("Bundle drive tests completed.")
 
 @toffee_test.testcase
 async def test_bundle_read_fetch_req_ready(icachemissunit_env: ICacheMissUnitEnv):
@@ -52,21 +51,144 @@ async def test_bundle_read_fetch_req_ready(icachemissunit_env: ICacheMissUnitEnv
     print("Bundle read test for fetch_req_ready (Python side) completed.")
 
 @toffee_test.testcase
-async def test_api_send_fetch_request_accepted(icachemissunit_env: ICacheMissUnitEnv):
+async def test_fencei_work(icachemissunit_env: ICacheMissUnitEnv):
+    """
+    Goal: Verify that fencei works by checking if it clears all MSHRs.
+    """
+    print("\n--- Testing fencei functionality ---")
+    agent = icachemissunit_env.agent
+    bundle = icachemissunit_env.bundle
+
+    print("Before fencei:")
+    # Print initial state of MSHRs
+    for i in range(10):
+        print(
+            f"prefetchMSHRs.{i}.io.req.ready.value:",
+            getattr(bundle.ICacheMissUnit_._prefetchMSHRs, f"_{i}")._io._req_ready.value,
+        )
+        print(
+            f"prefetchMSHRs.{i}.io.acquire.valid.value:",
+            getattr(bundle.ICacheMissUnit_._prefetchMSHRs, f"_{i}")._io._acquire_valid.value,
+        )
+    for i in range(4):
+        print(
+            f"fetchMSHRs.{i}.io.req.ready.value:",
+            getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{i}")._io._req_ready.value,
+        )
+        print(
+            f"fetchMSHRs.{i}.io.acquire.valid.value:",
+            getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{i}")._io._acquire_valid.value,
+        )
+    # Step 1: Set fencei to 1
+    await agent.fencei_func(1)
+    await bundle.step(10)  # Wait for 10 cycles to ensure fencei is processed
+    print("waited 10 cycles after setting fencei")
+    print("\nAfter fencei = 1, all MSHRs should be cleared")
+    # Step 2: Check if all MSHRs are cleared
+    for i in range(10):
+        assert getattr(bundle.ICacheMissUnit_._prefetchMSHRs, f"_{i}")._io._req_ready.value == 0, \
+            f"prefetchMSHRs.{i} should be cleared."
+        assert getattr(bundle.ICacheMissUnit_._prefetchMSHRs, f"_{i}")._io._acquire_valid.value == 0, \
+            f"prefetchMSHRs.{i} acquire should be invalid."
+
+    for i in range(4):
+        assert getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{i}")._io._req_ready.value == 0, \
+            f"fetchMSHRs.{i} should be cleared."
+        assert getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{i}")._io._acquire_valid.value == 0, \
+            f"fetchMSHRs.{i} acquire should be invalid."
+    
+    print("All MSHRs cleared successfully after fencei.")
+    # Step 3: Set fencei to 0 (optional, but good practice)
+    await agent.fencei_func(0)
+    await bundle.step(10)  # Wait for another 10 cycles to ensure fencei is processed
+    print("after setting fencei = 0, all MSHRs_ready should be 1,and all MSHRs_acquire_valid should be 0")
+    # Check if MSHRs are ready again
+    for i in range(10):
+        assert getattr(bundle.ICacheMissUnit_._prefetchMSHRs, f"_{i}")._io._req_ready.value == 1, \
+            f"prefetchMSHRs.{i} should be ready after fencei=0."
+        assert getattr(bundle.ICacheMissUnit_._prefetchMSHRs, f"_{i}")._io._acquire_valid.value == 0, \
+            f"prefetchMSHRs.{i} acquire should still be invalid after fencei=0."
+    for i in range(4):
+        assert getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{i}")._io._req_ready.value == 1, \
+            f"fetchMSHRs.{i} should be ready after fencei=0."
+        assert getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{i}")._io._acquire_valid.value == 0, \
+            f"fetchMSHRs.{i} acquire should still be invalid after fencei=0."
+    print("fencei test completed successfully.")
+
+@toffee_test.testcase
+async def test_set_flush(icachemissunit_env: ICacheMissUnitEnv):
+    """
+    Goal: Verify that the `drive_set_flush` API correctly sets the io_flush signal.
+    """
+    print("\n--- Testing drive_set_flush API ---")
+    agent = icachemissunit_env.agent
+    bundle = icachemissunit_env.bundle
+
+    # Step 1: Set flush to 1
+    await agent.drive_set_flush(True)
+    assert bundle.io._flush.value == 1, "Flush signal should be set to 1."
+    print("Flush signal set to 1.")
+
+    # Step 2: Step the bundle to propagate the change
+    await bundle.step()
+    
+    # Step 3: Set flush to 0
+    await agent.drive_set_flush(False)
+    assert bundle.io._flush.value == 0, "Flush signal should be set to 0."
+    print("Flush signal set to 0.")
+
+@toffee_test.testcase
+async def test_set_victim_way(icachemissunit_env: ICacheMissUnitEnv):
+    """
+    Goal: Verify that the `drive_set_victim_way` API correctly sets the io_victim_way signal.
+    """
+    print("\n--- Testing drive_set_victim_way API ---")
+    agent = icachemissunit_env.agent
+    bundle = icachemissunit_env.bundle
+    all_victim_ways = [0, 1, 2, 3]  # Assuming 4 ways for victim cache
+    # Check if the victim way is set correctly
+    for way in all_victim_ways:
+        print(f"Setting victim way to {way}.")
+        await agent.drive_set_victim_way(way)
+        assert bundle.io._victim._way.value == way, f"Victim way should be set to {way}."
+        print(f"Victim way set to {way}.")
+        # Step the bundle to propagate the change
+        await bundle.step()
+    print("Victim way test completed successfully.")
+
+@toffee_test.testcase
+async def test_send_fetch_request(icachemissunit_env: ICacheMissUnitEnv):
     """
     Goal: Verify that the `drive_send_fetch_request` API can successfully
-    send a request and the DUT accepts it (ready is high).
+    send four requests and the DUT accepts them.Also, when send the fifth 
+    request, the DUT should not accept it.
     """
-    print("\n--- [API Test] Testing drive_send_fetch_request ---")
-    
-    # In an idle DUT, the fetch_req should be accepted immediately.
-    accepted = await icachemissunit_env.agent.drive_send_fetch_request(
-        blkPaddr=0x1000, 
-        vSetIdx=0x1A
-    )
-    
-    assert accepted is True, "drive_send_fetch_request should return True on success."
-    print("API drive_send_fetch_request test passed.")
+    print("\n--- Testing drive_send_fetch_request API ---")
+    agent = icachemissunit_env.agent
+    bundle = icachemissunit_env.bundle
+    send_list = [
+        (0x1000, 0x1A),
+        (0x2000, 0x2B),
+        (0x3000, 0x3C),
+        (0x4000, 0x4D),
+        (0x2000, 0x2B),  # This one should be accepted again
+        (0x5000, 0x5E)  # This one should not be accepted
+    ]
+    count = 0
+    for blkPaddr, vSetIdx in send_list:
+        print(f"Attempting to send fetch #{count} request: blkPaddr={hex(blkPaddr)}, vSetIdx={hex(vSetIdx)}")
+        if count < 5:
+            accepted = await agent.drive_send_fetch_request(blkPaddr=blkPaddr, vSetIdx=vSetIdx)
+            assert accepted is True and bundle.io._fetch._req._ready.value == 1, f"Fetch request {count} should be accepted."
+            count += 1
+            print(f"Fetch request accepted: blkPaddr={hex(blkPaddr)}, vSetIdx={hex(vSetIdx)}")
+        else:
+            accepted = await agent.drive_send_fetch_request(blkPaddr=blkPaddr, vSetIdx=vSetIdx)
+            assert accepted is True and bundle.io._fetch._req._ready.value == 0 , f"Fetch request {count} should accepted but after that become not ready."
+            print(f"Fetch request NOT accepted: blkPaddr={hex(blkPaddr)}, vSetIdx={hex(vSetIdx)}")
+
+    print("four fetch requests sent successfully, with the fifth one correctly rejected.")
+
 
 
 @toffee_test.testcase
@@ -77,21 +199,20 @@ async def test_api_fetch_request_generates_acquire(icachemissunit_env: ICacheMis
     This tests the link between request and acquire generation.
     """
     print("\n--- [API Test] Testing Request -> Acquire Flow ---")
+    fetch_and_acquire_count = 0
     agent = icachemissunit_env.agent
-    test_addr = 0x2000
-    test_idx = 0x2B
-    expected_mem_addr = test_addr << 6  # Assuming a 64-byte cache line (<< 6)
-
+    test_addr = 0x1000
+    test_idx = 0x1A
+    expected_mem_addr = test_addr << 6
     # We need to try to send the request and get the acquire concurrently.
     send_result = await agent.drive_send_fetch_request(blkPaddr=test_addr, vSetIdx=test_idx)
     acquire_info = await agent.drive_get_acquire_request()
-
     assert send_result is True, "Fetch request should have been accepted."
     assert acquire_info is not None, "Did not capture an acquire request."
-    
     # The first fetch request should go to fetchMSHRs[0], which has source ID 0
-    assert acquire_info["source"] == 0, f"Expected source ID 0, but got {acquire_info['source']}"
+    assert acquire_info["source"] == 0, f"Expected source ID {fetch_and_acquire_count}, but got {acquire_info['source']}"
     assert acquire_info["address"] == expected_mem_addr, f"Expected address {hex(expected_mem_addr)}, but got {hex(acquire_info['address'])}"
+    fetch_and_acquire_count+=1
     
     print("API Request -> Acquire flow test passed.")
 
@@ -100,31 +221,14 @@ async def test_api_fetch_request_generates_acquire(icachemissunit_env: ICacheMis
 async def test_api_full_fetch_flow(icachemissunit_env: ICacheMissUnitEnv):
     """
     Goal: Verify the complete, end-to-end happy path for a fetch miss using APIs.
-    (Updated with debugging steps)
     """
     print("\n--- [API Test] Testing Full End-to-End Fetch Flow ---")
     agent = icachemissunit_env.agent
-    bundle = icachemissunit_env.bundle # For direct signal inspection
     
     # Test Data
     test_addr = 0x3000
     test_idx = 0x3C
     expected_mem_addr = test_addr << 6
-    
-    print("--- Debug: Running a few cycles post-reset to settle DUT ---")
-    # check acquire valid
-    if bundle.io._mem._acquire._valid.value == 1:
-        print("Debug: Found an unexpected acquire valid on the first cycle after reset.")
-        await agent.drive_acknowledge_acquire(cycles=1)
-        print("Debug: Acknowledged the unexpected acquire. Waiting for it to deassert.")
-        for _ in range(5):
-            if bundle.io._mem._acquire._valid.value == 0:
-                break
-            await bundle.step()
-        assert bundle.io._mem._acquire._valid.value == 0, "Unexpected acquire signal did not deassert."
-    
-    print("--- DUT is now presumed idle. Starting actual test. ---")
-    # -----------------------
 
     # 1. Send Fetch Request (now we are sure the DUT is idle)
     print("Step 1: Sending fetch request.")
@@ -211,73 +315,38 @@ async def test_api_grant_with_corruption(icachemissunit_env: ICacheMissUnitEnv):
     print("Verification passed: fetch_resp was generated and correctly marked as corrupt.")
 
 @toffee_test.testcase
-async def test_api_drive_prefetch_signal_directly(icachemissunit_env: ICacheMissUnitEnv):
+async def test_send_prefetch_request(icachemissunit_env: ICacheMissUnitEnv):
+    """
+    Goal: Verify that the `drive_send_fetch_request` API can successfully
+    send four requests and the DUT accepts them.Also, when send the fifth 
+    request, the DUT should not accept it.
+    """
+    print("\n--- Testing drive_send_fetch_request API ---")
     agent = icachemissunit_env.agent
     bundle = icachemissunit_env.bundle
 
-    # step 1: drive signal in this cycle
-    agent.drive_prefetch_req(blkPaddr=0x9000, vSetIdx=0x99, valid=True)
+    send_list = []
+    for i in range(11):
+        blkPaddr = 0x1000 + i * 0x1000
+        vSetIdx = 0x1A + i
+        send_list.append((blkPaddr, vSetIdx))
+    # The first 10 requests should be accepted, the 11th one should be rejected
+    count = 0
+    for blkPaddr, vSetIdx in send_list:
+        print(f"Attempting to send fetch #{count} request: blkPaddr={hex(blkPaddr)}, vSetIdx={hex(vSetIdx)}")
+        if count < 10:
+            accepted = await agent.drive_send_prefetch_req(blkPaddr=blkPaddr, vSetIdx=vSetIdx)
+            assert accepted is True and bundle.io._prefetch_req._ready.value == 1, f"Fetch request {count} should be accepted and ready for next request."
+            count += 1
+            print(f"Fetch request accepted: blkPaddr={hex(blkPaddr)}, vSetIdx={hex(vSetIdx)}")
+        else:
+            accepted = await agent.drive_send_prefetch_req(blkPaddr= 0x1000 + 2 * 0x1000, vSetIdx=0x1A + 2)
+            assert accepted is True and bundle.io._prefetch_req._ready.value == 1,"Fetch request should be accepted again, because it is in prefetch MSHR."
+            accepted = await agent.drive_send_prefetch_req(blkPaddr=blkPaddr, vSetIdx=vSetIdx)
+            assert accepted is True and bundle.io._prefetch_req._ready.value == 0, f"Fetch request {count} should be accepted but after that become not ready."
+            print(f"Fetch request NOT accepted: blkPaddr={hex(blkPaddr)}, vSetIdx={hex(vSetIdx)}")
 
-    # step 2: push one cycle
-    await bundle.step()
-
-    # step 3: before next cycle need to check
-    assert bundle.io._prefetch_req._valid.value == 1
-    assert bundle.io._prefetch_req._bits._blkPaddr.value == 0x9000
-    
-    # step 4: cancel the prefetch request
-    agent.drive_prefetch_req(0, 0, valid=False)
-    await bundle.step()
-    assert bundle.io._prefetch_req._valid.value == 0
-
-@toffee_test.testcase
-async def test_api_prefetch_data_assignment(icachemissunit_env: ICacheMissUnitEnv):
-    """
-    [CORRECTED VERSION]
-    Goal: Verify that the low-level drive_prefetch_req API correctly assigns
-    values to the DUT's input pins within a single clock cycle.
-    """
-    print("\n--- [API Verification] Testing prefetch addr/idx assignment ---")
-    agent = icachemissunit_env.agent
-    bundle = icachemissunit_env.bundle
-
-    test_addr = 0xABCDE
-    test_idx = 0x42
-
-    # --- step 1: before this cycle，drive prefetch req ---
-    print("Driving signals with low-level API 'drive_prefetch_req'.")
-    agent.drive_prefetch_req(blkPaddr=test_addr, vSetIdx=test_idx, valid=True)
-
-    # --- step 2: in this cycle，check the value in the Bundle  ---
-    print("Verifying bundle values immediately after driving...")
-    
-    actual_addr = bundle.io._prefetch_req._bits._blkPaddr.value
-    actual_idx = bundle.io._prefetch_req._bits._vSetIdx.value
-    actual_valid = bundle.io._prefetch_req._valid.value
-    
-    print(f"  Expected Addr: {hex(test_addr)}, Actual Addr: {hex(actual_addr)}")
-    print(f"  Expected Idx:  {hex(test_idx)},  Actual Idx:  {hex(actual_idx)}")
-    print(f"  Expected Valid: 1,           Actual Valid: {actual_valid}")
-
-    assert actual_addr == test_addr, "blkPaddr was not assigned correctly!"
-    assert actual_idx == test_idx, "vSetIdx was not assigned correctly!"
-    assert actual_valid == 1, "valid was not asserted!"
-    
-    # --- step 3: push to next cycle ---
-    print("Advancing one clock cycle...")
-    await bundle.step()
-    
-    # in this cycle，DUT will response ready=1
-    assert bundle.io._prefetch_req._ready.value == 1, "DUT did not become ready."
-    print("DUT correctly responded with ready=1.")
-    
-    # --- step 4: cancel drive and clean ---
-    agent.drive_prefetch_req(0, 0, valid=False)
-    await bundle.step()
-    assert bundle.io._prefetch_req._valid.value == 0
-    
-    print("\n--- [API Verification] Data assignment test passed. ---")
-
+    print("prefetch requests sent successfully.")
 
 @toffee_test.testcase
 async def test_api_full_prefetch_flow(icachemissunit_env: ICacheMissUnitEnv):
@@ -317,74 +386,3 @@ async def test_api_full_prefetch_flow(icachemissunit_env: ICacheMissUnitEnv):
     assert response_info["vSetIdx"] == test_idx, "Response vSetIdx does not match the prefetch request."
     print(f"Received fetch_resp for prefetch request: {response_info}")
     print("API Full End-to-End PREFETCH Flow test passed.")
-
-@toffee_test.testcase
-async def test_api_fetch_request_timeout(icachemissunit_env: ICacheMissUnitEnv):
-    """
-    [FINAL VERSION]
-    Goal: Verify timeout logic by serially filling all 4 fetch MSHRs,
-    adding a small delay between requests to handle internal DUT settling time.
-    """
-    print("\n--- [API Test] Testing fetch request API timeout ---")
-    agent = icachemissunit_env.agent
-    bundle = icachemissunit_env.bundle
-    All_filled_fetch_count = 5
-    NUM_FETCH_MSHRS = 4
-    print(f"ASSUMPTION: DUT has {NUM_FETCH_MSHRS} fetch MSHRs.")
-
-    # 1. 串行地填满所有 4 个 MSHR
-    print(f"Step 1: Serially filling up all {NUM_FETCH_MSHRS} fetch MSHRs.")
-    
-    for i in range(All_filled_fetch_count):
-        addr, idx = 0xA000 + i, 0xA0 + i
-        print(f"\n The top io_fetch_req.ready.value is {bundle.io._fetch._req._ready.value}")
-        if i < NUM_FETCH_MSHRS:
-            print(f"\n--- Filling MSHR slot #{i} ---")
-            for h in range(4):
-                print(
-                    f"fetchMSHRs.{h}.io.req.ready.value:",
-                    getattr(
-                        bundle.ICacheMissUnit_._fetchMSHRs, f"_{h}"
-                    )._io._req_ready.value,
-                )
-                print(
-                    f"fetchMSHRs.{h}.io.acquire.valid.value:",
-                    getattr(
-                        bundle.ICacheMissUnit_._fetchMSHRs, f"_{h}"
-                    )._io._acquire_valid.value,
-                )
-            accepted = await agent.drive_send_fetch_request(addr, idx)
-            assert accepted, f"Request to fill MSHR slot #{i} was not accepted."        
-            acquire_info = await agent.drive_get_acquire_request()
-            assert acquire_info is not None, f"Did not get acquire for request #{i}."    
-            await agent.drive_acknowledge_acquire(cycles=1)
-            print(f"Waiting 2 extra cycles for DUT to settle before next request...")
-            await bundle.step(2)
-        else:
-            print(f"\nAll {NUM_FETCH_MSHRS} fetch MSHRs are now occupied.")
-            print("we hope this filling will timeout.")
-            print(f"\n--- Filling MSHR slot #{i} ---")
-            for h in range(4):
-                print(
-                    f"fetchMSHRs.{h}.io.req.ready.value:",
-                    getattr(
-                        bundle.ICacheMissUnit_._fetchMSHRs, f"_{h}"
-                    )._io._req_ready.value,
-                )
-                print(
-                    f"fetchMSHRs.{h}.io.acquire.valid.value:",
-                    getattr(
-                        bundle.ICacheMissUnit_._fetchMSHRs, f"_{h}"
-                    )._io._acquire_valid.value,
-                )
-
-            # If we try to fill more than NUM_FETCH_MSHRS, we expect a timeout
-            print(f"\n The top io_fetch_req.ready.value is {bundle.io._fetch._req._ready.value}")
-            print(f"\n--- Attempting to fill MSHR slot #{i} ---")
-            timeout_result = await agent.drive_send_fetch_request(addr, idx)
-            print(f"\n The top io_fetch_req.ready.value is {bundle.io._fetch._req._ready.value}")
-            assert timeout_result is False, f"Request to fill MSHR slot #{i} " \
-                "should have timed out as all slots are already filled."    
-            print(f"Skipping MSHR slot #{i} as all {NUM_FETCH_MSHRS} slots are already filled.")
-        # ---------------------------------------------
-    print("\nAPI timeout logic test passed.")

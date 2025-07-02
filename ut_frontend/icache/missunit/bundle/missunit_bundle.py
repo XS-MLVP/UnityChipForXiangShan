@@ -98,5 +98,4 @@ class _21Bundle(Bundle):
 class ICacheMissUnitBundle(Bundle):
 	io = _21Bundle.from_prefix("io")
 	ICacheMissUnit_ = _4Bundle.from_prefix("ICacheMissUnit_")
-	fetchHit,prefetchHit = Signals(2)
 	reset, clock = Signals(2)

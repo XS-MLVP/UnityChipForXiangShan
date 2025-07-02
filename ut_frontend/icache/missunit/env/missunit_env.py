@@ -1,4 +1,3 @@
-import asyncio
 from toffee import Env
 from dut.ICacheMissUnit import DUTICacheMissUnit
 from ..agent import ICacheMissUnitAgent
