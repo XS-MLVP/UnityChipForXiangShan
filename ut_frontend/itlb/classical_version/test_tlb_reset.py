@@ -43,23 +43,6 @@ import inspect
 #     tlb.set_default_value()
 #     # reset
 #     tlb.reset()
-def reset_when_request(tlb_fixture):
-    """
-    Check reset
-        Request & reset in the same cycle
-    """
-    # connect to fixture
-    tlb = tlb_fixture
-    # add watch point
-    case_name = inspect.currentframe().f_back.f_code.co_name
-    g.add_watch_point(tlb.ctrl.reset, {
-                        "reset": fc.Eq(1),
-                        "notreset": fc.Eq(0),
-    }, name = f"{case_name}: RESET")
-    # set default value
-    tlb.set_default_value()
-    # reset
-    tlb.reset()
 
 #     # add clock
 #     tlb.dut.xclock.StepRis(lambda _: g.sample())
