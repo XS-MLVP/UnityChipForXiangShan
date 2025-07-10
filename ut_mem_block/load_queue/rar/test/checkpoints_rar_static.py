@@ -49,7 +49,7 @@ def init_rar_funcov(rarqueue):
                       }, name = "RAR_REVOKE_2")
     def _M(name):
         # get the module name
-        return module_name_with(name, "../../test_spec_case")
+        return module_name_with(name, "./test_spec_case")
     g.mark_function("RAR_ENQUEUE_0", _M("test_ctl_enqueue"), bin_name=["can receive violation query"])
     g.mark_function("RAR_ENQUEUE_1", _M("test_ctl_enqueue"), bin_name=["can receive violation query"])
     g.mark_function("RAR_ENQUEUE_2", _M("test_ctl_enqueue"), bin_name=["can receive violation query"])

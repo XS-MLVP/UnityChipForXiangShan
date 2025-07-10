@@ -13,7 +13,7 @@ async def test_random(storequeue_env: StoreQueueEnv):
     random.seed(os.urandom(128))
     await storequeue_env.agent.reset()
     for _ in range(2000):
-        enq_req_instance = EnqReq(
+        enq_req_instance = [EnqReq(
             valid=random.choice([True, False]),
             fuType=random.randint(0, 3),
             fuOpType=random.randint(0, 3),
@@ -24,14 +24,14 @@ async def test_random(storequeue_env: StoreQueueEnv):
             sqIdx_flag=random.choice([True, False]),
             sqIdx_value=random.randint(0, 63),
             numLsElem=random.randint(0, 7)
-        )
+        ) for i in range(6)]
         io_redirect_instance = IORedirect(
             valid=random.choice([True, False]),
             robIdx_flag=random.choice([True, False]),
             robIdx_value=random.randint(0, 255),
             level=random.choice([True, False])
         )
-        vec_feedback_instance = VecFeedback(
+        vec_feedback_instance = [VecFeedback(
             valid=random.choice([True, False]),
             robidx_flag=random.choice([True, False]),
             robidx_value=random.randint(0, 255),
@@ -47,8 +47,8 @@ async def test_random(storequeue_env: StoreQueueEnv):
             exceptionVec_7=random.choice([True, False]),
             exceptionVec_15=random.choice([True, False]),
             exceptionVec_23=random.choice([True, False])
-        )
-        store_addr_in_instance = StoreAddrIn(
+        ) for i in range(2)]
+        store_addr_in_instance = [StoreAddrIn(
             valid=random.choice([True, False]),
             uop_exceptionVec_3=random.choice([True, False]),
             uop_exceptionVec_6=random.choice([True, False]),
@@ -76,8 +76,8 @@ async def test_random(storequeue_env: StoreQueueEnv):
             isMisalign=random.choice([True, False]),
             misalignWith16Byte=random.choice([True, False]),
             updateAddrValid=random.choice([True, False])
-        )
-        store_addr_in_re_instance = StoreAddrInRe(
+        ) for i in range(2)]
+        store_addr_in_re_instance = [StoreAddrInRe(
             uop_exceptionVec_3=random.choice([True, False]),
             uop_exceptionVec_6=random.choice([True, False]),
             uop_exceptionVec_15=random.choice([True, False]),
@@ -96,15 +96,15 @@ async def test_random(storequeue_env: StoreQueueEnv):
             hasException=random.choice([True, False]),
             isvec=random.choice([True, False]),
             updateAddrValid=random.choice([True, False])
-        )
-        store_data_in_instance = StoreDataIn(
+        )  for i in range(2)]
+        store_data_in_instance = [StoreDataIn(
             valid=random.choice([True, False]),
             bits_uop_fuType=random.randint(0, 2**35 - 1),
             bits_uop_fuOpType=random.randint(0, 511),
             bits_uop_sqIdx_value=random.randint(0, 63),
             bits_data=random.randint(0, 2**128 - 1)
-        )
-        forward_instance = Forward(
+        ) for i in range(2)]
+        forward_instance = [Forward(
             vaddr=random.randint(0, 2**50 - 1),
             paddr=random.randint(0, 2**48 - 1),
             mask=random.randint(0, 65535),
@@ -126,7 +126,7 @@ async def test_random(storequeue_env: StoreQueueEnv):
             dataInvalidSqIdx_value=random.randint(0, 63),
             addrInvalidSqIdx_flag=random.choice([True, False]),
             addrInvalidSqIdx_value=random.randint(0, 63)
-        )
+        ) for i in range(2)]
         iorob_instance = IORob(
             rob_scommit=random.randint(0, 15),
             pendingst=random.choice([True, False]),
@@ -154,16 +154,16 @@ async def test_random(storequeue_env: StoreQueueEnv):
             paddr=random.randint(0, 2**48 - 1),
             withSameUop=random.choice([True, False])
         )
-        store_mask_in_instance = StoreMaskIn(
+        store_mask_in_instance = [StoreMaskIn(
             valid=random.choice([True, False]),
             sqIdx_value=random.randint(0, 63),
             mask=random.randint(0, 255)
-        )
+        ) for i in range(2)]
         async with Executor() as exec:
                 exec(storequeue_env.agent.update(enq_req_instance, io_redirect_instance))
                 exec(storequeue_env.agent.writeback(store_addr_in_instance, store_addr_in_re_instance, store_data_in_instance, store_mask_in_instance))
                 exec(storequeue_env.agent.forwardquery(forward_instance))
-                exec(storequeue_env.agent.mmio(uncache_instance, iorob_instance, random.choice([True, False])))
+                exec(storequeue_env.agent.mmio(uncache_instance, iorob_instance))
                 exec(storequeue_env.agent.ncstore(random.choice([True, False]), uncache_instance, random.choice([True, False])))
                 exec(storequeue_env.agent.commit(iorob_instance, ma_control_input_instance, vec_feedback_instance))
                 

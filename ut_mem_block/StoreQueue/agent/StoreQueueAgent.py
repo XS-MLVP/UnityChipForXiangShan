@@ -11,11 +11,11 @@ class StoreQueueAgent(Agent):
         
     async def reset(self):
         self.bundle.reset.value = 1
-        await self.bundle.step()
+        await self.bundle.step(1)
         self.bundle.reset.value = 0
-        await self.bundle.step()
+        await self.bundle.step(1)
         
-    @driver_method
+    @driver_method()
     async def update(self, enq: List[EnqReq], brqRedirect: IORedirect):
         for i in range(6):
             enq_i = getattr(self.bundle.io._enq_req, f'_{i}')
@@ -39,19 +39,10 @@ class StoreQueueAgent(Agent):
             enq_i._valid.value = False
         self.bundle.io._brqRedirect._valid.value = False
         await self.bundle.step(1)
-        stAddrReadyVec = []
-        stDataReadyVec = []
-        for i in range(56):
-            stAddrReadyVec.append(getattr(self.bundle.io._stAddrReadyVec, f"_{i}").value)
-            stDataReadyVec.append(getattr(self.bundle.io._stDataReadyVec, f"_{i}").value)
-        return stAddrReadyVec, self.bundle.io._stAddrReadySqPtr, \
-            stDataReadyVec, self.bundle.io._stDataReadySqPtr, \
-            self.bundle.io._stIssuePtr, self.bundle.StoreQueue._deqPtrExt._0, \
-            self.bundle.io._sqCancelCnt, self.bundle.io._sqEmpty, \
-            self.bundle.io._force_write
+        return self.bundle.StoreQueue
             
     
-    @driver_method
+    @driver_method()
     async def writeback(self, storeAddrIn: List[StoreAddrIn], storeAddrInRe: List[StoreAddrInRe], 
                         storeDataIn: List[StoreDataIn], storeMaskIn: List[StoreMaskIn]):
         for i in range(2):
@@ -95,7 +86,7 @@ class StoreQueueAgent(Agent):
             storeAddrIn_i._bits._uop._uopIdx.value = storeAddrIn[i].uop_uopIdx
             storeAddrIn_i._bits._uop._robIdx._flag.value = storeAddrIn[i].uop_robIdx_flag
             storeAddrIn_i._bits._uop._robIdx._value.value = storeAddrIn[i].uop_robIdx_value
-            storeAddrIn_i._bits._uop._sqIdx._value.value = storeAddrIn[i].uop_sqIdx_value
+            storeAddrIn_i._bits._uop._sqIdx_value.value = storeAddrIn[i].uop_sqIdx_value
             storeAddrIn_i._bits._vaddr.value = storeAddrIn[i].vaddr
             storeAddrIn_i._bits._fullva.value = storeAddrIn[i].fullva
             storeAddrIn_i._bits._vaNeedExt.value = storeAddrIn[i].vaNeedExt
@@ -112,10 +103,10 @@ class StoreQueueAgent(Agent):
             storeAddrIn_i._bits._isMisalign.value = storeAddrIn[i].isMisalign
             storeAddrIn_i._bits._misalignWith16Byte.value = storeAddrIn[i].misalignWith16Byte
             storeAddrIn_i._bits._updateAddrValid.value = storeAddrIn[i].updateAddrValid
-        await self.bundle.step()
+        await self.bundle.step(3)
         return self.bundle.StoreQueue
     
-    @driver_method
+    @driver_method()
     async def forwardquery(self, forward: List[Forward]):
         for i in range(2):
             forward_i = getattr(self.bundle.io._forward, f'_{i}')
@@ -138,8 +129,8 @@ class StoreQueueAgent(Agent):
         await self.bundle.step(1)
         return self.bundle.io._forward
     
-    @driver_method
-    async def mmio(self, uncache: Uncache, rob: IORob, cmoOpResp_valid: bool):
+    @driver_method()
+    async def mmio(self, uncache: Uncache, rob: IORob):
         self.bundle.io._uncache._req._ready.value = uncache.req_ready
         self.bundle.io._uncache._resp._valid.value = uncache.resp_valid
         self.bundle.io._uncache._resp._bits._nc.value = uncache.resp_bits_nc
@@ -149,14 +140,12 @@ class StoreQueueAgent(Agent):
         self.bundle.io._rob._pendingst.value = rob.pendingst
         self.bundle.io._rob._pendingPtr._flag.value = rob.pendingPtr_flag
         self.bundle.io._rob._pendingPtr._value.value = rob.pendingPtr_value
-        self.bundle.io._cmoOpResp._valid.value = cmoOpResp_valid
         await self.bundle.step(1)
         self.bundle.io._uncache._resp._valid.value = False
-        self.bundle.io._cmoOpResp._valid.value = False
         await self.bundle.step(1)
         return self.bundle.StoreQueue._mmioState
     
-    @driver_method
+    @driver_method()
     async def ncstore(self, uncacheOutstanding: bool, uncache: Uncache, flushSbuffer_empty: bool):
         self.bundle.io._uncache._req._ready.value = uncache.req_ready
         self.bundle.io._uncache._resp._valid.value = uncache.resp_valid
@@ -170,7 +159,7 @@ class StoreQueueAgent(Agent):
         await self.bundle.step(1)
         return self.bundle.StoreQueue._ncState
     
-    @driver_method
+    @driver_method()
     async def commit(self, rob: IORob, maControl: MaControlInput, vecFeedback: List[VecFeedback]):
         self.bundle.io._rob._scommit.value = rob.rob_scommit
         self.bundle.io._rob._pendingst.value = rob.pendingst
