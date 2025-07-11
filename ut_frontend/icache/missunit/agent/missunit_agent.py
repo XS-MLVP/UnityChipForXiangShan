@@ -95,6 +95,7 @@ class ICacheMissUnitAgent(Agent):
 
     async def drive_get_acquire_request(self, timeout_cycles: int = 10) -> dict | None:
         print(f"Waiting for memory acquire request...")
+
         for i in range(timeout_cycles):
             if self.bundle.io._mem._acquire._valid.value == 1:
                 acquire_info = {
@@ -102,6 +103,51 @@ class ICacheMissUnitAgent(Agent):
                     "address": self.bundle.io._mem._acquire._bits._address.value
                 }
                 print(f"Captured acquire request (cycle {i+1}): {acquire_info}")
+                return acquire_info
+            await self.bundle.step()
+        
+        print(f"Timeout: Did not capture acquire request after {timeout_cycles} cycles.")
+        return None
+
+    async def drive_get_and_acknowledge_acquire(self, timeout_cycles: int = 10, ack_cycles: int = 1) -> dict | None:
+        """
+        获取acquire请求并立即进行handshake确认
+        这是一个组合操作，确保每个acquire请求只被处理一次
+        """
+        print(f"Waiting for memory acquire request...")
+        
+        for i in range(timeout_cycles):
+            if self.bundle.io._mem._acquire._valid.value == 1:
+                acquire_info = {
+                    "source": self.bundle.io._mem._acquire._bits._source.value,
+                    "address": self.bundle.io._mem._acquire._bits._address.value
+                }
+                print(f"Captured acquire request (cycle {i+1}): {acquire_info}")
+                
+                # 立即进行handshake确认
+                print(f"Immediately acknowledging acquire request...")
+                self.bundle.io._mem._acquire._ready.value = 1
+                await self.bundle.step()
+                
+                # 确认handshake完成
+                if self.bundle.io._mem._acquire._valid.value == 1 and self.bundle.io._mem._acquire._ready.value == 1:
+                    print(f"Acquire handshake occurred.")
+                
+                # 等待额外的确认周期
+                for _ in range(ack_cycles - 1):
+                    await self.bundle.step()
+                
+                # 关闭ready信号
+                self.bundle.io._mem._acquire._ready.value = 0
+                print(f"Setting io_mem_acquire_ready back to 0.")
+                
+                # 等待acquire_valid变为0，确保这个请求已被完全处理
+                for wait_cycle in range(5):
+                    await self.bundle.step()
+                    if self.bundle.io._mem._acquire._valid.value == 0:
+                        print(f"Acquire valid dropped after {wait_cycle + 1} cycles.")
+                        break
+                
                 return acquire_info
             await self.bundle.step()
         

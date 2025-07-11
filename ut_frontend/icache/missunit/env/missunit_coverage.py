@@ -2,13 +2,13 @@ import toffee.funcov as fc
 from toffee.funcov import CovGroup
 
 
-
 def define_fifo_coverage(bundle,dut):
     """
     Defines the functional coverage points for the ICacheMissUnit's FIFO.
     
     Args:
         bundle: The top-level ICacheMissUnitBundle object.
+        dut: The DUT object for accessing internal signals.
     """
     g = CovGroup("MissUnit_FIFO")
     # create FIFO_internalsignals for FIFO functional coverage
@@ -206,4 +206,206 @@ def define_missunit_coverage_groups(bundle):
         name="prefetch_req_new_vs_hit"
     )
 
+    # =================================================================
+    # CP 33: MSHR查找命中逻辑
+    # 监控目标：MSHR查找接口和命中状态
+    # =================================================================
+    g.add_watch_point(
+        {
+            "fetch_req_valid": bundle.io._fetch._req._valid,
+            "fetch_req_blkPaddr": bundle.io._fetch._req._bits._blkPaddr,
+            "fetch_req_vSetIdx": bundle.io._fetch._req._bits._vSetIdx,
+            "prefetch_req_valid": bundle.io._prefetch_req._valid,
+            "prefetch_req_blkPaddr": bundle.io._prefetch_req._bits._blkPaddr,
+            "prefetch_req_vSetIdx": bundle.io._prefetch_req._bits._vSetIdx,
+            "fetch_hit": bundle.ICacheMissUnit_.fetchHit,
+            "prefetch_hit": bundle.ICacheMissUnit_.prefetchHit,
+        },
+        bins={
+            # 33.1: Fetch请求命中现有MSHR
+            "CP33.1_fetch_hit_existing": lambda d: d["fetch_req_valid"].value == 1 and d["fetch_hit"].value == 1,
+            
+            # 33.2: Prefetch请求命中现有MSHR
+            "CP33.2_prefetch_hit_existing": lambda d: d["prefetch_req_valid"].value == 1 and d["prefetch_hit"].value == 1,
+            
+            # 33.3: Prefetch请求与fetch请求地址相同时命中
+            "CP33.3_prefetch_hit_fetch_same": lambda d: d["prefetch_req_valid"].value == 1 and \
+                                                        d["fetch_req_valid"].value == 1 and \
+                                                        d["prefetch_req_blkPaddr"].value == d["fetch_req_blkPaddr"].value and \
+                                                        d["prefetch_req_vSetIdx"].value == d["fetch_req_vSetIdx"].value and \
+                                                        d["prefetch_hit"].value == 1,
+            
+            # 33.4: 新请求未命中任何MSHR
+            "CP33.4_no_hit": lambda d: (d["fetch_req_valid"].value == 1 and d["fetch_hit"].value == 0) or \
+                                       (d["prefetch_req_valid"].value == 1 and d["prefetch_hit"].value == 0),
+        },
+        name="MSHR_lookup_hit_logic"
+    )
+
+    # =================================================================
+    # CP 34: acquireArb仲裁逻辑
+    # 监控目标：仲裁器的选择逻辑和优先级
+    # =================================================================
+    g.add_watch_point(
+        {
+            "acquire_valid": bundle.io._mem._acquire._valid,
+            "acquire_source": bundle.io._mem._acquire._bits._source,
+            "fetch_0_acquire_valid": bundle.ICacheMissUnit_._fetchMSHRs._0._io._acquire_valid,
+            "fetch_1_acquire_valid": bundle.ICacheMissUnit_._fetchMSHRs._1._io._acquire_valid,
+            "fetch_2_acquire_valid": bundle.ICacheMissUnit_._fetchMSHRs._2._io._acquire_valid,
+            "fetch_3_acquire_valid": bundle.ICacheMissUnit_._fetchMSHRs._3._io._acquire_valid,
+            "prefetch_arb_valid": bundle.ICacheMissUnit_._prefetchMSHRs._0._io._acquire_valid,  # 简化监控
+        },
+        bins={
+            # 34.1: Fetch请求优先于prefetch请求
+            "CP34.1_fetch_priority": lambda d: d["acquire_valid"].value == 1 and \
+                                               d["acquire_source"].value < 4 and \
+                                               (d["fetch_0_acquire_valid"].value == 1 or \
+                                                d["fetch_1_acquire_valid"].value == 1 or \
+                                                d["fetch_2_acquire_valid"].value == 1 or \
+                                                d["fetch_3_acquire_valid"].value == 1),
+            
+            # 34.2: 只有prefetch请求时被选中
+            "CP34.2_prefetch_selected": lambda d: d["acquire_valid"].value == 1 and \
+                                                  d["acquire_source"].value >= 4 and \
+                                                  d["fetch_0_acquire_valid"].value == 0 and \
+                                                  d["fetch_1_acquire_valid"].value == 0 and \
+                                                  d["fetch_2_acquire_valid"].value == 0 and \
+                                                  d["fetch_3_acquire_valid"].value == 0,
+        },
+        name="acquire_arbitration_logic"
+    )
+
+    # =================================================================
+    # CP 35: Grant数据接收与处理
+    # 监控目标：Grant数据收集和状态更新
+    # =================================================================
+    g.add_watch_point(
+        {
+            "grant_valid": bundle.io._mem._grant._valid,
+            "grant_opcode": bundle.io._mem._grant._bits._opcode,
+            "grant_source": bundle.io._mem._grant._bits._source,
+            "grant_corrupt": bundle.io._mem._grant._bits._corrupt,
+            "last_fire": bundle.ICacheMissUnit_.last_fire,
+            "last_fire_r": bundle.ICacheMissUnit_.last_fire_r,
+        },
+        bins={
+            # 35.1: 第一个beat数据接收
+            "CP35.1_first_beat": lambda d: d["grant_valid"].value == 1 and \
+                                           d["grant_opcode"].value & 0x1 == 1 and \
+                                           d["last_fire"].value == 0,
+            
+            # 35.2: 最后一个beat数据接收
+            "CP35.2_last_beat": lambda d: d["grant_valid"].value == 1 and \
+                                          d["grant_opcode"].value & 0x1 == 1 and \
+                                          d["last_fire"].value == 1,
+            
+            # 35.3: Grant数据带有corrupt标志
+            "CP35.3_grant_corrupt": lambda d: d["grant_valid"].value == 1 and \
+                                              d["grant_opcode"].value & 0x1 == 1 and \
+                                              d["grant_corrupt"].value == 1,
+            
+            # 35.4: Grant完成后一拍的状态
+            "CP35.4_grant_completion": lambda d: d["last_fire_r"].value == 1,
+        },
+        name="grant_data_collection"
+    )
+
+    # =================================================================
+    # CP 36: 替换策略更新
+    # 监控目标：victim更新信号
+    # =================================================================
+    g.add_watch_point(
+        {
+            "victim_valid": bundle.io._victim._vSetIdx._valid,
+            "victim_bits": bundle.io._victim._vSetIdx._bits,
+            "acquire_valid": bundle.io._mem._acquire._valid,
+            "acquire_ready": bundle.io._mem._acquire._ready,
+        },
+        bins={
+            # 36.1: Acquire成功时更新victim
+            "CP36.1_victim_update": lambda d: d["victim_valid"].value == 1 and \
+                                              d["acquire_valid"].value == 1 and \
+                                              d["acquire_ready"].value == 1,
+        },
+        name="victim_replacement_update"
+    )
+
+    # =================================================================
+    # CP 37: SRAM写回操作
+    # 监控目标：Meta/Data写操作信号
+    # =================================================================
+    g.add_watch_point(
+        {
+            "meta_write_valid": bundle.io._meta_write._valid,
+            "data_write_valid": bundle.io._data_write._valid,
+            "fetch_resp_valid": bundle.io._fetch._resp._valid,
+            "fetch_resp_corrupt": bundle.io._fetch._resp._bits._corrupt,
+            "flush": bundle.io._flush,
+            "fencei": bundle.io._fencei,
+            "last_fire_r": bundle.ICacheMissUnit_.last_fire_r,
+        },
+        bins={
+            # 37.1: 正常写SRAM（无flush/fencei/corrupt）
+            "CP37.1_normal_sram_write": lambda d: d["meta_write_valid"].value == 1 and \
+                                                  d["data_write_valid"].value == 1 and \
+                                                  d["flush"].value == 0 and \
+                                                  d["fencei"].value == 0 and \
+                                                  d["last_fire_r"].value == 1,
+            
+            # 37.2: 有flush/fencei时不写SRAM但仍发送响应
+            "CP37.2_no_write_with_flush": lambda d: d["meta_write_valid"].value == 0 and \
+                                                    d["data_write_valid"].value == 0 and \
+                                                    d["fetch_resp_valid"].value == 1 and \
+                                                    (d["flush"].value == 1 or d["fencei"].value == 1) and \
+                                                    d["last_fire_r"].value == 1,
+            
+            # 37.3: fetch响应总是生成（无论是否写SRAM）
+            "CP37.3_fetch_resp_always": lambda d: d["fetch_resp_valid"].value == 1 and \
+                                                  d["last_fire_r"].value == 1,
+            
+            # 37.4: corrupt数据的响应
+            "CP37.4_corrupt_response": lambda d: d["fetch_resp_valid"].value == 1 and \
+                                                 d["fetch_resp_corrupt"].value == 1 and \
+                                                 d["last_fire_r"].value == 1,
+        },
+        name="sram_write_operations"
+    )
+
+    # =================================================================
+    # CP 38: flush/fencei特殊处理
+    # 监控目标：flush/fencei对MSHR状态的影响
+    # =================================================================
+    g.add_watch_point(
+        {
+            "fencei": bundle.io._fencei,
+            "flush": bundle.io._flush,
+            "fetch_req_ready": bundle.io._fetch._req._ready,
+            "prefetch_req_ready": bundle.io._prefetch_req._ready,
+            "fetch_0_req_ready": bundle.ICacheMissUnit_._fetchMSHRs._0._io._req_ready,
+            "prefetch_0_req_ready": bundle.ICacheMissUnit_._prefetchMSHRs._0._io._req_ready,
+        },
+        bins={
+            # 38.1: fencei清除所有MSHR
+            "CP38.1_fencei_clear_all": lambda d: d["fencei"].value == 1 and \
+                                                 d["fetch_req_ready"].value == 0 and \
+                                                 d["prefetch_req_ready"].value == 0,
+            
+            # 38.2: flush只影响prefetch MSHR
+            "CP38.2_flush_prefetch_only": lambda d: d["flush"].value == 1 and \
+                                                    d["fencei"].value == 0 and \
+                                                    d["prefetch_0_req_ready"].value == 0,
+        },
+        name="flush_fencei_handling"
+    )
+
     return g
+
+def create_all_coverage_groups(bundle, dut):
+    """
+    创建所有覆盖点组合，包括FIFO和主要功能覆盖点
+    """
+    fifo_coverage = define_fifo_coverage(bundle, dut)
+    main_coverage = define_missunit_coverage_groups(bundle)
+    
+    return [fifo_coverage, main_coverage]
