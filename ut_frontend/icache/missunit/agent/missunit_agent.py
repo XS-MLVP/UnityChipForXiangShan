@@ -25,9 +25,10 @@ class ICacheMissUnitAgent(Agent):
         self.bundle.io._victim._way.value = way
         await self.bundle.step()
 
-    async def drive_send_fetch_request(self, blkPaddr: int, vSetIdx: int, timeout_cycles: int = 10) -> bool:
+    async def drive_send_fetch_request(self, blkPaddr: int, vSetIdx: int, timeout_cycles: int = 10) -> dict:
+        fetch_info = {}
+        fetch_info["send_success"] = False
         for i in range(timeout_cycles):
-            await self.bundle.step()
             if self.bundle.io._fetch._req._ready.value == 1 and self.bundle.io._fetch._req._valid.value == 0:
                 self.bundle.io._fetch._req._bits._blkPaddr.value = blkPaddr
                 self.bundle.io._fetch._req._bits._vSetIdx.value = vSetIdx
@@ -35,18 +36,24 @@ class ICacheMissUnitAgent(Agent):
                 print(f"Fetch request accepted (cycle {i+1}). fetch_req_ready=1")
                 await self.bundle.step()
                 self.bundle.io._fetch._req._valid.value = 0
-                return True
+                fetch_info["blkPaddr"] = self.bundle.io._fetch._req._bits._blkPaddr.value
+                fetch_info["vSetIdx"] = self.bundle.io._fetch._req._bits._vSetIdx.value
+                if self.bundle.io._fetch._req._ready.value == 1:
+                    fetch_info["send_success"] = True
+                return fetch_info
             else:
                 print(f"Fetch request not accepted (cycle {i+1}). fetch_req_ready=0")
-                return False
+            await self.bundle.step()
 
         print(f"Timeout: Fetch request not accepted after {timeout_cycles} cycles.")
         self.bundle.io._fetch._req._valid.value = 0
-        return False
+        await self.bundle.step()
+        return fetch_info
 
-    async def drive_send_prefetch_req(self, blkPaddr: int, vSetIdx: int, timeout_cycles: int = 10):
+    async def drive_send_prefetch_req(self, blkPaddr: int, vSetIdx: int, timeout_cycles: int = 10) -> dict:
         """High-level API: Drives a prefetch request and waits for acceptance."""
-    
+        prefetch_info = {}
+        prefetch_info["send_success"] = False
         # wait for ready
         for i in range(timeout_cycles):
             # before every cycle, check whether ready
@@ -56,12 +63,16 @@ class ICacheMissUnitAgent(Agent):
                 self.bundle.io._prefetch_req._valid.value = 1
                 self.bundle.io._prefetch_req._bits._blkPaddr.value = blkPaddr
                 self.bundle.io._prefetch_req._bits._vSetIdx.value = vSetIdx
-                print(f"Prefetch request accepted on cycle {i+1}.")
-                await self.bundle.step()
-                self.bundle.io._prefetch_req._valid.value = 0  # reset valid to low
                 await self.bundle.step()  # wait for the next cycle
-                return True
-        
+                print(f"Prefetch request accepted on cycle {i+1}.")
+                self.bundle.io._prefetch_req._valid.value = 0  # reset valid to low
+                prefetch_info["blkPaddr"] = self.bundle.io._prefetch_req._bits._blkPaddr.value
+                prefetch_info["vSetIdx"] = self.bundle.io._prefetch_req._bits._vSetIdx.value
+                if self.bundle.io._prefetch_req._ready.value == 1:
+                    prefetch_info["send_success"] = True
+                return prefetch_info
+            else:
+                print(f"Preetch request not accepted (cycle {i+1}). fetch_req_ready=0")
             # if not ready，push to next cycle
             await self.bundle.step()
         
@@ -69,7 +80,7 @@ class ICacheMissUnitAgent(Agent):
         print("Timeout: Prefetch request not accepted.")
         self.bundle.io._prefetch_req._valid.value = 0 # cancel valid
         await self.bundle.step()
-        return False
+        return prefetch_info
 
     async def drive_acknowledge_acquire(self, cycles: int = 1, ready_value: int = 1):
         print(f"Setting io_mem_acquire_ready to {ready_value} for {cycles} cycle(s).")

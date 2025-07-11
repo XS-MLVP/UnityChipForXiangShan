@@ -1,6 +1,7 @@
 from .missunit_fixture import icachemissunit_env
 from ..env import ICacheMissUnitEnv
 import toffee_test
+import toffee
 
 
 @toffee_test.testcase
@@ -178,13 +179,14 @@ async def test_send_fetch_request(icachemissunit_env: ICacheMissUnitEnv):
     for blkPaddr, vSetIdx in send_list:
         print(f"Attempting to send fetch #{count} request: blkPaddr={hex(blkPaddr)}, vSetIdx={hex(vSetIdx)}")
         if count < 5:
-            accepted = await agent.drive_send_fetch_request(blkPaddr=blkPaddr, vSetIdx=vSetIdx)
-            assert accepted is True and bundle.io._fetch._req._ready.value == 1, f"Fetch request {count} should be accepted."
+            request_info = await agent.drive_send_fetch_request(blkPaddr=blkPaddr, vSetIdx=vSetIdx)
+            assert request_info["send_success"] is True and bundle.io._fetch._req._ready.value == 1, f"Fetch request {count} should be accepted."
+            assert request_info["blkPaddr"] == blkPaddr and request_info["vSetIdx"] == vSetIdx
             count += 1
             print(f"Fetch request accepted: blkPaddr={hex(blkPaddr)}, vSetIdx={hex(vSetIdx)}")
         else:
-            accepted = await agent.drive_send_fetch_request(blkPaddr=blkPaddr, vSetIdx=vSetIdx)
-            assert accepted is True and bundle.io._fetch._req._ready.value == 0 , f"Fetch request {count} should accepted but after that become not ready."
+            request_info = await agent.drive_send_fetch_request(blkPaddr=blkPaddr, vSetIdx=vSetIdx)
+            assert request_info["send_success"] is False and bundle.io._fetch._req._ready.value == 0 , f"Fetch request {count} should not accepted."
             print(f"Fetch request NOT accepted: blkPaddr={hex(blkPaddr)}, vSetIdx={hex(vSetIdx)}")
 
     print("four fetch requests sent successfully, with the fifth one correctly rejected.")
@@ -207,7 +209,7 @@ async def test_api_fetch_request_generates_acquire(icachemissunit_env: ICacheMis
     # We need to try to send the request and get the acquire concurrently.
     send_result = await agent.drive_send_fetch_request(blkPaddr=test_addr, vSetIdx=test_idx)
     acquire_info = await agent.drive_get_acquire_request()
-    assert send_result is True, "Fetch request should have been accepted."
+    assert send_result["send_success"] is True, "Fetch request should have been accepted."
     assert acquire_info is not None, "Did not capture an acquire request."
     # The first fetch request should go to fetchMSHRs[0], which has source ID 0
     assert acquire_info["source"] == 0, f"Expected source ID {fetch_and_acquire_count}, but got {acquire_info['source']}"
@@ -230,10 +232,10 @@ async def test_api_full_fetch_flow(icachemissunit_env: ICacheMissUnitEnv):
     test_idx = 0x3C
     expected_mem_addr = test_addr << 6
 
-    # 1. Send Fetch Request (now we are sure the DUT is idle)
+    # 1. Send Fetch Request
     print("Step 1: Sending fetch request.")
-    accepted = await agent.drive_send_fetch_request(blkPaddr=test_addr, vSetIdx=test_idx)
-    assert accepted, "Fetch request was not accepted when DUT should be idle."
+    send_result = await agent.drive_send_fetch_request(blkPaddr=test_addr, vSetIdx=test_idx)
+    assert send_result["send_success"] is True, "Fetch request was not accepted when DUT should be idle."
 
     # 2. Capture acquire AND drive victim_way concurrently
     # We want to ensure that the acquire request is captured
@@ -335,17 +337,17 @@ async def test_send_prefetch_request(icachemissunit_env: ICacheMissUnitEnv):
     for blkPaddr, vSetIdx in send_list:
         print(f"Attempting to send fetch #{count} request: blkPaddr={hex(blkPaddr)}, vSetIdx={hex(vSetIdx)}")
         if count < 10:
-            accepted = await agent.drive_send_prefetch_req(blkPaddr=blkPaddr, vSetIdx=vSetIdx)
-            assert accepted is True and bundle.io._prefetch_req._ready.value == 1, f"Fetch request {count} should be accepted and ready for next request."
+            send_result = await agent.drive_send_prefetch_req(blkPaddr=blkPaddr, vSetIdx=vSetIdx)
+            assert send_result["send_success"] is True and bundle.io._prefetch_req._ready.value == 1, f"Fetch request {count} should be accepted and ready for next request."
+            assert send_result["blkPaddr"] == blkPaddr and send_result["vSetIdx"] == vSetIdx, "send result should match with what send"
             count += 1
             print(f"Fetch request accepted: blkPaddr={hex(blkPaddr)}, vSetIdx={hex(vSetIdx)}")
         else:
-            accepted = await agent.drive_send_prefetch_req(blkPaddr= 0x1000 + 2 * 0x1000, vSetIdx=0x1A + 2)
-            assert accepted is True and bundle.io._prefetch_req._ready.value == 1,"Fetch request should be accepted again, because it is in prefetch MSHR."
-            accepted = await agent.drive_send_prefetch_req(blkPaddr=blkPaddr, vSetIdx=vSetIdx)
-            assert accepted is True and bundle.io._prefetch_req._ready.value == 0, f"Fetch request {count} should be accepted but after that become not ready."
+            send_result = await agent.drive_send_prefetch_req(blkPaddr= 0x1000 + 2 * 0x1000, vSetIdx=0x1A + 2)
+            assert send_result["send_success"] is True and bundle.io._prefetch_req._ready.value == 1,"Fetch request should be accepted again, because it is in prefetch MSHR."
+            send_result = await agent.drive_send_prefetch_req(blkPaddr=blkPaddr, vSetIdx=vSetIdx)
+            assert send_result["send_success"] is False and bundle.io._prefetch_req._ready.value == 0, f"Fetch request {count} should not be accepted."
             print(f"Fetch request NOT accepted: blkPaddr={hex(blkPaddr)}, vSetIdx={hex(vSetIdx)}")
-
     print("prefetch requests sent successfully.")
 
 @toffee_test.testcase
@@ -366,7 +368,7 @@ async def test_api_full_prefetch_flow(icachemissunit_env: ICacheMissUnitEnv):
     acquire_info = await agent.drive_get_acquire_request()
     print(acquire_info)
 
-    assert send_result and acquire_info is not None, "Failed to send prefetch or get acquire."
+    assert send_result["send_success"] is True and acquire_info is not None, "Failed to send prefetch or get acquire."
     
     source_id = acquire_info["source"]
     assert acquire_info["source"] == 4, f"Expected source ID 4 for prefetch, but got {acquire_info['source']}"
@@ -386,3 +388,110 @@ async def test_api_full_prefetch_flow(icachemissunit_env: ICacheMissUnitEnv):
     assert response_info["vSetIdx"] == test_idx, "Response vSetIdx does not match the prefetch request."
     print(f"Received fetch_resp for prefetch request: {response_info}")
     print("API Full End-to-End PREFETCH Flow test passed.")
+
+@toffee_test.testcase
+async def test_FIFO_moudle(icachemissunit_env: ICacheMissUnitEnv):
+    """
+    Goal: Correctly test FIFO by considering the high priority of fetch requests.
+    """
+    print("\n--- Testing FIFO (Considering Fetch Priority) ---")
+    dut = icachemissunit_env.dut
+    agent = icachemissunit_env.agent
+    bundle = icachemissunit_env.bundle
+    acquire_info_list = []
+
+    # 2. 填满 FIFO
+    print("Step 2: Enqueue 10 prefetch requests to fill the FIFO.")
+    for i in range(10):
+        await agent.drive_send_prefetch_req(0x1000 + i * 0x1000, 0x1A + i)
+        acquire_info = await agent.drive_get_acquire_request(timeout_cycles=10)
+        assert acquire_info is not None, f"Failed to get acquire for request{i}"
+        await agent.drive_acknowledge_acquire(cycles=1)
+        acquire_info_list.append(acquire_info)
+        print(f"the prefetch chosen is {bundle.prefetchDemux._io_chosen.value} now")
+
+    await agent.bundle.step(5)
+    # CP28.2 队满，入队翻转
+    assert dut.GetInternalSignal("ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.enq_ptr_flag", use_vpi=False).value == 1
+
+
+    # 3. 测试队满阻塞
+    print("Step 3: Test blocking when FIFO is full.")
+    send_result = await agent.drive_send_prefetch_req(blkPaddr=0xDEAD, vSetIdx=0, timeout_cycles=3)
+    assert send_result["send_success"] is False and bundle.io._prefetch_req._ready.value == 0, "FIFO should be full and starting block the request."
+
+
+    # 4. 出队一个元素
+    print(f"acquire_info_list is {acquire_info_list}")
+    print("Step 4: Dequeue one item from the FIFO.")
+    await agent.drive_respond_with_grant(source_id=acquire_info_list[0]["source"], data_beats=[0x1, 0x2])
+    response_info = await agent.drive_get_fetch_response(timeout_cycles=10)
+    assert response_info is not None, "Failed to get fetch response after dequeueing an item."
+    print(f"Dequeued item and received fetch response: {response_info}")
+    del acquire_info_list[0]
+
+    # 5. 测试指针回环入队
+    print("Step 5: Test enqueue after making space in the FIFO.")
+    send_result = await agent.drive_send_prefetch_req(blkPaddr=0xCAFE, vSetIdx=10)
+    acquire_info = await agent.drive_get_acquire_request(timeout_cycles=10)
+    assert acquire_info is not None, f"Failed to get acquire for request{i}"
+    await agent.drive_acknowledge_acquire(cycles=1)
+    acquire_info_list.append(acquire_info)
+    assert send_result["send_success"] is True, "Failed to enqueue into the freed FIFO slot."
+
+    # 6.顺序出队所有元素,并驱动drive_acknowledge_acquire以触发空队出列
+    await agent.bundle.step(5)
+    for i in acquire_info_list:
+        print(f"this acquire_info is {i}")
+        await agent.drive_respond_with_grant(source_id=i["source"],data_beats=[0x1,0x2])
+        response_info = await agent.drive_get_fetch_response(timeout_cycles=10)
+        print(f"#{i} response_info is {response_info}")
+        assert response_info is not None, "Failed to get prefetch response after dequeueing an item"
+
+
+    await agent.drive_respond_with_grant(source_id=acquire_info_list[0]["source"], data_beats=[0x1, 0x2])
+    response_info = await agent.drive_get_fetch_response(timeout_cycles=10)
+    assert response_info is None, "Expected no fetch response after flushing the FIFO."
+    await agent.bundle.step(5)
+
+
+    # 8. 测试Flush操作
+    print("Step 8: Test flush operation.")
+    # Flush 应该能清空 prefetch MSHR 和 FIFO，以及 fetch MSHR
+    await agent.drive_set_flush(True)
+    await agent.bundle.step(1)
+    await agent.drive_set_flush(False)
+    await agent.bundle.step(5)
+    
+    # 验证：flush后，所有资源都被释放，可以发送一个新的 prefetch 请求
+    print("  - Verifying a new prefetch can be sent after flush.")
+    send_result = await agent.drive_send_prefetch_req(blkPaddr=0xB000, vSetIdx=1)
+    assert send_result["send_success"] is True, "Failed to send a request after a flush operation."
+    
+    print("--- FIFO Test (Considering Fetch Priority) Completed ---")
+
+@toffee_test.testcase
+async def test_fetch_miss_request(icachemissunit_env: ICacheMissUnitEnv):
+    """
+    Test for CP31 CP32
+    Test 31.1: Accept new fetch request
+    Test 31.2: Handle existing fetch request
+    Test 31.3: Low index request priority
+    """
+    agent = icachemissunit_env.agent
+    bundle = icachemissunit_env.bundle
+    fetch_existed_list = []
+    for i in range(4):
+        blkPaddr = 0x1000 + i * 0x1000
+        vSetIdx = 0x1A + i
+        assert getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{i}")._io._req_ready.value == 1, f"fetch MSHR_{i} should be ready"
+        send_result = await agent.drive_send_fetch_request(blkPaddr=blkPaddr,vSetIdx=vSetIdx)
+        await bundle.step()
+        assert send_result["send_success"] is True, f"#{i}request should send fetch successfully."
+        assert getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{i}")._io._req_ready.value == 0 and \
+               getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{i}")._io._acquire_valid.value == 1, f"after fetch MSHR_{i} should not be ready"
+        fetch_existed_list.append(send_result)
+    
+    
+
+

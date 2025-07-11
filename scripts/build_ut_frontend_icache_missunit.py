@@ -31,7 +31,7 @@ def build(cfg):
             filelist.flush()
             s, _, err = exe_cmd(
                 f"picker export --cp_lib false {rtl_files[0]} --fs {filelist.name} --lang python --tdir "
-                f"{get_root_dir('dut')}/ -w ICacheMissUnit.fst -c --internal={internal_signals_path}"
+                f"{get_root_dir('dut')}/ -w ICacheMissUnit.fst -c --internal={internal_signals_path} --rw 1"
             )
         assert s, err
     return True
