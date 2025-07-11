@@ -3,7 +3,7 @@ from dut.PreDecode import DUTPreDecode
 from ..env import PreDecodeEnv
 from toffee import start_clock
 import toffee.funcov as fc
-from comm import UT_FCOV, module_name_with, get_version_checker
+from comm import UT_FCOV, module_name_with
 
 grp = fc.CovGroup(UT_FCOV("../../CLASSIC"))
 
@@ -39,7 +39,7 @@ def init_cov(dut:DUTPreDecode, grp: fc.CovGroup):
         grp.mark_function(f'check_valid_start_{i}',_mark(["test_precoding_checker_2_3_1"]))
         
     return grp
-        
+
 
 @toffee_test.fixture
 async def predecode_env(toffee_request: toffee_test.ToffeeRequest):

@@ -3,7 +3,7 @@ from dut.F3Predecoder import DUTF3Predecoder
 from toffee import start_clock
 from ..env import F3PreDecoderEnv
 import toffee.funcov as fc
-from comm import UT_FCOV, module_name_with, get_version_checker
+from comm import UT_FCOV, module_name_with
 
 grp = fc.CovGroup(UT_FCOV("../../CLASSIC"))
 def init_cov(dut:DUTF3Predecoder, grp: fc.CovGroup):

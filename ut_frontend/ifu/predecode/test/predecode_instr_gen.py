@@ -38,7 +38,6 @@ class PreDecodeInstrGen():
         if type == 'j':
             opcode = 0b1101111
             instr_rvi = (random.getrandbits(25) << 7) | opcode
-            instr_rvi = (0b1111100101100010010000111 << 7) | opcode
             func3 = random.choice([0b101])
             op = 0b01
             instr_rvc = (func3) << 13 | (random.getrandbits(11) << 2) | op
