@@ -101,40 +101,6 @@ module ICacheMissUnit (
 ## Bundle接口设计
 
 Bundle是Toffee框架中用于信号层次化管理的核心组件，将RTL信号组织成结构化的接口。
-
-### Bundle层次结构
-
-```python
-class ICacheMissUnitBundle(Bundle):
-    def __init__(self):
-        super().__init__()
-        # 主要接口组
-        self.io = IOBundle()           # 顶层IO接口
-        self.ICacheMissUnit_ = InternalBundle()  # 内部信号
-        
-class IOBundle(Bundle):
-    def __init__(self):
-        super().__init__()
-        self._fetch = FetchBundle()     # 取指接口
-        self._prefetch_req = PrefetchBundle()  # 预取接口
-        self._mem = MemBundle()         # 内存接口
-        self._victim = VictimBundle()   # 替换策略
-        self._flush = XPin()            # Flush信号
-        self._fencei = XPin()           # Fencei信号
-        
-class FetchBundle(Bundle):
-    def __init__(self):
-        super().__init__()
-        self._req = FetchReqBundle()    # 请求
-        self._resp = FetchRespBundle()  # 响应
-        
-class MemBundle(Bundle):  
-    def __init__(self):
-        super().__init__()
-        self._acquire = AcquireBundle() # Acquire通道
-        self._grant = GrantBundle()     # Grant通道
-```
-
 ### 信号访问示例
 
 ```python
@@ -155,56 +121,220 @@ mshr_ready = bundle.ICacheMissUnit_._fetchMSHRs._0._io._req_ready.value
 
 Agent提供高级API来驱动DUT和验证行为，封装了复杂的时序控制和协议细节。
 
-### 核心API接口
+### API参考文档
 
-#### 1. 基础控制接口
+#### 基础控制接口
 
+##### `async def fencei_func(self, value: int)`
+**功能**: 设置fencei信号并等待处理完成  
+**参数**:
+- `value` (int): fencei信号值 (0/1)
+
+**返回值**: None  
+**异常**: None  
+**用法示例**:
 ```python
-async def drive_set_victim_way(self, way: int)
-    """设置替换策略的victim way"""
-    
-async def drive_send_fetch_request(self, blkPaddr: int, vSetIdx: int, timeout_cycles: int = 10) -> dict
-    """发送取指请求"""
-    
-async def drive_send_prefetch_req(self, blkPaddr: int, vSetIdx: int, timeout_cycles: int = 10) -> dict
-    """发送预取请求"""
+await agent.fencei_func(1)  # 激活fencei
+await agent.fencei_func(0)  # 清除fencei
 ```
 
-#### 2. TileLink协议接口
+##### `async def drive_set_flush(self, value: bool)`
+**功能**: 设置或清除flush信号  
+**参数**:
+- `value` (bool): flush信号状态
 
+**返回值**: None  
+**异常**: None  
+**用法示例**:
 ```python
-async def drive_get_acquire_request(self, timeout_cycles: int = 10) -> dict | None
-    """获取acquire请求（单次）"""
-    
-async def drive_get_and_acknowledge_acquire(self, timeout_cycles: int = 10, ack_cycles: int = 1) -> dict | None
-    """获取acquire请求并立即确认（原子操作）"""
-    
-async def drive_acknowledge_acquire(self, cycles: int = 1, ready_value: int = 1)
-    """确认acquire请求"""
-    
-async def drive_respond_with_grant(self, source_id: int, data_beats: list, beat_size_code: int = 6, op_code: int = 5, corrupt: bool = False)
-    """发送Grant响应（支持multi-beat）"""
+await agent.drive_set_flush(True)   # 激活flush
+await agent.drive_set_flush(False)  # 清除flush
 ```
 
-#### 3. 响应获取接口
+##### `async def drive_set_victim_way(self, way: int)`
+**功能**: 设置替换策略的victim way  
+**参数**:
+- `way` (int): way编号 (0-3)
 
+**返回值**: None  
+**异常**: None  
+**用法示例**:
 ```python
-async def drive_get_fetch_response(self, timeout_cycles: int = 10) -> dict | None
-    """获取取指响应"""
+await agent.drive_set_victim_way(1)  # 设置victim way为1
 ```
 
-### Agent使用示例
+#### 请求发送接口
+
+##### `async def drive_send_fetch_request(self, blkPaddr: int, vSetIdx: int, timeout_cycles: int = 10) -> dict`
+**功能**: 发送取指请求并等待接受  
+**参数**:
+- `blkPaddr` (int): 块物理地址
+- `vSetIdx` (int): 虚拟set索引
+- `timeout_cycles` (int, 可选): 超时周期数，默认10
+
+**返回值**: 
+```python
+{
+    "send_success": bool,    # 请求是否成功发送
+    "blkPaddr": int,        # 实际发送的块地址
+    "vSetIdx": int          # 实际发送的set索引
+}
+```
+
+**异常**: None  
+**用法示例**:
+```python
+result = await agent.drive_send_fetch_request(blkPaddr=0x1000, vSetIdx=0x10)
+if result["send_success"]:
+    print("Fetch request sent successfully")
+```
+
+##### `async def drive_send_prefetch_req(self, blkPaddr: int, vSetIdx: int, timeout_cycles: int = 10) -> dict`
+**功能**: 发送预取请求并等待接受  
+**参数**:
+- `blkPaddr` (int): 块物理地址
+- `vSetIdx` (int): 虚拟set索引
+- `timeout_cycles` (int, 可选): 超时周期数，默认10
+
+**返回值**: 
+```python
+{
+    "send_success": bool,    # 请求是否成功发送
+    "blkPaddr": int,        # 实际发送的块地址
+    "vSetIdx": int          # 实际发送的set索引
+}
+```
+
+**异常**: None  
+**用法示例**:
+```python
+result = await agent.drive_send_prefetch_req(blkPaddr=0x2000, vSetIdx=0x20)
+assert result["send_success"], "Prefetch request should succeed"
+```
+
+#### TileLink协议接口
+
+##### `async def drive_get_acquire_request(self, timeout_cycles: int = 10) -> dict | None`
+**功能**: 获取acquire请求（单次获取，不执行handshake）  
+**参数**:
+- `timeout_cycles` (int, 可选): 超时周期数，默认10
+
+**返回值**: 
+```python
+{
+    "source": int,    # 源ID (0-3: fetch, 4-13: prefetch)
+    "address": int    # 请求地址
+}
+# 或 None (超时)
+```
+
+**异常**: None  
+**注意**: 此API只获取请求信息，不执行handshake，需要手动调用`drive_acknowledge_acquire`  
+**用法示例**:
+```python
+acquire_info = await agent.drive_get_acquire_request()
+if acquire_info:
+    print(f"Got acquire: source={acquire_info['source']}")
+    await agent.drive_acknowledge_acquire()
+```
+
+##### `async def drive_get_and_acknowledge_acquire(self, timeout_cycles: int = 10, ack_cycles: int = 1) -> dict | None`
+**功能**: 获取acquire请求并立即执行handshake（原子操作）  
+**参数**:
+- `timeout_cycles` (int, 可选): 超时周期数，默认10
+- `ack_cycles` (int, 可选): 确认持续周期数，默认1
+
+**返回值**: 与`drive_get_acquire_request`相同  
+**异常**: None  
+**注意**: 这是推荐的API，避免重复获取同一个acquire请求  
+**用法示例**:
+```python
+acquire_info = await agent.drive_get_and_acknowledge_acquire()
+if acquire_info:
+    print(f"Processed acquire: source={acquire_info['source']}")
+```
+
+##### `async def drive_acknowledge_acquire(self, cycles: int = 1, ready_value: int = 1)`
+**功能**: 确认acquire请求  
+**参数**:
+- `cycles` (int, 可选): 确认持续周期数，默认1
+- `ready_value` (int, 可选): ready信号值，默认1
+
+**返回值**: None  
+**异常**: None  
+**用法示例**:
+```python
+await agent.drive_acknowledge_acquire(cycles=2)  # 持续2个周期
+```
+
+##### `async def drive_respond_with_grant(self, source_id: int, data_beats: list, beat_size_code: int = 6, op_code: int = 5, is_corrupt_list: list = None)`
+**功能**: 发送Grant响应（支持multi-beat传输）  
+**参数**:
+- `source_id` (int): 目标源ID
+- `data_beats` (list): 数据beats列表，每个元素为int类型
+- `beat_size_code` (int, 可选): beat大小编码，默认6
+- `op_code` (int, 可选): 操作码，默认5 (GrantData)
+- `is_corrupt_list` (list, 可选): 每个beat的corruption状态，默认全False
+
+**返回值**: None  
+**异常**: ValueError (当is_corrupt_list长度与data_beats不匹配时)  
+**用法示例**:
+```python
+# 发送正常的2-beat Grant
+grant_data = [0x1234567890ABCDEF, 0xFEDCBA0987654321]
+await agent.drive_respond_with_grant(source_id=0, data_beats=grant_data)
+
+# 发送带corruption的Grant
+grant_data = [0x1111111111111111, 0x2222222222222222]
+corrupt_flags = [False, True]  # 第二个beat有corruption
+await agent.drive_respond_with_grant(
+    source_id=0, 
+    data_beats=grant_data, 
+    is_corrupt_list=corrupt_flags
+)
+```
+
+#### 响应获取接口
+
+##### `async def drive_get_fetch_response(self, timeout_cycles: int = 20) -> dict | None`
+**功能**: 获取fetch响应  
+**参数**:
+- `timeout_cycles` (int, 可选): 超时周期数，默认20
+
+**返回值**: 
+```python
+{
+    "blkPaddr": int,    # 块物理地址
+    "vSetIdx": int,     # 虚拟set索引
+    "waymask": int,     # way掩码 (独热编码)
+    "data": int,        # 响应数据
+    "corrupt": bool     # 数据是否损坏
+}
+# 或 None (超时)
+```
+
+**异常**: None  
+**用法示例**:
+```python
+response = await agent.drive_get_fetch_response()
+if response:
+    print(f"Got response: waymask={response['waymask']}")
+    assert not response['corrupt'], "Data should not be corrupt"
+```
+
+### 完整流程示例
 
 ```python
-# 完整的fetch流程
-async def test_full_fetch_flow(agent):
-    # 1. 发送取指请求
+async def complete_fetch_flow_example(agent):
+    """完整的fetch流程示例"""
+    
+    # 1. 发送fetch请求
     result = await agent.drive_send_fetch_request(blkPaddr=0x1000, vSetIdx=0x10)
-    assert result["send_success"] is True
+    assert result["send_success"], "Fetch request should succeed"
     
     # 2. 获取并确认acquire请求
     acquire_info = await agent.drive_get_and_acknowledge_acquire()
-    assert acquire_info is not None
+    assert acquire_info is not None, "Should get acquire request"
     
     # 3. 设置victim way
     await agent.drive_set_victim_way(way=1)
@@ -218,79 +348,99 @@ async def test_full_fetch_flow(agent):
     
     # 5. 获取fetch响应
     response = await agent.drive_get_fetch_response()
-    assert response is not None
-    assert response["waymask"] == (1 << 1)  # 验证waymask
+    assert response is not None, "Should get fetch response"
+    assert response["waymask"] == (1 << 1), "Waymask should match victim way"
+    
+    return response
+
+async def flush_scenario_example(agent):
+    """flush场景示例"""
+    
+    # 发送请求
+    await agent.drive_send_fetch_request(blkPaddr=0x1000, vSetIdx=0x10)
+    acquire_info = await agent.drive_get_and_acknowledge_acquire()
+    
+    # 在Grant前激活flush
+    await agent.drive_set_flush(True)
+    
+    # 发送Grant
+    grant_data = [0x1111111111111111, 0x2222222222222222]
+    await agent.drive_respond_with_grant(
+        source_id=acquire_info['source'], 
+        data_beats=grant_data
+    )
+    
+    # 仍然应该得到响应，但SRAM不会被写入
+    response = await agent.drive_get_fetch_response()
+    assert response is not None, "Should get response even with flush"
+    
+    # 清除flush
+    await agent.drive_set_flush(False)
 ```
 
 ## 测试用例设计
 
-### 测试分类
+### 完整测试用例列表 (共27个)
 
 #### 1. 基础功能测试
-- **test_smoke**: 冒烟测试，验证基本功能
-- **test_send_fetch_request**: 取指请求发送测试
-- **test_send_prefetch_request**: 预取请求发送测试
+1. **test_smoke** - 冒烟测试，验证基本功能
+2. **test_bundle_drive_fetch_req_inputs** - Bundle接口fetch请求输入测试
+3. **test_bundle_read_fetch_req_ready** - Bundle接口fetch ready信号读取测试
+4. **test_fencei_work** - Fencei功能测试
+5. **test_set_flush** - Flush信号设置测试
+6. **test_set_victim_way** - Victim way设置测试
 
-#### 2. MSHR管理测试
-- **test_mshr_hit_detection**: MSHR查找命中逻辑测试
-- **test_mshr_release_after_grant**: MSHR释放测试
-- **test_low_index_priority_fetch**: Fetch MSHR低索引优先级测试
-- **test_low_index_priority_prefetch**: Prefetch MSHR低索引优先级测试
+#### 2. 请求发送测试
+7. **test_send_fetch_request** - 取指请求发送测试
+8. **test_send_prefetch_request** - 预取请求发送测试
 
-#### 3. 仲裁逻辑测试
-- **test_acquire_arbitration_priority**: Acquire仲裁优先级测试
-- **test_fifo_priority_ordering**: FIFO优先级顺序测试
+#### 3. API完整流程测试
+9. **test_api_fetch_request_generates_acquire** - API取指请求生成acquire测试
+10. **test_api_full_fetch_flow** - API完整取指流程测试
+11. **test_api_grant_with_corruption** - API Grant数据损坏处理测试
+12. **test_api_full_prefetch_flow** - API完整预取流程测试
 
-#### 4. 数据传输测试
-- **test_grant_beat_collection**: Grant多beat数据收集测试
-- **test_api_grant_with_corruption**: 数据损坏处理测试
+#### 4. FIFO和优先级测试
+13. **test_FIFO_moudle** - FIFO模块功能测试
 
-#### 5. 替换策略测试
-- **test_victim_way_update**: 替换策略更新测试
-- **test_waymask_generation**: Waymask生成逻辑测试
+#### 5. MSHR管理测试
+14. **test_mshr_hit_detection** - MSHR查找命中逻辑测试
+15. **test_mshr_release_after_grant** - MSHR在Grant完成后的释放测试
 
-#### 6. SRAM写回测试
-- **test_sram_write_conditions**: SRAM写回条件测试
-- **test_no_write_with_flush_fencei**: Flush/Fencei时SRAM写回抑制测试
+#### 6. 优先级策略测试
+16. **test_low_index_priority_fetch** - Fetch MSHR低索引优先级测试
+17. **test_low_index_priority_prefetch** - Prefetch MSHR低索引优先级测试
+18. **test_fifo_priority_ordering** - FIFO优先级顺序测试
+19. **test_acquire_arbitration_priority** - Acquire仲裁优先级测试
 
-#### 7. 特殊情况测试
-- **test_flush_fencei_mshr_behavior**: Flush/Fencei对MSHR影响测试
-- **test_prefetch_same_address_as_fetch**: 相同地址处理测试
-- **test_demux_chosen_signal**: Demux选择信号测试
+#### 7. 数据传输与处理测试
+20. **test_grant_beat_collection** - Grant多beat数据收集测试
+21. **test_victim_way_update** - 替换策略更新测试
+22. **test_waymask_generation** - Waymask生成逻辑测试
 
-### 典型测试用例解析
+#### 8. SRAM写回测试
+23. **test_sram_write_conditions** - SRAM写回条件测试
+24. **test_no_write_with_flush_fencei** - Flush/Fencei时SRAM写回抑制测试
 
-#### test_acquire_arbitration_priority
+#### 9. 特殊情况测试
+25. **test_flush_fencei_mshr_behavior** - Flush/Fencei对MSHR影响测试
+26. **test_prefetch_same_address_as_fetch** - 相同地址处理测试
+27. **test_demux_chosen_signal** - Demux选择信号测试
 
-```python
-@toffee_test.testcase
-async def test_acquire_arbitration_priority(icachemissunit_env: ICacheMissUnitEnv):
-    """验证acquire仲裁逻辑：fetch请求优先于prefetch请求"""
-    agent = icachemissunit_env.agent
-    bundle = icachemissunit_env.bundle
-    
-    # 发送prefetch和fetch请求
-    prefetch_result = await agent.drive_send_prefetch_req(blkPaddr=0x8000, vSetIdx=0x80)
-    await bundle.step(2)
-    fetch_result = await agent.drive_send_fetch_request(blkPaddr=0x9000, vSetIdx=0x90)
-    await bundle.step(3)
-    
-    # 收集acquire请求，验证仲裁顺序
-    acquire_requests = []
-    for attempt in range(3):
-        acquire_info = await agent.drive_get_and_acknowledge_acquire(timeout_cycles=5)
-        if acquire_info is not None:
-            acquire_requests.append(acquire_info)
-        else:
-            break
-    
-    # 验证fetch请求（source < 4）优先于prefetch请求（source >= 4）
-    fetch_sources = [req["source"] for req in acquire_requests if req["source"] < 4]
-    prefetch_sources = [req["source"] for req in acquire_requests if req["source"] >= 4]
-    
-    assert len(fetch_sources) > 0, "Fetch request should be processed"
-    assert len(prefetch_sources) > 0, "Prefetch request should be processed"
-```
+### 测试分类总结
+
+| 分类 | 测试用例数量 | 主要验证内容 |
+|------|-------------|-------------|
+| 基础功能 | 6个 | Bundle接口、基本信号控制 |
+| 请求发送 | 2个 | Fetch/Prefetch请求发送 |
+| API流程 | 4个 | 完整的API使用流程 |
+| FIFO功能 | 1个 | Priority FIFO操作 |
+| MSHR管理 | 2个 | MSHR分配、释放、命中检测 |
+| 优先级策略 | 4个 | 各级优先级仲裁逻辑 |
+| 数据传输 | 3个 | Grant处理、waymask生成 |
+| SRAM写回 | 2个 | 写回控制和条件判断 |
+| 特殊情况 | 3个 | Flush/Fencei、边界条件 |
+| **总计** | **27个** | **全面覆盖ICacheMissUnit功能** |
 
 ## 功能覆盖点设计
 
@@ -368,17 +518,30 @@ async def test_acquire_arbitration_priority(icachemissunit_env: ICacheMissUnitEn
 "CP37.4_corrupt_response": Corrupt数据响应
 ```
 
-#### 8. 特殊处理覆盖点（CP38）
+#### 8. Miss 完成响应覆盖点（CP38）
 
 ```python
-"CP38.1_fencei_clear_all": Fencei清除所有MSHR
-"CP38.2_flush_prefetch_only": Flush只影响prefetch MSHR
+# CP38.1: 正常 Miss 完成响应
+"CP38.1_normal_miss_completion": 正常Miss完成响应
+```
+
+#### 9. 特殊处理覆盖点（CP39）
+
+```python
+# CP39.1: MSHR 未发射前 fencei
+"CP39.1_fencei_before_fire": Fencei阻止MSHR发射
+
+# CP39.2: MSHR 未发射前 flush
+"CP39.2_flush_before_fire": Flush只阻止prefetch MSHR发射
+
+# CP39.3: MSHR 已发射后 flush/fencei
+"CP39.3_flush_fencei_after_fire": 发射后flush/fencei抑制写回但不影响响应
 ```
 
 ### 覆盖点使用示例
 
 ```python
-def define_missunit_coverage_groups(bundle):
+def define_missunit_coverage_groups(bundle, dut):
     g = CovGroup("MissUnit_Main_Coverage")
     
     # CP33: MSHR查找命中逻辑覆盖点
@@ -396,12 +559,54 @@ def define_missunit_coverage_groups(bundle):
         name="MSHR_lookup_hit_logic"
     )
     
+    # CP38.1: Miss 完成响应覆盖点
+    g.add_watch_point(
+        {
+            "fetch_resp_valid": bundle.io._fetch._resp._valid,
+            "last_fire_r": bundle.ICacheMissUnit_.last_fire_r,
+            # 使用DUT内部信号访问mshr_resp（从RTL信号路径获取）
+            "mshr_resp_blkPaddr": dut.GetInternalSignal("ICacheMissUnit_top.ICacheMissUnit.mshr_resp_blkPaddr", use_vpi=False),
+            "mshr_resp_vSetIdx": dut.GetInternalSignal("ICacheMissUnit_top.ICacheMissUnit.mshr_resp_vSetIdx", use_vpi=False),
+        },
+        bins={
+            # 38.1: 正常 Miss 完成响应
+            # 当 last_fire_r 为高时，且内部mshr_resp有效数据时，无论是否有刷新信号，
+            # io.fetch_resp.valid 都为高
+            "CP38.1_normal_miss_completion": lambda d: d["last_fire_r"].value == 1 and \
+                                                       d["fetch_resp_valid"].value == 1 and \
+                                                       (d["mshr_resp_blkPaddr"].value != 0 or d["mshr_resp_vSetIdx"].value != 0),
+        },
+        name="miss_completion_response"
+    )
+    
+    # CP39: 处理 flush/fencei 覆盖点
+    g.add_watch_point(
+        {
+            "flush": bundle.io._flush,
+            "fencei": bundle.io._fencei,
+            "last_fire_r": bundle.ICacheMissUnit_.last_fire_r,
+            "meta_write_valid": bundle.io._meta_write._valid,
+            "data_write_valid": bundle.io._data_write._valid,
+            "fetch_resp_valid": bundle.io._fetch._resp._valid,
+        },
+        bins={
+            # 39.3: MSHR 已发射后 flush/fencei
+            # 已经发射了请求，之后再有刷新信号，等数据回来但不写 SRAM
+            "CP39.3_flush_fencei_after_fire": lambda d: (d["flush"].value == 1 or d["fencei"].value == 1) and \
+                                                        d["last_fire_r"].value == 1 and \
+                                                        d["meta_write_valid"].value == 0 and \
+                                                        d["data_write_valid"].value == 0 and \
+                                                        d["fetch_resp_valid"].value == 1,
+        },
+        name="flush_fencei_after_fire"
+    )
+    
     return g
 ```
 
 ## 验证环境配置
 
-### 测试夹具配置
+### fixture 配置
 
 ```python
 @toffee_test.fixture
@@ -436,36 +641,8 @@ async def icachemissunit_env(toffee_request: toffee_test.ToffeeRequest):
 
 ```bash
 # 运行所有测试
-python -m pytest ut_frontend/icache/missunit/test/missunit_test.py
-
-# 运行特定测试
-python -m pytest ut_frontend/icache/missunit/test/missunit_test.py::test_acquire_arbitration_priority
-
-# 运行带覆盖率的测试
-python -m pytest ut_frontend/icache/missunit/test/missunit_test.py --cov
-```
-
-### 调试技巧
-
-1. **信号监控**
-```python
-# 在测试中添加调试输出
-print(f"MSHR 0 ready: {bundle.ICacheMissUnit_._fetchMSHRs._0._io._req_ready.value}")
-print(f"Acquire valid: {bundle.io._mem._acquire._valid.value}")
-```
-
-2. **波形生成**
-```python
-# 在关键时间点dump波形
-await bundle.step(1)  # 等待信号稳定
-dut.dump_vcd("debug.vcd")  # 生成波形文件
-```
-
-3. **状态检查**
-```python
-# 检查内部状态
-if bundle.ICacheMissUnit_.last_fire_r.value == 1:
-    print("Grant processing completed")
+cd UnityChipForXiangShan
+make test target=ut_frontend/icache/missunit
 ```
 
 ## 最佳实践
@@ -515,7 +692,7 @@ if bundle.ICacheMissUnit_.last_fire_r.value == 1:
 
 - **结构化的Bundle接口**：清晰的信号层次组织
 - **高级的Agent API**：易用的协议驱动接口
-- **全面的测试覆盖**：13个主要测试用例覆盖核心功能
-- **量化的功能覆盖**：38个覆盖点确保验证完整性
+- **全面的测试覆盖**：27个测试用例覆盖核心功能
+- **量化的功能覆盖**：（CP28-CP39）覆盖点确保验证完整性
 
 该验证环境为ICacheMissUnit的功能验证提供了坚实的基础，支持高效的测试开发和调试工作流程。

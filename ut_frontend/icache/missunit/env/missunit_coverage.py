@@ -126,7 +126,7 @@ def define_fifo_coverage(bundle,dut):
 
     return g
 
-def define_missunit_coverage_groups(bundle):
+def define_missunit_coverage_groups(bundle, dut):
     """
     define functional coverage groups of ICacheMissUnit.
     """
@@ -373,8 +373,36 @@ def define_missunit_coverage_groups(bundle):
     )
 
     # =================================================================
-    # CP 38: flush/fencei特殊处理
-    # 监控目标：flush/fencei对MSHR状态的影响
+    # CP 38: Miss 完成响应
+    # 监控目标：向 mainPipe/prefetchPipe 发出 Miss 完成响应
+    # =================================================================
+    g.add_watch_point(
+        {
+            "fetch_resp_valid": bundle.io._fetch._resp._valid,
+            "last_fire_r": bundle.ICacheMissUnit_.last_fire_r,
+            "mshr_resp_blkPaddr": dut.GetInternalSignal("ICacheMissUnit_top.ICacheMissUnit.mshr_resp_blkPaddr", use_vpi=False),
+            "mshr_resp_vSetIdx": dut.GetInternalSignal("ICacheMissUnit_top.ICacheMissUnit.mshr_resp_vSetIdx", use_vpi=False),
+            "fetch_resp_blkPaddr": bundle.io._fetch._resp._bits._blkPaddr,
+            "fetch_resp_vSetIdx": bundle.io._fetch._resp._bits._vSetIdx,
+            "fetch_resp_waymask": bundle.io._fetch._resp._bits._waymask,
+            "fetch_resp_corrupt": bundle.io._fetch._resp._bits._corrupt,
+            "flush": bundle.io._flush,
+            "fencei": bundle.io._fencei,
+        },
+        bins={
+            # 38.1: 正常 Miss 完成响应
+            # 当 last_fire_r 为高时，且内部mshr_resp有效数据时，无论是否有刷新信号，
+            # io.fetch_resp.valid 都为高，且 fetch_resp.bits 数据正确更新
+            "CP38.1_normal_miss_completion": lambda d: d["last_fire_r"].value == 1 and \
+                                                       d["fetch_resp_valid"].value == 1 and \
+                                                       (d["mshr_resp_blkPaddr"].value != 0 or d["mshr_resp_vSetIdx"].value != 0),
+        },
+        name="miss_completion_response"
+    )
+
+    # =================================================================
+    # CP 39: 处理 flush/fencei
+    # 监控目标：flush/fencei对MSHR状态和写回操作的影响
     # =================================================================
     g.add_watch_point(
         {
@@ -383,29 +411,61 @@ def define_missunit_coverage_groups(bundle):
             "fetch_req_ready": bundle.io._fetch._req._ready,
             "prefetch_req_ready": bundle.io._prefetch_req._ready,
             "fetch_0_req_ready": bundle.ICacheMissUnit_._fetchMSHRs._0._io._req_ready,
+            "fetch_0_acquire_valid": bundle.ICacheMissUnit_._fetchMSHRs._0._io._acquire_valid,
             "prefetch_0_req_ready": bundle.ICacheMissUnit_._prefetchMSHRs._0._io._req_ready,
+            "prefetch_0_acquire_valid": bundle.ICacheMissUnit_._prefetchMSHRs._0._io._acquire_valid,
         },
         bins={
-            # 38.1: fencei清除所有MSHR
-            "CP38.1_fencei_clear_all": lambda d: d["fencei"].value == 1 and \
-                                                 d["fetch_req_ready"].value == 0 and \
-                                                 d["prefetch_req_ready"].value == 0,
+            # 39.1: MSHR 未发射前 fencei
+            # 当 io.fencei 为高时，fetchMSHRs 和 prefetchMSHRs 的 io.req.ready 和 io.acquire.valid 均为低
+            "CP39.1_fencei_before_fire": lambda d: d["fencei"].value == 1 and \
+                                                   d["fetch_0_req_ready"].value == 0 and \
+                                                   d["fetch_0_acquire_valid"].value == 0 and \
+                                                   d["prefetch_0_req_ready"].value == 0 and \
+                                                   d["prefetch_0_acquire_valid"].value == 0,
             
-            # 38.2: flush只影响prefetch MSHR
-            "CP38.2_flush_prefetch_only": lambda d: d["flush"].value == 1 and \
-                                                    d["fencei"].value == 0 and \
-                                                    d["prefetch_0_req_ready"].value == 0,
+            # 39.2: MSHR 未发射前 flush  
+            # 当 io.flush 为高时，只能发射 fetchMSHRs 的请求，prefetchMSHRs 被阻止
+            "CP39.2_flush_before_fire": lambda d: d["flush"].value == 1 and \
+                                                  d["fencei"].value == 0 and \
+                                                  d["prefetch_0_req_ready"].value == 0,
         },
-        name="flush_fencei_handling"
+        name="flush_fencei_mshr_handling"
+    )
+
+    # =================================================================
+    # CP 39.3: MSHR 已发射后 flush/fencei 的处理
+    # 监控目标：发射后的写回抑制
+    # =================================================================
+    g.add_watch_point(
+        {
+            "flush": bundle.io._flush,
+            "fencei": bundle.io._fencei,
+            "last_fire_r": bundle.ICacheMissUnit_.last_fire_r,
+            "meta_write_valid": bundle.io._meta_write._valid,
+            "data_write_valid": bundle.io._data_write._valid,
+            "fetch_resp_valid": bundle.io._fetch._resp._valid,
+        },
+        bins={
+            # 39.3: MSHR 已发射后 flush/fencei
+            # 已经发射了请求，之后再有刷新信号，等数据回来但不写 SRAM
+            # 写 SRAM 的信号均为低，但 fetch_resp 无影响
+            "CP39.3_flush_fencei_after_fire": lambda d: (d["flush"].value == 1 or d["fencei"].value == 1) and \
+                                                        d["last_fire_r"].value == 1 and \
+                                                        d["meta_write_valid"].value == 0 and \
+                                                        d["data_write_valid"].value == 0 and \
+                                                        d["fetch_resp_valid"].value == 1,
+        },
+        name="flush_fencei_after_fire"
     )
 
     return g
 
 def create_all_coverage_groups(bundle, dut):
     """
-    创建所有覆盖点组合，包括FIFO和主要功能覆盖点
+    创建所有覆盖点组合,包括FIFO和主要功能覆盖点
     """
     fifo_coverage = define_fifo_coverage(bundle, dut)
-    main_coverage = define_missunit_coverage_groups(bundle)
+    main_coverage = define_missunit_coverage_groups(bundle, dut)
     
     return [fifo_coverage, main_coverage]

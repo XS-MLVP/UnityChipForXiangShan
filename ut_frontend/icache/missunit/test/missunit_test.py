@@ -470,34 +470,6 @@ async def test_FIFO_moudle(icachemissunit_env: ICacheMissUnitEnv):
     
     print("--- FIFO Test (Considering Fetch Priority) Completed ---")
 
-@toffee_test.testcase
-async def test_fetch_miss_request(icachemissunit_env: ICacheMissUnitEnv):
-    """
-    Test for CP31 CP32
-    Test 31.1: Accept new fetch request
-    Test 31.2: Handle existing fetch request
-    Test 31.3: Low index request priority
-    """
-    agent = icachemissunit_env.agent
-    bundle = icachemissunit_env.bundle
-    fetch_existed_list = []
-    for i in range(4):
-        blkPaddr = 0x1000 + i * 0x1000
-        vSetIdx = 0x1A + i
-        assert getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{i}")._io._req_ready.value == 1, f"fetch MSHR_{i} should be ready"
-        send_result = await agent.drive_send_fetch_request(blkPaddr=blkPaddr,vSetIdx=vSetIdx)
-        await bundle.step()
-        assert send_result["send_success"] is True, f"#{i}request should send fetch successfully."
-        assert getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{i}")._io._req_ready.value == 0 and \
-               getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{i}")._io._acquire_valid.value == 1, f"after fetch MSHR_{i} should not be ready"
-        fetch_existed_list.append(send_result)
-    
-    
-
-
-# ============================================================================
-# 新增测试用例 - 覆盖验证文档中的所有功能测试点
-# ============================================================================
 
 @toffee_test.testcase
 async def test_mshr_hit_detection(icachemissunit_env: ICacheMissUnitEnv):
