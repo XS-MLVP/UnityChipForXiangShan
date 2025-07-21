@@ -610,6 +610,140 @@ PTW取得l1 page table entry后，向LLPTW查询l0 page table entry。
 
 
 
+#### 测试用例3： test\_ptw\_ptwcache\_req\_sv39\_l2miss\_nos2xlate\_1gbpage
+
+测试步骤
+
+###### 1. reset
+
+拉高reset信号10个时钟周期，再恢复reset到0。
+
+检测
+
+`````python
+    assert 1 == ptw_bundle.io_req_ready.value
+`````
+
+值为1表示设备重置，可以接受请求。
+
+
+###### 2. 设置PTW工作模式
+
+模拟csr.satp中，sv39，根页表物理页号为0x500。
+
+csr.vsatp csr.hsatp均为0。
+
+
+`````verilog
+
+    # satp.mode [63:60] 0:Bare, 1-7:Reserved, 8:Sv39, 9:Sv48, 10:Sv57, 11:Sv64, 12-15:Reserved
+    # satp.asid [59:44]
+    # satp.ppn  [43:0]  paddr >> 12
+    ptw_bundle.io_csr_satp_mode.value = 8   # Sv39
+    ptw_bundle.io_csr_satp_asid.value = 0
+    ptw_bundle.io_csr_satp_ppn.value = 0x500
+    ptw_bundle.io_csr_satp_changed.value = 0
+
+    ptw_bundle.io_csr_vsatp_mode.value = 0
+    ptw_bundle.io_csr_vsatp_asid.value = 0
+    ptw_bundle.io_csr_vsatp_ppn.value = 0
+    ptw_bundle.io_csr_vsatp_changed.value = 0
+
+    ptw_bundle.io_csr_hgatp_mode.value = 0
+    ptw_bundle.io_csr_hgatp_vmid.value = 0
+    ptw_bundle.io_csr_hgatp_changed.value = 0
+    
+    # mstatus.mxr
+    # The MXR (Make eXecutable Readable) bit modifies the privilege with which loads access virtual memory.
+    # When MXR=0, only loads from pages marked readable (R=1 in Figure 67) will succeed.
+    # When MXR=1, loads from pages marked either readable or executable (R=1 or X=1) will succeed.
+    ptw_bundle.io_csr_priv_mxr.value = 0 
+
+    # PBMT enable
+    # When PBMTE=0, the implementation behaves as though Svpbmt were not implemented. 
+    # If Svpbmt is not implemented, PBMTE is readonly zero. 
+    # Furthermore, for implementations with the hypervisor extension, 
+    # henvcfg.PBMTE is read-only zero if menvcfg.PBMTE is zero.
+    ptw_bundle.io_csr_mPBMTE.value = 0
+    ptw_bundle.io_csr_hPBMTE.value = 0
+`````
+
+###### 3. 模拟PTWCache发出页表查询请求
+
+虚拟地址页号0x80200。
+
+`````verilog
+    ptw_bundle.io_req_valid.value = 1
+
+    ptw_bundle.io_req_bits_req_info_vpn.value = 0x80200
+    # 00 noS2xlate, 01 onlyStage1, 10 onlyStage2, 11 allStage
+    ptw_bundle.io_req_bits_req_info_s2xlate.value = 0x00
+    # ptw:1, miss queue:   , prefetch:2  ??
+    ptw_bundle.io_req_bits_req_info_source.value = 1
+
+    # l3(Sv48) -> l2 -> l1 -> l0, l0 is the leaf node
+    ptw_bundle.io_req_bits_l3Hit.value = 0
+    ptw_bundle.io_req_bits_l2Hit.value = 0
+    ptw_bundle.io_req_bits_ppn.value = 0
+    ptw_bundle.io_req_bits_stage1Hit = 0
+`````
+
+检测PTW向内存接口发出读内存请求，内存地址是page table base所在页的一个page table entry。
+
+
+`````verilog
+
+    # after 2 cycle, ptw should request memory to get l2 pte
+    assert 1 == ptw_bundle.io_mem_req_valid.value
+
+    #               9-b bit | 9-bit    |   9-bit
+    # vpn=0x80200,        1000 0000 0010 0000 0000
+    #                 vpn[2]|vpn[1]    |vpn[0]
+    # vpn[2] = 10b
+    #
+    # satp.ppn = 0x500, pte entry len = 8 byte
+    # l2 pte paddr = 0x500 000 + 10b << 3  = 0x500010
+    assert 0x500010 == ptw_bundle.io_mem_req_bits_addr.value
+`````
+
+模拟内存接口11个cycle后返回内存数据，page table entry里权限为WR，表示这是一个1GB大页。
+
+
+`````verilog
+    # memory access takes many cycles, e.g. 10+ cycles
+    # but first, set ready to 0, indicating io_mem_ interface now is busy
+    ptw_bundle.io_mem_req_ready.value = 0
+    await ptw_bundle.step(11)
+
+
+    ptw_bundle.io_mem_resp_valid.value = 1
+
+    #  63 62-61 60 - 54  53 - 10 9-8 7 - 0
+    #  N  PBMT  Reserved   PPN   RSW DAGUXWRV
+    #  0  0     0         0x400           111        WR, indicating a 1GB page
+    #                10000000000 0000000111
+    ptw_bundle.io_mem_resp_bits.value = 0x100007
+`````
+
+PTW接下来不再查询下一级页表，向PTWCache返回结果。
+
+这里仅测试io\_resp\_valid。
+
+1GB和2MB大页不支持页表压缩。
+
+`````verilog
+    # Since this is a 1GB page, the PTW should stop querying l1 pte
+    assert 0 == ptw_bundle.io_mem_req_valid.value
+    # also should not query llptw
+    assert 0 == ptw_bundle.io_llptw_valid.value
+
+    # should finish current request 
+    assert 1 == ptw_bundle.io_resp_valid.value
+`````
+
+
+
+
 # How Has This Been Tested
 
 `````shell
