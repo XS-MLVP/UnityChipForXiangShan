@@ -199,7 +199,7 @@ class WayLookupAgent(Agent):
     # ==================== 读操作API ====================
     
     async def drive_read_entry(self, timeout_cycles: int = 10) -> dict:
-        """
+        """ 
         Drive a read request and get response
         Returns dict with read data or None if timeout
         """
@@ -208,34 +208,39 @@ class WayLookupAgent(Agent):
         # Set read_ready to enable reading
         self.bundle.io._read._ready.value = 1
         
-        for i in range(timeout_cycles):
-            if self.bundle.io._read._valid.value == 1:
-                read_info = {
-                    "read_success": True,
-                    "vSetIdx_0": self.bundle.io._read._bits._entry._vSetIdx._0.value,
-                    "vSetIdx_1": self.bundle.io._read._bits._entry._vSetIdx._1.value,
-                    "waymask_0": self.bundle.io._read._bits._entry._waymask._0.value,
-                    "waymask_1": self.bundle.io._read._bits._entry._waymask._1.value,
-                    "ptag_0": self.bundle.io._read._bits._entry._ptag._0.value,
-                    "ptag_1": self.bundle.io._read._bits._entry._ptag._1.value,
-                    "itlb_exception_0": self.bundle.io._read._bits._entry._itlb._exception._0.value,
-                    "itlb_exception_1": self.bundle.io._read._bits._entry._itlb._exception._1.value,
-                    "itlb_pbmt_0": self.bundle.io._read._bits._entry._itlb._pbmt._0.value,
-                    "itlb_pbmt_1": self.bundle.io._read._bits._entry._itlb._pbmt._1.value,
-                    "meta_codes_0": self.bundle.io._read._bits._entry._meta_codes._0.value,
-                    "meta_codes_1": self.bundle.io._read._bits._entry._meta_codes._1.value,
-                    "gpf_gpaddr": self.bundle.io._read._bits._gpf._gpaddr.value,
-                    "gpf_isForVSnonLeafPTE": self.bundle.io._read._bits._gpf._isForVSnonLeafPTE.value
-                }
-                print(f"Read data captured (cycle {i+1}): vSetIdx_0={hex(read_info['vSetIdx_0'])}")
+        try:
+            for i in range(timeout_cycles):
+                if self.bundle.io._read._valid.value == 1:
+                    read_info = {
+                        "read_success": True,
+                        "vSetIdx_0": self.bundle.io._read._bits._entry._vSetIdx._0.value,
+                        "vSetIdx_1": self.bundle.io._read._bits._entry._vSetIdx._1.value,
+                        "waymask_0": self.bundle.io._read._bits._entry._waymask._0.value,
+                        "waymask_1": self.bundle.io._read._bits._entry._waymask._1.value,
+                        "ptag_0": self.bundle.io._read._bits._entry._ptag._0.value,
+                        "ptag_1": self.bundle.io._read._bits._entry._ptag._1.value,
+                        "itlb_exception_0": self.bundle.io._read._bits._entry._itlb._exception._0.value,
+                        "itlb_exception_1": self.bundle.io._read._bits._entry._itlb._exception._1.value,
+                        "itlb_pbmt_0": self.bundle.io._read._bits._entry._itlb._pbmt._0.value,
+                        "itlb_pbmt_1": self.bundle.io._read._bits._entry._itlb._pbmt._1.value,
+                        "meta_codes_0": self.bundle.io._read._bits._entry._meta_codes._0.value,
+                        "meta_codes_1": self.bundle.io._read._bits._entry._meta_codes._1.value,
+                        "gpf_gpaddr": self.bundle.io._read._bits._gpf._gpaddr.value,
+                        "gpf_isForVSnonLeafPTE": self.bundle.io._read._bits._gpf._isForVSnonLeafPTE.value
+                    }
+                    print(f"Read data captured (cycle {i+1}): vSetIdx_0={hex(read_info['vSetIdx_0'])}")
+                    
+                    await self.bundle.step()  # Complete handshake
+                    return read_info
                 
-                await self.bundle.step()  # Complete handshake
-                return read_info
+                await self.bundle.step()
             
+            print(f"Timeout: No read data available after {timeout_cycles} cycles")
+            return {"read_success": False}
+        finally:
+            # Ensure read_ready is deasserted after the operation
+            self.bundle.io._read._ready.value = 0
             await self.bundle.step()
-        
-        print(f"Timeout: No read data available after {timeout_cycles} cycles")
-        return {"read_success": False}
 
     async def check_read_valid(self) -> bool:
         """Check if read data is currently valid"""

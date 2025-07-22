@@ -23,6 +23,7 @@ async def waylookup_env(toffee_request: toffee_test.ToffeeRequest):
     
     print("--- [FIXTURE SETUP] Defining WayLookup functional coverage groups... ---")
     coverage_groups = create_waylookup_coverage_groups(waylookup_env.bundle, dut)
+    # print(f"all signals: {waylookup_env.dut.GetInternalSignalList(use_vpi=False)}")
     
     # Add all coverage groups to the test request
     for coverage_group in coverage_groups:

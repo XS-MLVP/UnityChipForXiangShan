@@ -136,31 +136,11 @@ async def test_read_entry_api(waylookup_env: WayLookupEnv):
     print(f"Read valid status: {is_valid}")
 
 
-@toffee_test.testcase
-async def test_update_entry_api(waylookup_env: WayLookupEnv):
-    """Test update entry API (MissUnit integration)"""
-    agent = waylookup_env.agent
-    
-    # Reset first
-    await agent.reset_dut()
-    
-    # Test update operation
-    await agent.drive_update_entry(
-        blkPaddr=0x12345678,
-        vSetIdx=0xAB,
-        waymask=0x3,  # Workaround: use 2-bit range due to DUT constraint bug
-        corrupt=False
-    )
-    print("Update entry operation completed")
-    
-    # Test update with corruption
-    await agent.drive_update_entry(
-        blkPaddr=0x87654321,
-        vSetIdx=0xCD,
-        waymask=0x2,  # Workaround: use 2-bit range due to DUT constraint bug
-        corrupt=True
-    )
-    print("Update entry with corruption completed")
+
+
+
+
+
 
 
 @toffee_test.testcase
@@ -977,54 +957,134 @@ async def test_cp24_pointer_updates(waylookup_env: WayLookupEnv):
     print("✓ CP24.1-CP24.2: 读写指针在fire信号触发时正确递增")
 
 
-@toffee_test.testcase  
+@toffee_test.testcase
 async def test_cp25_update_operations(waylookup_env: WayLookupEnv):
-    """Test CP25: 更新操作 - 测试命中/未命中的不同更新逻辑"""
+    """Test CP25: 更新操作 - 使用白盒断言验证更新逻辑"""
     agent = waylookup_env.agent
+    bundle = waylookup_env.bundle
     
-    print("\n--- CP25: 更新操作测试 ---")
+    print("\n--- CP25: 更新操作白盒测试 ---")
     
-    # 初始复位
+    # --- Test Case 1: Hit Update (CP25.1) ---
+    print("Step 1: 测试命中更新 (CP25.1)")
     await agent.reset_dut()
     
-    # Step 1: 写入测试数据
-    print("Step 1: 写入测试数据")
-    await agent.drive_write_entry(
-        vSetIdx_0=0xAB, vSetIdx_1=0xCD,
-        waymask_0=0x1, waymask_1=0x2,
-        ptag_0=0x12345678, ptag_1=0x87654321,
-        timeout_cycles=20
-    )
+    # Define an initial entry to be written to the queue
+    initial_entry = {
+        "vSetIdx_0": 0xAB, "vSetIdx_1": 0xCD,
+        "waymask_0": 0x1, "waymask_1": 0x1,
+        "ptag_0": 0x1234, "ptag_1": 0x5678
+    }
+    await agent.drive_write_entry(**initial_entry)
     
-    # Step 2: 测试命中更新 (CP25.1)
-    print("Step 2: 测试命中更新 (CP25.1)")
+    # Drive a matching update. Expect waymask to be updated.
+    # Correct blkPaddr to match ptag_0 after shifting
     await agent.drive_update_entry(
-        blkPaddr=0x12345678,  # 匹配的地址
-        vSetIdx=0xAB,         # 匹配的vSetIdx
-        waymask=0x3,          # 更新waymask
-        corrupt=False         # 非corrupt更新
-    )
-    print("✓ CP25.1: 命中更新操作完成")
-    
-    # Step 3: 测试未命中更新 (CP25.2) 
-    print("Step 3: 测试未命中更新 (CP25.2)")
-    await agent.drive_update_entry(
-        blkPaddr=0x87654321,  # 不同的地址
-        vSetIdx=0xAB,         # 相同的vSetIdx但不同way
-        waymask=0x0,          # waymask清零
+        blkPaddr=(initial_entry["ptag_0"] << 6),  # Corrected: Shift ptag_0 to match blkPaddr[41:6]
+        vSetIdx=0xAB,     # Matches vSetIdx_0
+        waymask=0x3,      # New waymask value
         corrupt=False
     )
-    print("✓ CP25.2: 未命中更新操作完成")
+    await bundle.step(2)  # Allow time for the update to process
     
-    # Step 4: 测试不更新情况 (CP25.3)
-    print("Step 4: 测试不更新情况 (CP25.3)")
+    # Read back the entry and assert that the waymask was updated.
+    read_back_entry = await agent.drive_read_entry()
+    assert read_back_entry["read_success"], "读取更新后的条目失败"
+    assert read_back_entry["waymask_0"] == 0x3, f"命中更新失败，waymask应为3，实际为{read_back_entry['waymask_0']}"
+    print("✓ CP25.1: 命中更新成功，waymask被正确修改")
+
+    # --- Test Case 2: No Update due to vSetIdx mismatch (CP25.3) ---
+    print("\nStep 2: 测试vSetIdx不匹配导致的不更新 (CP25.3)")
+    await agent.reset_dut()
+    await agent.drive_write_entry(**initial_entry)
+
+    # Drive an update with a non-matching vSetIdx.
     await agent.drive_update_entry(
-        blkPaddr=0xFFFFFFFF,  # 完全不匹配的地址
-        vSetIdx=0xFF,         # 不匹配的vSetIdx
-        waymask=0x2,
-        corrupt=True          # corrupt标志，应该阻止更新
+        blkPaddr=(initial_entry["ptag_0"] << 6), # Still match ptag for this test, but vSetIdx will mismatch
+        vSetIdx=0xFF,  # Non-matching vSetIdx
+        waymask=0x3,
+        corrupt=False
     )
-    print("✓ CP25.3: 不更新操作完成")
+    await bundle.step(2)  # Allow time for the update to process
+
+    # Read back and assert that the entry was NOT changed.
+    read_back_entry = await agent.drive_read_entry()
+    assert read_back_entry["read_success"]
+    assert read_back_entry["waymask_0"] == initial_entry["waymask_0"], "vSetIdx不匹配时不应更新waymask"
+    print("✓ CP25.3: vSetIdx不匹配时，条目未被更新")
+
+    # --- Test Case 3: No Update due to corrupt flag (CP25.3) ---
+    print("\nStep 3: 测试corrupt标志导致的不更新 (CP25.3)")
+    await agent.reset_dut()
+    await agent.drive_write_entry(**initial_entry)
+
+    # Drive an update with the corrupt flag set.
+    await agent.drive_update_entry(
+        blkPaddr=(initial_entry["ptag_0"] << 6), # Still match ptag for this test
+        vSetIdx=0xAB,
+        waymask=0x3,
+        corrupt=True  # Set the corrupt flag
+    )
+    await bundle.step(2)  # Allow time for the update to process
+
+    # Read back and assert that the entry was NOT changed.
+    read_back_entry = await agent.drive_read_entry()
+    assert read_back_entry["read_success"]
+    assert read_back_entry["waymask_0"] == initial_entry["waymask_0"], "corrupt标志置位时不应更新waymask"
+    print("✓ CP25.3: corrupt标志置位时，条目未被更新")
+
+    # --- Test Case 4: Miss Update (CP25.2) - waymask cleared ---
+    print("\nStep 4: 测试未命中更新 (CP25.2) - waymask清零")
+    await agent.reset_dut()
+    initial_entry_for_miss = {
+        "vSetIdx_0": 0xAA, "vSetIdx_1": 0xBB,
+        "waymask_0": 0x2, "waymask_1": 0x2, # Initial waymask is 2
+        "ptag_0": 0x5555, "ptag_1": 0x6666
+    }
+    await agent.drive_write_entry(**initial_entry_for_miss)
+
+    # Drive an update that matches vSetIdx, but mismatches ptag, AND has matching waymask
+    # This should trigger the 'else if (io_update_bits_waymask == entries_X_waymask_Y)' branch
+    await agent.drive_update_entry(
+        blkPaddr=(0x9999 << 6),  # Mismatch ptag
+        vSetIdx=0xAA,            # Match vSetIdx
+        waymask=0x2,             # Match initial waymask
+        corrupt=False
+    )
+    await bundle.step(2)  # Allow time for the update to process
+
+    read_back_entry_after_miss = await agent.drive_read_entry()
+    assert read_back_entry_after_miss["read_success"]
+    assert read_back_entry_after_miss["waymask_0"] == 0x0, "未命中更新失败，waymask应被清零"
+    print("✓ CP25.2: 未命中更新成功，waymask被清零")
+
+    # --- Test Case 5: Miss Update (CP25.2) - waymask NOT cleared (due to RTL condition) ---
+    print("\nStep 5: 测试未命中更新 (CP25.2) - waymask未清零")
+    await agent.reset_dut()
+    initial_entry_for_miss_no_clear = {
+        "vSetIdx_0": 0xAA, "vSetIdx_1": 0xBB,
+        "waymask_0": 0x2, "waymask_1": 0x2, # Initial waymask is 2
+        "ptag_0": 0x5555, "ptag_1": 0x6666
+    }
+    await agent.drive_write_entry(**initial_entry_for_miss_no_clear)
+
+    # Drive an update that matches vSetIdx, but mismatches ptag, AND has NON-matching waymask
+    # This should NOT trigger the 'else if (io_update_bits_waymask == entries_X_waymask_Y)' branch
+    await agent.drive_update_entry(
+        blkPaddr=(0x9999 << 6),  # Mismatch ptag
+        vSetIdx=0xAA,            # Match vSetIdx
+        waymask=0x1,             # NON-matching initial waymask
+        corrupt=False
+    )
+    await bundle.step(2)  # Allow time for the update to process
+
+    read_back_entry_after_miss_no_clear = await agent.drive_read_entry()
+    assert read_back_entry_after_miss_no_clear["read_success"]
+    assert read_back_entry_after_miss_no_clear["waymask_0"] == initial_entry_for_miss_no_clear["waymask_0"], "未命中更新失败，waymask不应被清零"
+    print("✓ CP25.2: 未命中更新成功，waymask未被清零")
+
+
+
 
 
 @toffee_test.testcase
@@ -1057,36 +1117,41 @@ async def test_cp26_read_operations(waylookup_env: WayLookupEnv):
     else:
         print("⚠ CP26.1: Bypass条件未满足，可能队列不为空")
     
-    # Step 3: 测试正常读 (CP26.3) - 从队列读取
-    print("Step 3: 测试正常读 (CP26.3)")
-    # 先写入数据
+    # Step 3 & 4: 混合队列测试，确保覆盖GPF命中和未命中
+    print("\nStep 3 & 4: 测试GPF命中/未命中场景")
+    await agent.reset_dut() # 清空队列
+
+    # 3.1: 写入一个普通条目
+    print("  写入普通条目...")
     await agent.drive_write_entry(
         vSetIdx_0=0x11, vSetIdx_1=0x22,
         waymask_0=0x1, waymask_1=0x2,
         ptag_0=0x1111, ptag_1=0x2222,
         timeout_cycles=20
     )
-    
-    # 然后正常读取
-    read_result = await agent.drive_read_entry(timeout_cycles=20)
-    if read_result["read_success"]:
-        print("✓ CP26.3: 正常读操作成功")
-        print(f"读取数据: vSetIdx_0={hex(read_result['vSetIdx_0'])}, vSetIdx_1={hex(read_result['vSetIdx_1'])}")
-    
-    # Step 4: 测试GPF相关读操作 (CP26.4, CP26.5, CP26.6)
-    print("Step 4: 测试GPF相关读操作")
-    # 写入带GPF异常的数据
+
+    # 3.2: 写入一个GPF条目
+    print("  写入GPF条目...")
     await agent.drive_write_entry_with_gpf(
         vSetIdx_0=0x33, vSetIdx_1=0x44,
         gpf_gpaddr=0xDEADBEEF,
         timeout_cycles=20
     )
-    
-    # 尝试读取GPF数据
-    gpf_read_result = await agent.drive_read_entry(timeout_cycles=20)
-    if gpf_read_result["read_success"]:
-        print("✓ CP26.4-CP26.6: GPF相关读操作完成")
-    
+
+    # 4.1: 读取第一个条目 (普通条目)，这应该是一次GPF miss
+    print("  读取普通条目 (应触发 gpf_miss)...")
+    read_normal_result = await agent.drive_read_entry(timeout_cycles=20)
+    assert read_normal_result["read_success"], "读取普通条目失败"
+    assert read_normal_result["gpf_gpaddr"] == 0, "普通条目读取不应带有GPF信息"
+    print("✓ CP26.6: GPF未命中读取成功")
+
+    # 4.2: 读取第二个条目 (GPF条目)，这应该是一次GPF hit
+    print("  读取GPF条目 (应触发 gpf_hit)...")
+    read_gpf_result = await agent.drive_read_entry(timeout_cycles=20)
+    assert read_gpf_result["read_success"], "读取GPF条目失败"
+    assert read_gpf_result["gpf_gpaddr"] == 0xDEADBEEF, "读取的GPF地址不匹配"
+    print("✓ CP26.4 & CP26.5: GPF命中读取并消费成功")
+
     print("✓ CP26: 读操作各种场景测试完成")
 
 
