@@ -36,15 +36,15 @@ def init_pred_checker_funcov(dut:DUTPredChecker, g:fc.CovGroup, env:PredCheckerE
             f"RET_PDS_INFO_AT_{j}": lambda dut: getattr(dut, f"io_in_pds_{j}_brType").value == 3
         }, name=f"RET_PRED_COV_{j}")
     
-    # For function point 2 - RET prediction error checking:
+    # For function point 3 - JALR prediction error checking:
     for j in range(PREDICT_WIDTH):
         g.add_watch_point(dut, {
-            "RET_PRED_VALID": lambda dut: getattr(dut, "io_in_ftqOffset_valid").value == 1,
-            "RET_PRED_INVALID": lambda dut: getattr(dut, "io_in_ftqOffset_valid").value == 0,
-            f"RET_INSTR_VALID_{j}": lambda dut: getattr(dut, f"io_in_instrValid_{j}").value == 1,
-            f"RET_INSTR_RANGE_{j}": lambda dut: sum(getattr(dut, f"io_in_instrRange_{i}").value for i in range(PREDICT_WIDTH)) == j,
-            f"RET_PRED_OFFSET_AT_{j}": lambda dut: getattr(dut, f"io_in_ftqOffset_bits").value == j,
-            f"RET_PDS_INFO_AT_{j}": lambda dut: getattr(dut, f"io_in_pds_{j}_brType").value == 3
+            "JALR_PRED_VALID": lambda dut: getattr(dut, "io_in_ftqOffset_valid").value == 1,
+            "JALR_PRED_INVALID": lambda dut: getattr(dut, "io_in_ftqOffset_valid").value == 0,
+            f"JALR_INSTR_VALID_{j}": lambda dut: getattr(dut, f"io_in_instrValid_{j}").value == 1,
+            f"JALR_INSTR_RANGE_{j}": lambda dut: sum(getattr(dut, f"io_in_instrRange_{i}").value for i in range(PREDICT_WIDTH)) == j,
+            f"JALR_PRED_OFFSET_AT_{j}": lambda dut: getattr(dut, f"io_in_ftqOffset_bits").value == j,
+            f"JALR_PDS_INFO_AT_{j}": lambda dut: getattr(dut, f"io_in_pds_{j}_brType").value == 4
         }, name=f"JALR_PRED_COV_{j}")
         
     # For function point 4 - Renewing instruction range:
