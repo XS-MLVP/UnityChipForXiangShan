@@ -30,9 +30,10 @@ class ReadBitsData:
 
 
 class WayLookupAgent(Agent):
-    def __init__(self, bundle: WayLookupBundle):
+    def __init__(self, bundle: WayLookupBundle, dut: None):
         super().__init__(bundle)
         self.bundle = bundle
+        self.dut = dut
         bundle.set_all(0)
 
     # ==================== 基础控制API ====================
@@ -56,17 +57,17 @@ class WayLookupAgent(Agent):
         """Legacy flush method for compatibility"""
         ret = ReadBitsData()
 
-        ret.WayLookup_readPtr_value_before_flush = self.bundle.WayLookup._readPtr._value.value
+        ret.WayLookup_readPtr_value_before_flush = self.dut.GetInternalSignal("WayLookup_top.WayLookup.readPtr_value", use_vpi=False).value
         ret.WayLookup_readPtr_flag_before_flush = self.bundle.WayLookup._readPtr._flag.value
-        ret.WayLookup_writePtr_value_before_flush = self.bundle.WayLookup._writePtr._value.value
+        ret.WayLookup_writePtr_value_before_flush = self.dut.GetInternalSignal("WayLookup_top.WayLookup.writePtr_value", use_vpi=False).value
         ret.WayLookup_writePtr_flag_before_flush = self.bundle.WayLookup._writePtr._flag.value
 
         self.bundle.io._flush.value = 1
         await self.bundle.step()
 
-        ret.WayLookup_readPtr_value_after_flush = self.bundle.WayLookup._readPtr._value.value
+        ret.WayLookup_readPtr_value_after_flush = self.dut.GetInternalSignal("WayLookup_top.WayLookup.readPtr_value", use_vpi=False).value
         ret.WayLookup_readPtr_flag_after_flush = self.bundle.WayLookup._readPtr._flag.value
-        ret.WayLookup_writePtr_value_after_flush = self.bundle.WayLookup._writePtr._value.value
+        ret.WayLookup_writePtr_value_after_flush = self.dut.GetInternalSignal("WayLookup_top.WayLookup.writePtr_value", use_vpi=False).value
         ret.WayLookup_writePtr_flag_after_flush = self.bundle.WayLookup._writePtr._flag.value
 
         ret.flush = self.bundle.io._flush.value
@@ -138,20 +139,20 @@ class WayLookupAgent(Agent):
                 if self.bundle.io._write._ready.value == 1:
                     write_info["send_success"] = True
                     write_info.update({
-                        "vSetIdx_0": vSetIdx_0,
-                        "vSetIdx_1": vSetIdx_1,
-                        "waymask_0": waymask_0,
-                        "waymask_1": waymask_1,
-                        "ptag_0": ptag_0,
-                        "ptag_1": ptag_1,
-                        "itlb_exception_0": itlb_exception_0,
-                        "itlb_exception_1": itlb_exception_1,
-                        "itlb_pbmt_0": itlb_pbmt_0,
-                        "itlb_pbmt_1": itlb_pbmt_1,
-                        "meta_codes_0": meta_codes_0,
-                        "meta_codes_1": meta_codes_1,
-                        "gpf_gpaddr": gpf_gpaddr,
-                        "gpf_isForVSnonLeafPTE": gpf_isForVSnonLeafPTE
+                        "vSetIdx_0": self.bundle.io._write._bits._entry._vSetIdx._0.value,
+                        "vSetIdx_1": self.bundle.io._write._bits._entry._vSetIdx._1.value,
+                        "waymask_0": self.bundle.io._write._bits._entry._waymask._0.value,
+                        "waymask_1": self.bundle.io._write._bits._entry._waymask._1.value,
+                        "ptag_0": self.bundle.io._write._bits._entry._ptag._0.value,
+                        "ptag_1": self.bundle.io._write._bits._entry._ptag._1.value,
+                        "itlb_exception_0": self.bundle.io._write._bits._entry._itlb._exception._0.value,
+                        "itlb_exception_1": self.bundle.io._write._bits._entry._itlb._exception._1.value,
+                        "itlb_pbmt_0": self.bundle.io._write._bits._entry._itlb._pbmt._0.value,
+                        "itlb_pbmt_1": self.bundle.io._write._bits._entry._itlb._pbmt._1.value,
+                        "meta_codes_0": self.bundle.io._write._bits._entry._meta_codes._0.value,
+                        "meta_codes_1": self.bundle.io._write._bits._entry._meta_codes._1.value,
+                        "gpf_gpaddr": self.bundle.io._write._bits._gpf._gpaddr.value,
+                        "gpf_isForVSnonLeafPTE": self.bundle.io._write._bits._gpf._isForVSnonLeafPTE.value
                     })
                 
                 return write_info
@@ -242,10 +243,6 @@ class WayLookupAgent(Agent):
             self.bundle.io._read._ready.value = 0
             await self.bundle.step()
 
-    async def check_read_valid(self) -> bool:
-        """Check if read data is currently valid"""
-        return bool(self.bundle.io._read._valid.value)
-
     # ==================== 更新操作API ====================
     
     async def drive_update_entry(self,
@@ -274,13 +271,16 @@ class WayLookupAgent(Agent):
     
     async def get_queue_status(self) -> dict:
         """Get current queue status"""
-        read_ptr_value = self.bundle.WayLookup._readPtr._value.value
+        # because the readPtr value of bundle is not right, use internal signal as replace
+        read_ptr_value = self.dut.GetInternalSignal("WayLookup_top.WayLookup.readPtr_value", use_vpi=False).value
         read_ptr_flag = self.bundle.WayLookup._readPtr._flag.value
-        write_ptr_value = self.bundle.WayLookup._writePtr._value.value
+        # because the writePtr value of bundle is not right, use internal signal as replace
+        write_ptr_value = self.dut.GetInternalSignal("WayLookup_top.WayLookup.writePtr_value", use_vpi=False).value
         write_ptr_flag = self.bundle.WayLookup._writePtr._flag.value
         
         # Calculate queue status
-        empty = (read_ptr_value == write_ptr_value) and (read_ptr_flag == write_ptr_flag)
+
+        empty = bool(self.dut.GetInternalSignal("WayLookup_top.WayLookup.empty", use_vpi=False).value)
         full = (read_ptr_value == write_ptr_value) and (read_ptr_flag != write_ptr_flag)
         
         # Calculate count
@@ -308,9 +308,9 @@ class WayLookupAgent(Agent):
     async def get_pointers(self) -> dict:
         """Get read and write pointer states"""
         return {
-            "read_ptr_value": self.bundle.WayLookup._readPtr._value.value,
+            "read_ptr_value": self.dut.GetInternalSignal("WayLookup_top.WayLookup.readPtr_value", use_vpi=False).value,
             "read_ptr_flag": self.bundle.WayLookup._readPtr._flag.value,
-            "write_ptr_value": self.bundle.WayLookup._writePtr._value.value,
+            "write_ptr_value": self.dut.GetInternalSignal("WayLookup_top.WayLookup.writePtr_value", use_vpi=False).value,
             "write_ptr_flag": self.bundle.WayLookup._writePtr._flag.value
         }
 
@@ -319,8 +319,10 @@ class WayLookupAgent(Agent):
         # Note: These internal signals may need to be exposed via DPI or accessed differently
         return {
             "write_ready": bool(self.bundle.io._write._ready.value),
-            "read_valid": bool(self.bundle.io._read._valid.value)
-            # TODO: Add gpf_entry_valid, gpfPtr status if accessible
+            "read_valid": bool(self.bundle.io._read._valid.value),
+            "gpf_entry_valid": bool(self.dut.GetInternalSignal("WayLookup_top.WayLookup.gpf_entry_valid", use_vpi=False).value),
+            "gpfPtr_flag": bool(self.dut.GetInternalSignal("WayLookup_top.WayLookup.gpfPtr_flag", use_vpi=False).value),
+            "gpfPtr_value": self.dut.GetInternalSignal("WayLookup_top.WayLookup.gpfPtr_value", use_vpi=False).value
         }
 
     # ==================== 辅助验证API ====================
@@ -340,6 +342,7 @@ class WayLookupAgent(Agent):
             }
             
             result = await self.drive_write_entry(**entry_data)
+            await self.bundle.step(2)
             if result["send_success"]:
                 written_entries.append(entry_data)
                 print(f"Filled entry {i+1}/{count}")
@@ -355,6 +358,7 @@ class WayLookupAgent(Agent):
         
         while True:
             status = await self.get_queue_status()
+            print(f"Now there are {status['count']} entries")
             if status["empty"]:
                 break
                 

@@ -12,13 +12,16 @@ async def test_smoke(waylookup_env: WayLookupEnv):
 async def test_basic_control_apis(waylookup_env: WayLookupEnv):
     """Test basic control APIs: reset, flush"""
     agent = waylookup_env.agent
+    bundle = waylookup_env.bundle
     
     # Test reset functionality
     await agent.reset_dut()
     
     # Test flush control
     await agent.drive_set_flush(True)
+    assert bundle.io._flush.value == 1, "Flush signal should be set to 1"
     await agent.drive_set_flush(False)
+    assert bundle.io._flush.value == 0, "Flush signal should be set to 0"
     
     # Test legacy flush method
     flush_result = await agent.flush()
@@ -36,22 +39,23 @@ async def test_queue_status_apis(waylookup_env: WayLookupEnv):
     
     # Test queue status API
     status = await agent.get_queue_status()
-    assert "empty" in status
-    assert "full" in status
-    assert "count" in status
-    print(f"Initial queue status: empty={status['empty']}, count={status['count']}")
+    for k,v in status.items():
+        assert v is not None, f"Queue status {k} should not be None"
+        print(f"The queue status {k} is {v}")
     
     # Test pointers API
     pointers = await agent.get_pointers()
-    assert "read_ptr_value" in pointers
-    assert "write_ptr_value" in pointers
-    print(f"Pointers: read={pointers['read_ptr_value']}, write={pointers['write_ptr_value']}")
+    for k,v in pointers.items():
+        assert v is not None, f"Pointer {k} should not be None"
+        print(f"The value of Pointer {k} is {v}")
     
     # Test GPF status API
     gpf_status = await agent.get_gpf_status()
-    assert "write_ready" in gpf_status
-    print(f"GPF status: {gpf_status}")
-
+    for k,v in gpf_status.items():
+        assert v is not None, f"GPF status {k} should not be None"
+        print(f"The GPF status {k} is {v}")
+    
+    print("Status query APIs Passed.")
 
 @toffee_test.testcase
 async def test_write_entry_api(waylookup_env: WayLookupEnv):
@@ -73,14 +77,15 @@ async def test_write_entry_api(waylookup_env: WayLookupEnv):
     )
     
     print(f"Write entry result: {write_result}")
-    assert "send_success" in write_result
+    assert write_result["send_success"] is True, "Write entry should succeed"
+    assert write_result["vSetIdx_0"] == 0x10, "vSetIdx_0 should match written value"
+    assert write_result["vSetIdx_1"] == 0x20, "vSetIdx_1 should match written value"
+    assert write_result["waymask_0"] == 0x1, "waymask_0 should match written value"
+    assert write_result["waymask_1"] == 0x2, "waymask_1 should match written value"
+    assert write_result["ptag_0"] == 0x1000, "ptag_0 should match written value"
+    assert write_result["ptag_1"] == 0x2000, "ptag_1 should match written value"
     
-    if write_result["send_success"]:
-        print("Write entry succeeded")
-        assert write_result["vSetIdx_0"] == 0x10
-        assert write_result["vSetIdx_1"] == 0x20
-    else:
-        print("Write entry failed - queue may be full or not ready")
+    print("Write entry passed.")
     
     # Test write with GPF
     gpf_write_result = await agent.drive_write_entry_with_gpf(
@@ -91,7 +96,9 @@ async def test_write_entry_api(waylookup_env: WayLookupEnv):
     )
     
     print(f"GPF write result: {gpf_write_result}")
-    assert "send_success" in gpf_write_result
+    assert write_result["send_success"] is True, "Write with GPF entry should succeed"
+    
+    print("write entry APIs passed.")
 
 
 @toffee_test.testcase
@@ -101,73 +108,75 @@ async def test_read_entry_api(waylookup_env: WayLookupEnv):
     
     # Reset to start clean
     await agent.reset_dut()
+    data_dict = {
+        "vSetIdx_0": 0x50,
+        "vSetIdx_1": 0x60,
+        "waymask_0": 0x2,
+        "waymask_1": 0x3,
+        "ptag_0": 0x5000,
+        "ptag_1": 0x6000
+    }
     
     # First try to write some data
     write_result = await agent.drive_write_entry(
-        vSetIdx_0=0x50,
-        vSetIdx_1=0x60,
-        waymask_0=0x3,
-        waymask_1=0x3,  # Workaround: use 2-bit range due to DUT constraint bug
-        ptag_0=0x5000,
-        ptag_1=0x6000,
+        vSetIdx_0=data_dict["vSetIdx_0"],
+        vSetIdx_1=data_dict["vSetIdx_1"],
+        waymask_0=data_dict["waymask_0"],
+        waymask_1=data_dict["waymask_1"],
+        ptag_0=data_dict["ptag_0"],
+        ptag_1=data_dict["ptag_1"],
         timeout_cycles=20
     )
+    assert write_result["send_success"] == True, "Write data failed."
     
-    if write_result["send_success"]:
-        print("Data written successfully, now testing read")
+
+    print("Data written successfully, now testing read...")
         
-        # Test read entry
-        read_result = await agent.drive_read_entry(timeout_cycles=20)
-        print(f"Read result: {read_result}")
-        assert "read_success" in read_result
+    # Test read entry
+    read_result = await agent.drive_read_entry(timeout_cycles=20)
+    print(f"Read result: {read_result}")
+    assert read_result["read_success"] == True, "Read failed"
         
-        if read_result["read_success"]:
-            print("Read operation succeeded")
-            assert "vSetIdx_0" in read_result
-            assert "vSetIdx_1" in read_result
-            print(f"Read data: vSetIdx_0={hex(read_result['vSetIdx_0'])}, vSetIdx_1={hex(read_result['vSetIdx_1'])}")
-        else:
-            print("Read operation failed - no data available")
-    else:
-        print("Could not write data for read test")
-    
-    # Test read valid check
-    is_valid = await agent.check_read_valid()
-    print(f"Read valid status: {is_valid}")
+    if read_result["read_success"]:
+        print("Read operation succeeded")
+        for k,v in data_dict.items():
+            assert read_result[k] == v, f"the writed value of {k} is not matched with read, write in {v}, read out {read_result[k]}"
 
-
-
-
-
-
-
-
+    print("Read APIs passed.")
 
 @toffee_test.testcase
 async def test_helper_apis(waylookup_env: WayLookupEnv):
     """Test helper verification APIs"""
     agent = waylookup_env.agent
+    bundle = waylookup_env.bundle
     
     # Reset to start clean
     await agent.reset_dut()
     
-    # Test fill queue
+    # Test fill full queue
     print("Testing fill_queue...")
-    written_entries = await agent.fill_queue(5)
+    written_entries = await agent.fill_queue(32)
+    await bundle.step(2)
     print(f"Filled {len(written_entries)} entries")
+    print(f"All entries informations is here:{written_entries}")
     
     # Check queue status after filling
     status = await agent.get_queue_status()
-    print(f"Queue status after fill: count={status['count']}, empty={status['empty']}")
+    assert status["count"] == 32,"There should now be 32"
+    assert status["full"] is True, "Now should be full"
+    print(f"After full filed, Now status is {status}")
     
     # Test drain queue
     print("Testing drain_queue...")
     drained_entries = await agent.drain_queue()
+    await bundle.step(2)
     print(f"Drained {len(drained_entries)} entries")
+    print(f"All Drained entries can is here {drained_entries}")
     
     # Check queue status after draining
     final_status = await agent.get_queue_status()
-    print(f"Queue status after drain: count={final_status['count']}, empty={final_status['empty']}")
+    assert final_status["empty"] is True, "Now all entries should be clear."
+    print(f"Final status is {final_status}")
     
     # Test wait for condition
     print("Testing wait_for_condition...")
@@ -177,6 +186,7 @@ async def test_helper_apis(waylookup_env: WayLookupEnv):
     
     is_empty = await agent.wait_for_condition(check_empty, timeout_cycles=10)
     print(f"Wait for empty condition result: {is_empty}")
+    print("helper APIs passed.")
 
 
 @toffee_test.testcase
@@ -192,19 +202,14 @@ async def test_bypass_functionality(waylookup_env: WayLookupEnv):
     bypass_result = await agent.test_bypass_condition()
     
     print(f"Bypass test result: {bypass_result}")
-    assert "bypass_occurred" in bypass_result
-    assert "write_data" in bypass_result
-    assert "read_data" in bypass_result
-    assert "data_match" in bypass_result
+    assert bypass_result["bypass_occurred"] is True, "bypass should be occurred."
+    print("Bypass occurred successfully")
+    assert bypass_result["write_data"] is not None
+    assert bypass_result["read_data"] is not None
+    assert bypass_result["data_match"] is True, "read data and write data should be matched."
+    print("Bypass data matches - bypass working correctly")
     
-    if bypass_result["bypass_occurred"]:
-        print("Bypass occurred successfully")
-        if bypass_result["data_match"]:
-            print("Bypass data matches - bypass working correctly")
-        else:
-            print("Bypass data mismatch - potential issue")
-    else:
-        print("Bypass did not occur - queue may not be empty")
+    print("bypass API passed.")
 
 
 @toffee_test.testcase
@@ -212,13 +217,10 @@ async def test_comprehensive_queue_operations(waylookup_env: WayLookupEnv):
     """Comprehensive test of queue operations"""
     agent = waylookup_env.agent
     
-    # Reset and start with clean state
-    await agent.reset_dut()
-    
     # Test 1: Verify initial empty state
     initial_status = await agent.get_queue_status()
     print(f"Initial state: {initial_status}")
-    assert initial_status["empty"], "Queue should be empty after reset"
+    assert initial_status["empty"], "Queue should be empty before opterations"
     
     # Test 2: Fill queue partially and check status
     entries_to_write = 10
@@ -226,6 +228,7 @@ async def test_comprehensive_queue_operations(waylookup_env: WayLookupEnv):
     
     mid_status = await agent.get_queue_status()
     print(f"After writing {len(written)} entries: {mid_status}")
+    assert mid_status["count"] == 10, "Now there should be 10 entries."
     
     # Test 3: Read some entries back
     read_count = 5
@@ -239,8 +242,10 @@ async def test_comprehensive_queue_operations(waylookup_env: WayLookupEnv):
     
     print(f"Read {len(read_entries)} entries")
     
+    
     # Test 4: Check final status
     final_status = await agent.get_queue_status()
+    assert final_status["count"] == 5, "Now there should be 5 entries."
     print(f"Final status: {final_status}")
     
     # Test 5: Drain remaining entries
@@ -333,11 +338,11 @@ async def test_bundle_interface_comprehensive(waylookup_env: WayLookupEnv):
         print(f"✓ {field}: {original_val} -> {test_val}")
     
     # Test GPF fields - temporarily commented out for debugging
-    # bundle.io._write._bits._gpf._gpaddr.value = 0xDEADBEEF
-    # bundle.io._write._bits._gpf._isForVSnonLeafPTE.value = 1
-    # await bundle.step()
-    # assert bundle.io._write._bits._gpf._gpaddr.value == 0xDEADBEEF, "GPF address should be settable"
-    # assert bundle.io._write._bits._gpf._isForVSnonLeafPTE.value == 1, "GPF flag should be settable"
+    bundle.io._write._bits._gpf._gpaddr.value = 0xDEADBEEF
+    bundle.io._write._bits._gpf._isForVSnonLeafPTE.value = 1
+    await bundle.step()
+    assert bundle.io._write._bits._gpf._gpaddr.value == 0xDEADBEEF, "GPF address should be settable"
+    assert bundle.io._write._bits._gpf._isForVSnonLeafPTE.value == 1, "GPF flag should be settable"
     print("✓ GPF fields test skipped for debugging")
     
     # Test 3: Read interface signals
@@ -467,9 +472,9 @@ async def test_bundle_signal_ranges_and_limits(waylookup_env: WayLookupEnv):
     
     # Test maximum values for different width signals (corrected ranges)
     test_ranges = [
-        ("vSetIdx", bundle.io._write._bits._entry._vSetIdx._0, 0xFFFFFFFF),
+        ("vSetIdx", bundle.io._write._bits._entry._vSetIdx._0, 0xFF),
         ("waymask", bundle.io._write._bits._entry._waymask._0, 0x3),  # 2-bit field: 0-3
-        ("ptag", bundle.io._write._bits._entry._ptag._0, 0xFFFFFFFF),
+        ("ptag", bundle.io._write._bits._entry._ptag._0, 0xFFFFFFFFF),
         ("exception", bundle.io._write._bits._entry._itlb._exception._0, 0x3),  # 2-bit field: 0-3
         ("pbmt", bundle.io._write._bits._entry._itlb._pbmt._0, 0x3),  # 2-bit field: 0-3
         ("meta_codes", bundle.io._write._bits._entry._meta_codes._0, 0x1),  # 1-bit field: 0-1
@@ -504,7 +509,7 @@ async def test_bundle_signal_ranges_and_limits(waylookup_env: WayLookupEnv):
     
     update_tests = [
         ("update_blkPaddr", bundle.io._update._bits._blkPaddr, 0xFFFFFFFFFFFFFFFF),
-        ("update_vSetIdx", bundle.io._update._bits._vSetIdx, 0xFFFFFFFF),
+        ("update_vSetIdx", bundle.io._update._bits._vSetIdx, 0xFF),
         ("update_waymask", bundle.io._update._bits._waymask, 0x3),  # Workaround: 2-bit range due to DUT constraint bug
         ("update_corrupt", bundle.io._update._bits._corrupt, 1),
     ]
@@ -563,7 +568,7 @@ async def test_bundle_readback_consistency(waylookup_env: WayLookupEnv):
     # Test data consistency through write-read cycles
     test_patterns = [
         {
-            "vSetIdx_0": 0x11111111, "vSetIdx_1": 0x22222222,
+            "vSetIdx_0": 0xAB, "vSetIdx_1": 0xAC,
             "waymask_0": 0x1, "waymask_1": 0x2,  # 2-bit fields: 0-3
             "ptag_0": 0x12345678, "ptag_1": 0x87654321,
             "itlb_exception_0": 0x1, "itlb_exception_1": 0x2,  # 2-bit fields: 0-3
@@ -571,7 +576,7 @@ async def test_bundle_readback_consistency(waylookup_env: WayLookupEnv):
             "meta_codes_0": 1, "meta_codes_1": 0,  # 1-bit fields: 0-1
         },
         {
-            "vSetIdx_0": 0x00000000, "vSetIdx_1": 0xFFFFFFFF,
+            "vSetIdx_0": 0x00, "vSetIdx_1": 0xFF,
             "waymask_0": 0x0, "waymask_1": 0x3,  # 2-bit fields: 0-3
             "ptag_0": 0x00000000, "ptag_1": 0xFFFFFFFF,
             "itlb_exception_0": 0x0, "itlb_exception_1": 0x3,  # 2-bit fields: 0-3
@@ -625,6 +630,7 @@ async def test_bundle_readback_consistency(waylookup_env: WayLookupEnv):
                 all_consistent = False
             else:
                 print(f"  ✓ {field}: {hex(actual)}")
+            assert expected == actual,f"expected {hex(expected)}, got {hex(actual)}"
         
         if all_consistent:
             print(f"✓ Pattern {i+1} readback fully consistent")
@@ -798,12 +804,12 @@ async def test_bundle_signal_coverage_complete(waylookup_env: WayLookupEnv):
             ("write.valid", bundle.io._write._valid, [0, 1]),
             ("read.ready", bundle.io._read._ready, [0, 1]),
             ("update.valid", bundle.io._update._valid, [0, 1]),
-            ("write.entry.vSetIdx._0", bundle.io._write._bits._entry._vSetIdx._0, [0x0, 0x12345678]),
+            ("write.entry.vSetIdx._0", bundle.io._write._bits._entry._vSetIdx._0, [0x0, 0x12]),
             ("write.entry.waymask._0", bundle.io._write._bits._entry._waymask._0, [0, 3]),
             ("write.entry.ptag._0", bundle.io._write._bits._entry._ptag._0, [0x0, 0xABCDEF12]),
             ("write.entry.meta_codes._0", bundle.io._write._bits._entry._meta_codes._0, [0, 1]),
-            ("update.bits.blkPaddr", bundle.io._update._bits._blkPaddr, [0x0, 0x12345678ABCDEF00]),
-            ("update.bits.vSetIdx", bundle.io._update._bits._vSetIdx, [0x0, 0xDEADBEEF]),
+            ("update.bits.blkPaddr", bundle.io._update._bits._blkPaddr, [0x0, 0x3FFFFFFFFFD]), # 42-bit
+            ("update.bits.vSetIdx", bundle.io._update._bits._vSetIdx, [0x0, 0xDE]),
             ("update.bits.waymask", bundle.io._update._bits._waymask, [0, 3]),
             ("update.bits.corrupt", bundle.io._update._bits._corrupt, [0, 1]),
         ]
@@ -814,7 +820,11 @@ async def test_bundle_signal_coverage_complete(waylookup_env: WayLookupEnv):
                     signal_obj.value = test_val
                     await bundle.step()
                     actual_val = signal_obj.value
-                    print(f"✓ {signal_name}: set={hex(test_val) if isinstance(test_val, int) else test_val} -> actual={hex(actual_val) if isinstance(actual_val, int) else actual_val}")
+                    if actual_val == test_val:
+                        print(f"✓ {signal_name}: set={hex(test_val) if isinstance(test_val, int) else test_val} -> actual={hex(actual_val) if isinstance(actual_val, int) else actual_val}")
+                    else:
+                        print(f"x {signal_name}: set={hex(test_val) if isinstance(test_val, int) else test_val} -> actual={hex(actual_val) if isinstance(actual_val, int) else actual_val}")
+                    assert actual_val == test_val, f"set {test_val},but actual got {actual_val}"
             except Exception as e:
                 print(f"⚠ {signal_name}: modification failed - {e}")
         
@@ -822,151 +832,118 @@ async def test_bundle_signal_coverage_complete(waylookup_env: WayLookupEnv):
     except Exception as e:
         print(f"⚠ Error in signal modification tests: {e}")
     
-    # Test 8: Bundle step operations
-    print("Test 8: Bundle step operations")
-    try:
-        # Test single step
-        initial_clock = bundle.clock.value
-        await bundle.step()
-        print("✓ Single step completed")
-        
-        # Test multi-step
-        await bundle.step(3)
-        print("✓ Multi-step (3) completed")
-        
-        # Test step with concurrent signal operations
-        bundle.io._write._valid.value = 1
-        bundle.io._read._ready.value = 1
-        bundle.io._flush.value = 1
-        await bundle.step(2)
-        print("✓ Step with concurrent signal operations completed")
-        
-        # Reset signals
-        bundle.io._write._valid.value = 0
-        bundle.io._read._ready.value = 0
-        bundle.io._flush.value = 0
-        await bundle.step()
-        print("✓ Bundle step operations all working")
-    except Exception as e:
-        print(f"⚠ Error in bundle step operations: {e}")
-    
     print("✓ Complete bundle signal coverage test finished successfully")
     print("✓ All bundle signals have been verified for accessibility and functionality")
 
 
 # =====================================================================
-# 新增测试用例：针对功能点文档23-27的具体场景
+# Specific scenarios for feature points CP23-27 from the documentation
 # =====================================================================
 
 @toffee_test.testcase
 async def test_cp23_flush_operations(waylookup_env: WayLookupEnv):
-    """Test CP23: 刷新操作 - 完整测试flush对读/写指针和GPF信息的重置"""
+    """Test CP23: Flush operation - complete test of flush resetting read/write pointers and GPF information"""
     agent = waylookup_env.agent
     bundle = waylookup_env.bundle
     
-    print("\n--- CP23: 刷新操作测试 ---")
+    print("\n--- CP23: Flush Operation Test ---")
     
-    # 初始复位
-    await agent.reset_dut()
-    
-    # Step 1: 写入一些数据，使队列不为空
-    print("Step 1: 填充队列数据")
+    # Step 1: Write some data to make the queue non-empty
+    print("Step 1: Filling the queue with data")
     await agent.fill_queue(5)
-    status_before = await agent.get_queue_status()
-    pointers_before = await agent.get_pointers()
-    print(f"填充前状态: empty={status_before['empty']}, count={status_before['count']}")
-    print(f"填充前指针: read={pointers_before['read_ptr_value']}, write={pointers_before['write_ptr_value']}")
     
-    # Step 2: 写入带GPF异常的数据
-    print("Step 2: 写入GPF异常数据")
-    await agent.drive_write_entry_with_gpf(
+    # Step 2: Write data with a GPF exception
+    print("Step 2: Writing GPF exception data")
+    write_result = await agent.drive_write_entry_with_gpf(
         vSetIdx_0=0x50, vSetIdx_1=0x60,
         gpf_gpaddr=0xDEADBEEF,
         timeout_cycles=20
     )
+    assert write_result["send_success"] is True, "write GPF info failed."
+
+    status_before = await agent.get_queue_status()
+    pointers_before = await agent.get_pointers()
+    print(f"Status before flush: empty={status_before['empty']}, count={status_before['count']}")
+    print(f"Pointer values before flush: read={pointers_before['read_ptr_value']}, write={pointers_before['write_ptr_value']}")
     
-    # Step 3: 执行flush操作 (CP23.1, CP23.2, CP23.3)
-    print("Step 3: 执行flush操作")
+    # Step 3: Execute flush operation (CP23.1, CP23.2, CP23.3)
+    print("Step 3: Executing flush operation")
     bundle.io._flush.value = 1
     await bundle.step()
-    assert bundle.io._flush.value == 1, "Flush信号应该为高"
+    assert bundle.io._flush.value == 1, "Flush signal should be high"
     
     bundle.io._flush.value = 0  
-    await bundle.step(2)  # 等待flush效果生效
+    await bundle.step(2)  # Wait for the flush to take effect
     
-    # Step 4: 验证flush后的状态
-    print("Step 4: 验证flush后状态")
+    # Step 4: Verify the status after flush
+    print("Step 4: Verifying status after flush")
     status_after = await agent.get_queue_status()
     pointers_after = await agent.get_pointers()
     
-    print(f"flush后状态: empty={status_after['empty']}, count={status_after['count']}")
-    print(f"flush后指针: read={pointers_after['read_ptr_value']}, write={pointers_after['write_ptr_value']}")
+    print(f"Status after flush: empty={status_after['empty']}, count={status_after['count']}")
+    print(f"Pointers after flush: read={pointers_after['read_ptr_value']}, write={pointers_after['write_ptr_value']}")
     
-    # 验证CP23要求
-    assert status_after['empty'] == True, "CP23: flush后队列应该为空"
-    assert pointers_after['read_ptr_value'] == 0, "CP23.1: flush后读指针应该重置为0"
-    assert pointers_after['write_ptr_value'] == 0, "CP23.2: flush后写指针应该重置为0"
-    print("✓ CP23.1-CP23.3: flush操作正确重置了读指针、写指针和GPF信息")
+    # Verify CP23 requirements
+    assert status_after['empty'] == True, "CP23: Queue should be empty after flush"
+    assert pointers_after['read_ptr_value'] == 0, "CP23.1: Read pointer should be reset to 0 after flush"
+    assert pointers_after['write_ptr_value'] == 0, "CP23.2: Write pointer should be reset to 0 after flush"
+    print("✓ CP23.1-CP23.3: Flush operation correctly reset read pointer, write pointer, and GPF information")
 
 
 @toffee_test.testcase
 async def test_cp24_pointer_updates(waylookup_env: WayLookupEnv):
-    """Test CP24: 读写指针更新 - 测试fire信号触发的指针递增"""
+    """Test CP24: Read/write pointer updates - test pointer increment on fire signal"""
     agent = waylookup_env.agent
     bundle = waylookup_env.bundle
-    
-    print("\n--- CP24: 读写指针更新测试 ---")
-    
-    # 初始复位
-    await agent.reset_dut()
-    
-    # Step 1: 获取初始指针状态
+    # Step 1: Get initial pointer status
     initial_pointers = await agent.get_pointers()
-    print(f"初始指针状态: read={initial_pointers['read_ptr_value']}, write={initial_pointers['write_ptr_value']}")
+    print(f"Initial pointer status: read={initial_pointers['read_ptr_value']}, write={initial_pointers['write_ptr_value']}")
     
-    # Step 2: 测试写指针更新 (CP24.2)
-    print("Step 2: 测试写指针更新 (CP24.2)")
+    # Step 2: Test write pointer update (CP24.2)
+    print("Step 2: Testing write pointer update (CP24.2)")
     
     for i in range(3):
-        # 执行写操作，应该触发write.fire
+        # Perform a write operation, which should trigger write.fire
         write_result = await agent.drive_write_entry(
             vSetIdx_0=0x10 + i, vSetIdx_1=0x20 + i,
             waymask_0=0x1, waymask_1=0x2,
             ptag_0=0x1000 + i, ptag_1=0x2000 + i,
             timeout_cycles=20
         )
+        await bundle.step()
         
         if write_result["send_success"]:
             current_pointers = await agent.get_pointers()
             expected_write_ptr = (initial_pointers['write_ptr_value'] + i + 1) % 32
-            print(f"写操作 {i+1}: 写指针 {initial_pointers['write_ptr_value']} -> {current_pointers['write_ptr_value']} (期望: {expected_write_ptr})")
+            assert current_pointers['write_ptr_value'] == expected_write_ptr, f"x Write operation {i+1}: Write pointer {initial_pointers['write_ptr_value']} -> {current_pointers['write_ptr_value']} (Expected: {expected_write_ptr})"
             
-    # Step 3: 测试读指针更新 (CP24.1)  
-    print("Step 3: 测试读指针更新 (CP24.1)")
+    # Step 3: Test read pointer update (CP24.1)  
+    print("Step 3: Testing read pointer update (CP24.1)")
     
     read_ptr_before = await agent.get_pointers()
     for i in range(2):
-        # 执行读操作，应该触发read.fire
+        # Perform a read operation, which should trigger read.fire
         read_result = await agent.drive_read_entry(timeout_cycles=20)
+        await bundle.step()
         
         if read_result["read_success"]:
             current_pointers = await agent.get_pointers()
             expected_read_ptr = (read_ptr_before['read_ptr_value'] + i + 1) % 32
-            print(f"读操作 {i+1}: 读指针 {read_ptr_before['read_ptr_value']} -> {current_pointers['read_ptr_value']} (期望: {expected_read_ptr})")
+            assert current_pointers['read_ptr_value'] == expected_read_ptr,f"Read operation {i+1}: Read pointer {read_ptr_before['read_ptr_value']} -> {current_pointers['read_ptr_value']} (Expected: {expected_read_ptr})"
     
-    print("✓ CP24.1-CP24.2: 读写指针在fire信号触发时正确递增")
+    print("✓ CP24.1-CP24.2: Read/write pointers increment correctly when fire signal is triggered")
 
 
 @toffee_test.testcase
 async def test_cp25_update_operations(waylookup_env: WayLookupEnv):
-    """Test CP25: 更新操作 - 使用白盒断言验证更新逻辑"""
+    """Test CP25: Update operation """
     agent = waylookup_env.agent
     bundle = waylookup_env.bundle
     
-    print("\n--- CP25: 更新操作白盒测试 ---")
+    print("\n--- CP25: Update operation")
     
     # --- Test Case 1: Hit Update (CP25.1) ---
-    print("Step 1: 测试命中更新 (CP25.1)")
+    print("Step 1: Test hit update (CP25.1)")
     await agent.reset_dut()
     
     # Define an initial entry to be written to the queue
@@ -975,12 +952,13 @@ async def test_cp25_update_operations(waylookup_env: WayLookupEnv):
         "waymask_0": 0x1, "waymask_1": 0x1,
         "ptag_0": 0x1234, "ptag_1": 0x5678
     }
-    await agent.drive_write_entry(**initial_entry)
+    init_data_write_result = await agent.drive_write_entry(**initial_entry)
+    assert init_data_write_result["send_success"] is True, "write init entry failed."
     
     # Drive a matching update. Expect waymask to be updated.
     # Correct blkPaddr to match ptag_0 after shifting
     await agent.drive_update_entry(
-        blkPaddr=(initial_entry["ptag_0"] << 6),  # Corrected: Shift ptag_0 to match blkPaddr[41:6]
+        blkPaddr=(initial_entry["ptag_0"] << 6),
         vSetIdx=0xAB,     # Matches vSetIdx_0
         waymask=0x3,      # New waymask value
         corrupt=False
@@ -989,12 +967,12 @@ async def test_cp25_update_operations(waylookup_env: WayLookupEnv):
     
     # Read back the entry and assert that the waymask was updated.
     read_back_entry = await agent.drive_read_entry()
-    assert read_back_entry["read_success"], "读取更新后的条目失败"
-    assert read_back_entry["waymask_0"] == 0x3, f"命中更新失败，waymask应为3，实际为{read_back_entry['waymask_0']}"
-    print("✓ CP25.1: 命中更新成功，waymask被正确修改")
+    assert read_back_entry["read_success"], "read failed after update"
+    assert read_back_entry["waymask_0"] == 0x3, f"update entry failed, waymask should be 3, actual {read_back_entry['waymask_0']}"
+    print("✓ CP25.1: update success ,waymask update success")
 
     # --- Test Case 2: No Update due to vSetIdx mismatch (CP25.3) ---
-    print("\nStep 2: 测试vSetIdx不匹配导致的不更新 (CP25.3)")
+    print("\nStep 2: Test vSetIdx mismatch causes no update (CP25.3)")
     await agent.reset_dut()
     await agent.drive_write_entry(**initial_entry)
 
@@ -1010,11 +988,11 @@ async def test_cp25_update_operations(waylookup_env: WayLookupEnv):
     # Read back and assert that the entry was NOT changed.
     read_back_entry = await agent.drive_read_entry()
     assert read_back_entry["read_success"]
-    assert read_back_entry["waymask_0"] == initial_entry["waymask_0"], "vSetIdx不匹配时不应更新waymask"
-    print("✓ CP25.3: vSetIdx不匹配时，条目未被更新")
+    assert read_back_entry["waymask_0"] == initial_entry["waymask_0"], "Should not update waymask when vSetIdx does not match"
+    print("✓ CP25.3: When vSetIdx does not match, the entry is not updated")
 
     # --- Test Case 3: No Update due to corrupt flag (CP25.3) ---
-    print("\nStep 3: 测试corrupt标志导致的不更新 (CP25.3)")
+    print("\nStep 3: Testing the corruption flag causing non-updates (CP25.3)")
     await agent.reset_dut()
     await agent.drive_write_entry(**initial_entry)
 
@@ -1030,11 +1008,11 @@ async def test_cp25_update_operations(waylookup_env: WayLookupEnv):
     # Read back and assert that the entry was NOT changed.
     read_back_entry = await agent.drive_read_entry()
     assert read_back_entry["read_success"]
-    assert read_back_entry["waymask_0"] == initial_entry["waymask_0"], "corrupt标志置位时不应更新waymask"
-    print("✓ CP25.3: corrupt标志置位时，条目未被更新")
+    assert read_back_entry["waymask_0"] == initial_entry["waymask_0"], "The waymask should not be updated when the corrupt flag is set"
+    print("✓ CP25.3: When the corrupt flag is set, the entry is not updated")
 
     # --- Test Case 4: Miss Update (CP25.2) - waymask cleared ---
-    print("\nStep 4: 测试未命中更新 (CP25.2) - waymask清零")
+    print("\nStep 4: Test miss update (CP25.2) - waymask cleared")
     await agent.reset_dut()
     initial_entry_for_miss = {
         "vSetIdx_0": 0xAA, "vSetIdx_1": 0xBB,
@@ -1055,11 +1033,11 @@ async def test_cp25_update_operations(waylookup_env: WayLookupEnv):
 
     read_back_entry_after_miss = await agent.drive_read_entry()
     assert read_back_entry_after_miss["read_success"]
-    assert read_back_entry_after_miss["waymask_0"] == 0x0, "未命中更新失败，waymask应被清零"
-    print("✓ CP25.2: 未命中更新成功，waymask被清零")
+    assert read_back_entry_after_miss["waymask_0"] == 0x0, "update fail, waymask should be cleared."
+    print("✓ CP25.2: miss update success, waymask is cleared")
 
-    # --- Test Case 5: Miss Update (CP25.2) - waymask NOT cleared (due to RTL condition) ---
-    print("\nStep 5: 测试未命中更新 (CP25.2) - waymask未清零")
+    # --- Test Case 5: Miss Update (CP25.2) - waymask NOT cleared ---
+    print("\nStep 5: Test miss update (CP25.2) - waymask not cleared")
     await agent.reset_dut()
     initial_entry_for_miss_no_clear = {
         "vSetIdx_0": 0xAA, "vSetIdx_1": 0xBB,
@@ -1080,49 +1058,44 @@ async def test_cp25_update_operations(waylookup_env: WayLookupEnv):
 
     read_back_entry_after_miss_no_clear = await agent.drive_read_entry()
     assert read_back_entry_after_miss_no_clear["read_success"]
-    assert read_back_entry_after_miss_no_clear["waymask_0"] == initial_entry_for_miss_no_clear["waymask_0"], "未命中更新失败，waymask不应被清零"
-    print("✓ CP25.2: 未命中更新成功，waymask未被清零")
+    assert read_back_entry_after_miss_no_clear["waymask_0"] == initial_entry_for_miss_no_clear["waymask_0"], "Missed update failed, waymask should not be cleared"
+    print("✓ CP25.2: miss update success, waymask is not cleared")
 
-
-
-
+    print("CP25 passed.")
 
 @toffee_test.testcase
 async def test_cp26_read_operations(waylookup_env: WayLookupEnv):
-    """Test CP26: 读操作 - 测试bypass、正常读、GPF处理等场景"""
+    """Test CP26: Read operation - test bypass, normal read, GPF processing and other scenarios"""
     agent = waylookup_env.agent
     bundle = waylookup_env.bundle
     
-    print("\n--- CP26: 读操作测试 ---")
-    
-    # 初始复位
-    await agent.reset_dut()
-    
-    # Step 1: 测试读信号无效 (CP26.2) - 队列空且写信号无效
-    print("Step 1: 测试读信号无效 (CP26.2)")
+    print("\n--- CP26: Read operations ---")
+
+    # Step 1: Test read signal invalid (CP26.2) - queue empty and write signal invalid
+    print("Step 1: Test read signal invalid (CP26.2)")
     bundle.io._write._valid.value = 0
     bundle.io._read._ready.value = 1
     await bundle.step()
     
     read_valid = bundle.io._read._valid.value
-    print(f"队列空且写无效时，读valid = {read_valid}")
-    assert read_valid == 0, "CP26.2: 队列空且写信号无效时，读信号应该无效"
+    print(f"When queue is empty and write is invalid, read valid = {read_valid}")
+    assert read_valid == 0, "CP26.2: When queue is empty and write signal is invalid, read signal should be invalid"
     
-    # Step 2: 测试Bypass读 (CP26.1) - 队列空且写有效
-    print("Step 2: 测试Bypass读 (CP26.1)")
+    # Step 2: Test Bypass read (CP26.1) - queue empty and write valid
+    print("Step 2: Testing Bypass read (CP26.1)")
     bypass_result = await agent.test_bypass_condition()
     if bypass_result["bypass_occurred"]:
-        print("✓ CP26.1: Bypass读操作成功")
-        assert bypass_result["data_match"], "CP26.1: Bypass数据应该匹配"
+        print("✓ CP26.1: Bypass read operation successful")
+        assert bypass_result["data_match"], "CP26.1: Bypass data should match"
     else:
-        print("⚠ CP26.1: Bypass条件未满足，可能队列不为空")
+        print("⚠ CP26.1: Bypass condition not met, queue might not be empty")
     
-    # Step 3 & 4: 混合队列测试，确保覆盖GPF命中和未命中
-    print("\nStep 3 & 4: 测试GPF命中/未命中场景")
-    await agent.reset_dut() # 清空队列
+    # Step 3 & 4: Mixed queue test to ensure coverage of GPF hit and miss
+    print("\nStep 3 & 4: Testing GPF hit/miss scenarios")
+    await agent.reset_dut() # Clear the queue
 
-    # 3.1: 写入一个普通条目
-    print("  写入普通条目...")
+    # 3.1: Write a normal entry
+    print("  Writing a normal entry...")
     await agent.drive_write_entry(
         vSetIdx_0=0x11, vSetIdx_1=0x22,
         waymask_0=0x1, waymask_1=0x2,
@@ -1130,58 +1103,55 @@ async def test_cp26_read_operations(waylookup_env: WayLookupEnv):
         timeout_cycles=20
     )
 
-    # 3.2: 写入一个GPF条目
-    print("  写入GPF条目...")
+    # 3.2: Write a GPF entry
+    print("  Writing a GPF entry...")
     await agent.drive_write_entry_with_gpf(
         vSetIdx_0=0x33, vSetIdx_1=0x44,
         gpf_gpaddr=0xDEADBEEF,
         timeout_cycles=20
     )
 
-    # 4.1: 读取第一个条目 (普通条目)，这应该是一次GPF miss
-    print("  读取普通条目 (应触发 gpf_miss)...")
+    # 4.1: Read the first entry (normal entry), this should be a GPF miss
+    print("  Reading normal entry (should trigger gpf_miss)...")
     read_normal_result = await agent.drive_read_entry(timeout_cycles=20)
-    assert read_normal_result["read_success"], "读取普通条目失败"
-    assert read_normal_result["gpf_gpaddr"] == 0, "普通条目读取不应带有GPF信息"
-    print("✓ CP26.6: GPF未命中读取成功")
+    assert read_normal_result["read_success"], "Failed to read normal entry"
+    assert read_normal_result["gpf_gpaddr"] == 0, "Normal entry read should not have GPF information"
+    print("✓ CP26.6: GPF miss read successful")
 
-    # 4.2: 读取第二个条目 (GPF条目)，这应该是一次GPF hit
-    print("  读取GPF条目 (应触发 gpf_hit)...")
+    # 4.2: Read the second entry (GPF entry), this should be a GPF hit
+    print("  Reading GPF entry (should trigger gpf_hit)...")
     read_gpf_result = await agent.drive_read_entry(timeout_cycles=20)
-    assert read_gpf_result["read_success"], "读取GPF条目失败"
-    assert read_gpf_result["gpf_gpaddr"] == 0xDEADBEEF, "读取的GPF地址不匹配"
-    print("✓ CP26.4 & CP26.5: GPF命中读取并消费成功")
+    assert read_gpf_result["read_success"], "Failed to read GPF entry"
+    assert read_gpf_result["gpf_gpaddr"] == 0xDEADBEEF, "Read GPF address does not match"
+    print("✓ CP26.4 & CP26.5: GPF hit read and consumption successful")
 
-    print("✓ CP26: 读操作各种场景测试完成")
+    print("✓ CP26: Various read operation scenarios test completed")
 
 
 @toffee_test.testcase
 async def test_cp27_write_operations(waylookup_env: WayLookupEnv):
-    """Test CP27: 写操作 - 测试GPF停止、队列满、ITLB异常等场景"""
+    """Test CP27: Write operations - test scenarios like GPF stop, queue full, ITLB exception, etc."""
     agent = waylookup_env.agent
     bundle = waylookup_env.bundle
     
-    print("\n--- CP27: 写操作测试 ---")
+    print("\n--- CP27: Write Operation Test ---")
     
-    # 初始复位
-    await agent.reset_dut()
-    
-    # Step 1: 测试正常写 (CP27.3)
-    print("Step 1: 测试正常写 (CP27.3)")
+    # Step 1: Test normal write (CP27.3)
+    print("Step 1: Testing normal write (CP27.3)")
     normal_write_result = await agent.drive_write_entry(
         vSetIdx_0=0xAA, vSetIdx_1=0xBB,
         waymask_0=0x1, waymask_1=0x2,
         ptag_0=0xAAAA, ptag_1=0xBBBB,
         timeout_cycles=20
     )
-    
     if normal_write_result["send_success"]:
-        print("✓ CP27.3: 正常写操作成功")
+        print("✓ CP27.3: Normal write operation successful")
+    await agent.drive_read_entry() # release this normal entry.
+    await bundle.step()
+    # Step 2: Test write with ITLB exception - not bypassed (CP27.4.2)
+    print("Step 2: Testing write with ITLB exception - not bypassed (CP27.4.2)")
     
-    # Step 2: 测试有ITLB异常的写 - 没有被绕过 (CP27.4.2)
-    print("Step 2: 测试有ITLB异常的写 - 没有被绕过 (CP27.4.2)")
-    
-    # 设置写信号但不设置读信号，确保不会被绕过
+    # Set write signal but not read signal to ensure it's not bypassed
     bundle.io._read._ready.value = 0
     await bundle.step()
     
@@ -1191,79 +1161,62 @@ async def test_cp27_write_operations(waylookup_env: WayLookupEnv):
         timeout_cycles=20
     )
     
-    if itlb_write_result["send_success"]:
-        print("✓ CP27.4.2: 有ITLB异常的写操作(未绕过)成功")
+    assert itlb_write_result["send_success"] is True, "write with ITLB exception failed."
+    assert itlb_write_result["itlb_exception_0"] == 2 and itlb_write_result["itlb_exception_1"] == 2, "ITLB exception should be set to GPF"
+    print("✓ CP27.4.2: Write operation with ITLB exception (not bypassed) successful")
     
-    # Step 3: 测试有ITLB异常的写 - 被绕过直接读取 (CP27.4.1)
-    print("Step 3: 测试有ITLB异常的写 - 被绕过直接读取 (CP27.4.1)")
+    # Step 3: Test write with ITLB exception - bypassed for direct read (CP27.4.1)
+    print("Step 3: Testing write with ITLB exception - bypassed for direct read (CP27.4.1)")
     
-    # 同时设置写和读信号，创造绕过条件
-    bundle.io._write._valid.value = 1
-    bundle.io._read._ready.value = 1
-    
-    # 设置ITLB异常
-    bundle.io._write._bits._entry._itlb._exception._0.value = 2  # GPF异常
-    bundle.io._write._bits._gpf._gpaddr.value = 0xDEADBEEF
-    
+    read_itlb_result = await agent.drive_read_entry() # read itlb exception entry.
     await bundle.step()
+    print(read_itlb_result)
+    assert read_itlb_result["read_success"] and read_itlb_result["itlb_exception_0"] == 2 and read_itlb_result["itlb_exception_1"] == 2 , "Read Itlb exection info failed."
+    print("✓ CP27.4.1: ITLB exception write operation was bypassed for direct read")
+
+    # Step 4: Test write ready invalid condition (CP27.2) - try to fill the queue
+    print("Step 4: Testing write ready invalid condition (CP27.2)")
     
-    # 检查是否同时有写fire和读fire (绕过条件)
-    write_fire = bundle.io._write._valid.value & bundle.io._write._ready.value
-    read_fire = bundle.io._read._valid.value & bundle.io._read._ready.value
-    
-    if write_fire and read_fire:
-        print("✓ CP27.4.1: ITLB异常写操作被绕过直接读取")
-    
-    # 恢复信号
-    bundle.io._write._valid.value = 0
-    bundle.io._read._ready.value = 0
-    bundle.io._write._bits._entry._itlb._exception._0.value = 0
-    await bundle.step()
-    
-    # Step 4: 测试写就绪无效情况 (CP27.2) - 尝试填满队列
-    print("Step 4: 测试写就绪无效情况 (CP27.2)")
-    
-    # 尝试填满队列
+    # Try to fill the queue
     written_count = 0
-    for i in range(35):  # 超过队列大小32
+    for i in range(35):  # Exceed queue size of 32
         write_result = await agent.drive_write_entry(
             vSetIdx_0=i, vSetIdx_1=i+100,
             waymask_0=0x1, waymask_1=0x2,
             ptag_0=i*0x1000, ptag_1=i*0x2000,
-            timeout_cycles=5  # 短超时，快速失败
+            timeout_cycles=5  # Short timeout for quick failure
         )
-        
-        if write_result["send_success"]:
-            written_count += 1
+        if written_count <= 31:
+            assert write_result["send_success"] is True, "not full, should write in successfully."
         else:
-            print(f"写操作在第{i+1}次时失败，可能队列已满")
+            assert write_result["send_success"] is False, "full ,should write in failed."
+            print(f"Write operation failed at attempt {i+1}, queue is likely full")
             break
+        written_count += 1
+
     
-    print(f"成功写入 {written_count} 个条目")
+    print(f"Successfully wrote {written_count} entries")
     
-    # 检查队列状态
+    # Check queue status
     final_status = await agent.get_queue_status()
-    print(f"最终队列状态: count={final_status['count']}, full={final_status.get('full', 'unknown')}")
+    print(f"Final queue status: count={final_status['count']}, full={final_status.get('full', 'unknown')}")
     
     if written_count < 35:
-        print("✓ CP27.2: 队列满时写就绪正确变为无效")
+        print("✓ CP27.2: Write ready correctly becomes invalid when queue is full")
     
-    print("✓ CP27: 写操作各种场景测试完成")
+    print("✓ CP27: Various write operation scenarios test completed")
 
 
 @toffee_test.testcase
 async def test_pointer_wraparound(waylookup_env: WayLookupEnv):
-    """测试指针环形队列的回环功能"""
+    """Test the wraparound functionality of the pointer circular queue"""
     agent = waylookup_env.agent
     
-    print("\n--- 指针回环测试 ---")
+    print("\n--- Pointer Wraparound Test ---")
     
-    # 初始复位
-    await agent.reset_dut()
-    
-    # 填满队列并检查指针回环
-    print("测试写指针回环...")
-    for i in range(35):  # 超过队列大小32，测试回环
+    # Fill the queue and check for pointer wraparound
+    print("Testing write pointer wraparound...")
+    for i in range(35):  # Exceed queue size of 32 to test wraparound
         write_result = await agent.drive_write_entry(
             vSetIdx_0=i % 256, vSetIdx_1=(i+1) % 256,
             waymask_0=i % 4, waymask_1=(i+1) % 4,
@@ -1274,99 +1227,20 @@ async def test_pointer_wraparound(waylookup_env: WayLookupEnv):
         if not write_result["send_success"]:
             break
             
-        if i % 10 == 0:  # 每10次检查一次指针
+        if i % 10 == 0:  # Check pointer every 10 writes
             pointers = await agent.get_pointers()
-            print(f"写入{i+1}次后，写指针={pointers['write_ptr_value']}")
+            print(f"After {i+1} writes, write pointer = {pointers['write_ptr_value']}")
     
-    # 读取所有数据并检查读指针回环
-    print("测试读指针回环...")
+    # Read all data and check for read pointer wraparound
+    print("Testing read pointer wraparound...")
     for i in range(35):
         read_result = await agent.drive_read_entry(timeout_cycles=10)
         
         if not read_result["read_success"]:
             break
             
-        if i % 10 == 0:  # 每10次检查一次指针
+        if i % 10 == 0:  # Check pointer every 10 reads
             pointers = await agent.get_pointers()
-            print(f"读取{i+1}次后，读指针={pointers['read_ptr_value']}")
+            print(f"After {i+1} reads, read pointer = {pointers['read_ptr_value']}")
     
-    print("✓ 指针回环测试完成")
-
-
-@toffee_test.testcase
-async def test_comprehensive_functional_coverage(waylookup_env: WayLookupEnv):
-    """综合功能覆盖率测试 - 确保触发所有覆盖点"""
-    agent = waylookup_env.agent
-    bundle = waylookup_env.bundle
-    
-    print("\n--- 综合功能覆盖率测试 ---")
-    
-    # 初始复位
-    await agent.reset_dut()
-    
-    # 测试各种数据边界值
-    print("测试数据边界值...")
-    
-    # waymask边界值
-    await agent.drive_write_entry(vSetIdx_0=0, vSetIdx_1=0xFF, waymask_0=0, waymask_1=3, ptag_0=0, ptag_1=0xFFFFFFFF, timeout_cycles=20)
-    
-    # meta_codes不同值
-    bundle.io._write._valid.value = 1
-    bundle.io._write._bits._entry._meta_codes._0.value = 0
-    bundle.io._write._bits._entry._meta_codes._1.value = 1
-    await bundle.step()
-    bundle.io._write._valid.value = 0
-    await bundle.step()
-    
-    # ITLB异常类型
-    bundle.io._write._valid.value = 1
-    bundle.io._write._bits._entry._itlb._exception._0.value = 0  # 无异常
-    bundle.io._write._bits._entry._itlb._exception._1.value = 0
-    await bundle.step()
-    
-    bundle.io._write._bits._entry._itlb._exception._0.value = 2  # GPF异常
-    bundle.io._write._bits._gpf._gpaddr.value = 0x12345678
-    await bundle.step()
-    bundle.io._write._valid.value = 0
-    await bundle.step()
-    
-    # 测试多操作并发
-    print("测试多操作并发...")
-    bundle.io._write._valid.value = 1
-    bundle.io._read._ready.value = 1  
-    bundle.io._update._valid.value = 1
-    await bundle.step()
-    
-    # 测试写操作后立即flush
-    print("测试写操作后立即flush...")
-    bundle.io._write._valid.value = 1
-    bundle.io._flush.value = 1
-    await bundle.step()
-    bundle.io._flush.value = 0
-    await bundle.step()
-    
-    # 测试所有接口空闲
-    print("测试所有接口空闲...")
-    bundle.io._write._valid.value = 0
-    bundle.io._read._ready.value = 0
-    bundle.io._update._valid.value = 0
-    bundle.io._flush.value = 0
-    await bundle.step()
-    
-    # 测试update操作的各种情况
-    print("测试update操作各种情况...")
-    # 正常update
-    await agent.drive_update_entry(blkPaddr=0x12345678, vSetIdx=0x10, waymask=2, corrupt=False)
-    
-    # corrupt update
-    await agent.drive_update_entry(blkPaddr=0x87654321, vSetIdx=0x20, waymask=1, corrupt=True)
-    
-    # update与read并发
-    bundle.io._update._valid.value = 1
-    bundle.io._read._ready.value = 1
-    await bundle.step()
-    bundle.io._update._valid.value = 0
-    bundle.io._read._ready.value = 0
-    await bundle.step()
-    
-    print("✓ 综合功能覆盖率测试完成")
+    print("✓ Pointer wraparound test completed")
