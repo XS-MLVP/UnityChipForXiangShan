@@ -2,9 +2,11 @@ import asyncio
 import toffee
 import toffee_test
 from toffee import start_clock
+from comm import get_version_checker
 from dut.ICache import DUTICache
 from ..env import ICacheEnv
 
+version_check = get_version_checker("openxiangshan-kmh-*")
 
 @toffee_test.fixture
 async def icache_env(toffee_request: toffee_test.ToffeeRequest):
