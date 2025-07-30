@@ -20,7 +20,7 @@ ROUND_SIZE = 30
 
 ### CASE EXAMPLE
 # Running the following test case will show a pass:
-def _test_receive_ptw_resp_nonstage(tlb_fixture):
+def test_receive_ptw_resp_nonstage(tlb_fixture):
     """
     Func: receive PTW response under nonstage condition and stored it into TLB entry
         subfunc1: TODO
