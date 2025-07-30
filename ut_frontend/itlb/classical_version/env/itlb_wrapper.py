@@ -20,7 +20,7 @@ from datetime import datetime
 import toffee.funcov as fc
 
 from dut.TLB import *
-from utils.value_util import other_than
+from ut_frontend.itlb.classical_version.env.itlb_utils import other_than
 from .itlb_consts import *
 from queue import Queue
 from comm import get_version_checker, get_out_dir, UT_FCOV
@@ -281,6 +281,14 @@ class TLBWrapper(toffee.Bundle):
         self.dut.reset.value = 0
         # print(">>> RESET FINISHED !")
 
+    def cleanup_requestor(self, requestor: int):
+        self.reset()
+        self.flushPipe[requestor].value = 1
+        self.dut.Step()
+        self.flushPipe[requestor].value = 0
+        self.dut.Step(2)
+        # print(f">>> CLEANUP requestor_{i} FINISHED !")
+
     def gene_rand_TLBreq(self):
         """
         generate random TLB request
@@ -288,6 +296,23 @@ class TLBWrapper(toffee.Bundle):
         req_valid = random.choice([0, 1])
         req_vaddr = random.randint(0, 2 ** 50 - 1)
         return req_valid, req_vaddr
+
+    def gene_rand_TLBsignal_batch(self) -> dict:
+        vaddr = random.randint(0, 2 ** 50 - 1)
+        asid = random.randint(0, 2 ** 16 - 1)
+        vpn = vaddr >> 12
+        offset = vaddr & 0xfff
+        ppn = random.randint(0, 2 ** 36 - 1)
+        ppn_low = [random.randint(0, 2 ** 3 - 1) for _ in range(8)]
+        valid_idx = [random.choice([0, 1]) for _ in range(8)]
+        return {
+            "asid": asid,
+            "vpn": vpn,
+            "offset": offset,
+            "ppn": ppn,
+            "ppn_low": ppn_low,
+            "valid_idx": valid_idx,
+        }
 
     def rand_req0(self):
         """
