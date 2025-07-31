@@ -19,7 +19,7 @@ import inspect
 # Running the following test case will show a pass:
 def test_receive_ptw_resp_nonstage(tlb_fixture):
     """
-    Func: TODO
+    Func: receive PTW response under nonstage condition and stored it into TLB entry
         subfunc1: TODO
     """
     # connect to fixture
@@ -38,10 +38,30 @@ def test_receive_ptw_resp_nonstage(tlb_fixture):
     # add clock
     tlb.dut.xclock.StepRis(lambda _: g.sample())
     # start
-    for _ in range(10000):
-        # add signal and assign to dut
+    for _ in range(1000):
+        for _ in range(30):
+            # add signal and assign to dut
+            vaddr = random.randint(0, 2 ** 50 - 1)
+            asid = random.randint(0, 2 ** 16 - 1)
+            vpn = vaddr >> 12
+            offset = vaddr & 0xfff
+            s2xlate = 0b00
+            ppn = tlb.rand_ptw_resp(vpn, asid, s2xlate)
 
-        # step to next cycle
-        tlb.dut.Step(2)
+            tlb.csr.satp.asid.value = asid
 
-        # assert result
+            # step to next cycle
+            tlb.dut.Step()
+
+            # check whether PTW resp is stored
+            tlb.requestor_0.req.valid.value = 1
+            tlb.requestor_0.req.bits_vaddr.value = (vpn << 12) | offset
+
+            # step to next cycle
+            tlb.dut.Step(2)
+
+            # assert result
+            assert(tlb.requestor_0.resp.paddr_0.value == ((ppn << 12) | offset))
+            assert(tlb.requestor_0.resp.miss.value == 0)
+        # reset
+        tlb.reset()

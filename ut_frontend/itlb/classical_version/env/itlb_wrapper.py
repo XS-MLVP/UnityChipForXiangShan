@@ -88,6 +88,7 @@ class ControlBundle(toffee.Bundle):
     signals = [
         "reset",
         "io_sfence_valid",
+        "io_hartId",
         "io_requestor_2_resp_ready",
         "io_requestor_2_resp_valid",
         "io_ptw_req_0_valid",
@@ -323,15 +324,95 @@ class TLBWrapper(toffee.Bundle):
         req_2_valid, req_2_vaddr = self.rand_req2()
         return req_0_valid, req_0_vaddr, req_1_valid, req_1_vaddr, req_2_valid, req_2_vaddr
 
-    def gene_rand_ptw_resp(self, vpn, s2xlate):
+    def rand_ptw_resp(self, vpn, asid, s2xlate):
         """
         generate random PTW response by s2xlate
         """
-        self.ctrl.io_ptw_resp_valid = 1
-        self.ctrl.io_ptw_resp_bits_s2xlate = s2xlate
-        # nos2xlate (s2xlate == 0b00)
-        self.ptw_resp_s1.entry_tag = vpn >> 12
-        self.ptw_resp_s1.entry_asid
+        # generate random input signals
+        randPPN = random.randint(0, 2 ** 36 - 1)
+        randValididx = [random.choice([0,1]) for _ in range(8)]
+        randPPN_low = [random.randint(0, 2 ** 3 - 1) for _ in range(8)]
+
+        addr_low = vpn & 0b111
+
+        # assign to DUT
+        ## ctrl signals
+        self.ctrl.io_ptw_resp_valid.value = 1
+        self.ctrl.io_ptw_resp_bits_s2xlate.value = s2xlate
+        ## nos2xlate (s2xlate == 0b00)
+        if (s2xlate == 0b00):
+            self.ptw_resp_s1.entry_tag.value = vpn >> 3
+            self.ptw_resp_s1.entry_asid.value = asid
+            self.ptw_resp_s1.entry_vmid.value = DONTCARE
+            self.ptw_resp_s1.entry_n.value = UNUSED0
+            self.ptw_resp_s1.entry_pbmt.value = UNUSED0
+            self.ptw_resp_s1.entry_perm_d.value = UNUSED0
+            self.ptw_resp_s1.entry_perm_a.value = UNUSED0
+            self.ptw_resp_s1.entry_perm_g.value = UNUSED0
+            self.ptw_resp_s1.entry_perm_u.value = UNUSED0
+            self.ptw_resp_s1.entry_perm_x.value = UNUSED1
+            self.ptw_resp_s1.entry_perm_w.value = UNUSED0
+            self.ptw_resp_s1.entry_perm_r.value = UNUSED0
+            self.ptw_resp_s1.entry_level.value = UNUSED0
+            self.ptw_resp_s1.entry_v.value = 1
+            self.ptw_resp_s1.entry_ppn.value = randPPN >> 3
+            self.ptw_resp_s1.addr_low.value = addr_low
+            ppn_low_dict = {
+                0: self.ptw_resp_s1.ppn_low_0,
+                1: self.ptw_resp_s1.ppn_low_1,
+                2: self.ptw_resp_s1.ppn_low_2,
+                3: self.ptw_resp_s1.ppn_low_3,
+                4: self.ptw_resp_s1.ppn_low_4,
+                5: self.ptw_resp_s1.ppn_low_5,
+                6: self.ptw_resp_s1.ppn_low_6,
+                7: self.ptw_resp_s1.ppn_low_7
+            }
+            valididx_dict = {
+                0: self.ptw_resp_s1.valididx_0,
+                1: self.ptw_resp_s1.valididx_1,
+                2: self.ptw_resp_s1.valididx_2,
+                3: self.ptw_resp_s1.valididx_3,
+                4: self.ptw_resp_s1.valididx_4,
+                5: self.ptw_resp_s1.valididx_5,
+                6: self.ptw_resp_s1.valididx_6,
+                7: self.ptw_resp_s1.valididx_7
+            }
+            pteidx_dict = {
+                0: self.ptw_resp_s1.pteidx_0,
+                1: self.ptw_resp_s1.pteidx_1,
+                2: self.ptw_resp_s1.pteidx_2,
+                3: self.ptw_resp_s1.pteidx_3,
+                4: self.ptw_resp_s1.pteidx_4,
+                5: self.ptw_resp_s1.pteidx_5,
+                6: self.ptw_resp_s1.pteidx_6,
+                7: self.ptw_resp_s1.pteidx_7
+            }
+            for i in range(8):
+                if i == addr_low:
+                    ppn_low_dict[i].value = randPPN & 0b111
+                    valididx_dict[i].value = 1
+                else:
+                    ppn_low_dict[i].value = randPPN_low[i]
+                    valididx_dict[i].value = randValididx[i]
+            pteidx_dict[addr_low].value = 1
+            self.ptw_resp_s1.pf.value = UNUSED0
+            self.ptw_resp_s1.af.value = UNUSED0
+        ## OnlyStage1 (s2xlate == 0b01)
+        elif (s2xlate == 0b01):
+            self.ptw_resp_s1.entry_tag.value = vpn >> 12
+            self.ptw_resp_s1.entry_asid.value = asid
+            # TODO
+        ## OnlyStage2 (s2xlate == 0b10)
+        elif (s2xlate == 0b10):
+            self.ptw_resp_s1.entry_tag.value = vpn >> 12
+            self.ptw_resp_s1.entry_asid.value = asid
+            # TODO
+        ## AllStage (s2xlate == 0b11)
+        else:
+            self.ptw_resp_s1.entry_tag.value = vpn >> 12
+            self.ptw_resp_s1.entry_asid.value = asid
+            # TODO
+        return randPPN
 
 class TLBrwWrapper(toffee.Bundle):
     """

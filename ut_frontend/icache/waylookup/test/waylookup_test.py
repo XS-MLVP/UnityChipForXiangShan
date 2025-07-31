@@ -5,6 +5,9 @@ import toffee_test
 
 @toffee_test.testcase
 async def test_smoke(waylookup_env: WayLookupEnv):
+    flush_write_ptr = await waylookup_env.agent.flush_write_ptr()
+    print(f"Flush write pointer result: {flush_write_ptr}")
+    
     print(await waylookup_env.agent.flush())
 
 

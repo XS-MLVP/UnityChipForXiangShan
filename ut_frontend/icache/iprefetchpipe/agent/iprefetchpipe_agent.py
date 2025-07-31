@@ -8,21 +8,6 @@ class IPrefetchPipeAgent(Agent):
         super().__init__(bundle)
         self.bundle = bundle
 
-    async def set_s1_flush(self):
-        self.bundle.reset.value = 1
-        await self.bundle.step()
-        self.bundle.reset.value = 0
-        await self.bundle.step()
-
-        print(
-            "\nBefore setting, s1_flush is: ",
-            self.bundle.IPrefetchPipe._s1._flush.value,
-        )
-        self.bundle.io._flush.value = 1
-        await self.bundle.step()
-        print(
-            "After setting, s1_flush is: ", self.bundle.IPrefetchPipe._s1._flush.value
-        )
 
 
     async def receive_prefetch(self):
