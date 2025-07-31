@@ -454,7 +454,7 @@ async def test_FIFO_moudle(icachemissunit_env: ICacheMissUnitEnv):
     assert response_info is None, "Expected no fetch response after flushing the FIFO."
     await agent.bundle.step(5)
 
-
+ 
     # 8. 测试Flush操作
     print("Step 8: Test flush operation.")
     # Flush 应该能清空 prefetch MSHR 和 FIFO，以及 fetch MSHR
@@ -1217,3 +1217,137 @@ async def test_demux_chosen_signal(icachemissunit_env: ICacheMissUnitEnv):
     
     print("Demux chosen signal test completed successfully.")
 
+@toffee_test.testcase
+async def test_trigger_priorityFIFO_enq_assert(icachemissunit_env: ICacheMissUnitEnv):
+    """
+    测试点: 触发 priorityFIFO.io.enq assert
+    通过在 enq_ready 为高时改变 valid 但不完成 handshake 来触发 assert
+    """
+    # Warning: This test triger this assert failed. We need to fix it.
+    print("\n--- Testing Priority FIFO Enqueue Assert ---")
+    agent = icachemissunit_env.agent
+    bundle = icachemissunit_env.bundle
+    
+    # 首先填充所有 prefetch MSHR，使 priorityFIFO 满
+    print("Filling all prefetch MSHRs...")
+    for i in range(10):
+        send_result = await agent.drive_send_prefetch_req(
+            blkPaddr=0x40000 + i * 0x1000, 
+            vSetIdx=0x40 + i
+        )
+        assert send_result["send_success"] is True, f"Prefetch request {i} should succeed"
+    
+    await bundle.step(5)
+    
+    # 检查 priorityFIFO 是否已满
+    enq_ready = bundle.priorityFIFO._io_enq._ready.value
+    print(f"priorityFIFO enq_ready: {enq_ready}")
+    
+    # 如果 FIFO 满了，enq_ready 应该为 0
+    # 我们需要等待一些 acquire 被处理以释放空间
+    while enq_ready == 0:
+        # 处理一些 acquire 请求
+        for _ in range(2):
+            acquire_info = await agent.drive_get_and_acknowledge_acquire(timeout_cycles=1)
+            if acquire_info:
+                # 响应 grant 以释放 MSHR
+                await agent.drive_respond_with_grant(
+                    source_id=acquire_info["source"],
+                    data_beats=[0x1000 + acquire_info["source"] * 0x100]
+                )
+                await bundle.step(5)
+        
+        await bundle.step(5)
+        enq_ready = bundle.priorityFIFO._io_enq._ready.value
+        print(f"priorityFIFO enq_ready after processing: {enq_ready}")
+        
+        # 如果仍然为 0，继续等待
+        if enq_ready == 0:
+            print("Waiting for more space in priorityFIFO...")
+    
+    # 现在 enq_ready 应该为 1
+    print(f"enq_ready is now {enq_ready}, preparing to trigger assert...")
+    
+    # 直接操作 bundle 信号来创建违规条件
+    # 在 enq_ready 为高时，让 valid 变化但不保持稳定
+    bundle.io._prefetch_req._valid.value = 1
+    bundle.io._prefetch_req._bits._blkPaddr.value = 0x50000
+    bundle.io._prefetch_req._bits._vSetIdx.value = 0x50
+    await bundle.step()
+    
+    # 立即撤销 valid，但不等待 handshake 完成
+    bundle.io._prefetch_req._valid.value = 0
+    await bundle.step()
+    
+    # 再次拉高 valid，尝试触发 assert
+    bundle.io._prefetch_req._valid.value = 1
+    bundle.io._prefetch_req._bits._blkPaddr.value = 0x51000
+    bundle.io._prefetch_req._bits._vSetIdx.value = 0x51
+    await bundle.step()
+    
+    print("Priority FIFO enqueue assert test completed")
+
+@toffee_test.testcase  
+async def test_trigger_priorityFIFO_deq_assert(icachemissunit_env: ICacheMissUnitEnv):
+    """
+    测试点: 触发 priorityFIFO.io.deq assert
+    通过在 deq_valid 为高时改变 ready 信号但不完成 handshake 来触发 assert
+    """
+    # Warning: This test triger this assert failed. We need to fix it.
+    print("\n--- Testing Priority FIFO Dequeue Assert ---")
+    agent = icachemissunit_env.agent
+    bundle = icachemissunit_env.bundle
+    
+    # 首先发送一些 prefetch 请求以填充 priorityFIFO
+    print("Sending prefetch requests to fill priorityFIFO...")
+    for i in range(3):
+        send_result = await agent.drive_send_prefetch_req(
+            blkPaddr=0x60000 + i * 0x1000, 
+            vSetIdx=0x60 + i
+        )
+        assert send_result["send_success"] is True, f"Prefetch request {i} should succeed"
+    
+    await bundle.step(5)
+    
+    # 等待 acquire 请求
+    print("Waiting for acquire requests...")
+    acquire_requests = []
+    for _ in range(10):
+        acquire_info = await agent.drive_get_acquire_request(timeout_cycles=1)
+        if acquire_info:
+            acquire_requests.append(acquire_info)
+            print(f"Got acquire request: source={acquire_info['source']}")
+        await bundle.step()
+    
+    # 检查 deq_valid 信号
+    deq_valid = bundle.priorityFIFO._io_deq._valid.value
+    print(f"priorityFIFO deq_valid: {deq_valid}")
+    
+    # 如果有 acquire 请求，说明 deq_valid 应该为高
+    if len(acquire_requests) > 0:
+        # 尝试通过控制内存接口的 ready 信号来触发 assert
+        print("Attempting to trigger deq assert by controlling memory ready...")
+        
+        # 让 acquire_valid 为高但 ready 信号不稳定
+        bundle.io._mem._acquire._ready.value = 0
+        await bundle.step()
+        
+        # 快速切换 ready 信号
+        bundle.io._mem._acquire._ready.value = 1
+        await bundle.step()
+        
+        bundle.io._mem._acquire._ready.value = 0
+        await bundle.step()
+        
+        bundle.io._mem._acquire._ready.value = 1
+        await bundle.step()
+        
+        # 处理剩余的请求以清理状态
+        for acquire_info in acquire_requests:
+            await agent.drive_respond_with_grant(
+                source_id=acquire_info["source"],
+                data_beats=[0x2000 + acquire_info["source"] * 0x100]
+            )
+            await bundle.step(5)
+    
+    print("Priority FIFO dequeue assert test completed")
