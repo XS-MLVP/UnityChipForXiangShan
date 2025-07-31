@@ -22,6 +22,7 @@ class _5Bundle(Bundle):
 	_s1 = _4Bundle.from_prefix("_s1")
 	_s0 = _0Bundle.from_prefix("_s0")
 	_from_bpu_s0_flush_probe = Signal()
+	_state = Signal()
 
 class _6Bundle(Bundle):
 	_blkPaddr, _vSetIdx = Signals(2)
@@ -159,7 +160,7 @@ class _38Bundle(Bundle):
 	_metaRead = _27Bundle.from_prefix("_metaRead")
 	_wayLookupWrite = _37Bundle.from_prefix("_wayLookupWrite")
 	_pmp = _30Bundle.from_prefix("_pmp")
-	_flush, _csr_pf_enable, _itlbFlushPipe, _state = Signals(4)
+	_flush, _csr_pf_enable, _itlbFlushPipe = Signals(3)
 
 class IPrefetchPipeBundle(Bundle):
 	io = _38Bundle.from_prefix("io")

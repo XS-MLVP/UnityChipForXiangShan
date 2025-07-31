@@ -32,8 +32,8 @@ def build(cfg):
             filelist.flush()
             s, _, err = exe_cmd(
                 f"picker export --cp_lib false {rtl_files[0]} --fs {filelist.name} --lang python --tdir "
-                f"{get_root_dir('dut')}/ -w IPrefetchPipe.fst -c --internal={internal_signals_path} "
-                f"-V {verilator_args}"
+                f"{get_root_dir('dut')}/ -w IPrefetchPipe.fst -c --internal={internal_signals_path} --vpi --rw 1"
+            #    f"-V {verilator_args}"
             )
         assert s, err
     return True

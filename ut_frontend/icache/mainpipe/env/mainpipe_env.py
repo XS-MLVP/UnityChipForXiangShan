@@ -8,5 +8,5 @@ class ICacheMainPipeEnv(Env):
         super().__init__()
         self.dut = dut
         self.bundle = ICacheMainPipeBundle.from_prefix("").bind(dut)
-        self.agent = ICacheMainPipeAgent(self.bundle)
+        self.agent = ICacheMainPipeAgent(self.bundle, dut)
         self.bundle.set_all(0)
