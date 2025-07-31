@@ -70,9 +70,9 @@ def test_receive_ptw_resp_nonstage(tlb_fixture):
         tlb.reset()
 
 
-def test_receive_ptw_resp_nonstage_single_hit(tlb_fixture):
+def test_receive_ptw_resp_nonstage_single_hit_icache(tlb_fixture):
     """
-    no stage，单次miss
+    no stage，单次hit
     """
     # connect to fixture
     tlb = tlb_fixture
@@ -92,6 +92,20 @@ def test_receive_ptw_resp_nonstage_single_hit(tlb_fixture):
         for _ in range(ROUND_SIZE):
             _do_test_receive_ptw_resp_nonstage_hit_requestor_1(tlb)
         tlb.cleanup_requestor(1)
+
+
+def test_receive_ptw_resp_nonstage_single_hit_ifu(tlb_fixture):
+    """
+    no stage，单次hit
+    """
+    # connect to fixture
+    tlb = tlb_fixture
+    tlb.set_default_value()
+    # reset
+    tlb.reset()
+
+    # add clock
+    tlb.dut.xclock.StepRis(lambda _: g.sample())
 
     for _ in range(ROUND_NUM):
         for _ in range(ROUND_SIZE):
@@ -160,7 +174,7 @@ def _do_test_receive_ptw_resp_nonstage_hit_requestor_2(tlb):
     assert (tlb.requestor_2.resp.miss.value == 0)
 
 
-def test_receive_ptw_resp_nonstage_single_miss(tlb_fixture):
+def test_receive_ptw_resp_nonstage_single_miss_icache(tlb_fixture):
     """
     no stage，单次miss
     """
@@ -182,6 +196,20 @@ def test_receive_ptw_resp_nonstage_single_miss(tlb_fixture):
         for _ in range(ROUND_SIZE):
             _do_test_receive_ptw_resp_nonstage_miss_requestor_1(tlb)
         tlb.cleanup_requestor(1)
+
+
+def test_receive_ptw_resp_nonstage_single_miss_ifu(tlb_fixture):
+    """
+    no stage，单次miss
+    """
+    # connect to fixture
+    tlb = tlb_fixture
+    tlb.set_default_value()
+    # reset
+    tlb.reset()
+
+    # add clock
+    tlb.dut.xclock.StepRis(lambda _: g.sample())
 
     for _ in range(ROUND_NUM):
         for _ in range(ROUND_SIZE):
@@ -245,3 +273,220 @@ def _do_test_receive_ptw_resp_nonstage_miss_requestor_2(tlb):
     tlb.dut.Step(2)
     # assert result
     assert (tlb.requestor_2.resp.miss.value == 1)
+
+
+def test_receive_ptw_resp_nonstage_valid_icache(tlb_fixture):
+    """
+    no stage，valid有效性
+    """
+    # connect to fixture
+    tlb = tlb_fixture
+    tlb.set_default_value()
+    # reset
+    tlb.reset()
+
+    # add clock
+    tlb.dut.xclock.StepRis(lambda _: g.sample())
+
+    for _ in range(ROUND_NUM):
+        for _ in range(ROUND_SIZE):
+            _do_test_receive_ptw_resp_nonstage_valid_requestor_0(tlb)
+            tlb.cleanup_requestor(0)
+            _do_test_receive_ptw_resp_nonstage_invalid_requestor_0(tlb)
+            tlb.cleanup_requestor(0)
+
+    for _ in range(ROUND_NUM):
+        for _ in range(ROUND_SIZE):
+            _do_test_receive_ptw_resp_nonstage_valid_requestor_1(tlb)
+            tlb.cleanup_requestor(1)
+            _do_test_receive_ptw_resp_nonstage_invalid_requestor_1(tlb)
+            tlb.cleanup_requestor(1)
+
+
+def test_receive_ptw_resp_nonstage_valid_ifu(tlb_fixture):
+    """
+    no stage，valid-ready有效性
+    """
+    # connect to fixture
+    tlb = tlb_fixture
+    tlb.set_default_value()
+    # reset
+    tlb.reset()
+
+    # add clock
+    tlb.dut.xclock.StepRis(lambda _: g.sample())
+
+    for _ in range(ROUND_NUM):
+        for _ in range(ROUND_SIZE):
+            _do_test_receive_ptw_resp_nonstage_valid_ready_requestor_2(tlb)
+            tlb.cleanup_requestor(2)
+            _do_test_receive_ptw_resp_nonstage_invalid_ready_requestor_2(tlb)
+            tlb.cleanup_requestor(2)
+            _do_test_receive_ptw_resp_nonstage_valid_busy_requestor_2(tlb)
+            tlb.cleanup_requestor(2)
+            _do_test_receive_ptw_resp_nonstage_invalid_busy_requestor_2(tlb)
+            tlb.cleanup_requestor(2)
+
+
+def _do_test_receive_ptw_resp_nonstage_valid_requestor_0(tlb):
+    # generate signals
+    signals = tlb.gene_rand_TLBsignal_batch()
+    # initialize dut with signals
+    tlb.init_dut_for_nostage_hit(signals["vpn"], signals["asid"], signals["ppn"], signals["ppn_low"])
+    tlb.csr.satp.asid.value = signals["asid"]
+    # step to next cycle
+    tlb.dut.Step()
+    # switch requestor
+    tlb.requestor_0.req.valid.value = 1
+    tlb.requestor_1.req.valid.value = 0
+    tlb.requestor_2.req.valid.value = 0
+    tlb.requestor_0.req.bits_vaddr.value = (signals["vpn"] << 12) | signals["offset"]
+    # step to next cycle
+    tlb.dut.Step(2)
+    # assert result
+    assert (tlb.requestor_0.resp.paddr_0.value == ((signals["ppn"] << 12) | signals["offset"]))
+    assert (tlb.requestor_0.resp.miss.value == 0)
+
+
+def _do_test_receive_ptw_resp_nonstage_invalid_requestor_0(tlb):
+    # generate signals
+    signals = tlb.gene_rand_TLBsignal_batch()
+    # initialize dut with signals
+    tlb.init_dut_for_nostage_miss(signals["vpn"], signals["asid"], signals["ppn"], signals["ppn_low"])
+    tlb.csr.satp.asid.value = signals["asid"]
+    # step to next cycle
+    tlb.dut.Step()
+    # switch requestor
+    tlb.requestor_0.req.valid.value = 0
+    tlb.requestor_1.req.valid.value = 0
+    tlb.requestor_2.req.valid.value = 0
+    tlb.requestor_0.req.bits_vaddr.value = (signals["vpn"] << 12) | signals["offset"]
+    # step to next cycle
+    tlb.dut.Step(2)
+    # assert result, no hit anyway
+    assert not (tlb.requestor_0.resp.miss.value == 0 and
+                tlb.requestor_0.resp.paddr_0.value == ((signals["ppn"] << 12) | signals["offset"]))
+
+
+def _do_test_receive_ptw_resp_nonstage_valid_requestor_1(tlb):
+    # generate signals
+    signals = tlb.gene_rand_TLBsignal_batch()
+    # initialize dut with signals
+    tlb.init_dut_for_nostage_hit(signals["vpn"], signals["asid"], signals["ppn"], signals["ppn_low"])
+    tlb.csr.satp.asid.value = signals["asid"]
+    # step to next cycle
+    tlb.dut.Step()
+    # switch requestor
+    tlb.requestor_0.req.valid.value = 0
+    tlb.requestor_1.req.valid.value = 1
+    tlb.requestor_2.req.valid.value = 0
+    tlb.requestor_1.req.bits_vaddr.value = (signals["vpn"] << 12) | signals["offset"]
+    # step to next cycle
+    tlb.dut.Step(2)
+    # assert result
+    assert (tlb.requestor_1.resp.paddr_0.value == ((signals["ppn"] << 12) | signals["offset"]))
+    assert (tlb.requestor_1.resp.miss.value == 0)
+
+
+def _do_test_receive_ptw_resp_nonstage_invalid_requestor_1(tlb):
+    # generate signals
+    signals = tlb.gene_rand_TLBsignal_batch()
+    # initialize dut with signals
+    tlb.init_dut_for_nostage_miss(signals["vpn"], signals["asid"], signals["ppn"], signals["ppn_low"])
+    tlb.csr.satp.asid.value = signals["asid"]
+    # step to next cycle
+    tlb.dut.Step()
+    # switch requestor
+    tlb.requestor_0.req.valid.value = 0
+    tlb.requestor_1.req.valid.value = 0
+    tlb.requestor_2.req.valid.value = 0
+    tlb.requestor_1.req.bits_vaddr.value = (signals["vpn"] << 12) | signals["offset"]
+    # step to next cycle
+    tlb.dut.Step(2)
+    # assert result, no hit anyway
+    assert not (tlb.requestor_1.resp.miss.value == 0 and
+                tlb.requestor_1.resp.paddr_0.value == ((signals["ppn"] << 12) | signals["offset"]))
+
+
+def _do_test_receive_ptw_resp_nonstage_valid_ready_requestor_2(tlb):
+    # generate signals
+    signals = tlb.gene_rand_TLBsignal_batch()
+    # initialize dut with signals
+    tlb.init_dut_for_nostage_hit(signals["vpn"], signals["asid"], signals["ppn"], signals["ppn_low"])
+    tlb.csr.satp.asid.value = signals["asid"]
+    # step to next cycle
+    tlb.dut.Step()
+    # switch requestor
+    tlb.requestor_0.req.valid.value = 0
+    tlb.requestor_1.req.valid.value = 0
+    tlb.requestor_2.req.valid.value = 1
+    tlb.ctrl.io_requestor_2_resp_ready.value = 1
+    tlb.requestor_2.req.bits_vaddr.value = (signals["vpn"] << 12) | signals["offset"]
+    # step to next cycle
+    tlb.dut.Step(2)
+    # assert result
+    assert (tlb.requestor_2.resp.paddr_0.value == ((signals["ppn"] << 12) | signals["offset"]))
+    assert (tlb.requestor_2.resp.miss.value == 0)
+
+
+def _do_test_receive_ptw_resp_nonstage_invalid_ready_requestor_2(tlb):
+    # generate signals
+    signals = tlb.gene_rand_TLBsignal_batch()
+    # initialize dut with signals
+    tlb.init_dut_for_nostage_miss(signals["vpn"], signals["asid"], signals["ppn"], signals["ppn_low"])
+    tlb.csr.satp.asid.value = signals["asid"]
+    # step to next cycle
+    tlb.dut.Step()
+    # switch requestor
+    tlb.requestor_0.req.valid.value = 0
+    tlb.requestor_1.req.valid.value = 0
+    tlb.requestor_2.req.valid.value = 0
+    tlb.ctrl.io_requestor_2_resp_ready.value = 1
+    tlb.requestor_2.req.bits_vaddr.value = (signals["vpn"] << 12) | signals["offset"]
+    # step to next cycle
+    tlb.dut.Step(2)
+    # assert result, no hit anyway
+    assert not (tlb.requestor_2.resp.miss.value == 0 and
+                tlb.requestor_2.resp.paddr_0.value == ((signals["ppn"] << 12) | signals["offset"]))
+
+
+def _do_test_receive_ptw_resp_nonstage_valid_busy_requestor_2(tlb):
+    # generate signals
+    signals = tlb.gene_rand_TLBsignal_batch()
+    # initialize dut with signals
+    tlb.init_dut_for_nostage_miss(signals["vpn"], signals["asid"], signals["ppn"], signals["ppn_low"])
+    tlb.csr.satp.asid.value = signals["asid"]
+    # step to next cycle
+    tlb.dut.Step()
+    # switch requestor
+    tlb.requestor_0.req.valid.value = 0
+    tlb.requestor_1.req.valid.value = 0
+    tlb.requestor_2.req.valid.value = 1
+    tlb.ctrl.io_requestor_2_resp_ready.value = 0
+    tlb.requestor_2.req.bits_vaddr.value = (signals["vpn"] << 12) | signals["offset"]
+    # step to next cycle
+    tlb.dut.Step(2)
+    # assert result, no hit anyway
+    assert not (tlb.requestor_2.resp.miss.value == 0 and
+                tlb.requestor_2.resp.paddr_0.value == ((signals["ppn"] << 12) | signals["offset"]))
+
+
+def _do_test_receive_ptw_resp_nonstage_invalid_busy_requestor_2(tlb):
+    # generate signals
+    signals = tlb.gene_rand_TLBsignal_batch()
+    # initialize dut with signals
+    tlb.init_dut_for_nostage_miss(signals["vpn"], signals["asid"], signals["ppn"], signals["ppn_low"])
+    tlb.csr.satp.asid.value = signals["asid"]
+    # step to next cycle
+    tlb.dut.Step()
+    # switch requestor
+    tlb.requestor_0.req.valid.value = 0
+    tlb.requestor_1.req.valid.value = 0
+    tlb.requestor_2.req.valid.value = 0
+    tlb.ctrl.io_requestor_2_resp_ready.value = 0
+    tlb.requestor_2.req.bits_vaddr.value = (signals["vpn"] << 12) | signals["offset"]
+    # step to next cycle
+    tlb.dut.Step(2)
+    # assert result, no hit anyway
+    assert not (tlb.requestor_2.resp.miss.value == 0 and
+                tlb.requestor_2.resp.paddr_0.value == ((signals["ppn"] << 12) | signals["offset"]))
