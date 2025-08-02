@@ -14,6 +14,7 @@
 
 
 import os
+import sys
 import time
 import base64
 import re
@@ -487,3 +488,74 @@ def get_all_rtl_files(top_module, cfg):
 
     get_rtl_helper(top_module)
     return list(module_path_map.values())
+
+
+def generate_dirmap(scripts_dir="../scripts", output_file="../.dirmap.autogen"):
+    script_root = os.path.abspath(os.path.dirname(__file__))
+    scripts_dir = os.path.join(script_root, scripts_dir)
+    output_path = os.path.abspath(os.path.join(script_root, output_file))
+
+    script_files = [
+        f for f in os.listdir(scripts_dir)
+        if f.startswith("build_ut_") and f.endswith(".py")
+    ]
+
+    with open(output_path, "w") as f_out:
+        for script_file in script_files:
+            dut_name = re.search(r"build_ut_(.*)\.py", script_file).group(1)
+            script_path = os.path.join(scripts_dir, script_file)
+            module_name = f"build_ut_{dut_name}"
+            spec = importlib.util.spec_from_file_location(module_name, script_path)
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            spec.loader.exec_module(module)
+            if not hasattr(module, "get_metadata"):
+                warning(f"{script_file} has no get_metadata() function, skipping")
+                continue
+            try:
+                metadata = module.get_metadata()
+                dut_dir = metadata.get("dut_dir")
+                test_targets = metadata.get("test_targets", [])
+            except Exception as e:
+                warning(f"Failed to get metadata from {script_file}: {str(e)}")
+                continue
+            if not dut_dir or not test_targets:
+                warning(f"{script_file} has invalid metadata (missing dut_dir or test_targets)")
+                continue
+            for target in test_targets:
+                f_out.write(f"{dut_name} --> {dut_dir} --> {target}\n")
+
+def extract_signals(verilog_file, output_file):
+    # 定义匹配 wire 和 reg 的正则表达式
+    signal_pattern = re.compile(r'\b(wire|reg)\b\s*(\[[^\]]+\])?\s*([\w, ]+)(;|=)')
+    
+    extracted_signals = []
+    
+    # 读取 sv 文件内容
+    with open(verilog_file, 'r') as file:
+        lines = file.readlines()
+    
+    # 逐行解析
+    for line in lines:
+        match = signal_pattern.search(line)
+        if match:
+            signal_type = match.group(1)  # wire or reg
+            width = match.group(2) if match.group(2) else ""  # [8:0] or empty
+            names = match.group(3)  # 信号名
+            if signal_type == "reg":
+                signal_type = "logic"
+            # 分解信号名并格式化
+            if width=="" :
+                for name in names.split(','):
+                    extracted_signals.append(f"  - \"{signal_type} {name.strip()}\"")
+            else :
+                for name in names.split(','):
+                    extracted_signals.append(f"  - \"{signal_type} {width.strip()} {name.strip()}\"")
+    
+    # 写入到 yaml 文件
+    basename = os.path.basename(verilog_file)
+    filename = os.path.splitext(basename)[0]
+    with open(output_file, 'w') as file:
+        file.write(filename + ':\n')
+        for signal in extracted_signals:
+            file.write(signal + '\n')

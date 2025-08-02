@@ -18,7 +18,7 @@ weight: 13
 ```bash
 git clone https://github.com/XS-MLVP/UnityChipForXiangShan.git
 cd UnityChipForXiangShan
-pip3 install -r requirements.txt # 安装python依赖（例如 toffee）
+pip3 install -r requirements.txt # 安装 python 依赖（例如 toffee）
 ```
 
 #### 下载RTL代码： 
@@ -26,10 +26,10 @@ pip3 install -r requirements.txt # 安装python依赖（例如 toffee）
 默认从仓库[https://github.com/XS-MLVP/UnityChipXiangShanRTLs](https://github.com/XS-MLVP/UnityChipXiangShanRTLs)中下载。用户也可以自行按照XiangShan文档编译生成RTL。
 
 ```bash
-make rtl    # 该命下载最新的rtl代码，并解压至rtl目录，并创建软连接
+make rtl    # 该命令下载最新的 rtl 代码，解压至 rtl 目录，并创建软链接
 ```
 
-可以用以下命令指定下载的rtl版本：
+可以用以下命令指定下载的 rtl 版本：
 
 ```bash
 make rtl args="rtl.version=\'openxiangshan-kmh-fad7803d-24120901\'"
@@ -37,7 +37,7 @@ make rtl args="rtl.version=\'openxiangshan-kmh-fad7803d-24120901\'"
 
 所有RTL下载包请在[UnityChipXiangShanRTLs](https://github.com/XS-MLVP/UnityChipXiangShanRTLs)中查看。
 
-RTL压缩包的命名规范为：`名称-微架构-Git标记-日期编号.tar.gz`，例如`openxiangshan-kmh-97e37a2237-24092701.tar.gz`。在使用时，仓库代码会过滤掉git标记和后缀，例如通过 cfg.rtl.version 访问到的版本号为：`openxiangshan-kmh-24092701`。压缩包内的目录结构为：
+RTL压缩包的命名规范为：`名称-微架构-Git标记-日期编号.tar.gz`，例如`openxiangshan-kmh-97e37a2237-24092701.tar.gz`。在使用时，仓库代码会过滤掉 git 标记和后缀，例如通过 cfg.rtl.version 访问到的版本号为：`openxiangshan-kmh-24092701`。压缩包内的目录结构为：
 
 ```bash
 openxiangshan-kmh-97e37a2237-24092701.tar.gz

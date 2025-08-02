@@ -48,7 +48,31 @@ children:
         priority: high
       - name: "icache"
         desc: "指令缓存 (Instruction Cache)"
-        priority: high
+        children: 
+          - name: "iprefetchpipe"
+            desc: "预取指模块"
+            meta:
+              doc_url: "https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/01_frontend/04_icache/01_iprefetchpipe/"  
+          - name: "mainpipe"
+            desc: "取指模块"
+            meta:
+              doc_url: "https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/01_frontend/04_icache/02_mainpipe/"
+          - name: "waylookup"
+            desc: "元数据缓冲队列"
+            meta:
+              doc_url: "https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/01_frontend/04_icache/03_waylookup/"
+          - name: "missunit"
+            desc: "缺失处理单元"
+            meta:
+              doc_url: "https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/01_frontend/04_icache/04_missunit/"
+          - name: "ctrlunit"
+            desc: "控制单元"
+            meta:
+              doc_url: "https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/01_frontend/04_icache/05_ctrlunit/"                                            
+          - name: "icache"
+            desc: "icache顶层模块"
+            meta:
+              doc_url: "https://open-verify.cc/UnityChipForXiangShan/docs/98_ut/01_frontend/04_icache/06_icache/"
       - name: "ifu"
         desc: "指令单元 (Instruction Fetch Unit)"
         children:
@@ -181,23 +205,16 @@ children:
         desc: "Load/Store队列"
         priority: critical
         children:
-          - name: "load_queue"
-            desc: "Load队列"
-          - name: "load_queue"
-            desc: "Load队列"
-            children:
-              - name: "virtual_load_queue"
-                desc: "虚拟Load队列"
-              - name: "rar_queue"
-                desc: "RAR队列"
-              - name: "raw_queue"
-                desc: "RAW队列"
-              - name: "replay_queue"
-                desc: "重发队列"
-              - name: "uncache_queue"
-                desc: "非缓存队列"
-              - name: "exception_queue"
-                desc: "异常队列"
+          - name: "virtual_load_queue"
+            desc: "虚拟Load队列"
+          - name: "rar_queue"
+            desc: "RAR队列"
+          - name: "raw_queue"
+            desc: "RAW队列"
+          - name: "replay_queue"
+            desc: "重发队列"
+          - name: "uncache_queue"
+            desc: "非缓存队列"
           - name: "store_queue"
             desc: "Store队列"
       - name: "dtlb"

@@ -13,6 +13,10 @@ async def waylookup_env(toffee_request: toffee_test.ToffeeRequest):
     dut.InitClock("clock")
     start_clock(dut)
     waylookup_env = WayLookupEnv(dut)
+    waylookup_env.dut.reset.value = 1
+    waylookup_env.dut.Step(10)
+    waylookup_env.dut.reset.value = 0
+    waylookup_env.dut.Step(10)
     yield waylookup_env
 
     cur_loop = asyncio.get_event_loop()

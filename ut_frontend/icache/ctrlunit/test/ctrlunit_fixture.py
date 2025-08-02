@@ -13,6 +13,10 @@ async def ctrlunit_env(toffee_request: toffee_test.ToffeeRequest):
     dut.InitClock("clock")
     start_clock(dut)
     ctrlunit_env = CtrlUnitEnv(dut)
+    ctrlunit_env.dut.reset.value = 1
+    ctrlunit_env.dut.Step(10)
+    ctrlunit_env.dut.reset.value = 0
+    ctrlunit_env.dut.Step(10)
     yield ctrlunit_env
 
     cur_loop = asyncio.get_event_loop()
