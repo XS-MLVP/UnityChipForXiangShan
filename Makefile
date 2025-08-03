@@ -1,11 +1,12 @@
 .PHONY: dut rtl check_dut
+MAKEFILE_DIR := $(CURDIR)
 
 export PYTHONPATH := $(shell pwd):$(shell picker --show_xcom_lib_location_python):$(PYTHONPATH)
 export ENABLE_XINFO := 0
-export CFG := ""
-export DUTS := "*"
+export CFG := "$(MAKEFILE_DIR)/configs/_default.yaml"
+export DUTS := "$(MAKEFILE_DIR)/ut_frontend/icache/icache"
 export REPORT := "--toffee-report"
-
+export target := "ut_frontend/icache/icache"
 comma:= ,
 empty:=    
 space:= $(empty) $(empty)
