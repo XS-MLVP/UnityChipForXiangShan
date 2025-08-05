@@ -6,7 +6,7 @@ from dut.PTW import DUTPTW
 import toffee
 from toffee import *
 
-from bundle import PTWBundle
+from ..bundle.bundle import PTWBundle
 
 
 @toffee_test.testcase

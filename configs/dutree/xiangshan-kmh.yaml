@@ -104,7 +104,7 @@ children:
       - name: "l2tlb"
         desc: "l2 TLB"
         children: 
-          - name: "PTW"
+          - name: "ptw"
             desc: "Page Table Walker模块"
       - name: "pmp"
         desc: "物理内存保护"
