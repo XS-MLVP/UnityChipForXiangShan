@@ -19,7 +19,7 @@ async def test_jal_chk_1_1_1(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
     
 @toffee_test.testcase
 async def test_jal_chk_1_1_2(predchecker_env):
@@ -29,7 +29,7 @@ async def test_jal_chk_1_1_2(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
     
 
 @toffee_test.testcase
@@ -40,7 +40,7 @@ async def test_jal_chk_1_2_1(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
 
 @toffee_test.testcase
 async def test_jal_chk_1_2_2(predchecker_env):
@@ -50,7 +50,7 @@ async def test_jal_chk_1_2_2(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
     
     
 @toffee_test.testcase 
@@ -61,7 +61,7 @@ async def test_ret_chk_2_1_1(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
     
 @toffee_test.testcase
 async def test_ret_chk_2_1_2(predchecker_env):
@@ -71,7 +71,7 @@ async def test_ret_chk_2_1_2(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
     
 @toffee_test.testcase
 async def test_ret_chk_2_2_1(predchecker_env):
@@ -81,7 +81,7 @@ async def test_ret_chk_2_2_1(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
 
 
 @toffee_test.testcase
@@ -92,7 +92,7 @@ async def test_ret_chk_2_2_2(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
 
 
 @toffee_test.testcase
@@ -102,7 +102,7 @@ async def test_jalr_chk_3_1_1(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
 
 @toffee_test.testcase
 async def test_jalr_chk_3_1_2(predchecker_env):
@@ -111,7 +111,7 @@ async def test_jalr_chk_3_1_2(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
 
 @toffee_test.testcase
 async def test_jalr_chk_3_2_1(predchecker_env):
@@ -120,7 +120,7 @@ async def test_jalr_chk_3_2_1(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
 
 @toffee_test.testcase
 async def test_jalr_chk_3_2_2(predchecker_env):
@@ -129,7 +129,7 @@ async def test_jalr_chk_3_2_2(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
 
 @toffee_test.testcase
 async def test_renew_range_4_1(predchecker_env):
@@ -139,7 +139,7 @@ async def test_renew_range_4_1(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
 
 @toffee_test.testcase  
 async def test_renew_range_4_2(predchecker_env):
@@ -149,7 +149,7 @@ async def test_renew_range_4_2(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
     
 @toffee_test.testcase
 async def test_renew_range_4_3(predchecker_env):
@@ -159,7 +159,7 @@ async def test_renew_range_4_3(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
 
 
 @toffee_test.testcase
@@ -170,7 +170,7 @@ async def test_not_cfi_chk_5_1_1(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
     
 @toffee_test.testcase
 async def test_not_cfi_chk_5_1_2(predchecker_env):
@@ -180,7 +180,7 @@ async def test_not_cfi_chk_5_1_2(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
 
 @toffee_test.testcase
 async def test_not_cfi_chk_5_2(predchecker_env):
@@ -190,7 +190,7 @@ async def test_not_cfi_chk_5_2(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
 
 @toffee_test.testcase
 async def test_invalid_instr_chk_6_1_1(predchecker_env):
@@ -200,7 +200,7 @@ async def test_invalid_instr_chk_6_1_1(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
     
 @toffee_test.testcase
 async def test_invalid_instr_chk_6_1_2(predchecker_env):
@@ -210,7 +210,7 @@ async def test_invalid_instr_chk_6_1_2(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
     
 @toffee_test.testcase
 async def test_invalid_instr_chk_6_1_3(predchecker_env):
@@ -220,7 +220,7 @@ async def test_invalid_instr_chk_6_1_3(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
 
 @toffee_test.testcase
 async def test_invalid_instr_chk_6_2(predchecker_env):
@@ -230,7 +230,7 @@ async def test_invalid_instr_chk_6_2(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
 
 @toffee_test.testcase
 async def test_tgt_chk_7_1_1(predchecker_env):
@@ -240,7 +240,7 @@ async def test_tgt_chk_7_1_1(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
     
 @toffee_test.testcase
 async def test_tgt_chk_7_1_2(predchecker_env):
@@ -250,7 +250,7 @@ async def test_tgt_chk_7_1_2(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
     
 @toffee_test.testcase
 async def test_tgt_chk_7_2(predchecker_env):
@@ -260,7 +260,7 @@ async def test_tgt_chk_7_2(predchecker_env):
     for i in range(TEST_CYCLE):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
 
 @toffee_test.testcase
 async def test_rand_tgt_8(predchecker_env):
@@ -272,5 +272,5 @@ async def test_rand_tgt_8(predchecker_env):
     for i in range(len(vec_pkt)):
         #print(*vec_pkt[i])
         res = await predchecker_env.predCheckerAgent.agent_pred_check(*vec_pkt[i])
-    del sqr
+    
     
