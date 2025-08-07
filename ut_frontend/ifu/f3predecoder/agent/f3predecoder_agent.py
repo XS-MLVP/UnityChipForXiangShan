@@ -9,10 +9,6 @@ class F3PreDecodeData():
     def __str__(self):
         return f"brTypes: {self.brTypes}\nisCalls: {self.isCalls}\nisRets: {self.isRets}"
 
-    def clear(self):
-        self.brTypes = [] 
-        self.isCalls = [] 
-        self.isRets = []
 class F3PreDecoderAgent(Agent):
     
     def __init__(self, bundle:F3PreDecoderBundle):
@@ -27,7 +23,6 @@ class F3PreDecoderAgent(Agent):
         await self.bundle.step()
 
         ret = F3PreDecodeData()
-        ret.clear()
         for i in range(16):
             ret.brTypes.append(getattr(self.bundle.io._out_pd, f"_{i}")._brType.value)
             ret.isCalls.append(getattr(self.bundle.io._out_pd, f"_{i}")._isCall.value)
