@@ -2,7 +2,7 @@
 # hit
 ################################################################################
 
-def hit_nonStage_requestor_0(tlb):
+def hit_nonStage_requestor_0(tlb) -> dict:
     # generate signals
     signals = tlb.gene_rand_TLBsignal_batch()
     # initialize dut with signals
@@ -20,9 +20,11 @@ def hit_nonStage_requestor_0(tlb):
     # assert result
     assert (tlb.requestor_0.resp.paddr_0.value == ((signals["ppn"] << 12) | signals["offset"]))
     assert (tlb.requestor_0.resp.miss.value == 0)
+    # return signals
+    return signals
 
 
-def hit_nonStage_requestor_1(tlb):
+def hit_nonStage_requestor_1(tlb) -> dict:
     # generate signals
     signals = tlb.gene_rand_TLBsignal_batch()
     # initialize dut with signals
@@ -40,9 +42,11 @@ def hit_nonStage_requestor_1(tlb):
     # assert result
     assert (tlb.requestor_1.resp.paddr_0.value == ((signals["ppn"] << 12) | signals["offset"]))
     assert (tlb.requestor_1.resp.miss.value == 0)
+    # return signals
+    return signals
 
 
-def hit_nonStage_requestor_2(tlb):
+def hit_nonStage_requestor_2(tlb) -> dict:
     # generate signals
     signals = tlb.gene_rand_TLBsignal_batch()
     # initialize dut with signals
@@ -61,6 +65,8 @@ def hit_nonStage_requestor_2(tlb):
     # assert result
     assert (tlb.requestor_2.resp.paddr_0.value == ((signals["ppn"] << 12) | signals["offset"]))
     assert (tlb.requestor_2.resp.miss.value == 0)
+    # return signals
+    return signals
 
 
 ################################################################################
@@ -68,7 +74,7 @@ def hit_nonStage_requestor_2(tlb):
 ################################################################################
 
 # no stage
-def miss_nonStage_requestor_0(tlb):
+def miss_nonStage_requestor_0(tlb) -> dict:
     # generate signals
     signals = tlb.gene_rand_TLBsignal_batch()
     # initialize dut with signals
@@ -85,9 +91,11 @@ def miss_nonStage_requestor_0(tlb):
     tlb.dut.Step(2)
     # assert result
     assert (tlb.requestor_0.resp.miss.value == 1)
+    # return signals
+    return signals
 
 
-def miss_nonStage_requestor_1(tlb):
+def miss_nonStage_requestor_1(tlb) -> dict:
     # generate signals
     signals = tlb.gene_rand_TLBsignal_batch()
     # initialize dut with signals
@@ -104,9 +112,11 @@ def miss_nonStage_requestor_1(tlb):
     tlb.dut.Step(2)
     # assert result
     assert (tlb.requestor_1.resp.miss.value == 1)
+    # return signals
+    return signals
 
 
-def miss_nonStage_requestor_2(tlb):
+def miss_nonStage_requestor_2(tlb) -> dict:
     # generate signals
     signals = tlb.gene_rand_TLBsignal_batch()
     # initialize dut with signals
@@ -124,10 +134,12 @@ def miss_nonStage_requestor_2(tlb):
     tlb.dut.Step(2)
     # assert result
     assert (tlb.requestor_2.resp.miss.value == 1)
+    # return signals
+    return signals
 
 
 # only stage 1
-def miss_onlyStage1_requestor_0(tlb):
+def miss_onlyStage1_requestor_0(tlb) -> dict:
     # generate signals
     signals = tlb.gene_rand_TLBsignal_batch()
     # initialize dut with signals
@@ -144,9 +156,11 @@ def miss_onlyStage1_requestor_0(tlb):
     tlb.dut.Step(2)
     # assert result
     assert (tlb.requestor_0.resp.miss.value == 1)
+    # return signals
+    return signals
 
 
-def miss_onlyStage1_requestor_1(tlb):
+def miss_onlyStage1_requestor_1(tlb) -> dict:
     # generate signals
     signals = tlb.gene_rand_TLBsignal_batch()
     # initialize dut with signals
@@ -163,9 +177,11 @@ def miss_onlyStage1_requestor_1(tlb):
     tlb.dut.Step(2)
     # assert result
     assert (tlb.requestor_1.resp.miss.value == 1)
+    # return signals
+    return signals
 
 
-def miss_onlyStage1_requestor_2(tlb):
+def miss_onlyStage1_requestor_2(tlb) -> dict:
     # generate signals
     signals = tlb.gene_rand_TLBsignal_batch()
     # initialize dut with signals
@@ -183,10 +199,12 @@ def miss_onlyStage1_requestor_2(tlb):
     tlb.dut.Step(2)
     # assert result
     assert (tlb.requestor_2.resp.miss.value == 1)
+    # return signals
+    return signals
 
 
 # only stage 2
-def miss_onlyStage2_requestor_0(tlb):
+def miss_onlyStage2_requestor_0(tlb) -> dict:
     # generate signals
     signals = tlb.gene_rand_TLBsignal_batch()
     # initialize dut with signals
@@ -203,9 +221,11 @@ def miss_onlyStage2_requestor_0(tlb):
     tlb.dut.Step(2)
     # assert result
     assert (tlb.requestor_0.resp.miss.value == 1)
+    # return signals
+    return signals
 
 
-def miss_onlyStage2_requestor_1(tlb):
+def miss_onlyStage2_requestor_1(tlb) -> dict:
     # generate signals
     signals = tlb.gene_rand_TLBsignal_batch()
     # initialize dut with signals
@@ -222,9 +242,11 @@ def miss_onlyStage2_requestor_1(tlb):
     tlb.dut.Step(2)
     # assert result
     assert (tlb.requestor_1.resp.miss.value == 1)
+    # return signals
+    return signals
 
 
-def miss_onlyStage2_requestor_2(tlb):
+def miss_onlyStage2_requestor_2(tlb) -> dict:
     # generate signals
     signals = tlb.gene_rand_TLBsignal_batch()
     # initialize dut with signals
@@ -242,10 +264,12 @@ def miss_onlyStage2_requestor_2(tlb):
     tlb.dut.Step(2)
     # assert result
     assert (tlb.requestor_2.resp.miss.value == 1)
+    # return signals
+    return signals
 
 
 # all stage
-def miss_allStage_requestor_0(tlb):
+def miss_allStage_requestor_0(tlb) -> dict:
     # generate signals
     signals = tlb.gene_rand_TLBsignal_batch()
     # initialize dut with signals
@@ -262,9 +286,11 @@ def miss_allStage_requestor_0(tlb):
     tlb.dut.Step(2)
     # assert result
     assert (tlb.requestor_0.resp.miss.value == 1)
+    # return signals
+    return signals
 
 
-def miss_allStage_requestor_1(tlb):
+def miss_allStage_requestor_1(tlb) -> dict:
     # generate signals
     signals = tlb.gene_rand_TLBsignal_batch()
     # initialize dut with signals
@@ -281,9 +307,11 @@ def miss_allStage_requestor_1(tlb):
     tlb.dut.Step(2)
     # assert result
     assert (tlb.requestor_1.resp.miss.value == 1)
+    # return signals
+    return signals
 
 
-def miss_allStage_requestor_2(tlb):
+def miss_allStage_requestor_2(tlb) -> dict:
     # generate signals
     signals = tlb.gene_rand_TLBsignal_batch()
     # initialize dut with signals
@@ -301,3 +329,5 @@ def miss_allStage_requestor_2(tlb):
     tlb.dut.Step(2)
     # assert result
     assert (tlb.requestor_2.resp.miss.value == 1)
+    # return signals
+    return signals
