@@ -7,19 +7,38 @@ from comm import UT_FCOV, module_name_with
 
 grp = fc.CovGroup(UT_FCOV("../../CLASSIC"))
 
+
+def check_isRVC(index: int, expected_value: int):
+    def checker(x):
+        attr_name = f"io_out_pd_{index}_isRVC"
+        return getattr(x, attr_name).value == expected_value
+
+    return checker
+
+
+def check_hasHalfValid(index: int, expected_value: int):
+    def checker(x):
+        attr_name = f"io_out_hasHalfValid_{index}"
+        return getattr(x, attr_name).value == expected_value
+
+    return checker
+
+
+def check_pdValid(index: int, expected_value: int):
+    def checker(x):
+        attr_name = f"io_out_pd_{index}_valid"
+        return getattr(x, attr_name).value == expected_value
+
+    return checker
+
+
 def init_cov(dut:DUTPreDecode, grp: fc.CovGroup):
     for i in range(16):
         grp.add_cover_point(
             dut,
             {
-                "instr is rvc:": lambda x, current_i=i: getattr(
-                    x, f"io_out_pd_{current_i}_isRVC"
-                ).value
-                == 1,
-                "instr is rvi:": lambda x, current_i=i: getattr(
-                    x, f"io_out_pd_{current_i}_isRVC"
-                ).value
-                == 0,
+                "instr is rvc:": check_isRVC(i, 1),
+                "instr is rvi:": check_isRVC(i, 0),
             },
             name=f"check_rvc_rvi_{i}",
         )
@@ -28,14 +47,8 @@ def init_cov(dut:DUTPreDecode, grp: fc.CovGroup):
         grp.add_cover_point(
             dut,
             {
-                "instr is half_valid_start:": lambda x, current_i=i: getattr(
-                    x, f"io_out_hasHalfValid_{current_i}"
-                ).value
-                == 1,
-                "instr is not half_valid_start:": lambda x, current_i=i: getattr(
-                    x, f"io_out_hasHalfValid_{current_i}"
-                ).value
-                == 0,
+                "instr is half_valid_start:": check_hasHalfValid(i, 1),
+                "instr is not half_valid_start:": check_hasHalfValid(i, 0),
             },
             name=f"check_half_valid_start_{i}",
         )
@@ -44,14 +57,8 @@ def init_cov(dut:DUTPreDecode, grp: fc.CovGroup):
         grp.add_cover_point(
             dut,
             {
-                "instr is valid_starts:": lambda x, current_i=i: getattr(
-                    x, f"io_out_pd_{current_i}_valid"
-                ).value
-                == 1,
-                "instr is not valid_starts:": lambda x, current_i=i: getattr(
-                    x, f"io_out_pd_{current_i}_valid"
-                ).value
-                == 0,
+                "instr is valid_starts:": check_pdValid(i, 1),
+                "instr is not valid_starts:": check_pdValid(i, 0),
             },
             name=f"check_valid_start_{i}",
         )

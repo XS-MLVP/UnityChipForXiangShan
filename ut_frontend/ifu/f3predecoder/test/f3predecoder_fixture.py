@@ -5,56 +5,50 @@ from ..env import F3PreDecoderEnv
 import toffee.funcov as fc
 from comm import UT_FCOV, module_name_with
 
+
 grp = fc.CovGroup(UT_FCOV("../../CLASSIC"))
+
+
+def check_function(
+    attr_name: str, expected_value: int, mask: int = 0xFFFFFFFF, shift: int = 0
+):
+    def checker(x):
+        return ((getattr(x, attr_name).value & mask) >> shift) == expected_value
+
+    return checker
+
+
 def init_cov(dut:DUTF3Predecoder, grp: fc.CovGroup):
     for i in range(16):
         grp.add_cover_point(
             dut,
             {
-                "instr is not cfi": lambda x, current_i=i: getattr(
-                    x, f"io_out_pd_{current_i}_brType"
-                ).value
-                == 0,
-                "instr is branch": lambda x, current_i=i: getattr(
-                    x, f"io_out_pd_{current_i}_brType"
-                ).value
-                == 1,
-                "instr is jal": lambda x, current_i=i: getattr(
-                    x, f"io_out_pd_{current_i}_brType"
-                ).value
-                == 2,
-                "instr is jalr": lambda x, current_i=i: getattr(
-                    x, f"io_out_pd_{current_i}_brType"
-                ).value
-                == 3,
+                "instr is not cfi": check_function(f"io_out_pd_{i}_brType", 0),
+                "instr is branch": check_function(f"io_out_pd_{i}_brType", 1),
+                "instr is jal": check_function(f"io_out_pd_{i}_brType", 2),
+                "instr is jalr": check_function(f"io_out_pd_{i}_brType", 3),
             },
             name=f"check_cfi_{i}",
         )
-
     for i in range(16):
         grp.add_cover_point(
             dut,
             {
-                "instr is RVI.JAL and is call": lambda x, current_i=i: getattr(
-                    x, f"io_out_pd_{current_i}_isCall"
-                ).value
-                == 1
-                and getattr(x, f"io_in_instr_{current_i}").value & 0b1111111
-                == 0b1101111,
-                "instr is RVI.JAL and is not call or ret": lambda x, current_i=i: getattr(
-                    x, f"io_out_pd_{current_i}_isCall"
-                ).value
-                == 0
-                and getattr(x, f"io_out_pd_{current_i}_isRet").value == 0
-                and getattr(x, f"io_in_instr_{current_i}").value & 0b1111111
-                == 0b1101111,
-                "instr is RVC.JAL and is not call or ret": lambda x, current_i=i: getattr(
-                    x, f"io_out_pd_{current_i}_isCall"
-                ).value
-                == 0
-                and getattr(x, f"io_out_pd_{current_i}_isRet").value == 0
-                and getattr(x, f"io_in_instr_{current_i}").value & 0b11 == 0b01
-                and (getattr(x, f"io_in_instr_{current_i}").value >> 13) == 0b101,
+                "instr is RVI.JAL and is call": check_function(
+                    f"io_out_pd_{i}_isCall", 1
+                )
+                and check_function(f"io_in_instr_{i}", 0b1101111, mask=0b1111111),
+                "instr is RVI.JAL and is not call or ret": check_function(
+                    f"io_out_pd_{i}_isCall", 0
+                )
+                and check_function(f"io_out_pd_{i}_isRet", 0)
+                and check_function(f"io_in_instr_{i}", 0b1101111, mask=0b1111111),
+                "instr is RVC.JAL and is not call or ret": check_function(
+                    f"io_out_pd_{i}_isCall", 0
+                )
+                and check_function(f"io_out_pd_{i}_isRet", 0)
+                and check_function(f"io_in_instr_{i}", 0b01, mask=0b11)
+                and check_function(f"io_in_instr_{i}", 0b101, shift=13),
             },
             name=f"check_jal_{i}",
         )
@@ -63,33 +57,25 @@ def init_cov(dut:DUTF3Predecoder, grp: fc.CovGroup):
         grp.add_cover_point(
             dut,
             {
-                "instr is RVI.JALR and is call": lambda x, current_i=i: getattr(
-                    x, f"io_out_pd_{current_i}_isCall"
-                ).value
-                == 1
-                and getattr(x, f"io_in_instr_{current_i}").value & 0b1111111
-                == 0b1100111,
-                "instr is RVI.JALR and is ret": lambda x, current_i=i: getattr(
-                    x, f"io_out_pd_{current_i}_isRet"
-                ).value
-                == 1
-                and getattr(x, f"io_in_instr_{current_i}").value & 0b1111111
-                == 0b1100111,
-                "instr is RVI.JALR and is not call or ret": lambda x, current_i=i: getattr(
-                    x, f"io_out_pd_{current_i}_isRet"
-                ).value
-                == 0
-                and getattr(x, f"io_out_pd_{current_i}_isCall").value == 0
-                and getattr(x, f"io_in_instr_{current_i}").value & 0b1111111
-                == 0b1100111,
-                "instr is RVC.JALR and is not call or ret": lambda x, current_i=i: getattr(
-                    x, f"io_out_pd_{current_i}_isRet"
-                ).value
-                == 0
-                and getattr(x, f"io_out_pd_{current_i}_isCall").value == 0
-                and getattr(x, f"io_in_instr_{current_i}").value & 0b1111111
-                == 0b0000010
-                and (getattr(x, f"io_in_instr_{current_i}").value >> 12) == 0b1001,
+                "instr is RVI.JALR and is call": check_function(
+                    f"io_out_pd_{i}_isCall", 1
+                )
+                and check_function(f"io_in_instr_{i}",0b1100111,mask = 0b1111111),
+                "instr is RVI.JALR and is ret": check_function(
+                    f"io_out_pd_{i}_isRet", 1
+                )
+                and check_function(f"io_in_instr_{i}", 0b1100111, mask=0b1111111),
+                "instr is RVI.JALR and is not call or ret": check_function(
+                    f"io_out_pd_{i}_isRet", 0
+                )
+                and check_function(f"io_out_pd_{i}_isCall", 0)
+                and check_function(f"io_in_instr_{i}", 0b1100111, mask=0b1111111),
+                "instr is RVC.JALR and is not call or ret": check_function(
+                    f"io_out_pd_{i}_isRet", 0
+                )
+                and check_function(f"io_out_pd_{i}_isCall", 0)
+                and check_function(f"io_in_instr_{i}", 0b0000010, mask=0b1111111)
+                and check_function(f"io_in_instr_{i}", 0b1001, shift=12),
             },
             name=f"check_jalr_{i}",
         )
@@ -98,21 +84,15 @@ def init_cov(dut:DUTF3Predecoder, grp: fc.CovGroup):
         grp.add_cover_point(
             dut,
             {
-                "instr is RVC.JR and is ret": lambda x, current_i=i: getattr(
-                    x, f"io_out_pd_{i}_isRet"
-                ).value
-                == 1
-                and getattr(x, f"io_in_instr_{current_i}").value & 0b1111111
-                == 0b0000010
-                and (getattr(x, f"io_in_instr_{current_i}").value >> 12) == 0b1000,
-                "instr is RVC.JR and is not call or ret": lambda x, current_i=i: getattr(
-                    x, f"io_out_pd_{current_i}_isRet"
-                ).value
-                == 0
-                and getattr(x, f"io_out_pd_{current_i}_isCall").value == 0
-                and getattr(x, f"io_in_instr_{current_i}").value & 0b1111111
-                == 0b0000010
-                and (getattr(x, f"io_in_instr_{current_i}").value >> 12) == 0b1000,
+                "instr is RVC.JR and is ret": check_function(f"io_out_pd_{i}_isRet", 1)
+                and check_function(f"io_in_instr_{i}",0b0000010,mask = 0b1111111)
+                and check_function(f"io_in_instr_{i}",0b1000,shift= 12),
+                "instr is RVC.JR and is not call or ret": check_function(
+                    f"io_out_pd_{i}_isRet", 0
+                )
+                and check_function(f"io_out_pd_{i}_isCall", 0)
+                and check_function(f"io_in_instr_{i}",0b0000010,mask = 0b1111111)
+                and check_function(f"io_in_instr_{i}",0b1000,shift=12),
             },
             name=f"check_jr_{i}",
         )
