@@ -27,6 +27,6 @@ class IoBundle(Bundle):
     _wdata_0 = _0Bundle.from_prefix("_wdata_0")
     _rdata_1 = _1Bundle.from_prefix("_rdata_1")
 
-class FTQPcMemBundle(Bundle):
+class FtbEntryMemBundle(Bundle):
     clock, reset = Signals(2)
     io = IoBundle.from_prefix("io")
