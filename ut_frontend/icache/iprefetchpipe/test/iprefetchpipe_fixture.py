@@ -14,6 +14,10 @@ async def iprefetchpipe_env(toffee_request: toffee_test.ToffeeRequest):
     start_clock(dut)
     iprefetchpipe_env = IPrefetchPipeEnv(dut)
     toffee_request.add_cov_groups([get_cover_group_of_receive_prefetch_quest(dut)])
+    iprefetchpipe_env.dut.reset.value = 1
+    iprefetchpipe_env.dut.Step(10)
+    iprefetchpipe_env.dut.reset.value = 0
+    iprefetchpipe_env.dut.Step(10)
     yield iprefetchpipe_env
 
     cur = asyncio.get_event_loop()
