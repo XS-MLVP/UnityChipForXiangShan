@@ -60,8 +60,7 @@ class FtqRedirectMemAgent(Agent):
         data.NOS_flag = self.bundle.io._rdata_0._NOS._flag.value
         data.NOS_value = self.bundle.io._rdata_0._NOS._value.value
         data.topAddr = self.bundle.io._rdata_0._topAddr.value
-
-        await self.bundle.step()
+        # await self.bundle.step()
         return data
     
     #read in port 1
@@ -85,7 +84,7 @@ class FtqRedirectMemAgent(Agent):
         data.NOS_value = self.bundle.io._rdata_1._NOS._value.value
         data.sc_disagree_0 = self.bundle.io._rdata_1._sc_disagree._0.value
         data.sc_disagree_1 = self.bundle.io._rdata_1._sc_disagree._1.value
-        await self.bundle.step()
+        # await self.bundle.step()
         return data
 
     #read in port 2
@@ -97,7 +96,7 @@ class FtqRedirectMemAgent(Agent):
         self.bundle.io._ren._2.value = 0
         data = rDataPort2()
         data.hisPtr_value = self.bundle.io._rdata_2._histPtr._value.value
-        await self.bundle.step()
+        # await self.bundle.step()
         return data
     
     #write in port 0
