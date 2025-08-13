@@ -1,1 +1,1 @@
-from .ftq_pc_mem_bundle import FTQPcMemBundle
+from .ftq_pc_mem_bundle import FtqPcMemBundle
