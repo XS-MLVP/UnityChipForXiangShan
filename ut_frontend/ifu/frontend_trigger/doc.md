@@ -4,7 +4,7 @@
 
 ### **接口说明**
 
-```java
+```verilog
 module FrontendTrigger(
   input         clock,
   input         reset,
