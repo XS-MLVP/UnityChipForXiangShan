@@ -43,5 +43,6 @@ def get_coverage_group_of_update_register(loadqueue_rar_env: LoadQueueRAREnv) ->
                       name="RAR_RELEASE")
 
     g.add_watch_point(loadqueue_rar_env, {f"dequeue_{i}": is_dequeue(i) for i in range(72)}, name=f"RAR_DEQUEUE")
-        
+    g.mark_function("RAR_RELEASE", "test_ctl_releasedupdate", bin_name=["release"])
+    g.mark_function("RAR_DEQUEUE", "test_ctl_dequeue", bin_name=[f"dequeue_{i}" for i in range(72)])
     return g

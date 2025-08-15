@@ -33,7 +33,7 @@ def build(cfg):
     if not os.path.exists(get_root_dir("dut/LoadQueueReplay")):
         info("Exporting LoadQueueReplay.sv")
         rtl_files = get_all_rtl_files("LoadQueueReplay", cfg=cfg)
-        internal_signals_path = os.path.join(get_root_dir("scripts/mem_block_load_queue_replay/internal.yaml"))
+        internal_signals_path = os.path.join(get_root_dir("scripts/mem_block_lsq_replay_queue/internal.yaml"))
         extract_signals(get_rtl_dir("rtl/LoadQueueReplay.sv", cfg=cfg), internal_signals_path)
         with NamedTemporaryFile("w+", encoding="utf-8", suffix=".txt") as filelist:
             filelist.write("\n".join(rtl_files))
