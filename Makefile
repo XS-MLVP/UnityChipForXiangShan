@@ -1,6 +1,6 @@
 .PHONY: dut rtl check_dut
 
-export PYTHONPATH := $(shell pwd):$(shell picker --show_xcom_lib_location_python):$(PYTHONPATH)
+export PYTHONPATH := $(shell pwd):$(shell picker --show_xcom_lib_location_python | tail -n 1):$(PYTHONPATH)
 export ENABLE_XINFO := 0
 export CFG := ""
 export DUTS := "*"
