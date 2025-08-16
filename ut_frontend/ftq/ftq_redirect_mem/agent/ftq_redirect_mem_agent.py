@@ -91,22 +91,22 @@ class FtqRedirectMemAgent(Agent):
     
     #write in port 0
     @driver_method()
-    async def write_0(self, wdata: wDataPort0, waddr: int):
+    async def write_0(self, wdata, waddr: int):
         self.bundle.io._wen_0.value = 1
         self.bundle.io._waddr_0.value = waddr
-        self.bundle.io._wdata_0._histPtr._flag.value = wdata.hisPtr_flag
-        self.bundle.io._wdata_0._histPtr._value.value = wdata.hisPtr_value
-        self.bundle.io._wdata_0._ssp.value = wdata.ssp
-        self.bundle.io._wdata_0._sctr.value = wdata.sctr
-        self.bundle.io._wdata_0._TOSW._flag.value = wdata.TOSW_flag
-        self.bundle.io._wdata_0._TOSW._value.value = wdata.TOSW_value
-        self.bundle.io._wdata_0._TOSR._flag.value = wdata.TOSR_flag
-        self.bundle.io._wdata_0._TOSR._value.value = wdata.TOSR_value
-        self.bundle.io._wdata_0._NOS._flag.value = wdata.NOS_flag
-        self.bundle.io._wdata_0._NOS._value.value = wdata.NOS_value
-        self.bundle.io._wdata_0._topAddr.value = wdata.topAddr
-        self.bundle.io._wdata_0._sc_disagree_0.value = wdata.sc_disagree_0
-        self.bundle.io._wdata_0._sc_disagree_1.value = wdata.sc_disagree_1
+        self.bundle.io._wdata_0._histPtr._flag.value = wdata[0]
+        self.bundle.io._wdata_0._histPtr._value.value = wdata[1]
+        self.bundle.io._wdata_0._ssp.value = wdata[2]
+        self.bundle.io._wdata_0._sctr.value = wdata[3]
+        self.bundle.io._wdata_0._TOSW._flag.value = wdata[4]
+        self.bundle.io._wdata_0._TOSW._value.value = wdata[5]
+        self.bundle.io._wdata_0._TOSR._flag.value = wdata[6]
+        self.bundle.io._wdata_0._TOSR._value.value = wdata[7]
+        self.bundle.io._wdata_0._NOS._flag.value = wdata[8]
+        self.bundle.io._wdata_0._NOS._value.value = wdata[9]
+        self.bundle.io._wdata_0._topAddr.value = wdata[10]
+        self.bundle.io._wdata_0._sc_disagree_0.value = wdata[11]
+        self.bundle.io._wdata_0._sc_disagree_1.value = wdata[12]
         
         await self.bundle.step()
         self.bundle.io._wen_0.value = 0

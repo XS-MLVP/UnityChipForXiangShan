@@ -119,3 +119,25 @@ async def test_read_2_at_31(ftq_redirect_mem_env:FtqRedirectMemEnv):
     assert data31[0] == 78
     print(f"read port 2 at addr 31: {data31}")
     print(f"Read Port 2 Test Passed at addr 31!!!")
+
+# 测试写入端口0
+# hisPtr_flag, hisPtr_value, ssp, sctr, TOSW_flag, TOSW_value, TOSR_flag, TOSR_value, NOS_flag, NOS_value, topAddr, sc_disagree_0, sc_disagree_1
+# 4.1 写入端口0的地址0
+@toffee_test.testcase
+async def test_write_0_at_0(ftq_redirect_mem_env:FtqRedirectMemEnv):
+    await ftq_redirect_mem_env.agent.reset()
+    print("\n--- Testing Write Port 0 at addr 0 ---")
+    data = [1, 100, 13, 3, 0, 26, 1, 8, 1, 30, 1234567890123456, 0, 0]
+    await ftq_redirect_mem_env.agent.write_0(data, 0)
+    print(f"write port 0 at addr 0: {data}")
+    print(f"Write Port 0 Test Passed at addr 0!!!")
+
+# 4.2 写入端口0的地址31
+@toffee_test.testcase
+async def test_write_0_at_31(ftq_redirect_mem_env:FtqRedirectMemEnv):
+    await ftq_redirect_mem_env.agent.reset()
+    print("\n--- Testing Write Port 0 at addr 31 ---")
+    data = [1, 100, 13, 3, 0, 26, 1, 8, 1, 30, 1234567890123456, 0, 0]
+    await ftq_redirect_mem_env.agent.write_0(data, 31)
+    print(f"write port 0 at addr 31: {data}")
+    print(f"Write Port 0 Test Passed at addr 31!!!")
