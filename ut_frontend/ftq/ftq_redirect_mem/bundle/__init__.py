@@ -1,1 +1,1 @@
-from ftq_redirect_mem_bundle import FtqRedirectMemBundle
+from .ftq_redirect_mem_bundle import FtqRedirectMemBundle

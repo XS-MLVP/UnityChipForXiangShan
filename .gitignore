@@ -5,6 +5,8 @@ __pycache__/
 .hugo_build.lock
 
 # results
+*.dat
+*.fst
 out/
 dut/*
 !dut/__init__.py

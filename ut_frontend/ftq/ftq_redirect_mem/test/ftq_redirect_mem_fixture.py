@@ -14,7 +14,7 @@ async def ftq_redirect_mem_env(toffee_request: toffee_test.ToffeeRequest):
     ftq_redirect_mem_env.dut.Step(10)
     ftq_redirect_mem_env.dut.reset.value = 0
     ftq_redirect_mem_env.dut.Step(10)
-    print(f"all signals: {ftq_redirect_mem_env.dut.GetInternalSignalList(use_vpi=False)}")
+    # print(f"all signals: {ftq_redirect_mem_env.dut.GetInternalSignalList(use_vpi=False)}")
     dut.InitClock("clock")
     
     print("--- [FIXTURE SETUP] Defining all functional coverage groups... ---")

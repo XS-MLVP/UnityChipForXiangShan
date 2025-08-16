@@ -13,16 +13,6 @@ class BaseData:
     NOS_flag = 0
     NOS_value = 0
 
-class rDataPort0(BaseData):
-    topAddr = 0
-
-class rDataPort1(BaseData):
-    sc_disagree_0 = 0
-    sc_disagree_1 = 0
-
-class rDataPort2:
-    hisPtr_value = 0
-
 class wDataPort0(BaseData):
     topAddr = 0
     sc_disagree_0 = 0
@@ -48,18 +38,18 @@ class FtqRedirectMemAgent(Agent):
         self.bundle.io._ren._0.value = 0
         
         # get data 
-        data = rDataPort0()
-        data.hisPtr_flag = self.bundle.io._rdata_0._histPtr._flag.value
-        data.hisPtr_value = self.bundle.io._rdata_0._histPtr._value.value
-        data.ssp = self.bundle.io._rdata_0._ssp.value
-        data.sctr = self.bundle.io._rdata_0._sctr.value
-        data.TOSW_flag = self.bundle.io._rdata_0._TOSW._flag.value
-        data.TOSW_value = self.bundle.io._rdata_0._TOSW._value.value
-        data.TOSR_flag = self.bundle.io._rdata_0._TOSR._flag.value
-        data.TOSR_value = self.bundle.io._rdata_0._TOSR._value.value
-        data.NOS_flag = self.bundle.io._rdata_0._NOS._flag.value
-        data.NOS_value = self.bundle.io._rdata_0._NOS._value.value
-        data.topAddr = self.bundle.io._rdata_0._topAddr.value
+        data = list()
+        data.append(self.bundle.io._rdata_0._histPtr._flag.value)
+        data.append(self.bundle.io._rdata_0._histPtr._value.value)
+        data.append(self.bundle.io._rdata_0._ssp.value)
+        data.append(self.bundle.io._rdata_0._sctr.value)
+        data.append(self.bundle.io._rdata_0._TOSW._flag.value)
+        data.append(self.bundle.io._rdata_0._TOSW._value.value)
+        data.append(self.bundle.io._rdata_0._TOSR._flag.value)
+        data.append(self.bundle.io._rdata_0._TOSR._value.value)
+        data.append(self.bundle.io._rdata_0._NOS._flag.value)
+        data.append(self.bundle.io._rdata_0._NOS._value.value)
+        data.append(self.bundle.io._rdata_0._topAddr.value)
         # await self.bundle.step()
         return data
     
@@ -71,19 +61,19 @@ class FtqRedirectMemAgent(Agent):
         await self.bundle.step()
         self.bundle.io._ren._1.value = 0
         #get data
-        data = rDataPort1()
-        data.hisPtr_flag = self.bundle.io._rdata_1._histPtr._flag.value
-        data.hisPtr_value = self.bundle.io._rdata_1._histPtr._value.value
-        data.ssp = self.bundle.io._rdata_1._ssp.value   
-        data.sctr = self.bundle.io._rdata_1._sctr.value
-        data.TOSW_flag = self.bundle.io._rdata_1._TOSW._flag.value
-        data.TOSW_value = self.bundle.io._rdata_1._TOSW._value.value
-        data.TOSR_flag = self.bundle.io._rdata_1._TOSR._flag.value
-        data.TOSR_value = self.bundle.io._rdata_1._TOSR._value.value
-        data.NOS_flag = self.bundle.io._rdata_1._NOS._flag.value
-        data.NOS_value = self.bundle.io._rdata_1._NOS._value.value
-        data.sc_disagree_0 = self.bundle.io._rdata_1._sc_disagree._0.value
-        data.sc_disagree_1 = self.bundle.io._rdata_1._sc_disagree._1.value
+        data = list()
+        data.append(self.bundle.io._rdata_1._histPtr._flag.value)
+        data.append(self.bundle.io._rdata_1._histPtr._value.value)
+        data.append(self.bundle.io._rdata_1._ssp.value)
+        data.append(self.bundle.io._rdata_1._sctr.value)
+        data.append(self.bundle.io._rdata_1._TOSW._flag.value)
+        data.append(self.bundle.io._rdata_1._TOSW._value.value)
+        data.append(self.bundle.io._rdata_1._TOSR._flag.value)
+        data.append(self.bundle.io._rdata_1._TOSR._value.value)
+        data.append(self.bundle.io._rdata_1._NOS._flag.value)
+        data.append(self.bundle.io._rdata_1._NOS._value.value)
+        data.append(self.bundle.io._rdata_1._sc_disagree_0.value)
+        data.append(self.bundle.io._rdata_1._sc_disagree_1.value)
         # await self.bundle.step()
         return data
 
@@ -94,8 +84,8 @@ class FtqRedirectMemAgent(Agent):
         self.bundle.io._raddr._2.value = raddr
         await self.bundle.step()
         self.bundle.io._ren._2.value = 0
-        data = rDataPort2()
-        data.hisPtr_value = self.bundle.io._rdata_2._histPtr._value.value
+        data = list()
+        data.append(self.bundle.io._rdata_2._histPtr._value.value)
         # await self.bundle.step()
         return data
     
@@ -115,8 +105,8 @@ class FtqRedirectMemAgent(Agent):
         self.bundle.io._wdata_0._NOS._flag.value = wdata.NOS_flag
         self.bundle.io._wdata_0._NOS._value.value = wdata.NOS_value
         self.bundle.io._wdata_0._topAddr.value = wdata.topAddr
-        self.bundle.io._wdata_0._sc_disagree._0.value = wdata.sc_disagree_0
-        self.bundle.io._wdata_0._sc_disagree._1.value = wdata.sc_disagree_1
+        self.bundle.io._wdata_0._sc_disagree_0.value = wdata.sc_disagree_0
+        self.bundle.io._wdata_0._sc_disagree_1.value = wdata.sc_disagree_1
         
         await self.bundle.step()
         self.bundle.io._wen_0.value = 0
