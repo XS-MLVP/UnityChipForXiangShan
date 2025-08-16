@@ -1,24 +1,6 @@
 from toffee import Agent, driver_method, monitor_method
 from ..bundle import FtqRedirectMemBundle
 
-class BaseData:
-    hisPtr_flag = 0
-    hisPtr_value = 0
-    ssp = 0
-    sctr = 0
-    TOSW_flag = 0
-    TOSW_value = 0
-    TOSR_flag = 0
-    TOSR_value = 0
-    NOS_flag = 0
-    NOS_value = 0
-
-class wDataPort0(BaseData):
-    topAddr = 0
-    sc_disagree_0 = 0
-    sc_disagree_1 = 0
-
-
 class FtqRedirectMemAgent(Agent):
     def __init__(self, bundle:FtqRedirectMemBundle):
         super().__init__(bundle)
@@ -37,7 +19,7 @@ class FtqRedirectMemAgent(Agent):
         self.bundle.io._ren._0.value = 1
         self.bundle.io._raddr._0.value = raddr
         await self.bundle.step()
-        self.bundle.io._ren._0.value = 0
+        # self.bundle.io._ren._0.value = 0
         
         # get data 
         data = list()
@@ -52,7 +34,7 @@ class FtqRedirectMemAgent(Agent):
         data.append(self.bundle.io._rdata_0._NOS._flag.value)
         data.append(self.bundle.io._rdata_0._NOS._value.value)
         data.append(self.bundle.io._rdata_0._topAddr.value)
-        await self.bundle.step()
+        # await self.bundle.step()
         return data
     
     #read in port 1
@@ -61,7 +43,7 @@ class FtqRedirectMemAgent(Agent):
         self.bundle.io._ren._1.value = 1
         self.bundle.io._raddr._1.value = raddr  
         await self.bundle.step()
-        self.bundle.io._ren._1.value = 0
+        # self.bundle.io._ren._1.value = 0
         #get data
         data = list()
         data.append(self.bundle.io._rdata_1._histPtr._flag.value)
@@ -76,7 +58,7 @@ class FtqRedirectMemAgent(Agent):
         data.append(self.bundle.io._rdata_1._NOS._value.value)
         data.append(self.bundle.io._rdata_1._sc_disagree_0.value)
         data.append(self.bundle.io._rdata_1._sc_disagree_1.value)
-        await self.bundle.step()
+        # await self.bundle.step()
         return data
 
     #read in port 2
@@ -85,10 +67,10 @@ class FtqRedirectMemAgent(Agent):
         self.bundle.io._ren._2.value = 1
         self.bundle.io._raddr._2.value = raddr
         await self.bundle.step()
-        self.bundle.io._ren._2.value = 0
+        # self.bundle.io._ren._2.value = 0
         data = list()
         data.append(self.bundle.io._rdata_2._histPtr_value.value)
-        await self.bundle.step()
+        # await self.bundle.step()
         return data
     
     #write in port 0
@@ -110,6 +92,6 @@ class FtqRedirectMemAgent(Agent):
         self.bundle.io._wdata_0._sc_disagree_0.value = wdata[11]
         self.bundle.io._wdata_0._sc_disagree_1.value = wdata[12]
         await self.bundle.step()
-        self.bundle.io._wen_0.value = 0
-        await self.bundle.step()
+        # self.bundle.io._wen_0.value = 0
+        # await self.bundle.step()
         

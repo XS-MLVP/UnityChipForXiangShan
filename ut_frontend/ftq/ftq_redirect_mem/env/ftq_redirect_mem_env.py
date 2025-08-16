@@ -3,7 +3,6 @@ from toffee.model import *
 from dut.FtqRedirectMem import DUTFtqRedirectMem
 from ..agent import FtqRedirectMemAgent
 from ..bundle import FtqRedirectMemBundle
-# from ..bundle import rDataPort0, rDataPort1, rDataPort2, wDataPort0
 
 # class FtqRedirectMemModel(Model):
 #     def __init__(self):

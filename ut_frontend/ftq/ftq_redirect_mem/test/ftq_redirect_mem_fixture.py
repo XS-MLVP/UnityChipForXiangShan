@@ -21,16 +21,13 @@ async def ftq_redirect_mem_env(toffee_request: toffee_test.ToffeeRequest):
     coverage_groups = create_coverage_groups(ftq_redirect_mem_env.bundle, dut)
     
     # Add all coverage groups to the test request
-    for coverage_group in coverage_groups:
-        toffee_request.add_cov_groups(coverage_group)
-        print(f"Added coverage group: {coverage_group.name}")
-
+    for g in coverage_groups:
+        toffee_request.add_cov_groups(g)
+        dut.StepRis(lambda x: g.sample())
+        print(f"Added coverage group: {g.name}")
+        
     yield ftq_redirect_mem_env
     
-    # Sample all coverage groups
-    for coverage_group in coverage_groups:
-        dut.StepRis(coverage_group.sample)
-        
     cur_loop = asyncio.get_event_loop()
     for task in asyncio.all_tasks(cur_loop):
         if task.get_name() == "__clock_loop":
