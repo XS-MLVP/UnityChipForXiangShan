@@ -80,6 +80,7 @@ class FtqRedirectMemEnv(Env):
 
     def __init__(self, dut:DUTFtqRedirectMem):
         super().__init__()
-        
-        bundle = FtqRedirectMemBundle.from_prefix("").bind(dut)
+        self.dut = dut
+        self.bundle = FtqRedirectMemBundle.from_prefix("").bind(dut)
         self.agent = FtqRedirectMemAgent(bundle)
+        self.bundle.set_all(0)
