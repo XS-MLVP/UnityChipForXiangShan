@@ -50,36 +50,72 @@ async def test_read_0_at_31(ftq_redirect_mem_env:FtqRedirectMemEnv):
     print(f"read port 0 at addr 31: {data31}")
     print(f"Read Port 0 Test Passed at addr 31!!!")
 
+# 测试读取端口1
+# hisPtr_flag, hisPtr_value, ssp, sctr, TOSW_flag, TOSW_value, TOSR_flag, TOSR_value, NOS_flag, NOS_value, sc_disagree_0, sc_disagree_1
+# 2.1 读取端口1的地址0
+@toffee_test.testcase
+async def test_read_1_at_0(ftq_redirect_mem_env:FtqRedirectMemEnv):
+    await ftq_redirect_mem_env.agent.reset()
+    print("\n--- Testing Read Port 1 at addr 0 ---")
+    
+    data0 = await ftq_redirect_mem_env.agent.read_1(0)
+    print(f"data0: {data0}")
+    assert data0[0] == 1
+    assert data0[1] == 238
+    assert data0[2] == 14
+    assert data0[3] == 3
+    assert data0[4] == 0
+    assert data0[5] == 26
+    assert data0[6] == 1
+    assert data0[7] == 9
+    assert data0[8] == 1
+    assert data0[9] == 30
+    assert data0[10] == 1
+    assert data0[11] == 1
+    print(f"read port 1 at addr 0: {data0}")
+    print(f"Read Port 1 Test Passed at addr 0!!!")
+
+# 2.2 读取端口1的地址31
+@toffee_test.testcase
+async def test_read_1_at_31(ftq_redirect_mem_env:FtqRedirectMemEnv):
+    await ftq_redirect_mem_env.agent.reset()
+    print("\n--- Testing Read Port 1 at addr 31 ---")
+    
+    data31 = await ftq_redirect_mem_env.agent.read_1(31)
+    print(f"data31: {data31}")
+    assert data31[0] == 1
+    assert data31[1] == 238
+    assert data31[2] == 14
+    assert data31[3] == 3
+    assert data31[4] == 0
+    assert data31[5] == 26
+    assert data31[6] == 1
+    assert data31[7] == 9
+    assert data31[8] == 1
+    assert data31[9] == 30
+    assert data31[10] == 1
+    assert data31[11] == 1
+    print(f"read port 1 at addr 31: {data31}")
+    print(f"Read Port 1 Test Passed at addr 31!!!")
+
+# # 测试读取端口2
+# # hisPtr_value
+# async def test_read_2_at_0(ftq_redirect_mem_env:FtqRedirectMemEnv):
+#     await ftq_redirect_mem_env.agent.reset()
+#     print("\n--- Testing Read Port 2 at addr 0 ---")
+    
+#     data0 = await ftq_redirect_mem_env.agent.read_2(0)
+#     assert data0[0] == 46
+#     print(f"read port 2 at addr 0: {data0}")
+#     print(f"Read Port 2 Test Passed at addr 0!!!")
+
+# # 2.2 读取端口2的地址31
 # @toffee_test.testcase
-# async def test_bundle_drive_fetch_req_inputs(icachemissunit_env: ICacheMissUnitEnv):
-#     dut_bundle = icachemissunit_env.bundle
-
-#     print("\n--- Testing Bundle: Driving fetch_req_valid ---")
-#     dut_bundle.io._fetch._req._valid.value = 1 # Corrected path
-#     await dut_bundle.step()
-#     assert dut_bundle.io._fetch._req._valid.value == 1
-#     print(f"Python side: dut_bundle.io._fetch._req._valid.value = {dut_bundle.io._fetch._req._valid.value}")
-
-#     dut_bundle.io._fetch._req._valid.value = 0 # Corrected path
-#     await dut_bundle.step()
-#     assert dut_bundle.io._fetch._req._valid.value == 0
-#     print(f"Python side: dut_bundle.io._fetch._req._valid.value = {dut_bundle.io._fetch._req._valid.value}")
-
-#     print("\n--- Testing Bundle: Driving fetch_req_bits_blkPaddr ---")
-#     test_addr = 0xABCD0000
-#     dut_bundle.io._fetch._req._bits._blkPaddr.value = test_addr # Corrected path
-#     await dut_bundle.step()
-#     assert dut_bundle.io._fetch._req._bits._blkPaddr.value == test_addr
-#     print(f"Python side: dut_bundle.io._fetch._req._bits._blkPaddr.value = {hex(dut_bundle.io._fetch._req._bits._blkPaddr.value)}")
-
-#     print("\n--- Testing Bundle: Driving fencei ---")
-#     # fencei is directly under _21Bundle (io)
-#     dut_bundle.io._fencei.value = 1 # This was likely correct before if _fencei exists directly under io
-#     await dut_bundle.step()
-#     assert dut_bundle.io._fencei.value == 1
-#     print(f"Python side: dut_bundle.io._fencei.value = {dut_bundle.io._fencei.value}")
-#     dut_bundle.io._fencei.value = 0
-#     await dut_bundle.step()
-#     assert dut_bundle.io._fencei.value == 0
-#     print(f"Python side: dut_bundle.io._fencei.value = {dut_bundle.io._fencei.value}")
-#     print("Bundle drive tests completed.")
+# async def test_read_2_at_31(ftq_redirect_mem_env:FtqRedirectMemEnv):
+#     await ftq_redirect_mem_env.agent.reset()
+#     print("\n--- Testing Read Port 2 at addr 31 ---")
+    
+#     data31 = await ftq_redirect_mem_env.agent.read_2(31)
+#     assert data31[0] == 46
+#     print(f"read port 2 at addr 31: {data31}")
+#     print(f"Read Port 2 Test Passed at addr 31!!!")
