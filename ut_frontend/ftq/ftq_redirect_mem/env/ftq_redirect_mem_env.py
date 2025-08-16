@@ -75,12 +75,30 @@ from ..bundle import FtqRedirectMemBundle
 #         self.topAddr[addr] = data.top_addr
 #         self.scDisagree0[addr] = data.sc_disagree0
 #         self.scDisagree1[addr] = data.sc_disagree1
+def set_write_mode_imm(dut):
+    dut.io_wen_0.AsImmWrite()
+    dut.io_waddr_0.AsImmWrite()
+    dut.io_wdata_0_histPtr_flag.AsImmWrite()
+    dut.io_wdata_0_histPtr_value.AsImmWrite()
+    dut.io_wdata_0_ssp.AsImmWrite()
+    dut.io_wdata_0_sctr.AsImmWrite()
+    dut.io_wdata_0_TOSW_flag.AsImmWrite()
+    dut.io_wdata_0_TOSW_value.AsImmWrite()
+    dut.io_wdata_0_TOSR_flag.AsImmWrite()
+    dut.io_wdata_0_TOSR_value.AsImmWrite()
+    dut.io_wdata_0_NOS_flag.AsImmWrite()
+    dut.io_wdata_0_NOS_value.AsImmWrite()
+    dut.io_wdata_0_topAddr.AsImmWrite()
+    dut.io_ren_0.AsImmWrite()
+    dut.io_ren_1.AsImmWrite()
+    dut.io_ren_2.AsImmWrite()
 
 class FtqRedirectMemEnv(Env):
 
     def __init__(self, dut:DUTFtqRedirectMem):
         super().__init__()
         self.dut = dut
+        set_write_mode_imm(self.dut)
         self.bundle = FtqRedirectMemBundle.from_prefix("").bind(dut)
         self.agent = FtqRedirectMemAgent(self.bundle)
         self.bundle.set_all(0)

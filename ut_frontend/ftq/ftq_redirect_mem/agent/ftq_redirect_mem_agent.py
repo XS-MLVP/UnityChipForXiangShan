@@ -18,10 +18,12 @@ class wDataPort0(BaseData):
     sc_disagree_0 = 0
     sc_disagree_1 = 0
 
+
 class FtqRedirectMemAgent(Agent):
     def __init__(self, bundle:FtqRedirectMemBundle):
         super().__init__(bundle)
         self.bundle = bundle
+        
     
     async def reset(self):
         self.bundle.reset.value = 1
@@ -50,7 +52,7 @@ class FtqRedirectMemAgent(Agent):
         data.append(self.bundle.io._rdata_0._NOS._flag.value)
         data.append(self.bundle.io._rdata_0._NOS._value.value)
         data.append(self.bundle.io._rdata_0._topAddr.value)
-        # await self.bundle.step()
+        await self.bundle.step()
         return data
     
     #read in port 1
@@ -74,7 +76,7 @@ class FtqRedirectMemAgent(Agent):
         data.append(self.bundle.io._rdata_1._NOS._value.value)
         data.append(self.bundle.io._rdata_1._sc_disagree_0.value)
         data.append(self.bundle.io._rdata_1._sc_disagree_1.value)
-        # await self.bundle.step()
+        await self.bundle.step()
         return data
 
     #read in port 2
@@ -86,12 +88,12 @@ class FtqRedirectMemAgent(Agent):
         self.bundle.io._ren._2.value = 0
         data = list()
         data.append(self.bundle.io._rdata_2._histPtr_value.value)
-        # await self.bundle.step()
+        await self.bundle.step()
         return data
     
     #write in port 0
     @driver_method()
-    async def write_0(self, wdata, waddr: int):
+    async def write_0(self, wdata, waddr):        
         self.bundle.io._wen_0.value = 1
         self.bundle.io._waddr_0.value = waddr
         self.bundle.io._wdata_0._histPtr._flag.value = wdata[0]
@@ -107,7 +109,7 @@ class FtqRedirectMemAgent(Agent):
         self.bundle.io._wdata_0._topAddr.value = wdata[10]
         self.bundle.io._wdata_0._sc_disagree_0.value = wdata[11]
         self.bundle.io._wdata_0._sc_disagree_1.value = wdata[12]
-        
         await self.bundle.step()
         self.bundle.io._wen_0.value = 0
         await self.bundle.step()
+        

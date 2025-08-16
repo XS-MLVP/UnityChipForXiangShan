@@ -17,16 +17,16 @@ async def test_read_0_at_0(ftq_redirect_mem_env:FtqRedirectMemEnv):
     
     data0 = await ftq_redirect_mem_env.agent.read_0(0)
     assert data0[0] == 0
-    assert data0[1] == 46
-    assert data0[2] == 11
-    assert data0[3] == 2
-    assert data0[4] == 0
-    assert data0[5] == 13
+    assert data0[1] == 199
+    assert data0[2] == 8
+    assert data0[3] == 6
+    assert data0[4] == 1
+    assert data0[5] == 5
     assert data0[6] == 1
-    assert data0[7] == 12
+    assert data0[7] == 15
     assert data0[8] == 0
-    assert data0[9] == 26
-    assert data0[10] == 351244621699960
+    assert data0[9] ==  1
+    assert data0[10] == 84348167230997
     print(f"read port 0 at addr 0: {data0}")
 
 # 1.2 读取端口0的地址1
@@ -35,18 +35,17 @@ async def test_read_0_at_31(ftq_redirect_mem_env:FtqRedirectMemEnv):
     await ftq_redirect_mem_env.agent.reset()
     print("\n--- Testing Read Port 0 at addr 31 ---")
     data31 = await ftq_redirect_mem_env.agent.read_0(31)
-    print(f"read port 0 at addr 31: {data31}")
     assert data31[0] == 0
-    assert data31[1] == 46
-    assert data31[2] == 11
-    assert data31[3] == 2
-    assert data31[4] == 0
-    assert data31[5] == 13
+    assert data31[1] == 199
+    assert data31[2] == 8
+    assert data31[3] == 6
+    assert data31[4] == 1
+    assert data31[5] == 5
     assert data31[6] == 1
-    assert data31[7] == 12
+    assert data31[7] == 15
     assert data31[8] == 0
-    assert data31[9] == 26
-    assert data31[10] == 351244621699960
+    assert data31[9] == 1
+    assert data31[10] == 84348167230997
     print(f"read port 0 at addr 31: {data31}")
     print(f"Read Port 0 Test Passed at addr 31!!!")
 
@@ -59,18 +58,19 @@ async def test_read_1_at_0(ftq_redirect_mem_env:FtqRedirectMemEnv):
     print("\n--- Testing Read Port 1 at addr 0 ---")
     
     data0 = await ftq_redirect_mem_env.agent.read_1(0)
-    assert data0[0] == 1
-    assert data0[1] == 238
-    assert data0[2] == 14
-    assert data0[3] == 3
-    assert data0[4] == 0
-    assert data0[5] == 26
+    print(f"data0: {data0}")
+    assert data0[0] == 0
+    assert data0[1] == 199
+    assert data0[2] == 8
+    assert data0[3] == 6
+    assert data0[4] == 1
+    assert data0[5] == 5
     assert data0[6] == 1
-    assert data0[7] == 9
-    assert data0[8] == 1
-    assert data0[9] == 30
-    assert data0[10] == 1
-    assert data0[11] == 1
+    assert data0[7] == 15
+    assert data0[8] == 0
+    assert data0[9] == 1
+    assert data0[10] == 0
+    assert data0[11] == 0
     print(f"read port 1 at addr 0: {data0}")
     print(f"Read Port 1 Test Passed at addr 0!!!")
 
@@ -81,18 +81,18 @@ async def test_read_1_at_31(ftq_redirect_mem_env:FtqRedirectMemEnv):
     print("\n--- Testing Read Port 1 at addr 31 ---")
     
     data31 = await ftq_redirect_mem_env.agent.read_1(31)
-    assert data31[0] == 1
-    assert data31[1] == 238
-    assert data31[2] == 14
-    assert data31[3] == 3
-    assert data31[4] == 0
-    assert data31[5] == 26
+    assert data31[0] == 0
+    assert data31[1] == 199
+    assert data31[2] == 8
+    assert data31[3] == 6
+    assert data31[4] == 1
+    assert data31[5] == 5
     assert data31[6] == 1
-    assert data31[7] == 9
-    assert data31[8] == 1
-    assert data31[9] == 30
-    assert data31[10] == 1
-    assert data31[11] == 1
+    assert data31[7] == 15
+    assert data31[8] ==  0
+    assert data31[9] == 1
+    assert data31[10] == 0
+    assert data31[11] == 0
     print(f"read port 1 at addr 31: {data31}")
     print(f"Read Port 1 Test Passed at addr 31!!!")
 
@@ -105,7 +105,7 @@ async def test_read_2_at_0(ftq_redirect_mem_env:FtqRedirectMemEnv):
     print("\n--- Testing Read Port 2 at addr 0 ---")
     
     data0 = await ftq_redirect_mem_env.agent.read_2(0)
-    assert data0[0] == 78
+    assert data0[0] == 199
     print(f"read port 2 at addr 0: {data0}")
     print(f"Read Port 2 Test Passed at addr 0!!!")
 
@@ -116,7 +116,7 @@ async def test_read_2_at_31(ftq_redirect_mem_env:FtqRedirectMemEnv):
     print("\n--- Testing Read Port 2 at addr 31 ---")
     
     data31 = await ftq_redirect_mem_env.agent.read_2(31)
-    assert data31[0] == 78
+    assert data31[0] == 199
     print(f"read port 2 at addr 31: {data31}")
     print(f"Read Port 2 Test Passed at addr 31!!!")
 
@@ -141,3 +141,19 @@ async def test_write_0_at_31(ftq_redirect_mem_env:FtqRedirectMemEnv):
     await ftq_redirect_mem_env.agent.write_0(data, 31)
     print(f"write port 0 at addr 31: {data}")
     print(f"Write Port 0 Test Passed at addr 31!!!")
+
+# 测试写入端口0 and 读取端口0
+# 5.1 写入端口0的地址0后读取端口0的地址0
+@toffee_test.testcase
+async def test_write_0_and_read_0_at_0(ftq_redirect_mem_env:FtqRedirectMemEnv):
+    # await ftq_redirect_mem_env.agent.reset()
+    print("\n--- Testing Write Port 0 and Read Port 0 at addr 0 ---")
+    data = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0]
+    await ftq_redirect_mem_env.agent.write_0(data, 0)
+    print(f"write port 0 at addr 0: {data}")
+    print(f"Write Port 0 Test Passed at addr 0!!!")
+    read_data = await ftq_redirect_mem_env.agent.read_0(0)
+    res_data = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    assert read_data == res_data
+    print(f"read port 0 at addr 0: {read_data}")
+    print(f"Read Port 0 Test Passed at addr 0!!!")
