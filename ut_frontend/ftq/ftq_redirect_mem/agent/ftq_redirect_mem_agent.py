@@ -85,7 +85,7 @@ class FtqRedirectMemAgent(Agent):
         await self.bundle.step()
         self.bundle.io._ren._2.value = 0
         data = list()
-        data.append(self.bundle.io._rdata_2._histPtr._value.value)
+        data.append(self.bundle.io._rdata_2._histPtr_value.value)
         # await self.bundle.step()
         return data
     
