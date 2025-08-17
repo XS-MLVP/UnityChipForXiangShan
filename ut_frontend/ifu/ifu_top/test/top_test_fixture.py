@@ -9,8 +9,12 @@ from ..env import IFUTopEnv
 async def ifu_top_env(toffee_request: toffee_test.ToffeeRequest):
     import asyncio
     # version_check()
-    dut = toffee_request.create_dut(DUTNewIFU)
+    dut: DUTNewIFU = toffee_request.create_dut(DUTNewIFU, clock_name="clock")
     start_clock(dut)
+    dut.reset.value = 1
+    dut.Step()
+    dut.reset.value = 0 
+    dut.Step(6)
     ifu_env_cur = IFUTopEnv(dut)
     yield ifu_env_cur
 

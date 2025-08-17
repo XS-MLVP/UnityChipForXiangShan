@@ -1,6 +1,7 @@
 import toffee_test
 from .top_test_fixture import ifu_top_env
 from ..datadef import FTQQuery, ICacheStatusResp, FTQFlushInfo, FromUncache, ITLBResp, PMPResp, RobCommit, FrontendTriggerReq
+from ..agent import OutsideAgent
 
 import random 
 
@@ -20,14 +21,14 @@ async def test_smoke1(ifu_top_env):
     # this is just an example, maybe still some hidden relations of the inputs need to be found
     ftq_query = FTQQuery()
     ftq_query.ftqIdx.flag = False
-    ftq_query.ftqIdx.value = 2
+    ftq_query.ftqIdx.value = 0
 
     ftq_query.ftqOffset.exists = False
-    ftq_query.ftqOffset.offsetIdx = 0 
+    ftq_query.ftqOffset.offsetIdx = 0
     ftq_query.startAddr = 14531204
     ftq_query.nextlineStart = ftq_query.startAddr + 64
 
-    ftq_query.nextStartAddr = 19191898
+    ftq_query.nextStartAddr = 14531230
 
 
     icache_resp = ICacheStatusResp()
@@ -36,14 +37,14 @@ async def test_smoke1(ifu_top_env):
     icache_resp.resp.double_line = (ftq_query.startAddr & 256)
     icache_resp.resp.pmp_mmios[0] = False
     icache_resp.resp.pmp_mmios[1] = False
-    icache_resp.resp.data = 0x1096_1144_1189_1204_1217_1221_1444
+    icache_resp.resp.data = 0x1096_1227_1189_1204_1217_1221_1444
     icache_resp.resp.vaddrs[0] = ftq_query.startAddr
     icache_resp.resp.vaddrs[1] = ftq_query.nextlineStart
     icache_resp.resp.exceptions[0] = False
     icache_resp.resp.exceptions[1] = False
     icache_resp.resp.paddr = 0x18151192
-    icache_resp.resp.gpaddr = 0x1798180418121814
-    icache_resp.resp.icache_valid = True
+    icache_resp.resp.gpaddr = 0x1798180418121
+    icache_resp.resp.icache_valid = True # if valid is true, it is not true, need more ctrl infos
     icache_resp.resp.VS_non_leaf_PTE = True
     icache_resp.resp.itlb_pbmts[0] = 0
     icache_resp.resp.itlb_pbmts[1] = 0
@@ -51,10 +52,10 @@ async def test_smoke1(ifu_top_env):
     ftq_flush_info = FTQFlushInfo()
     ftq_flush_info.flush_from_bpu.stgs["s2"].stg_valid = True
     ftq_flush_info.flush_from_bpu.stgs["s2"].ftqIdx.flag = False
-    ftq_flush_info.flush_from_bpu.stgs["s2"].ftqIdx.value = 4
-    ftq_flush_info.flush_from_bpu.stgs["s3"].stg_valid = False
+    ftq_flush_info.flush_from_bpu.stgs["s2"].ftqIdx.value = 2
+    ftq_flush_info.flush_from_bpu.stgs["s3"].stg_valid = True
     ftq_flush_info.flush_from_bpu.stgs["s3"].ftqIdx.flag = False
-    ftq_flush_info.flush_from_bpu.stgs["s3"].ftqIdx.value = 6
+    ftq_flush_info.flush_from_bpu.stgs["s3"].ftqIdx.value = 1
 
     ftq_flush_info.redirect.redirect_level = False
     ftq_flush_info.redirect.ftqIdx.flag = True
@@ -80,53 +81,98 @@ async def test_smoke1(ifu_top_env):
     pmp_resp = PMPResp()
     pmp_resp.instr = 0
     pmp_resp.mmio = True
+    fs_is_off = True
 
     rob_commits = [RobCommit() for i in range(8)]
 
     triggerReq = FrontendTriggerReq()
-    triggerReq.fsIsOff = True
+
+    top_agent:OutsideAgent = ifu_top_env.top_agent
     # done at stage 0
+    await top_agent.query_from_ftq(ftq_query)
+    await top_agent.from_ftq_flush(ftq_flush_info)
+    await top_agent.set_icache_ready(icache_resp.ready)
 
-    await ifu_top_env.top_agent.query_from_ftq(ftq_query)
-    await ifu_top_env.top_agent.from_ftq_flush(ftq_flush_info)
-    await ifu_top_env.top_agent.set_icache_ready(icache_resp.ready)
+    await top_agent.top.step()
 
-    await ifu_top_env.top_agent.top.step()
+    # entering stage 0
 
-    await ifu_top_env.top_agent.get_ftq_ready()
+    await top_agent.get_bpu_flush()
 
-    await ifu_top_env.top_agent.top.step()
+    # print(top_agent.top.io_ftqInter._fromFtq._req._valid.value)
+
+    await top_agent.top.step()
+    await top_agent.get_ftq_ready()
+
     # done at stage 2?
-    await ifu_top_env.top_agent.fake_resp(icache_resp)
-    await ifu_top_env.top_agent.top.step()
+
+    # entering stage1
+
+    await top_agent.fake_resp(icache_resp, fs_is_off=fs_is_off)
+
+    await top_agent.top.step()
+
+    # entering stage2
     # done at stage3?
-    await ifu_top_env.top_agent.receive_mmio_ftq_ptr()
-    await ifu_top_env.top_agent.set_mmio_commited(True)
+    await top_agent.receive_mmio_ftq_ptr()
+    await top_agent.set_mmio_commited(True)
 
-    await ifu_top_env.top_agent.set_touncache_ready(True)
-    await ifu_top_env.top_agent.get_to_uncache_req()
-    await ifu_top_env.top_agent.fake_from_uncache(from_uncache)
+    await top_agent.set_touncache_ready(True)
+    await top_agent.get_to_uncache_req()
+    await top_agent.fake_from_uncache(from_uncache)
 
-    await ifu_top_env.top_agent.set_itlb_req_ready(True)
-    await ifu_top_env.top_agent.fake_get_itlb_req()
+    await top_agent.set_itlb_req_ready(True)
+    await top_agent.fake_get_itlb_req()
 
-    await ifu_top_env.top_agent.get_itlb_resp_ready()
-    await ifu_top_env.top_agent.fake_itlb_resp(itlb_resp)
+    await top_agent.get_itlb_resp_ready()
+    await top_agent.fake_itlb_resp(itlb_resp)
 
-    await ifu_top_env.top_agent.receive_pmp_req_addr()
-    await ifu_top_env.top_agent.fake_pmp_resp(pmp_resp)
+    await top_agent.receive_pmp_req_addr()
+    await top_agent.fake_pmp_resp(pmp_resp)
 
-    await ifu_top_env.top_agent.fake_rob_commits(rob_commits)
+    await top_agent.fake_rob_commits(rob_commits)
 
-    await ifu_top_env.top_agent.set_triggers(triggerReq)
+    await top_agent.set_triggers(triggerReq)
 
-    await ifu_top_env.top_agent.set_ibuffer_ready(True)
-    await ifu_top_env.top_agent.get_toibuffer_info()
+    await top_agent.set_ibuffer_ready(True)
+    await top_agent.get_icache_stop()
+    await top_agent.get_cut_instrs()
+    await top_agent.get_predecode_res()
 
-    await ifu_top_env.top_agent.get_icache_stop()
-    await ifu_top_env.top_agent.top.step()
+    await top_agent.top.step()
     
-    await ifu_top_env.top_agent.collect_res_backto_ftq()
+    # entering stage3
+    # collect res of stage 2
+    await top_agent.get_exception_vecs()
+
+    await top_agent.get_f1_pcs_cut_ptrs()
+    await top_agent.get_addrs()
+
+    print()
+    print(f"f1_valid: {top_agent.top.internal_wires._f1_valid.value}")
+    print(f"f2_flush: {top_agent.top.internal_wires._f2_flush.value}")
+    print(f"f0_flush_from_bpu_probe: {top_agent.top.internal_wires._f0_flush_from_bpu_probe.value}")
+    # print(top_agent.top.internal_flushes._f2_ready.value)
+    print(f"f1_fire: {top_agent.top.internal_wires._f1_fire.value}")
+    print(f"f2_fire: {top_agent.top.internal_wires._f2_fire.value}")
+    print(f"f3_fire: {top_agent.top.internal_wires._f3_ready.value}")
+
+    await top_agent.get_ranges()
+    await top_agent.get_f3predecoder_res()
+    
+    await top_agent.get_extended_instrs()
+
+    await top_agent.top.step()
+
+        # collect res of stage 3
+
+    res1 = await top_agent.get_pred_checker_res()
+    await top_agent.collect_res_backto_ftq()
+
+    await top_agent.get_cur_last_half_valid()
+
+    await top_agent.get_toibuffer_info()
 
 
+    
 
