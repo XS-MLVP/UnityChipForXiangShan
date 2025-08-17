@@ -1,38 +1,45 @@
 from .ftq_datadef import FTQIdx
 
 class ToUncache():
-	addr = 0
-	valid = True
+	def __init__(self):
+		self.addr = 0
+		self.valid = True
 
 class FromUncache():
-	data = 0
-	valid = True
+	def __init__(self):
+		self.data = 0
+		self.valid = True
 	
 
 class ITLBReq():
-	vaddr = 0
-	valid = True
+	def __init__(self):
+		self.vaddr = 0
+		self.valid = True
 
 class Excp():
-	gpfInstr = False
-	afInstr = False
-	pfInstr = False
+	def __init__(self):
+		self.gpfInstr = False
+		self.afInstr = False
+		self.pfInstr = False
 
 class ITLBResp():
-	valid = True
-	paddr = 0
-	pbmt = 0
-	gpaddr = 0
-	excp = Excp()
-	isForVSnonLeafPTE = False
+	def __init__(self):
+		self.valid = True
+		self.paddr = 0
+		self.pbmt = 0
+		self.gpaddr = 0
+		self.excp = Excp()
+		self.isForVSnonLeafPTE = False
 
 
 class PMPResp():
-	instr = 0
-	mmio = True
+	def __init__(self):
+		self.instr = 0
+		self.mmio = True
 
 
 class RobCommit():
-	valid = False
-	ftqIdx = FTQIdx()
-	ftqOffset = 0
+	def __init__(self):
+		self.valid = False
+		self.ftqIdx = FTQIdx()
+		self.ftqOffset = 0
