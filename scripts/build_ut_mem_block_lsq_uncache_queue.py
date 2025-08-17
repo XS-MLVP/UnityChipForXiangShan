@@ -33,7 +33,7 @@ def build(cfg):
     if not os.path.exists(get_root_dir("dut/LoadQueueUncache")):
         info("Exporting LoadQueueUncache.sv")
         rtl_files = get_all_rtl_files("LoadQueueUncache", cfg=cfg)
-        internal_signals_path = os.path.join(get_root_dir("scripts/mem_block_load_queue_uncache/internal.yaml"))
+        internal_signals_path = os.path.join(get_root_dir("scripts/mem_block_lsq_uncache_queue/internal.yaml"))
         extract_signals(get_rtl_dir("rtl/LoadQueueUncache.sv", cfg=cfg), internal_signals_path)
         with NamedTemporaryFile("w+", encoding="utf-8", suffix=".txt") as filelist:
             filelist.write("\n".join(rtl_files))
