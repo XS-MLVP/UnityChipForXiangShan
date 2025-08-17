@@ -1,4 +1,7 @@
 class PreDecodeDataDef():
+    """
+    PreDecodeDataDef is a datadef that contains the pre-decode data for the PreDecode stage.
+    """
     def __init__(self):
         
         self.new_instrs = []
@@ -19,7 +22,9 @@ class PreDecodeDataDef():
     
 
 class F3PreDecodeData():
-    
+    """
+    F3PreDecodeData is a datadef that contains the pre-decode data for the F3 stage.
+    """
     def __init__(self):
         self.brTypes = [] 
         self.isCalls = [] 
@@ -34,6 +39,9 @@ class F3PreDecodeData():
         return self.brTypes == value.brTypes and self.isCalls == value.isCalls and self.isRets == value.isRets
 
 class PredCheckerRetData():
+    """
+    PredCheckerRetData is a datadef that contains the return data for the PredChecker.
+    """
     def __init__(self):
         self.ranges = []
         self.takens = []
