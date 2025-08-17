@@ -19,7 +19,7 @@ def define_read_ifuPtrPlus1_coverage(bundle: FtqPcMemBundle, dut) -> CovGroup:
     g = CovGroup("Read_IfuPtrPlus1")
     g.add_watch_point(
         {
-            "ifuPtrPlus1": bundle.io._ifuPtrPlus1._w_value
+            "ifuPtrPlus1": bundle.io._ifuPtr.Plus1_w_value
         },
         bins={
             "read_when_addr_0": lambda d: d["ifuPtrPlus1"].value == 0,
@@ -33,7 +33,7 @@ def define_read_ifuPtrPlus2_coverage(bundle: FtqPcMemBundle, dut) -> CovGroup:
     g = CovGroup("Read_IfuPtrPlus2")
     g.add_watch_point(
         {
-            "ifuPtrPlus2": bundle.io._ifuPtrPlus2._w_value
+            "ifuPtrPlus2": bundle.io._ifuPtr.Plus2_w_value
         },
         bins={
             "read_when_addr_0": lambda d: d["ifuPtrPlus2"].value == 0,
@@ -61,7 +61,7 @@ def define_read_pfPtrPlus1_coverage(bundle: FtqPcMemBundle, dut) -> CovGroup:
     g = CovGroup("Read_PfPtrPlus1")
     g.add_watch_point(
         {
-            "pfPtrPlus1": bundle.io._pfPtrPlus1._w_value
+            "pfPtrPlus1": bundle.io._pfPtr.Plus1_w_value
         },
         bins={
             "read_when_addr_0": lambda d: d["pfPtrPlus1"].value == 0,
@@ -89,7 +89,7 @@ def define_read_commPtrPlus1_coverage(bundle: FtqPcMemBundle, dut) -> CovGroup:
     g = CovGroup("Read_CommPtrPlus1")
     g.add_watch_point(
         {
-            "commPtrPlus1": bundle.io._commPtrPlus1._w_value
+            "commPtrPlus1": bundle.io._commPtr.Plus1_w_value
         },
         bins={
             "read_when_addr_0": lambda d: d["commPtrPlus1"].value == 0,
@@ -103,8 +103,8 @@ def define_write_port0_coverage(bundle: FtqPcMemBundle, dut) -> CovGroup:
     g = CovGroup("Write_Port0")
     g.add_watch_point(
         {
-            "wen": bundle.io._wen._0,
-            "waddr": bundle.io._waddr._0
+            "wen": bundle.io._wen,
+            "waddr": bundle.io._waddr
         },
         bins={
             "write_when_addr_0": lambda d: d["wen"].value == 1 and d["waddr"].value == 0,

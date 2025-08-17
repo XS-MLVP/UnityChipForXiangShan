@@ -21,6 +21,7 @@ class PfPtrBundle(Bundle):
 	Plus1_rdata = Rdata2Bundle.from_prefix("Plus1_rdata")
 
 class CommPtrBundle(Bundle):
+	_w_value, Plus1_w_value = Signals(2)
 	_rdata = Rdata3Bundle.from_prefix("_rdata")
 	Plus1_rdata = Rdata3Bundle.from_prefix("Plus1_rdata")
 
@@ -28,7 +29,7 @@ class WdataBundle(Bundle):
 	_startAddr, _nextLineAddr, _fallThruError = Signals(3)
 
 class IoBundle(Bundle):
-	_wen, _waddr = Signal(2)
+	_wen, _waddr = Signals(2)
 	_ifuPtr  = IfuPtrBundle.from_prefix("_ifuPtr")
 	_pfPtr   = PfPtrBundle.from_prefix("_pfPtr")
 	_commPtr = CommPtrBundle.from_prefix("_commPtr")

@@ -26,7 +26,7 @@ class FtqPcMemAgent(Agent):
     #read in port ifuPtrPlus1
     @driver_method()
     async def read_ifuPtrPlus1(self, raddr: int):
-        self.bundle.io._ifuPtrPlus1._w_value = raddr
+        self.bundle.io._ifuPtr.Plus1_w_value = raddr
         await self.bundle.step()
         data = list()
         data.append(self.bundle.io._ifuPtr.Plus1_rdata._startAddr.value)
@@ -37,7 +37,7 @@ class FtqPcMemAgent(Agent):
     #read in port ifuPtrPlus2
     @driver_method()
     async def read_ifuPtrPlus2(self, raddr: int):
-        self.bundle.io._ifuPtrPlus2._w_value = raddr
+        self.bundle.io._ifuPtr.Plus2_w_value = raddr
         await self.bundle.step()
         data = [self.bundle.io._ifuPtr.Plus2_rdata._startAddr.value]
         return data
@@ -55,7 +55,7 @@ class FtqPcMemAgent(Agent):
     #read in port pfPtrPlus1
     @driver_method()
     async def read_pfPtrPlus1(self, raddr: int):
-        self.bundle.io._pfPtrPlus1._w_value = raddr
+        self.bundle.io._pfPtr.Plus1_w_value = raddr
         await self.bundle.step()
         data = list()
         data.append(self.bundle.io._pfPtr.Plus1_rdata._startAddr.value)
@@ -71,7 +71,7 @@ class FtqPcMemAgent(Agent):
 
     #read in port commPtrPlus1
     async def read_commPtrPlus1(self, raddr: int):
-        self.bundle.io._commPtrPlus1._w_value = raddr
+        self.bundle.io._commPtr.Plus1_w_value = raddr
         await self.bundle.step()
         data = [self.bundle.io._commPtr.Plus1_rdata._startAddr.value]
         return data
