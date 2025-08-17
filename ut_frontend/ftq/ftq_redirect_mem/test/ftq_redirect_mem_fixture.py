@@ -1,8 +1,7 @@
 import asyncio,toffee,toffee_test
 from toffee import start_clock
 from dut.FtqRedirectMem import DUTFtqRedirectMem
-from ..env import FtqRedirectMemEnv
-from ..env.ftq_redirect_mem_coverage import create_coverage_groups
+from ..env import FtqRedirectMemEnv, create_coverage_groups
 
 @toffee_test.fixture
 async def ftq_redirect_mem_env(toffee_request: toffee_test.ToffeeRequest):

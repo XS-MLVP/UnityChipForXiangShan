@@ -1,1 +1,2 @@
 from .ftq_redirect_mem_env import FtqRedirectMemEnv
+from .ftq_redirect_mem_coverage import create_coverage_groups

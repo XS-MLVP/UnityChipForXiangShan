@@ -1,8 +1,7 @@
 import asyncio, toffee, toffee_test
 from toffee import start_clock
 from dut.FtqPdMem import DUTFtqPdMem
-from ..env import FtqPdMemEnv
-from ..env.ftq_pd_mem_coverage import create_coverage_groups
+from ..env import FtqPdMemEnv, create_coverage_groups
 
 @toffee_test.fixture
 async def ftq_pd_mem_env(toffee_request: toffee_test.ToffeeRequest):

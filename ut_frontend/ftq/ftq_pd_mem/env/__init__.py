@@ -1,1 +1,2 @@
 from .ftq_pd_mem_env import FtqPdMemEnv
+from .ftq_pd_mem_coverage import create_coverage_groups
