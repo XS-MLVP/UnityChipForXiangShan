@@ -12,10 +12,10 @@ def set_write_mode_imm(dut: DUTFtqPdMem):
     dut.io_wen_0.AsImmWrite()
     dut.io_waddr_0.AsImmWrite()
     for i in range(16):
-        getattr(dut.io_wdata_0._brMask, f"_{i}").AsImmWrite()
-        getattr(dut.io_wdata_0._rvcMask, f"_{i}").AsImmWrite()
+        getattr(dut, f"io_wdata_0_brMask_{i}").AsImmWrite()
+        getattr(dut, f"io_wdata_0_rvcMask_{i}").AsImmWrite()
     for i in range(3):
-        getattr(dut.io_wdata_0._jmpInfo._bits, f"_{i}").AsImmWrite()
+        getattr(dut, f"io_wdata_0_jmpInfo_bits_{i}").AsImmWrite()
     dut.io_wdata_0_jmpInfo_valid.AsImmWrite()
     dut.io_wdata_0_jmpOffset.AsImmWrite()
     dut.io_wdata_0_jalTarget.AsImmWrite()

@@ -5,6 +5,7 @@ import toffee_test
 @toffee_test.testcase
 async def test_smoke(ftq_redirect_mem_env:FtqRedirectMemEnv):
     await ftq_redirect_mem_env.agent.reset()
+    print("\n--- Smoke Test Passed!!! ---")
 
 # 测试读取端口0
 # hisPtr_flag, hisPtr_value, ssp, sctr, TOSW_flag, TOSW_value, TOSR_flag, TOSR_value, NOS_flag, NOS_value, topAddr
