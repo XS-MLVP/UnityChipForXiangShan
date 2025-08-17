@@ -25,7 +25,6 @@ class FtqPdMemAgent(Agent):
         data.append([getattr(self.bundle.io._rdata_0._jmp.Info._bits, f"_{i}").value for i in range(3)])
         data.append(self.bundle.io._rdata_0._jmp.Info._valid.value)
         data.append(self.bundle.io._rdata_0._jmp.Offset.value)
-        # self.bundle.step()
         return data
 
     #read in port 1
@@ -42,7 +41,6 @@ class FtqPdMemAgent(Agent):
         data.append(self.bundle.io._rdata_1._jmp.Info._valid.value)
         data.append(self.bundle.io._rdata_1._jmp.Offset.value)
         data.append(self.bundle.io._rdata_1._jalTarget.value)
-        # self.bundle.step()
         return data
     
     #write in port 0
@@ -60,4 +58,3 @@ class FtqPdMemAgent(Agent):
         self.bundle.io._wdata_0._jalTarget.value = data[5]
         await self.bundle.step()
         self.bundle.io._wen_0.value = 0
-        # await self.bundle.step()
