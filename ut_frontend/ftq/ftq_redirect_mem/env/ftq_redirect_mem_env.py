@@ -74,7 +74,7 @@ from ..bundle import FtqRedirectMemBundle
 #         self.topAddr[addr] = data.top_addr
 #         self.scDisagree0[addr] = data.sc_disagree0
 #         self.scDisagree1[addr] = data.sc_disagree1
-def set_write_mode_imm(dut):
+def set_write_mode_imm(dut: DUTFtqRedirectMem):
     dut.io_wen_0.AsImmWrite()
     dut.io_waddr_0.AsImmWrite()
     dut.io_wdata_0_histPtr_flag.AsImmWrite()
