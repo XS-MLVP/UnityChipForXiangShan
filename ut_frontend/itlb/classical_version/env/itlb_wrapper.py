@@ -20,6 +20,7 @@ from datetime import datetime
 import toffee.funcov as fc
 
 from dut.TLB import *
+from ut_frontend.itlb.classical_version.env.itlb_utils import other_than
 from .itlb_consts import *
 from queue import Queue
 from comm import get_version_checker, get_out_dir, UT_FCOV
@@ -280,6 +281,14 @@ class TLBWrapper(toffee.Bundle):
         self.dut.reset.value = 0
         # print(">>> RESET FINISHED !")
 
+    def cleanup_requestor(self, requestor: int):
+        self.reset()
+        self.flushPipe[requestor].value = 1
+        self.dut.Step()
+        self.flushPipe[requestor].value = 0
+        self.dut.Step(2)
+        # print(f">>> CLEANUP requestor_{i} FINISHED !")
+
     def gene_rand_TLBreq(self):
         """
         generate random TLB request
@@ -287,6 +296,27 @@ class TLBWrapper(toffee.Bundle):
         req_valid = random.choice([0, 1])
         req_vaddr = random.randint(0, 2 ** 50 - 1)
         return req_valid, req_vaddr
+
+    def gene_rand_TLBsignal_batch(self) -> dict:
+        vpn, offset = self.gene_rand_addr()
+        asid = random.randint(0, 2 ** 16 - 1)
+        ppn = random.randint(0, 2 ** 36 - 1)
+        ppn_low = [random.randint(0, 2 ** 3 - 1) for _ in range(8)]
+        valid_idx = [random.choice([0, 1]) for _ in range(8)]
+        return {
+            "asid": asid,
+            "vpn": vpn,
+            "offset": offset,
+            "ppn": ppn,
+            "ppn_low": ppn_low,
+            "valid_idx": valid_idx,
+        }
+
+    def gene_rand_addr(self) -> tuple[int, int]:
+        addr = random.randint(0, 2 ** 50 - 1)
+        pn = addr >> 12
+        offset = addr & 0xfff
+        return pn, offset
 
     def rand_req0(self):
         """
@@ -413,6 +443,328 @@ class TLBWrapper(toffee.Bundle):
             self.ptw_resp_s1.entry_asid.value = asid
             # TODO
         return randPPN
+
+    def init_dut_for_nostage_hit(self, vpn, asid, ppn, ppn_low):
+        # prepare data
+        addr_low = vpn & 0b111
+        ## ctrl signals
+        self.ctrl.io_ptw_resp_valid.value = 1
+        self.ctrl.io_ptw_resp_bits_s2xlate.value = 0b00
+        # initialize conditions
+        self.ptw_resp_s1.entry_tag.value = vpn >> 3
+        self.ptw_resp_s1.entry_asid.value = asid
+        self.ptw_resp_s1.entry_vmid.value = DONTCARE
+        self.ptw_resp_s1.entry_n.value = UNUSED0
+        self.ptw_resp_s1.entry_pbmt.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_d.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_a.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_g.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_u.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_x.value = UNUSED1
+        self.ptw_resp_s1.entry_perm_w.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_r.value = UNUSED0
+        self.ptw_resp_s1.entry_level.value = UNUSED0
+        self.ptw_resp_s1.entry_v.value = 1
+        self.ptw_resp_s1.entry_ppn.value = ppn >> 3
+        self.ptw_resp_s1.addr_low.value = addr_low
+        ppn_low_dict = {
+            0: self.ptw_resp_s1.ppn_low_0,
+            1: self.ptw_resp_s1.ppn_low_1,
+            2: self.ptw_resp_s1.ppn_low_2,
+            3: self.ptw_resp_s1.ppn_low_3,
+            4: self.ptw_resp_s1.ppn_low_4,
+            5: self.ptw_resp_s1.ppn_low_5,
+            6: self.ptw_resp_s1.ppn_low_6,
+            7: self.ptw_resp_s1.ppn_low_7
+        }
+        valididx_dict = {
+            0: self.ptw_resp_s1.valididx_0,
+            1: self.ptw_resp_s1.valididx_1,
+            2: self.ptw_resp_s1.valididx_2,
+            3: self.ptw_resp_s1.valididx_3,
+            4: self.ptw_resp_s1.valididx_4,
+            5: self.ptw_resp_s1.valididx_5,
+            6: self.ptw_resp_s1.valididx_6,
+            7: self.ptw_resp_s1.valididx_7
+        }
+        pteidx_dict = {
+            0: self.ptw_resp_s1.pteidx_0,
+            1: self.ptw_resp_s1.pteidx_1,
+            2: self.ptw_resp_s1.pteidx_2,
+            3: self.ptw_resp_s1.pteidx_3,
+            4: self.ptw_resp_s1.pteidx_4,
+            5: self.ptw_resp_s1.pteidx_5,
+            6: self.ptw_resp_s1.pteidx_6,
+            7: self.ptw_resp_s1.pteidx_7
+        }
+        for i in range(8):
+            if i == addr_low:
+                ppn_low_dict[i].value = ppn & 0b111
+                valididx_dict[i].value = 1
+            else:
+                ppn_low_dict[i].value = ppn_low[i]
+                valididx_dict[i].value = 0
+        pteidx_dict[addr_low].value = 1
+        self.ptw_resp_s1.pf.value = UNUSED0
+        self.ptw_resp_s1.af.value = UNUSED0
+
+
+    def init_dut_for_nostage_miss(self, vpn, asid, ppn, ppn_low):
+        # prepare data
+        addr_low = vpn & 0b111
+        ## ctrl signals
+        self.ctrl.io_ptw_resp_valid.value = 1
+        self.ctrl.io_ptw_resp_bits_s2xlate.value = 0b00
+        # initialize conditions
+        self.ptw_resp_s1.entry_tag.value = other_than(vpn >> 3)
+        self.ptw_resp_s1.entry_asid.value = asid
+        self.ptw_resp_s1.entry_vmid.value = DONTCARE
+        self.ptw_resp_s1.entry_n.value = UNUSED0
+        self.ptw_resp_s1.entry_pbmt.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_d.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_a.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_g.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_u.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_x.value = UNUSED1
+        self.ptw_resp_s1.entry_perm_w.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_r.value = UNUSED0
+        self.ptw_resp_s1.entry_level.value = UNUSED0
+        self.ptw_resp_s1.entry_v.value = 1
+        self.ptw_resp_s1.entry_ppn.value = ppn >> 3
+        self.ptw_resp_s1.addr_low.value = addr_low
+        ppn_low_dict = {
+            0: self.ptw_resp_s1.ppn_low_0,
+            1: self.ptw_resp_s1.ppn_low_1,
+            2: self.ptw_resp_s1.ppn_low_2,
+            3: self.ptw_resp_s1.ppn_low_3,
+            4: self.ptw_resp_s1.ppn_low_4,
+            5: self.ptw_resp_s1.ppn_low_5,
+            6: self.ptw_resp_s1.ppn_low_6,
+            7: self.ptw_resp_s1.ppn_low_7
+        }
+        valididx_dict = {
+            0: self.ptw_resp_s1.valididx_0,
+            1: self.ptw_resp_s1.valididx_1,
+            2: self.ptw_resp_s1.valididx_2,
+            3: self.ptw_resp_s1.valididx_3,
+            4: self.ptw_resp_s1.valididx_4,
+            5: self.ptw_resp_s1.valididx_5,
+            6: self.ptw_resp_s1.valididx_6,
+            7: self.ptw_resp_s1.valididx_7
+        }
+        pteidx_dict = {
+            0: self.ptw_resp_s1.pteidx_0,
+            1: self.ptw_resp_s1.pteidx_1,
+            2: self.ptw_resp_s1.pteidx_2,
+            3: self.ptw_resp_s1.pteidx_3,
+            4: self.ptw_resp_s1.pteidx_4,
+            5: self.ptw_resp_s1.pteidx_5,
+            6: self.ptw_resp_s1.pteidx_6,
+            7: self.ptw_resp_s1.pteidx_7
+        }
+        for i in range(8):
+            if i == addr_low:
+                ppn_low_dict[i].value = ppn & 0b111
+                valididx_dict[i].value = 1
+            else:
+                ppn_low_dict[i].value = ppn_low[i]
+                valididx_dict[i].value = 0
+        pteidx_dict[addr_low].value = 1
+        self.ptw_resp_s1.pf.value = UNUSED0
+        self.ptw_resp_s1.af.value = UNUSED0
+
+    def init_dut_for_onlyStage1_miss(self, vpn, asid, ppn, ppn_low):
+        # prepare data
+        addr_low = vpn & 0b111
+        ## ctrl signals
+        self.ctrl.io_ptw_resp_valid.value = 1
+        self.ctrl.io_ptw_resp_bits_s2xlate.value = 0b01
+        # initialize conditions
+        self.ptw_resp_s1.entry_tag.value = other_than(vpn >> 3)
+        self.ptw_resp_s1.entry_asid.value = asid
+        self.ptw_resp_s1.entry_vmid.value = DONTCARE
+        self.ptw_resp_s1.entry_n.value = UNUSED0
+        self.ptw_resp_s1.entry_pbmt.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_d.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_a.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_g.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_u.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_x.value = UNUSED1
+        self.ptw_resp_s1.entry_perm_w.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_r.value = UNUSED0
+        self.ptw_resp_s1.entry_level.value = UNUSED0
+        self.ptw_resp_s1.entry_v.value = 1
+        self.ptw_resp_s1.entry_ppn.value = ppn >> 3
+        self.ptw_resp_s1.addr_low.value = addr_low
+        ppn_low_dict = {
+            0: self.ptw_resp_s1.ppn_low_0,
+            1: self.ptw_resp_s1.ppn_low_1,
+            2: self.ptw_resp_s1.ppn_low_2,
+            3: self.ptw_resp_s1.ppn_low_3,
+            4: self.ptw_resp_s1.ppn_low_4,
+            5: self.ptw_resp_s1.ppn_low_5,
+            6: self.ptw_resp_s1.ppn_low_6,
+            7: self.ptw_resp_s1.ppn_low_7
+        }
+        valididx_dict = {
+            0: self.ptw_resp_s1.valididx_0,
+            1: self.ptw_resp_s1.valididx_1,
+            2: self.ptw_resp_s1.valididx_2,
+            3: self.ptw_resp_s1.valididx_3,
+            4: self.ptw_resp_s1.valididx_4,
+            5: self.ptw_resp_s1.valididx_5,
+            6: self.ptw_resp_s1.valididx_6,
+            7: self.ptw_resp_s1.valididx_7
+        }
+        pteidx_dict = {
+            0: self.ptw_resp_s1.pteidx_0,
+            1: self.ptw_resp_s1.pteidx_1,
+            2: self.ptw_resp_s1.pteidx_2,
+            3: self.ptw_resp_s1.pteidx_3,
+            4: self.ptw_resp_s1.pteidx_4,
+            5: self.ptw_resp_s1.pteidx_5,
+            6: self.ptw_resp_s1.pteidx_6,
+            7: self.ptw_resp_s1.pteidx_7
+        }
+        for i in range(8):
+            if i == addr_low:
+                ppn_low_dict[i].value = ppn & 0b111
+                valididx_dict[i].value = 1
+            else:
+                ppn_low_dict[i].value = ppn_low[i]
+                valididx_dict[i].value = 0
+        pteidx_dict[addr_low].value = 1
+        self.ptw_resp_s1.pf.value = UNUSED0
+        self.ptw_resp_s1.af.value = UNUSED0
+
+    def init_dut_for_onlyStage2_miss(self, vpn, asid, ppn, ppn_low):
+        # prepare data
+        addr_low = vpn & 0b111
+        ## ctrl signals
+        self.ctrl.io_ptw_resp_valid.value = 1
+        self.ctrl.io_ptw_resp_bits_s2xlate.value = 0b10
+        # initialize conditions
+        self.ptw_resp_s1.entry_tag.value = other_than(vpn >> 3)
+        self.ptw_resp_s1.entry_asid.value = asid
+        self.ptw_resp_s1.entry_vmid.value = DONTCARE
+        self.ptw_resp_s1.entry_n.value = UNUSED0
+        self.ptw_resp_s1.entry_pbmt.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_d.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_a.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_g.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_u.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_x.value = UNUSED1
+        self.ptw_resp_s1.entry_perm_w.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_r.value = UNUSED0
+        self.ptw_resp_s1.entry_level.value = UNUSED0
+        self.ptw_resp_s1.entry_v.value = 1
+        self.ptw_resp_s1.entry_ppn.value = ppn >> 3
+        self.ptw_resp_s1.addr_low.value = addr_low
+        ppn_low_dict = {
+            0: self.ptw_resp_s1.ppn_low_0,
+            1: self.ptw_resp_s1.ppn_low_1,
+            2: self.ptw_resp_s1.ppn_low_2,
+            3: self.ptw_resp_s1.ppn_low_3,
+            4: self.ptw_resp_s1.ppn_low_4,
+            5: self.ptw_resp_s1.ppn_low_5,
+            6: self.ptw_resp_s1.ppn_low_6,
+            7: self.ptw_resp_s1.ppn_low_7
+        }
+        valididx_dict = {
+            0: self.ptw_resp_s1.valididx_0,
+            1: self.ptw_resp_s1.valididx_1,
+            2: self.ptw_resp_s1.valididx_2,
+            3: self.ptw_resp_s1.valididx_3,
+            4: self.ptw_resp_s1.valididx_4,
+            5: self.ptw_resp_s1.valididx_5,
+            6: self.ptw_resp_s1.valididx_6,
+            7: self.ptw_resp_s1.valididx_7
+        }
+        pteidx_dict = {
+            0: self.ptw_resp_s1.pteidx_0,
+            1: self.ptw_resp_s1.pteidx_1,
+            2: self.ptw_resp_s1.pteidx_2,
+            3: self.ptw_resp_s1.pteidx_3,
+            4: self.ptw_resp_s1.pteidx_4,
+            5: self.ptw_resp_s1.pteidx_5,
+            6: self.ptw_resp_s1.pteidx_6,
+            7: self.ptw_resp_s1.pteidx_7
+        }
+        for i in range(8):
+            if i == addr_low:
+                ppn_low_dict[i].value = ppn & 0b111
+                valididx_dict[i].value = 1
+            else:
+                ppn_low_dict[i].value = ppn_low[i]
+                valididx_dict[i].value = 0
+        pteidx_dict[addr_low].value = 1
+        self.ptw_resp_s1.pf.value = UNUSED0
+        self.ptw_resp_s1.af.value = UNUSED0
+
+    def init_dut_for_allStage_miss(self, vpn, asid, ppn, ppn_low):
+        # prepare data
+        addr_low = vpn & 0b111
+        ## ctrl signals
+        self.ctrl.io_ptw_resp_valid.value = 1
+        self.ctrl.io_ptw_resp_bits_s2xlate.value = 0b11
+        # initialize conditions
+        self.ptw_resp_s1.entry_tag.value = other_than(vpn >> 3)
+        self.ptw_resp_s1.entry_asid.value = asid
+        self.ptw_resp_s1.entry_vmid.value = DONTCARE
+        self.ptw_resp_s1.entry_n.value = UNUSED0
+        self.ptw_resp_s1.entry_pbmt.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_d.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_a.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_g.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_u.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_x.value = UNUSED1
+        self.ptw_resp_s1.entry_perm_w.value = UNUSED0
+        self.ptw_resp_s1.entry_perm_r.value = UNUSED0
+        self.ptw_resp_s1.entry_level.value = UNUSED0
+        self.ptw_resp_s1.entry_v.value = 1
+        self.ptw_resp_s1.entry_ppn.value = ppn >> 3
+        self.ptw_resp_s1.addr_low.value = addr_low
+        ppn_low_dict = {
+            0: self.ptw_resp_s1.ppn_low_0,
+            1: self.ptw_resp_s1.ppn_low_1,
+            2: self.ptw_resp_s1.ppn_low_2,
+            3: self.ptw_resp_s1.ppn_low_3,
+            4: self.ptw_resp_s1.ppn_low_4,
+            5: self.ptw_resp_s1.ppn_low_5,
+            6: self.ptw_resp_s1.ppn_low_6,
+            7: self.ptw_resp_s1.ppn_low_7
+        }
+        valididx_dict = {
+            0: self.ptw_resp_s1.valididx_0,
+            1: self.ptw_resp_s1.valididx_1,
+            2: self.ptw_resp_s1.valididx_2,
+            3: self.ptw_resp_s1.valididx_3,
+            4: self.ptw_resp_s1.valididx_4,
+            5: self.ptw_resp_s1.valididx_5,
+            6: self.ptw_resp_s1.valididx_6,
+            7: self.ptw_resp_s1.valididx_7
+        }
+        pteidx_dict = {
+            0: self.ptw_resp_s1.pteidx_0,
+            1: self.ptw_resp_s1.pteidx_1,
+            2: self.ptw_resp_s1.pteidx_2,
+            3: self.ptw_resp_s1.pteidx_3,
+            4: self.ptw_resp_s1.pteidx_4,
+            5: self.ptw_resp_s1.pteidx_5,
+            6: self.ptw_resp_s1.pteidx_6,
+            7: self.ptw_resp_s1.pteidx_7
+        }
+        for i in range(8):
+            if i == addr_low:
+                ppn_low_dict[i].value = ppn & 0b111
+                valididx_dict[i].value = 1
+            else:
+                ppn_low_dict[i].value = ppn_low[i]
+                valididx_dict[i].value = 0
+        pteidx_dict[addr_low].value = 1
+        self.ptw_resp_s1.pf.value = UNUSED0
+        self.ptw_resp_s1.af.value = UNUSED0
+
 
 class TLBrwWrapper(toffee.Bundle):
     """
