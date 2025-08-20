@@ -18,7 +18,7 @@ class _0Bundle(Bundle):
     _strong_bias = aBundle.from_prefix("_strong_bias")
 
 class IoBundle(Bundle):
-    _raddr_0, ren_0 = Signals(2)
+    _raddr_0, ren_0, _rdata_0_meta = Signals(3)
     _wen, _wdata_meta, _waddr = Signals(3)
     _rdata_0_ftb_entry = _0Bundle.from_prefix("_rdata_0_ftb_entry")
     _wdata_ftb_entry = _0Bundle.from_prefix("_wdata_ftb_entry")
