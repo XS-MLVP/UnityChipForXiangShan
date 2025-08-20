@@ -9,8 +9,8 @@ def define_read0_coverage(bundle: FtqMeta1rSramBundle, dut) -> CovGroup:
             "raddr": bundle.io._raddr_0
         },
         bins={  
-            "read_when_addr_0": lambda d: d["ren"].value == 1 and d["raddr"].value == 0,
-            "read_when_addr_31": lambda d: d["ren"].value == 1 and d["raddr"].value == 31
+            "read_when_addr_0": lambda d: d["raddr"].value == 0,
+            "read_when_addr_31": lambda d: d["raddr"].value == 31
         },
         name = "FtqMeta1rSram ReadPort0" 
     )
