@@ -7,46 +7,43 @@ from typing import Callable, Any
 
 class AnalysisPort:
     """
-    一个简单的广播端口类，模拟UVM的uvm_analysis_port。
-    它可以连接多个订阅者（回调函数），并在调用write()时将数据广播给所有订阅者。
+    一个【健壮的】广播端口类，模拟UVM的uvm_analysis_port。
+    它强制所有回调都是同步的，以确保广播操作在零仿真时间内完成。
     """
     def __init__(self, name: str = "AnalysisPort"):
-        """
-        初始化AnalysisPort。
-        :param name: 端口的名称，用于调试和日志记录。
-        """
         self.name = name
         self._subscribers = []
 
     def connect(self, callback: Callable):
         """
         连接一个订阅者（回调函数）到这个端口。
-        :param callback: 一个可调用对象 (callable)，它接受一个参数（要广播的数据）。
-                         这个回调可以是普通函数或异步函数。
+        【重要】: 此处禁止连接异步(async def)函数，以保证零延迟语义。
         """
         if not callable(callback):
             raise TypeError(f"'{callback}' is not a callable function or method.")
+        
+        # 核心修改：检查回调是否是协程函数，如果是，则禁止连接
+        if asyncio.iscoroutinefunction(callback):
+            raise TypeError(
+                f"Cannot connect an async function '{getattr(callback, '__name__', 'unknown')}' "
+                f"to AnalysisPort '{self.name}'. Callbacks must be synchronous to guarantee zero-delay execution."
+            )
+            
         if callback not in self._subscribers:
             self._subscribers.append(callback)
 
-    async def write(self, item: Any):
+    def write(self, item: Any):
         """
-        将一个项目（例如一个transaction）广播给所有连接的订阅者。
-        :param item: 要广播的数据。
+        【同步方法】将一个项目（例如一个transaction）广播给所有连接的订阅者。
+        此操作保证在调用者的当前仿真周期内完成。
         """
-        if not self._subscribers:
-            return  # 如果没有订阅者，直接返回
-
-        # 遍历并调用所有回调函数
+        # 注意：这里不再有 async 和 await
         for callback in self._subscribers:
             try:
-                # 检查回调是否是协程函数 (async def)
-                if asyncio.iscoroutinefunction(callback):
-                    await callback(item)
-                else:
-                    callback(item)
+                callback(item) # 直接同步调用
             except Exception as e:
                 print(f"Error executing callback '{getattr(callback, '__name__', 'unknown')}' for {self.name}: {e}")
+
 
 
 
@@ -60,6 +57,13 @@ class WayLookupAgent(Agent):
         self.update_queue = queue.Queue()
         self.read_status = 1
         self.flush_status = 0
+        
+        # 为每种需要监视和广播的事件创建一个AnalysisPort实例
+        self.write_ap = AnalysisPort("write_ap")
+        self.update_ap = AnalysisPort("update_ap")
+        # 如果需要，也可以为read和flush创建
+        self.read_ap = AnalysisPort("read_ap")
+        self.flush_ap = AnalysisPort("flush_ap")
 
 
     async def send_write(self):
