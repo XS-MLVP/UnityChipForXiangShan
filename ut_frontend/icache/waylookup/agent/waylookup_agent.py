@@ -4,6 +4,9 @@ from ..trans import WayLookup_trans, WayLookup_update_trans
 import queue
 import asyncio
 from typing import Callable, Any
+import random
+from abc import ABC, abstractmethod
+
 
 class AnalysisPort:
     """
@@ -45,6 +48,65 @@ class AnalysisPort:
                 print(f"Error executing callback '{getattr(callback, '__name__', 'unknown')}' for {self.name}: {e}")
 
 
+class BackPressureController:
+
+    class BackPressurePolicy(ABC):
+        @abstractmethod
+        def generate(self) -> bool:
+            pass
+
+    class AlwaysOnPolicy(BackPressurePolicy):
+        def generate(self) -> bool:
+            return True
+
+    class AlwaysOffPolicy(BackPressurePolicy):
+        def generate(self) -> bool:
+            return False
+
+    class RandomDutyCyclePolicy(BackPressurePolicy):
+        def __init__(self, duty_cycle: float):
+            if not 0.0 <= duty_cycle <= 1.0:
+                raise ValueError("Duty cycle must be between 0.0 and 1.0")
+            self._duty_cycle = duty_cycle
+
+        def generate(self) -> bool:
+            return random.random() < self._duty_cycle
+
+
+    def __init__(self, initial_policy: 'BackPressureController.BackPressurePolicy' = None):
+        self._policy: BackPressureController.BackPressurePolicy
+        if initial_policy is None:
+            self.set_policy(self.AlwaysOnPolicy())
+        else:
+            self.set_policy(initial_policy)
+        
+        self._force_value: bool = False
+        self._force_duration_remaining: int = 0
+
+    def set_policy(self, policy: 'BackPressureController.BackPressurePolicy'):
+        print(f"[ReadyController] Policy updated to {policy.__class__.__name__}.")
+        self._policy = policy
+
+    def force(self, value: bool, duration: int):
+        if duration < 1:
+            raise ValueError("Force duration must be at least 1 cycle.")
+        print(f"[ReadyController] Forcing ready to {value} for {duration} cycles.")
+        self._force_value = value
+        self._force_duration_remaining = duration
+
+    def get_value(self) -> bool:
+        return_value = 0
+        if self._force_duration_remaining > 0:
+            return_value = self._force_value
+        else:
+            return_value = self._policy.generate()
+            
+        if self._force_duration_remaining > 0:
+            self._force_duration_remaining -= 1
+        
+        return return_value
+
+
 
 
 class WayLookupAgent(Agent):
@@ -55,8 +117,9 @@ class WayLookupAgent(Agent):
         self.bundle = bundle
         self.write_queue = queue.Queue()
         self.update_queue = queue.Queue()
-        self.read_status = 1
         self.flush_status = 0
+
+        self.read_bp = BackPressureController()
         
         # 为每种需要监视和广播的事件创建一个AnalysisPort实例
         self.write_ap = AnalysisPort("write_ap")
@@ -114,7 +177,7 @@ class WayLookupAgent(Agent):
     
     async def send_read(self):
         while True:
-            self.bundle.io._read._ready.value = self.read_status
+            self.bundle.io._read._ready.value = int(self.read_bp.get_value())
             await self.bundle.step()
 
     
