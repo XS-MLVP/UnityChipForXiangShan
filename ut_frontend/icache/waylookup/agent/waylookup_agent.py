@@ -148,53 +148,54 @@ class WayLookupAgent(Agent):
                 write_trans.gpf_gpaddr = self.bundle.io._write._bits._gpf._gpaddr.value
                 write_trans.gpf_isForVSnonLeafPTE = self.bundle.io._write._bits._gpf._isForVSnonLeafPTE.value
                 
+                self.write_ap.write(write_trans)
+            await self.bundle.step()
 
+            
+    
+    async def monitor_read(self):
+        while True:
+            if self.bundle.io._read._valid.value == 1 and self.bundle.io._read._ready.value == 1:
+                read_trans = WayLookup_trans()
 
+                read_trans.common0.vSetIdx = self.bundle.io._read._bits._entry._vSetIdx._0.value
+                read_trans.common0.waymask = self.bundle.io._read._bits._entry._waymask._0.value
+                read_trans.common0.ptag = self.bundle.io._read._bits._entry._ptag._0.value
+                read_trans.common0.itlb_exception = self.bundle.io._read._bits._entry._itlb._exception._0.value
+                read_trans.common0.itlb_pbmt = self.bundle.io._read._bits._entry._itlb._pbmt._0.value
+                read_trans.common0.meta_codes = self.bundle.io._read._bits._entry._meta_codes._0.value
+
+                read_trans.common1.vSetIdx = self.bundle.io._read._bits._entry._vSetIdx._1.value
+                read_trans.common1.waymask = self.bundle.io._read._bits._entry._waymask._1.value
+                read_trans.common1.ptag = self.bundle.io._read._bits._entry._ptag._1.value
+                read_trans.common1.itlb_exception = self.bundle.io._read._bits._entry._itlb._exception._1.value
+                read_trans.common1.itlb_pbmt = self.bundle.io._read._bits._entry._itlb._pbmt._1.value
+                read_trans.common1.meta_codes = self.bundle.io._read._bits._entry._meta_codes._1.value
+
+                read_trans.gpf_gpaddr = self.bundle.io._read._bits._gpf._gpaddr.value
+                read_trans.gpf_isForVSnonLeafPTE = self.bundle.io._read._bits._gpf._isForVSnonLeafPTE.value
+                
+                self.read_ap.write(read_trans)
             await self.bundle.step()
 
 
+    async def monitor_update(self):
+        while True:
+            if self.bundle.io._update._valid.value == 1:
+                update_trans = WayLookup_update_trans()
+
+                update_trans.blkPaddr = self.bundle.io._update._bits._blkPaddr.value
+                update_trans.vSetIdx = self.bundle.io._update._bits._vSetIdx.value
+                update_trans.waymask = self.bundle.io._update._bits._waymask.value
+                update_trans.corrupt = self.bundle.io._update._bits._corrupt.value
+                
+                self.update_ap.write(update_trans)
+            await self.bundle.step()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    async def flush_write_ptr(self):
-        
-        # set io_write_fire，io.write.ready is already 1
-        self.bundle.io._write._valid.value = 1
-        await self.bundle.step()
-        
-        # set write_ptr by writting entry
-        self.bundle.io._write._bits._entry._vSetIdx._0.value = 0
-        self.bundle.io._write._bits._entry._vSetIdx._1.value = 1
-        self.bundle.io._write._bits._entry._waymask._0.value = 0
-        self.bundle.io._write._bits._entry._waymask._1.value = 1
-        self.bundle.io._write._bits._entry._ptag._0.value = 0
-        self.bundle.io._write._bits._entry._ptag._1.value = 1
-        self.bundle.io._write._bits._entry._itlb._exception._0.value = 0
-        self.bundle.io._write._bits._entry._itlb._exception._1.value = 1
-        self.bundle.io._write._bits._entry._meta_codes._0.value = 0
-        self.bundle.io._write._bits._entry._meta_codes._1.value = 1
-        await self.bundle.step()
-        print("Before flush, write_ptr is: ", self.bundle.WayLookup._writePtr._value.value)
-        
-        # flush
-        self.bundle.io._flush.value = 1
-        await self.bundle.step()
-        
-        # print
-        print("After flush, write_ptr is: ", self.bundle.WayLookup._writePtr._value.value)
-        await self.bundle.step()
+    async def monitor_flush(self):
+        while True:
+            if self.bundle.io._flush.value == 1:
+                
+                self.flush_ap.write(1)
+            await self.bundle.step()
