@@ -11,7 +11,8 @@ class WayLookupAgent(Agent):
         self.bundle = bundle
         self.write_queue = queue.Queue()
         self.update_queue = queue.Queue()
-        self.read_queue = queue.Queue()
+        self.read_status = 1
+        self.flush_status = 0
 
 
     async def send_write(self):
@@ -41,6 +42,53 @@ class WayLookupAgent(Agent):
 
                 await self.bundle.step()
                 self.bundle.io._write._valid.value = 0
+    
+    
+    async def send_update(self):
+        while True:
+            if self.update_queue.empty():
+                await self.bundle.step()
+            else:
+                update_trans: WayLookup_update_trans = self.update_queue.get()
+                
+                self.bundle.io._update._valid.value = 1
+                self.bundle.io._update._bits._blkPaddr.value = update_trans.blkPaddr
+                self.bundle.io._update._bits._vSetIdx.value = update_trans.vSetIdx
+                self.bundle.io._update._bits._waymask.value = update_trans.waymask
+                self.bundle.io._update._bits._corrupt.value = update_trans.corrupt
+
+                await self.bundle.step()
+                if self.update_queue.empty():
+                    self.bundle.io._update._valid.value = 0    
+    
+    async def send_read(self):
+        while True:
+            self.bundle.io._read._ready.value = self.read_status
+            await self.bundle.step()
+
+    
+    async def send_flush(self):
+        while True:
+            self.bundle.io._flush.value = self.flush_status
+            await self.bundle.step()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
