@@ -7,12 +7,246 @@ from .checkpoints_store_static import init_store_funcov
 from ..util.dataclass import EnqReq, IORedirect, VecFeedback, StoreAddrIn, StoreAddrInRe, StoreDataIn, Forward, IORob, Uncache, MaControlInput, StoreMaskIn
 from ..env.StoreQueueEnv import StoreQueueEnv
 from toffee import Executor
+
+@toffee_test.testcase
+async def test_ctl_update(storequeue_env: StoreQueueEnv):
+    await storequeue_env.agent.reset()
+    enq_req = [
+        EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=3, lastUop=True,
+            robIdx_flag=True, robIdx_value=2, sqIdx_flag=True, sqIdx_value=0, numLsElem=4),
+        EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=7, lastUop=True,
+            robIdx_flag=True, robIdx_value=7, sqIdx_flag=True, sqIdx_value=4, numLsElem=1),
+        EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=9, lastUop=True,
+            robIdx_flag=True, robIdx_value=9, sqIdx_flag=True, sqIdx_value=5, numLsElem=2),
+        EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=17, lastUop=True,
+            robIdx_flag=True, robIdx_value=13, sqIdx_flag=True, sqIdx_value=7, numLsElem=5),
+        EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=16, lastUop=True,
+            robIdx_flag=True, robIdx_value=16, sqIdx_flag=True, sqIdx_value=12, numLsElem=3),
+        EnqReq(valid=False, fuType=2, fuOpType=1, uopIdx=25, lastUop=True,
+            robIdx_flag=True, robIdx_value=23, sqIdx_flag=True, sqIdx_value=15, numLsElem=2)
+    ]
+    redirect = IORedirect(valid=True, robIdx_flag=True, robIdx_value=137, level=True)
+    inner = await storequeue_env.agent.update(enq_req, redirect)
+    allocated = []
+    for i in range(56):
+        allocated.append(getattr(inner._allocated, f'_{i}').value)
+    allocate = allocated.count(1)
+    assert allocate == 15
     
 @toffee_test.testcase
-async def test_smoke(storequeue_env: StoreQueueEnv):
+async def test_queue_full(storequeue_env:StoreQueueEnv):
+    await storequeue_env.agent.reset()
+    for i in range(4):
+        enq_req = [
+            EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=3, lastUop=True,
+                robIdx_flag=True, robIdx_value=2, sqIdx_flag=True, sqIdx_value=0+i*14, numLsElem=4),
+            EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=7, lastUop=True,
+                robIdx_flag=True, robIdx_value=7, sqIdx_flag=True, sqIdx_value=4+i*14, numLsElem=1),
+            EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=9, lastUop=True,
+                robIdx_flag=True, robIdx_value=9, sqIdx_flag=True, sqIdx_value=5+i*14, numLsElem=2),
+            EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=17, lastUop=True,
+                robIdx_flag=True, robIdx_value=13, sqIdx_flag=True, sqIdx_value=7+i*14, numLsElem=5),
+            EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=16, lastUop=True,
+                robIdx_flag=True, robIdx_value=16, sqIdx_flag=True, sqIdx_value=12+i*14, numLsElem=2),
+            EnqReq(valid=False, fuType=2, fuOpType=1, uopIdx=25, lastUop=True,
+                robIdx_flag=True, robIdx_value=23, sqIdx_flag=True, sqIdx_value=15+i*14, numLsElem=2)
+        ]
+        redirect = IORedirect(valid=True, robIdx_flag=True, robIdx_value=137, level=True)
+        await storequeue_env.agent.update(enq_req, redirect)
+    allocated = []
+    for i in range(56):
+        allocated.append(getattr(storequeue_env.agent.bundle.StoreQueue._allocated, f'_{i}').value)
+    allocate = allocated.count(1)
+    assert allocate == 56 and storequeue_env.agent.bundle.io._sqEmpty.value == 0
+    
+    storequeue_env.agent.bundle.io._brqRedirect._valid.value = True
+    storequeue_env.agent.bundle.io._brqRedirect._bits._robIdx._value.value = 3
+    await storequeue_env.agent.bundle.step(2)
+    allocated = []
+    for i in range(56):
+        allocated.append(getattr(storequeue_env.agent.bundle.StoreQueue._allocated, f'_{i}').value)
+    allocate = allocated.count(1)
+    assert allocate == 16    
+    
+@toffee_test.testcase
+async def test_enqueue_boundary(storequeue_env:StoreQueueEnv):
+    await storequeue_env.agent.reset()
+    for i in range(5):
+        enq_req = [
+            EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=3, lastUop=True,
+                robIdx_flag=True, robIdx_value=2, sqIdx_flag=True, sqIdx_value=0+i*11, numLsElem=4),
+            EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=7, lastUop=True,
+                robIdx_flag=True, robIdx_value=7, sqIdx_flag=True, sqIdx_value=4+i*11, numLsElem=1),
+            EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=9, lastUop=True,
+                robIdx_flag=True, robIdx_value=9, sqIdx_flag=True, sqIdx_value=5+i*11, numLsElem=2),
+            EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=17, lastUop=True,
+                robIdx_flag=True, robIdx_value=13, sqIdx_flag=True, sqIdx_value=7+i*11, numLsElem=4),
+            EnqReq(valid=False, fuType=2, fuOpType=1, uopIdx=16, lastUop=True,
+                robIdx_flag=True, robIdx_value=16, sqIdx_flag=True, sqIdx_value=12+i*11, numLsElem=2),
+            EnqReq(valid=False, fuType=2, fuOpType=1, uopIdx=25, lastUop=True,
+                robIdx_flag=True, robIdx_value=23, sqIdx_flag=True, sqIdx_value=15+i*11, numLsElem=2)
+        ]
+        redirect = IORedirect(valid=True, robIdx_flag=True, robIdx_value=137, level=True)
+        await storequeue_env.agent.update(enq_req, redirect)
+    enq_req = [
+        EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=3, lastUop=True,
+            robIdx_flag=True, robIdx_value=2, sqIdx_flag=True, sqIdx_value=55, numLsElem=4),
+        EnqReq(valid=False, fuType=2, fuOpType=1, uopIdx=7, lastUop=True,
+            robIdx_flag=True, robIdx_value=7, sqIdx_flag=True, sqIdx_value=4+i*11, numLsElem=1),
+        EnqReq(valid=False, fuType=2, fuOpType=1, uopIdx=9, lastUop=True,
+            robIdx_flag=True, robIdx_value=9, sqIdx_flag=True, sqIdx_value=5+i*11, numLsElem=2),
+        EnqReq(valid=False, fuType=2, fuOpType=1, uopIdx=17, lastUop=True,
+            robIdx_flag=True, robIdx_value=13, sqIdx_flag=True, sqIdx_value=7+i*11, numLsElem=4),
+        EnqReq(valid=False, fuType=2, fuOpType=1, uopIdx=16, lastUop=True,
+            robIdx_flag=True, robIdx_value=16, sqIdx_flag=True, sqIdx_value=12+i*11, numLsElem=2),
+        EnqReq(valid=False, fuType=2, fuOpType=1, uopIdx=25, lastUop=True,
+            robIdx_flag=True, robIdx_value=23, sqIdx_flag=True, sqIdx_value=15+i*11, numLsElem=2)
+    ]
+    redirect = IORedirect(valid=True, robIdx_flag=True, robIdx_value=137, level=True)
+    await storequeue_env.agent.update(enq_req, redirect)
+    allocated = []
+    for i in range(56):
+        allocated.append(getattr(storequeue_env.agent.bundle.StoreQueue._allocated, f'_{i}').value)
+    allocate = allocated.count(1)
+    assert allocate == 56 and storequeue_env.agent.bundle.io._sqEmpty.value == 0
+    
+@toffee_test.testcase
+async def test_ctl_forward(storequeue_env:StoreQueueEnv):
+    await storequeue_env.agent.reset()
+    enq_req = [
+        EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=3, lastUop=True,
+            robIdx_flag=True, robIdx_value=2, sqIdx_flag=True, sqIdx_value=0, numLsElem=4),
+        EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=7, lastUop=True,
+            robIdx_flag=True, robIdx_value=7, sqIdx_flag=True, sqIdx_value=4, numLsElem=1),
+        EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=9, lastUop=True,
+            robIdx_flag=True, robIdx_value=9, sqIdx_flag=True, sqIdx_value=5, numLsElem=2),
+        EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=17, lastUop=True,
+            robIdx_flag=True, robIdx_value=13, sqIdx_flag=True, sqIdx_value=7, numLsElem=5),
+        EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=16, lastUop=True,
+            robIdx_flag=True, robIdx_value=16, sqIdx_flag=True, sqIdx_value=12, numLsElem=3),
+        EnqReq(valid=False, fuType=2, fuOpType=1, uopIdx=25, lastUop=True,
+            robIdx_flag=True, robIdx_value=23, sqIdx_flag=True, sqIdx_value=15, numLsElem=2)
+    ]
+    redirect = IORedirect(valid=True, robIdx_flag=True, robIdx_value=137, level=True)
+    inner = await storequeue_env.agent.update(enq_req, redirect)
+    
+    store_addr_in = [
+        StoreAddrIn(valid=True, uop_exceptionVec_3=False, uop_exceptionVec_6=False,
+            uop_exceptionVec_7=False, uop_exceptionVec_15=False, uop_exceptionVec_23=False, uop_fuOpType=2, uop_uopIdx=37, 
+            uop_robIdx_flag=True, uop_robIdx_value=27, uop_sqIdx_value=0, vaddr=5842633485, fullva=17652359845,
+            vaNeedExt=True, isHyper=True, paddr=15263498, gpaddr=715638945, isForVSnonLeafPTE=True, mask=23345, 
+            wlineflag=True, miss=True, nc=True, isFrmMisAlignBuf=True, isvec=True, isMisalign= True,
+            misalignWith16Byte=True, updateAddrValid=True),
+        StoreAddrIn(valid=True, uop_exceptionVec_3=False, uop_exceptionVec_6=False,
+            uop_exceptionVec_7=False, uop_exceptionVec_15=True, uop_exceptionVec_23=False, uop_fuOpType=2, uop_uopIdx=37, 
+            uop_robIdx_flag=True, uop_robIdx_value=27, uop_sqIdx_value=0, vaddr=5842633485, fullva=17652359845,
+            vaNeedExt=True, isHyper=True, paddr=15263498, gpaddr=715638945, isForVSnonLeafPTE=True, mask=23345, 
+            wlineflag=True, miss=False, nc=True, isFrmMisAlignBuf=True, isvec=True, isMisalign= True,
+            misalignWith16Byte=True, updateAddrValid=True)
+    ]
+    store_data_in = [
+        StoreDataIn(valid=True, bits_uop_fuType=0x080000000, bits_uop_fuOpType=2, bits_uop_sqIdx_value=0, bits_data=14578693243),
+        StoreDataIn(valid=True, bits_uop_fuType=0x200000000, bits_uop_fuOpType=2, bits_uop_sqIdx_value=0, bits_data=14578693243)
+    ]
+    store_addr_in_re = [
+        StoreAddrInRe(uop_exceptionVec_3=False, uop_exceptionVec_6=False, uop_exceptionVec_15=False,
+            uop_exceptionVec_23=False, uop_uopIdx=24, uop_robIdx_flag=True, uop_robIdx_value=233, fullva=14758,
+            vaNeedExt=True, isHyper=True, gpaddr=71563284596, isForVSnonLeafPTE=True, af=True, mmio=False,
+            memBackTypeMM=True, hasException=True, isvec=True, updateAddrValid=True),
+        StoreAddrInRe(uop_exceptionVec_3=False, uop_exceptionVec_6=False, uop_exceptionVec_15=False,
+            uop_exceptionVec_23=False, uop_uopIdx=24, uop_robIdx_flag=True, uop_robIdx_value=233, fullva=14758,
+            vaNeedExt=True, isHyper=True, gpaddr=71563284596, isForVSnonLeafPTE=True, af=True, mmio=False,
+            memBackTypeMM=True, hasException=True, isvec=True, updateAddrValid=True)
+    ]
+    store_mask_in = [
+        StoreMaskIn(valid=True, sqIdx_value=60, mask=211),
+        StoreMaskIn(valid=True, sqIdx_value=60, mask=211)
+    ]
+    forward = [
+        Forward(vaddr=5248925627, paddr=1586048842, mask=25463, uop_waitForRobIdx_flag=True,
+            uop_waitForRobIdx_value=12, uop_loadWaitBit=True, uop_loadWaitStrict=True, uop_sqIdx_flag=True,
+            uop_sqIdx_value=21, valid=True, forwardMask=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            forwardData=[1,1,0,0,0,0,0,0,1,1,0,0,0,0,0,0], sqIdx_flag=True, dataInvalid=True,
+            matchInvalid=True, addrInvalid=True, sqIdxMask=0x0000000000000001, dataInvalidSqIdx_flag=True,
+            dataInvalidSqIdx_value=27, addrInvalidSqIdx_flag=True, addrInvalidSqIdx_value=23),
+        Forward(vaddr=5248925627, paddr=1586048842, mask=25463, uop_waitForRobIdx_flag=True,
+            uop_waitForRobIdx_value=12, uop_loadWaitBit=True, uop_loadWaitStrict=True, uop_sqIdx_flag=True,
+            uop_sqIdx_value=21, valid=True, forwardMask=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            forwardData=[127,136,0,0,0,0,0,0,127,136,0,0,0,0,0,0], sqIdx_flag=True, dataInvalid=True,
+            matchInvalid=True, addrInvalid=True, sqIdxMask=1452638954, dataInvalidSqIdx_flag=True,
+            dataInvalidSqIdx_value=27, addrInvalidSqIdx_flag=True, addrInvalidSqIdx_value=23)
+    ]
+    async with Executor() as exec:
+            exec(storequeue_env.agent.forwardquery(forward))
+            exec(storequeue_env.agent.writeback(store_addr_in, store_addr_in_re, store_data_in, store_mask_in))
+    assert storequeue_env.agent.bundle.StoreQueue._forwardMask2.value == 0x0000000000000001
+    
+@toffee_test.testcase
+async def test_mmio(storequeue_env:StoreQueueEnv):
+    await storequeue_env.agent.reset()
+    enq_req = [
+        EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=24, lastUop=True,
+            robIdx_flag=True, robIdx_value=1, sqIdx_flag=True, sqIdx_value=0, numLsElem=4),
+        EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=7, lastUop=True,
+            robIdx_flag=True, robIdx_value=7, sqIdx_flag=True, sqIdx_value=4, numLsElem=1),
+        EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=9, lastUop=True,
+            robIdx_flag=True, robIdx_value=9, sqIdx_flag=True, sqIdx_value=5, numLsElem=2),
+        EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=17, lastUop=True,
+            robIdx_flag=True, robIdx_value=13, sqIdx_flag=True, sqIdx_value=7, numLsElem=5),
+        EnqReq(valid=True, fuType=2, fuOpType=1, uopIdx=16, lastUop=True,
+            robIdx_flag=True, robIdx_value=16, sqIdx_flag=True, sqIdx_value=12, numLsElem=3),
+        EnqReq(valid=False, fuType=2, fuOpType=1, uopIdx=25, lastUop=True,
+            robIdx_flag=True, robIdx_value=23, sqIdx_flag=True, sqIdx_value=15, numLsElem=2)
+    ]
+    redirect = IORedirect(valid=True, robIdx_flag=True, robIdx_value=137, level=True)
+    store_addr_in = [
+        StoreAddrIn(valid=True, uop_exceptionVec_3=False, uop_exceptionVec_6=False,
+            uop_exceptionVec_7=False, uop_exceptionVec_15=False, uop_exceptionVec_23=False, uop_fuOpType=2, uop_uopIdx=24, 
+            uop_robIdx_flag=True, uop_robIdx_value=1, uop_sqIdx_value=0, vaddr=5842633485, fullva=17652359845,
+            vaNeedExt=True, isHyper=True, paddr=15263498, gpaddr=715638945, isForVSnonLeafPTE=True, mask=23345, 
+            wlineflag=True, miss=False, nc=False, isFrmMisAlignBuf=True, isvec=True, isMisalign= True,
+            misalignWith16Byte=True, updateAddrValid=True),
+        StoreAddrIn(valid=True, uop_exceptionVec_3=False, uop_exceptionVec_6=False,
+            uop_exceptionVec_7=False, uop_exceptionVec_15=True, uop_exceptionVec_23=False, uop_fuOpType=2, uop_uopIdx=24, 
+            uop_robIdx_flag=True, uop_robIdx_value=1, uop_sqIdx_value=0, vaddr=5842633485, fullva=17652359845,
+            vaNeedExt=True, isHyper=True, paddr=15263498, gpaddr=715638945, isForVSnonLeafPTE=True, mask=23345, 
+            wlineflag=True, miss=False, nc=False, isFrmMisAlignBuf=True, isvec=True, isMisalign= True,
+            misalignWith16Byte=True, updateAddrValid=True)
+    ]
+    store_addr_in_re = [
+        StoreAddrInRe(uop_exceptionVec_3=False, uop_exceptionVec_6=False, uop_exceptionVec_15=False,
+            uop_exceptionVec_23=False, uop_uopIdx=24, uop_robIdx_flag=True, uop_robIdx_value=1, fullva=14758,
+            vaNeedExt=True, isHyper=True, gpaddr=71563284596, isForVSnonLeafPTE=True, af=True, mmio=True,
+            memBackTypeMM=True, hasException=False, isvec=True, updateAddrValid=True),
+        StoreAddrInRe(uop_exceptionVec_3=False, uop_exceptionVec_6=False, uop_exceptionVec_15=False,
+            uop_exceptionVec_23=False, uop_uopIdx=24, uop_robIdx_flag=True, uop_robIdx_value=13, fullva=14758,
+            vaNeedExt=True, isHyper=True, gpaddr=71563284596, isForVSnonLeafPTE=True, af=True, mmio=True,
+            memBackTypeMM=True, hasException=False, isvec=True, updateAddrValid=True)
+    ]
+    store_data_in = [
+        StoreDataIn(valid=True, bits_uop_fuType=0x080000001, bits_uop_fuOpType=2, bits_uop_sqIdx_value=0, bits_data=14578693243),
+        StoreDataIn(valid=True, bits_uop_fuType=0x200000001, bits_uop_fuOpType=2, bits_uop_sqIdx_value=0, bits_data=14578693243)
+    ]
+    uncache = Uncache(req_ready=True, resp_valid=True, resp_bits_nc=False, resp_bits_nderr=False)
+    rob = IORob(rob_scommit=7, pendingst=True, pendingPtr_flag=True, pendingPtr_value=1)
+    store_mask_in = [
+        StoreMaskIn(valid=True, sqIdx_value=60, mask=211),
+        StoreMaskIn(valid=True, sqIdx_value=60, mask=211)
+    ]
+    async with Executor() as exec:
+            exec(storequeue_env.agent.update(enq_req, redirect))
+            exec(storequeue_env.agent.mmio(uncache, rob))
+            exec(storequeue_env.agent.writeback(store_addr_in, store_addr_in_re, store_data_in, store_mask_in))
+    assert storequeue_env.agent.bundle.StoreQueue._commitVec._0.value == 1
+    await storequeue_env.agent.bundle.step(2)
+    state = storequeue_env.agent.bundle.StoreQueue._mmioState.value
+    assert state==1
+    
+@toffee_test.testcase
+async def test_random(storequeue_env: StoreQueueEnv):
     random.seed(os.urandom(128))
     await storequeue_env.agent.reset()
-    for _ in range(10):
+    for _ in range(2000):
         enq_req_instance = [EnqReq(
             valid=random.choice([True, False]),
             fuType=random.randint(0, 3),
@@ -172,10 +406,10 @@ async def storequeue_env(toffee_request: toffee_test.ToffeeRequest):
     import asyncio
     dut = toffee_request.create_dut(DUTStoreQueue, "clock")
     toffee.start_clock(dut)
-    storequeue_env = StoreQueueEnv(dut)
-    toffee_request.add_cov_groups(init_store_funcov(storequeue_env))
+    env = StoreQueueEnv(dut)
+    toffee_request.add_cov_groups(init_store_funcov(env))
     
-    yield storequeue_env
+    yield env
     
     cur_loop = asyncio.get_event_loop()
     for task in asyncio.all_tasks(cur_loop):

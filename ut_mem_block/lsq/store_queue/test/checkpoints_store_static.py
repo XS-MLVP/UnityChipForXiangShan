@@ -42,4 +42,16 @@ def init_store_funcov(storequeue):
                         "can do mmio": lambda x: x.value > 0,
                         #"can't receive violation query": lambda x: x.value == 0,
                       }, name = "STORE_MMIO")
+    
+    def _M(name):
+        # get the module name
+        return module_name_with(name, "./test_spec_case")
+    g.mark_function("STORE_ENQUEUE_0", _M("test_ctl_update"), bin_name=["can receive store query"])
+    g.mark_function("STORE_ENQUEUE_1", _M("test_ctl_update"), bin_name=["can receive store query"])
+    g.mark_function("STORE_ENQUEUE_2", _M("test_ctl_update"), bin_name=["can receive store query"])
+    g.mark_function("STORE_ENQUEUE_3", _M("test_ctl_update"), bin_name=["can receive store query"])
+    g.mark_function("STORE_ENQUEUE_4", _M("test_ctl_update"), bin_name=["can receive store query"])
+    g.mark_function("STORE_FORWARD", _M("test_ctl_forward"), bin_name=["can forward data"])
+    g.mark_function("STORE_MMIO", _M("test_mmio"), bin_name=["can do mmio"])
+
     return g

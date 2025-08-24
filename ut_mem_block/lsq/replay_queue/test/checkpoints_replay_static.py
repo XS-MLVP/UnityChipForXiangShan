@@ -68,4 +68,21 @@ def init_replay_funcov(replayqueue):
                         #"can't receive violation query": lambda x: x.value == 0,
                       }, name = "COLDCOUNT_2")
     
+    def _M(name):
+        # get the module name
+        return module_name_with(name, "./test_spec_case")
+    g.mark_function("REPLAY_ENQUEUE_0", _M("test_ctl_update"), bin_name=["can receive violation query"])
+    g.mark_function("REPLAY_ENQUEUE_1", _M("test_ctl_update"), bin_name=["can receive violation query"])
+    g.mark_function("REPLAY_ENQUEUE_2", _M("test_ctl_update"), bin_name=["can receive violation query"])
+    g.mark_function("REPLAY_BLOCK_0", _M("test_ctl_blocking"), bin_name=["can update blocking register"])
+    g.mark_function("REPLAY_BLOCK_1", _M("test_ctl_blocking"), bin_name=["can update blocking register"])
+    g.mark_function("REPLAY_BLOCK_2", _M("test_ctl_blocking"), bin_name=["can update blocking register"])
+    g.mark_function("REPLAY_0", _M("test_ctl_replay"), bin_name=["can replay"])
+    g.mark_function("REPLAY_1", _M("test_ctl_replay"), bin_name=["can replay"])
+    g.mark_function("REPLAY_2", _M("test_ctl_replay"), bin_name=["can replay"])
+    g.mark_function("COLDCOUNT_0", _M("test_cold_queue"), bin_name=["can cold"])
+    g.mark_function("COLDCOUNT_1", _M("test_cold_queue"), bin_name=["can cold"])
+    g.mark_function("COLDCOUNT_2", _M("test_cold_queue"), bin_name=["can cold"])
+    g.mark_function("REPLAY_FULL", _M("test_queue_full"), bin_name=["judge full"])
+
     return g
