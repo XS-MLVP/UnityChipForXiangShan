@@ -120,6 +120,7 @@ class WayLookupAgent(Agent):
         self.flush_status = 0
 
         self.read_bp = BackPressureController()
+        self.flush_bp = BackPressureController()
         
         # 为每种需要监视和广播的事件创建一个AnalysisPort实例
         self.write_ap = AnalysisPort("write_ap")
@@ -127,6 +128,16 @@ class WayLookupAgent(Agent):
         # 如果需要，也可以为read和flush创建
         self.read_ap = AnalysisPort("read_ap")
         self.flush_ap = AnalysisPort("flush_ap")
+
+
+    async def write_write_trans(self, trans: WayLookup_trans):
+        """Sequencer调用的公共API，用于请求发送一个write transaction"""
+        self.write_queue.put(trans)
+    
+    
+    async def write_update_trans(self, trans: WayLookup_update_trans):
+        """Sequencer调用的公共API，用于请求发送一个update transaction"""
+        self.update_queue.put(trans)
 
 
     async def send_write(self):
@@ -183,7 +194,7 @@ class WayLookupAgent(Agent):
     
     async def send_flush(self):
         while True:
-            self.bundle.io._flush.value = self.flush_status
+            self.bundle.io._flush.value = 1-int(self.flush_bp.get_value())
             await self.bundle.step()
 
 
