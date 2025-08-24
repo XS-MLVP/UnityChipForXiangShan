@@ -286,7 +286,7 @@ class WayLookupAgent(Agent):
         """拉起flush"""
         self.flush_bp.force(False, duration)
     
-    def stop_read(self, duration):
+    def write_read(self, duration):
         """拉低read"""
         self.read_bp.force(False, duration)
     
@@ -307,10 +307,7 @@ class WayLookupAgent(Agent):
 
     async def stop_read(self, duration: int = 1):
         """在指定周期内停止读取（拉低read.ready）"""
-        self.stop_read(duration)
-
-
-
+        self.write_read(duration)
 
 
     async def send_basic_write(self, trans_count=5):
