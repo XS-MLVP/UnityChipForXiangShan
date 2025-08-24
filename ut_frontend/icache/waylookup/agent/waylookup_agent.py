@@ -130,15 +130,6 @@ class WayLookupAgent(Agent):
         self.flush_ap = AnalysisPort("flush_ap")
 
 
-    async def write_write_trans(self, trans: WayLookup_trans):
-        """Sequencer调用的公共API，用于请求发送一个write transaction"""
-        self.write_queue.put(trans)
-    
-    
-    async def write_update_trans(self, trans: WayLookup_update_trans):
-        """Sequencer调用的公共API，用于请求发送一个update transaction"""
-        self.update_queue.put(trans)
-
 
     async def send_write(self):
         while True:
@@ -273,3 +264,109 @@ class WayLookupAgent(Agent):
                 
                 self.flush_ap.write(1)
             await self.bundle.step()
+
+
+##############           上方代码用于实现基本Agent功能，下方代码用于实现Sequencer功能           ##############
+##############           上方代码用于实现基本Agent功能，下方代码用于实现Sequencer功能           ##############
+##############           上方代码用于实现基本Agent功能，下方代码用于实现Sequencer功能           ##############
+##############           上方代码用于实现基本Agent功能，下方代码用于实现Sequencer功能           ##############
+##############           上方代码用于实现基本Agent功能，下方代码用于实现Sequencer功能           ##############
+##############           上方代码用于实现基本Agent功能，下方代码用于实现Sequencer功能           ##############
+##############           上方代码用于实现基本Agent功能，下方代码用于实现Sequencer功能           ##############
+
+    def write_write_trans(self, trans: WayLookup_trans):
+        """发送一个write transaction"""
+        self.write_queue.put(trans)    
+    
+    def write_update_trans(self, trans: WayLookup_update_trans):
+        """发送一个update transaction"""
+        self.update_queue.put(trans)
+    
+    def write_flush(self, duration):
+        """拉起flush"""
+        self.flush_bp.force(False, duration)
+    
+    def stop_read(self, duration):
+        """拉低read"""
+        self.read_bp.force(False, duration)
+    
+    async def delay(self, cycles: int):
+        """等待指定的仿真时钟周期数"""
+        if cycles > 0:
+            for _ in range(cycles):
+                await self.bundle.step()
+
+
+
+
+
+    async def do_flush(self, duration: int = 1):
+        """触发flush信号，并等待指定的周期数"""
+        self.write_flush(duration)
+        await self.delay(duration)
+
+    async def stop_read(self, duration: int = 1):
+        """在指定周期内停止读取（拉低read.ready）"""
+        self.stop_read(duration)
+
+
+
+
+
+    async def send_basic_write(self, trans_count=5):
+        """ 发送一系列随机的写请求。验证基本的FIFO功能。"""
+        for i in range (0, trans_count):
+            trans = WayLookup_trans()
+            trans.randomize(
+                itlb_exception_0=0,
+                itlb_exception_1=0
+            )
+            self.write_write_trans(trans)
+
+
+
+
+
+    async def seq_flush(self, trans_count=5):
+        """ 验证flush功能：写入部分数据 -> flush -> 再写入数据。"""
+        self.send_basic_write(random.randint(10,20))
+        await self.delay(random.randint(5,8))
+        await self.do_flush(duration=1)
+        self.send_basic_write(random.randint(10,20))
+
+    async def seq_gpf_stall(self):
+        """
+        核心测试点：验证GPF stall逻辑。
+        1. 发送一个带GPF的transaction。
+        2. 立即发送一个普通transaction。
+        3. 期望普通transaction被stall，直到GPF被读取。
+        """
+        # flush
+        await self.do_flush(duration=1)
+        await self.delay(5)
+
+
+        # 发送gpf，并停止读取，此时gpf应当一直在waylookup中
+        self.stop_read(20)
+        gpf_trans = WayLookup_trans().randomize(itlb_exception_0=2)
+        self.write_write_trans(gpf_trans)
+        # await self.delay(1) # 确保gpf_trans被agent的driver处理
+
+        # 发送普通trans，该trans不应该被写入
+        self.send_basic_write(1)
+
+        # 等gpf被读出后，trans才应该被写入
+
+    async def seq_bypass(self):
+        """
+        核心测试点：验证GPF stall逻辑。
+        1. 发送一个带GPF的transaction。
+        2. 立即发送一个普通transaction。
+        3. 期望普通transaction被stall，直到GPF被读取。
+        """
+        # flush
+        await self.do_flush(duration=1)
+        await self.delay(5)
+
+        # 发送普通trans，该trans应当立即读出
+        self.send_basic_write(1)

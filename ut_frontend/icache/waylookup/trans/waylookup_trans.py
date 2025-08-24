@@ -1,5 +1,13 @@
 import random
 
+
+#    Exception Type:
+#    width: Int  = 2
+#    none:  UInt = "b00".U(width.W)
+#    pf:    UInt = "b01".U(width.W) // instruction page fault
+#    gpf:   UInt = "b10".U(width.W) // instruction guest page fault
+#    af:    UInt = "b11".U(width.W) // instruction access fault
+
 class WayLookup_common_trans:    
     VSETIDX_W = 8
     WAYMASK_W = 4
