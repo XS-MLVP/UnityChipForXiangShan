@@ -16,7 +16,7 @@ IPrefetchPipe 为预取的流水线，三级流水设计，负责预取请求的
     <center>	
     <img src="../iprefetchpipe_structure.png"
          alt="IPrefetchPipe模块结构示意图"
-         style="zoom:100%"/>
+         style="zoom:40%"/>
     <br>		
     IPrefetchPipe结构示意图	
     </center>
