@@ -19,7 +19,7 @@ def build(cfg):
     # export ftq.sv
     if not os.path.exists(get_root_dir(f"dut/{module_name}")):
         info("Exporting Ftq.sv")
-        s,out,err = exe_cmd(f'picker export --cp_lib false {rtl_files[0]} --tname {module_name}\
+        s,out,err = exe_cmd(f'picker export --rw 1 --cp_lib false {rtl_files[0]} --tname {module_name}\
                             --lang python --tdir {get_root_dir("dut")}/ -w {module_name}.fst -c --fs ' + ' '.join(rtl_files))
         assert s, f"Failed to export Ftq.sv: %s\n%s" % (out, err)
 
