@@ -44,9 +44,11 @@ class NewDUTFtqTop(DUTFtqTop):
         self.toBpu_redirect_bits_cfiUpdate_jr_hit = self.GetInternalSignal("FtqTop_top.io_toBpu_redirect_bits_cfiUpdate_jr_hit")
         self.toBpu_redirect_bits_cfiUpdate_shift = self.GetInternalSignal("FtqTop_top.io_toBpu_redirect_bits_cfiUpdate_shift")
         self.toBpu_redirect_bits_cfiUpdate_addIntoHist = self.GetInternalSignal("FtqTop_top.io_toBpu_redirect_bits_cfiUpdate_addIntoHist")
-
+        self.toIfu_flushFromBpu_s2_valid = self.GetInternalSignal("FtqTop_top.io_toIfu_flushFromBpu_s2_valid")
+        self.toBpu_enq_ptr_value = self.GetInternalSignal("FtqTop_top.io_toBpu_enq_ptr_value")
         
         # 新增：各种指针信号
+        self.allowBpuIn = self.GetInternalSignal("FtqTop_top.Ftq.allowBpuIn")
         self.bpu_ptr = self.GetInternalSignal("FtqTop_top.Ftq.bpuPtr_value")
         self.ifu_ptr_write = self.GetInternalSignal("FtqTop_top.Ftq.ifuPtr_write_value")
         self.ifu_wb_ptr_write = self.GetInternalSignal("FtqTop_top.Ftq.ifuWbPtr_value")
@@ -79,6 +81,12 @@ class NewDUTFtqTop(DUTFtqTop):
 
         def get_commit_state_queue_reg(ftq_idx, offset):
             return self.GetInternalSignal(f"FtqTop_top.Ftq.commitStateQueueReg_{ftq_idx}_{offset}")    
+
+        def get_entry_fetch_status(offset):
+            return self.GetInternalSignal(f"FtqTop_top.Ftq.entry_fetch_status_{offset}")
+
+        def get_entry_hit_status(offset):
+            return self.GetInternalSignal(f"FtqTop_top.Ftq.entry_hit_status_{offset}")
         
         #  不能直接调用函数 必须用封闭包绑定self33333
         self.get_update_target = get_update_target
@@ -86,6 +94,8 @@ class NewDUTFtqTop(DUTFtqTop):
         self.get_cfi_index_valid = get_cfi_index_valid
         self.get_mispredict_vec = get_mispredict_vec
         self.get_commit_state_queue_reg = get_commit_state_queue_reg
+        self.get_entry_fetch_status = get_entry_fetch_status
+        self.get_entry_hit_status = get_entry_hit_status
 
 
 

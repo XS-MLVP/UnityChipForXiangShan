@@ -28,6 +28,7 @@ class LastStageFtbEntryBundle(Bundle):
 class ToIfuBundle(Bundle):  # 新增：专门处理 toIfu 相关信号
     req_ready = Signal()  # 1-bit (ready)
     req_valid = Signal()  # 新增：可能需要的信号
+    redirect_valid = Signal()
       # 新增：从 example.py 看到需要这个信号
 
 

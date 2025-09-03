@@ -1,11 +1,12 @@
 from toffee import *
+from .ftq_bundle import FtqBundle
 
 
 class FtqAgent(Agent):
-    def __init__(self, ftq_bundle):
+    def __init__(self, ftq_bundle: FtqBundle):
         super().__init__(ftq_bundle) 
+        self.bundle = ftq_bundle
 
-    
 
 
     @driver_method()
@@ -542,4 +543,29 @@ class FtqAgent(Agent):
         
         return self.bundle.fromBpu.resp_ready.value    
 
-    
+    @driver_method()
+    async def get_toifu_outputs(self):
+        """获取IFU输出，包括重定向信号"""
+        outputs = {
+            'req_ready': self.bundle.toIfu.req_ready.value,
+            'redirect_valid': self.bundle.toIfu.redirect_valid.value,
+            'flushFromBpu': {
+                's2': {
+                    'valid': self.bundle.toIfu.flushFromBpu_s2_valid.value if hasattr(self.bundle.toIfu, 'flushFromBpu_s2_valid') else 0,
+                    'flag': self.bundle.toIfu.flushFromBpu_s2_bits_flag.value if hasattr(self.bundle.toIfu, 'flushFromBpu_s2_bits_flag') else 0,
+                    'value': self.bundle.toIfu.flushFromBpu_s2_bits_value.value if hasattr(self.bundle.toIfu, 'flushFromBpu_s2_bits_value') else 0,
+                },
+                's3': {
+                    'valid': self.bundle.toIfu.flushFromBpu_s3_valid.value if hasattr(self.bundle.toIfu, 'flushFromBpu_s3_valid') else 0,
+                    'flag': self.bundle.toIfu.flushFromBpu_s3_bits_flag.value if hasattr(self.bundle.toIfu, 'flushFromBpu_s3_bits_flag') else 0,
+                    'value': self.bundle.toIfu.flushFromBpu_s3_bits_value.value if hasattr(self.bundle.toIfu, 'flushFromBpu_s3_bits_value') else 0,
+                }
+            }
+        }
+        return outputs
+
+
+    @driver_method()
+    async def get_fromBpu_resp_ready(self):
+        
+        return self.bundle.fromBpu.resp_ready.value
