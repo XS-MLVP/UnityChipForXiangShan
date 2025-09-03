@@ -1,17 +1,34 @@
-from toffee import Bundle, Signal, Signals
+from toffee import *  # 导入 Toffee 框架
 
 class IfuPdSlotBundle(Bundle):
-    brType, isCall, isRet, valid = Signals(4)
+    brType = Signal()
+    isCall = Signal()
+    isRet  = Signal()
+    valid  = Signal()
+
 class RobCommitBundle(Bundle):
-    valid, bits_commitType, bits_ftqIdx_flag, bits_ftqIdx_value, bits_ftqOffset = Signals(5)
+    valid             = Signal()
+    bits_commitType   = Signal()
+    bits_ftqIdx_flag  = Signal()
+    bits_ftqIdx_value = Signal()
+    bits_ftqOffset    = Signal()     
 
 class LastStageFtbEntryBundle(Bundle):
-    valid, isJalr, isCall, isRet = Signals(4)
-    brSlots_0_valid, brSlots_0_offset, tailSlot_valid, tailSlot_offset, tailSlot_sharing = Signals(5)
+    valid = Signal()
+    isJalr = Signal()
+    isCall = Signal()
+    isRet = Signal()
+    brSlots_0_valid = Signal()
+    brSlots_0_offset = Signal()
+    tailSlot_valid = Signal()
+    tailSlot_offset = Signal()
+    tailSlot_sharing = Signal()
 
 
 class ToIfuBundle(Bundle):  # 新增：专门处理 toIfu 相关信号
-    req_ready, req_valid = Signals(2)  # 1-bit (ready), 1-bit (valid)
+    req_ready = Signal()  # 1-bit (ready)
+    req_valid = Signal()  # 新增：可能需要的信号
+      # 新增：从 example.py 看到需要这个信号
 
 
 class ToICacheBundle(Bundle):  # 新增：专门处理 toICache 相关信号
@@ -146,14 +163,14 @@ class FromIfuBundle(Bundle):  # 新增：IFU 重定向信号 Bundle
     pdWb_bits_pc_14 = Signal()
     pdWb_bits_pc_15 = Signal()
 
-class FtqTopBundle(Bundle):
+class FtqBundle(Bundle):
 
     #加from prefix只是为了给信号加前缀，并且只适用于与dut的信号绑定，与python的变量名无关。具体在agent中驱动信号名字
     #是根据bundle的子bundle实例化名字+一个“.”符号，和我们加的前缀无关
-    clock, reset = Signals(2)
     fromBackend = FromBackendBundle.from_prefix("fromBackend_")  # 新增
     fromIfu = FromIfuBundle.from_prefix("fromIfu_")  # 新增
     fromBpu = FromBpuBundle.from_prefix("fromBpu_")
     toIfu = ToIfuBundle.from_prefix("toIfu_")
     toICache = ToICacheBundle.from_prefix("toICache_")  # 新增
     toPrefetch = ToPrefetchBundle.from_prefix("toPrefetch_")  # 新增
+

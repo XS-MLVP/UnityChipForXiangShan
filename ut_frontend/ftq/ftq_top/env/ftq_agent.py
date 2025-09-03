@@ -1,17 +1,12 @@
-from toffee import Agent, driver_method
-from ..bundle import FtqTopBundle
+from toffee import *
 
 
-class FtqTopAgent(Agent):
-    def __init__(self, ftq_top_bundle: FtqTopBundle):
-        super().__init__(ftq_top_bundle)
-        self.bundle = ftq_top_bundle
+class FtqAgent(Agent):
+    def __init__(self, ftq_bundle):
+        super().__init__(ftq_bundle) 
 
-    async def reset(self):
-        self.bundle.reset.value = 1
-        await self.bundle.step()
-        self.bundle.reset.value = 0
-        await self.bundle.step()
+    
+
 
     @driver_method()
     async def drive_backend_inputs(

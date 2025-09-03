@@ -1,7 +1,9 @@
+import random
 import toffee_test
-from ..bundle import FtqTopBundle
-from ..env import FtqTopEnv 
+from ..env import FtqBundle
+from ..env import FtqEnv 
 import toffee
+
 from dut.FtqTop import DUTFtqTop
 import toffee.funcov as fc
 from toffee.funcov import CovGroup
@@ -78,7 +80,7 @@ class NewDUTFtqTop(DUTFtqTop):
         def get_commit_state_queue_reg(ftq_idx, offset):
             return self.GetInternalSignal(f"FtqTop_top.Ftq.commitStateQueueReg_{ftq_idx}_{offset}")    
         
-        #  不能直接调用函数 必须用封闭包绑定self
+        #  不能直接调用函数 必须用封闭包绑定self33333
         self.get_update_target = get_update_target
         self.get_cfi_index_bits = get_cfi_index_bits
         self.get_cfi_index_valid = get_cfi_index_valid
@@ -118,7 +120,8 @@ def ftq_cover_point(dut):
   
     return g
 
-def get_ftq_simple_timing_coverage(dut):  
+def get_ftq_simple_timing_coverage(dut):  #qqqq
+
     group = CovGroup("FTQ Simple Timing Coverage")
 
     
@@ -129,7 +132,7 @@ def get_ftq_simple_timing_coverage(dut):
     return group
 
 @toffee_test.fixture
-async def ftq_top_env(toffee_request: toffee_test.ToffeeRequest):
+async def ftq_env(toffee_request: toffee_test.ToffeeRequest):
     toffee.setup_logging(toffee.WARNING)
     dut = toffee_request.create_dut(NewDUTFtqTop,"clock")  # 假设 DUT 类名为 DUTFtqTop，根据实际调整
     #toffee_request.add_cov_groups(ftq_cover_point(dut))  # 可选：添加覆盖
@@ -144,7 +147,7 @@ async def ftq_top_env(toffee_request: toffee_test.ToffeeRequest):
     toffee.start_clock(dut)
 
 
-    ftq_bundle = FtqTopBundle.from_prefix('io_')
+    ftq_bundle = FtqBundle.from_prefix('io_')
     
     ftq_bundle.bind(dut)  # 绑定到 DUT
 
@@ -169,10 +172,10 @@ async def ftq_top_env(toffee_request: toffee_test.ToffeeRequest):
     #toffee.create_task(monitor_icache_req_when_ifu_redirect())    #qqqqq
 
 
-    yield FtqTopEnv(ftq_bundle, dut=dut)  
+    yield FtqEnv(ftq_bundle, dut=dut)  
 
     
     
     print("99999999")
-    #return FtqTopEnv(ftq_bundle, dut=dut)  
+    #return FtqEnv(ftq_bundle, dut=dut)  
     toffee_request.cov_groups.append(simple_timing_coverage)#qqqq
