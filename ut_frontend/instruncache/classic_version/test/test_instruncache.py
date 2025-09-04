@@ -29,8 +29,6 @@ class InstrUncacheBundle(Bundle):
 
 @toffee_test.testcase
 async def test_instruncache_smoke(toffee_request: toffee_test.ToffeeRequest):
-
-    toffee.setup_logging(toffee.WARNING)
     instruncache = toffee_request.create_dut(DUTInstrUncache, "clock")
     toffee.start_clock(instruncache)
 
@@ -212,8 +210,6 @@ async def _request_data(instruncache_bundle, req_addr, \
 
 @toffee_test.testcase
 async def test_instruncache_addr_alignment(toffee_request: toffee_test.ToffeeRequest):
-
-    toffee.setup_logging(toffee.WARNING)
     instruncache = toffee_request.create_dut(DUTInstrUncache, "clock")
     toffee.start_clock(instruncache)
 
@@ -248,8 +244,6 @@ async def test_instruncache_addr_alignment(toffee_request: toffee_test.ToffeeReq
 #
 @toffee_test.testcase
 async def test_instruncache_addr_misalign(toffee_request: toffee_test.ToffeeRequest):
-
-    toffee.setup_logging(toffee.WARNING)
     instruncache = toffee_request.create_dut(DUTInstrUncache, "clock")
     toffee.start_clock(instruncache)
 

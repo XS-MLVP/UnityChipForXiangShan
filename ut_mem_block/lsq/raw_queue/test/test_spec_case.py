@@ -128,11 +128,7 @@ async def test_ctl_upadte(loadqueue_raw_env: LoadQueueRAWEnv):
     assert allocate == 0
     
 def generate_random_bit_integer(num: int):
-    # 生成48位的二进制字符串
-    binary_string = ''.join(random.choice(['0', '1']) for _ in range(num))
-    # 将二进制字符串转换为整数
-    decimal_value = int(binary_string, 2)
-    return decimal_value
+    return random.getrandbits(num)
 
 @toffee_test.testcase
 async def test_freelist_full(loadqueue_raw_env: LoadQueueRAWEnv):
@@ -363,33 +359,33 @@ async def test_random(loadqueue_raw_env: LoadQueueRAWEnv):
     for _ in range(5000):
         query = [
             IOQuery(
-            valid=random.choice([True, False]),
-            uop_preDecodeInfo_isRVC=random.choice([True, False]),
-            uop_ftqPtr_flag=random.choice([True, False]),
+            valid=not random.getrandbits(1),
+            uop_preDecodeInfo_isRVC=not random.getrandbits(1),
+            uop_ftqPtr_flag=not random.getrandbits(1),
             uop_ftqPtr_value=generate_random_bit_integer(6),
             uop_ftqOffset=generate_random_bit_integer(4),
-            uop_robIdx_flag=random.choice([True, False]),
+            uop_robIdx_flag=not random.getrandbits(1),
             uop_robIdx_value=generate_random_bit_integer(8),
-            uop_sqIdx_flag=random.choice([True, False]),
+            uop_sqIdx_flag=not random.getrandbits(1),
             uop_sqIdx_value = generate_random_bit_integer(6),
             mask=generate_random_bit_integer(16), 
             bits_paddr=generate_random_bit_integer(48),
-            datavalid=random.choice([True, False]),
-            revoke=random.choice([True, False]),
+            datavalid=not random.getrandbits(1),
+            revoke=not random.getrandbits(1),
         )
             for i in range(num_queries)
         ]
         redirect = IORedirect(
-            valid=random.choice([True, False]),
-            robIdx_flag=random.choice([True, False]),
+            valid=not random.getrandbits(1),
+            robIdx_flag=not random.getrandbits(1),
             robIdx_value=generate_random_bit_integer(8),
             level=random.randint(0, 1)
         )
-        stIssuePtr = Ptr(flag=random.choice([True, False]), value=generate_random_bit_integer(6))
-        stAddrReadySqPtr = Ptr(flag=random.choice([True, False]), value=generate_random_bit_integer(6))
+        stIssuePtr = Ptr(flag=not random.getrandbits(1), value=generate_random_bit_integer(6))
+        stAddrReadySqPtr = Ptr(flag=not random.getrandbits(1), value=generate_random_bit_integer(6))
         stores = [
-            StoreIn(valid=random.choice([True, False]), robIdx_flag=random.choice([True, False]), robIdx_value=generate_random_bit_integer(8), paddr=generate_random_bit_integer(48), mask=generate_random_bit_integer(16), miss=random.choice([True, False])),
-            StoreIn(valid=random.choice([True, False]), robIdx_flag=random.choice([True, False]), robIdx_value=generate_random_bit_integer(8), paddr=generate_random_bit_integer(48), mask=generate_random_bit_integer(16), miss=random.choice([True, False]))
+            StoreIn(valid=not random.getrandbits(1), robIdx_flag=not random.getrandbits(1), robIdx_value=generate_random_bit_integer(8), paddr=generate_random_bit_integer(48), mask=generate_random_bit_integer(16), miss=not random.getrandbits(1)),
+            StoreIn(valid=not random.getrandbits(1), robIdx_flag=not random.getrandbits(1), robIdx_value=generate_random_bit_integer(8), paddr=generate_random_bit_integer(48), mask=generate_random_bit_integer(16), miss=not random.getrandbits(1))
         ]
         async with Executor() as exec:
             exec(loadqueue_raw_env.agent.update(query, redirect, stIssuePtr, stAddrReadySqPtr))

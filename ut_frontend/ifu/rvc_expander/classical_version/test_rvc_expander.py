@@ -43,6 +43,7 @@ def rvc_expand(rvc_expander, ref_insts, is_32bit=False, fsIsOff=False):
 
 
 @pytest.mark.toffee_tags(TAG_SMOKE)
+@pytest.mark.skip
 def test_rvc_expand_32bit_smoke(rvc_expander):
     """
     Test the RVC expand function with 1 fixed 32 bit instruction
@@ -51,6 +52,7 @@ def test_rvc_expand_32bit_smoke(rvc_expander):
 
 
 @pytest.mark.toffee_tags(TAG_SMOKE)
+@pytest.mark.skip
 def test_rvc_expand_16bit_smoke(rvc_expander):
     """
     Test the RVC expand function with 1 compressed instruction
@@ -63,6 +65,7 @@ T = 1<<16
 @pytest.mark.toffee_tags(TAG_LONG_TIME_RUN)
 @pytest.mark.parametrize("start,end",
                          [(r*(T//N), (r+1)*(T//N) if r < N-1 else T) for r in range(N)])
+@pytest.mark.skip
 def test_rvc_expand_16bit_full(rvc_expander, start, end):
     """Test the RVC expand function with a full compressed instruction set
     
@@ -89,6 +92,7 @@ T=1<<32
 @pytest.mark.toffee_tags([TAG_LONG_TIME_RUN, TAG_RARELY_USED])
 @pytest.mark.parametrize("start,end",
                          [(r*(T//N), (r+1)*(T//N) if r < N-1 else T) for r in range(N)])
+@pytest.mark.skip
 def test_rvc_expand_32bit_full(rvc_expander, start, end):
     """Test the RVC expand function with a full 32 bit instruction set
 

@@ -8,7 +8,6 @@ from ..env import ICacheMainPipeEnv
 
 @toffee_test.fixture
 async def icachemainpipe_env(toffee_request: toffee_test.ToffeeRequest):
-    toffee.setup_logging(toffee.ERROR)
     dut = toffee_request.create_dut(DUTICacheMainPipe)
     dut.InitClock("clock")
     start_clock(dut)

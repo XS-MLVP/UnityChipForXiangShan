@@ -25,9 +25,6 @@ from queue import Queue
 from comm import get_version_checker, get_out_dir, UT_FCOV
 from toffee_test.reporter import set_func_coverage, set_line_coverage
 
-# Set the toffee log level to ERROR
-toffee.setup_logging(toffee.ERROR)
-
 # Version check
 version_check = get_version_checker("openxiangshan-kmh-*")
 
