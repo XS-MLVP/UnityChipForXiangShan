@@ -11,17 +11,6 @@
 #
 # See the Mulan PSL v2 for more details.
 # **************************************************************************************/
-import ast
-import functools
-import os
-
-import pytest
-import yaml
-
-from comm.cfg.model import UnityChipConfig
-from comm.functions.base64 import base64_encode, base64_decode
-from comm.functions.utils import get_root_dir, get_abs_path, time_format
-from comm.logger import debug
 
 __all__ = [
     "get_config",
@@ -38,10 +27,22 @@ __all__ = [
     "dump_cfg",
 ]
 
+import ast
+import functools
+import os
+
+import pytest
+import yaml
+
+from ..cfg.model import UnityChipConfig
+from ..functions.base64 import base64_encode, base64_decode
+from ..functions.utils import get_root_dir, get_abs_path, time_format
+from ..logger import debug
+
 global_cfg = None
 
 
-def get_config(cfg=None):
+def get_config(cfg: UnityChipConfig = None):
     if cfg is not None:
         return cfg
     global global_cfg
@@ -53,7 +54,7 @@ def get_config(cfg=None):
     return global_cfg
 
 
-def get_log_dir(subdir: str = "", cfg=None) -> str:
+def get_log_dir(subdir: str = "", cfg: UnityChipConfig = None) -> str:
     """Gets the absolute path to the log directory from the configuration.
 
     Args:
@@ -68,7 +69,7 @@ def get_log_dir(subdir: str = "", cfg=None) -> str:
     return get_abs_path(cfg.output.out_dir, os.path.join(cfg.log.file_dir, subdir), cfg)
 
 
-def get_out_dir(subdir: str = "", cfg=None) -> str:
+def get_out_dir(subdir: str = "", cfg: UnityChipConfig = None) -> str:
     """Gets the absolute path to the output directory from the configuration.
 
     Args:
@@ -83,8 +84,8 @@ def get_out_dir(subdir: str = "", cfg=None) -> str:
     return get_abs_path(cfg.output.out_dir, subdir, cfg)
 
 
-def get_rtl_dir(subdir: str = "", cfg=None) -> str:
-    """Gets the absolute path to the RTL cache directory from the configuration.
+def get_rtl_dir(subdir: str = "", cfg: UnityChipConfig = None) -> str:
+    """Gets the absolute path to the RTL directory of `rtl.version` from the configuration.
 
     Args:
         subdir (str, optional): A subdirectory to append to the RTL path.
@@ -95,10 +96,11 @@ def get_rtl_dir(subdir: str = "", cfg=None) -> str:
         str: The absolute path to the RTL cache directory.
     """
     cfg = get_config(cfg)
+    subdir = os.path.join("rtl", subdir)
     return get_abs_path(cfg.rtl.cache_dir, subdir, cfg)
 
 
-def get_rtl_lnk_version(cfg=None) -> str:
+def get_rtl_lnk_version(cfg: UnityChipConfig = None) -> str:
     """Reads the RTL version from the 'rtl' symlink in the cache directory.
 
     This function parses the target of the 'rtl' symlink to extract the
@@ -113,14 +115,15 @@ def get_rtl_lnk_version(cfg=None) -> str:
     Raises:
         AssertionError: If the 'rtl' symlink does not exist or is not a symlink.
     """
-    lnk = os.path.join(get_rtl_dir(cfg=cfg), "rtl")
+    cfg = get_config(cfg)
+    lnk = os.path.join(cfg.rtl.cache_dir, "rtl")
     assert os.path.exists(lnk), f"rtl link {lnk} not found"
     assert os.path.islink(lnk), f"{lnk} is not a link, please check"
     version = os.readlink(lnk).replace("/rtl", "").split("/")[-1].strip()
     return version
 
 
-def get_report_dir(cfg=None) -> str:
+def get_report_dir(cfg: UnityChipConfig = None) -> str:
     """Gets the absolute path to the report directory from the configuration.
 
     Args:
@@ -157,7 +160,7 @@ def get_version_checker(target_version: str):
     return lambda: None
 
 
-def new_report_name(cfg=None) -> tuple[str, str]:
+def new_report_name(cfg: UnityChipConfig = None) -> tuple[str, str]:
     """Generates a new report name and ensures the report directory exists.
 
     It creates the report directory if needed and resolves placeholders in the

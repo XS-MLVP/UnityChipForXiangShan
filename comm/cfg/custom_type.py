@@ -1,14 +1,11 @@
+__all__ = ['TemplateString']
+
 import os
 import re
 from collections.abc import Callable
 
 from pydantic import AfterValidator
 from typing_extensions import Annotated
-
-from ..functions.git import get_git_tag, get_git_url_with_commit
-from ..functions.utils import get_root_dir, time_format
-
-__all__ = ['TemplateString']
 
 
 def replace_default_vars(input_str: str) -> str:
@@ -23,6 +20,9 @@ def replace_default_vars(input_str: str) -> str:
     Returns:
         str: The string with placeholders replaced.
     """
+    from ..functions.git import get_git_tag, get_git_url_with_commit
+    from ..functions.utils import get_root_dir, time_format
+
     # Define variable mapping table with lazy evaluation
     variable_resolvers: dict[str, Callable[[], str]] = {
         'time': lambda: time_format(fmt="%Y%m%d%H%M%S"),

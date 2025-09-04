@@ -1,4 +1,4 @@
-.PHONY: dut rtl check_dut
+.PHONY: dut rtl
 
 export PYTHONPATH := $(shell pwd):$(shell picker --show_xcom_lib_location_python | tail -n 1):$(PYTHONPATH)
 export ENABLE_XINFO := 0
@@ -23,6 +23,12 @@ clean_rtl:
 
 test_all:
 	@python3 run.py --config $(CFG) $(KV) -- $(REPORT) -vs ut_*/ $(args)
+
+test_all_fast:
+	@python3 run.py --config $(CFG) --no-waveform --no-code-cov $(KV) -- -vs ut_*/ $(args)
+
+test_without_waveform:
+	@python3 run.py --config $(CFG) --no-waveform $(KV) -- $(REPORT) -vs $(target) $(args)
 
 test:
 	@python3 run.py --config $(CFG) $(KV) -- $(REPORT) -vs $(args) $(target)

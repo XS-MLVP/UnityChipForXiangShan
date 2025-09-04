@@ -12,10 +12,6 @@
 # See the Mulan PSL v2 for more details.
 # **************************************************************************************/
 
-import inspect
-import os
-import time
-
 __all__ = [
     "get_root_dir",
     "get_abs_path",
@@ -27,6 +23,10 @@ __all__ = [
     "module_name_with",
     "is_all_file_exist",
 ]
+
+import inspect
+import os
+import time
 
 
 def get_root_dir(subdir: str = "") -> str:

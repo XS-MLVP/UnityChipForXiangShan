@@ -12,12 +12,12 @@
 # See the Mulan PSL v2 for more details.
 # **************************************************************************************/
 
-import base64
-
 __all__ = [
     "base64_encode",
     "base64_decode",
 ]
+
+import base64
 
 
 def base64_encode(input_str: str) -> str:
