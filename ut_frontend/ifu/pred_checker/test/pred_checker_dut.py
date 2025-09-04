@@ -124,7 +124,6 @@ def init_pred_checker_funcov(dut:DUTPredChecker, g:fc.CovGroup, env:PredCheckerE
 
 @toffee_test.fixture
 async def predchecker_env(toffee_request: toffee_test.ToffeeRequest):
-    toffee.setup_logging(toffee.WARNING)
     dut = toffee_request.create_dut(DUTPredChecker)
     dut.InitClock("clock")
     toffee.start_clock(dut)

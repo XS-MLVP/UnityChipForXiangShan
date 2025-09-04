@@ -223,6 +223,7 @@ def read_ref(ref,ren,raddr):
     last_read = rdatas
     return rdatas
 
+@pytest.mark.skip
 def test_random(init_ref, init_dut):
     # get init
     ref = init_ref

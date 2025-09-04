@@ -1,5 +1,5 @@
-#coding=utf8
-#***************************************************************************************
+# coding=utf8
+# ***************************************************************************************
 # This project is licensed under Mulan PSL v2.
 # You can use this software according to the terms and conditions of the Mulan PSL v2.
 # You may obtain a copy of Mulan PSL v2 at:
@@ -10,26 +10,19 @@
 # MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 #
 # See the Mulan PSL v2 for more details.
-#**************************************************************************************/
+# **************************************************************************************/
 
-import toffee
-import os
-import pytest
 import ctypes
 import datetime
+
+import toffee
 import toffee.funcov as fc
-
-from dut.PreDecode import *
+import toffee_test
 from dut.DecodeStage import *
-
-from comm import get_out_dir, get_root_dir, debug, UT_FCOV, get_file_logger, get_version_checker, module_name_with
+from dut.PreDecode import *
 from dut.RVCExpander import *
 
-from toffee_test.reporter import set_func_coverage
-from toffee_test.reporter import set_line_coverage
-
-# Set the toffe log level to ERROR
-toffee.setup_logging(toffee.ERROR)
+from comm import get_out_dir, debug, UT_FCOV, get_file_logger, get_version_checker, module_name_with
 
 # Version check
 version_check = get_version_checker("openxiangshan-kmh-*")
@@ -40,14 +33,14 @@ g = fc.CovGroup(UT_FCOV("../../INT"))
 
 def init_rvc_expander_funcov(expander, g: fc.CovGroup):
     """Add watch points to the RVCExpander module to collect function coverage information"""
-    
+
     # 1. Add point RVC_EXPAND_RET to check expander return value:
     #    - bin ERROR. The instruction is not illegal
     #    - bin SUCCE. The instruction is not expanded
     g.add_watch_point(expander, {
-                                "ERROR": lambda x: x.stat()["ilegal"] == False,
-                                "SUCCE": lambda x: x.stat()["ilegal"] != False,
-                          }, name = "RVC_EXPAND_RET")
+        "ERROR": lambda x: x.stat()["ilegal"] == False,
+        "SUCCE": lambda x: x.stat()["ilegal"] != False,
+    }, name="RVC_EXPAND_RET")
 
     # 2. Add point RVC_EXPAND_16B_RANGE to check expander input range
     #   - bin RANGE[start-end]. The instruction is in the range of the compressed instruction set
@@ -61,13 +54,14 @@ def init_rvc_expander_funcov(expander, g: fc.CovGroup):
     #   - bin BITS[0-31]. The instruction is expanded to the corresponding 32-bit instruction
     def _check_pos(i):
         def check(expander):
-            return expander.stat()["instr"] & (1<<i) != 0
+            return expander.stat()["instr"] & (1 << i) != 0
+
         return check
+
     g.add_watch_point(expander, {
-                                  "POS_%d"%i: _check_pos(i)
-                                   for i in range(32)
-                                },
-                      name="RVC_EXPAND_32B_BITS")
+        "POS_%d" % i: _check_pos(i)
+        for i in range(32)
+    }, name="RVC_EXPAND_32B_BITS")
 
     # 5. Reverse mark function coverage to the check point
     def _M(name):
@@ -75,9 +69,12 @@ def init_rvc_expander_funcov(expander, g: fc.CovGroup):
         return module_name_with(name, "../../test_rv_decode")
 
     #  - mark RVC_EXPAND_RET
-    g.mark_function("RVC_EXPAND_RET",     _M(["test_rvc_expand_16bit_full",
-                                              "test_rvc_expand_32bit_full",
-                                              "test_rvc_expand_32bit_randomN"]), bin_name=["ERROR", "SUCCE"])
+    g.mark_function(
+        "RVC_EXPAND_RET",
+        _M(["test_rvc_expand_16bit_full",
+            "test_rvc_expand_32bit_full",
+            "test_rvc_expand_32bit_randomN"]),
+        bin_name=["ERROR", "SUCCE"])
     #  - mark RVC_EXPAND_16B_RANGE
     g.mark_function("RVC_EXPAND_32B_BITS", _M("test_rvc_expand_32bit_randomN"), bin_name=["POS_*"], raise_error=False)
 
@@ -91,10 +88,10 @@ def init_rv_decoder_funcov(g: fc.CovGroup):
 
 
 class RVCExpander(toffee.Bundle):
-    def __init__(self, cover_group, **kwargs):
+    def __init__(self, cover_group, dut: DUTRVCExpander):
         super().__init__()
         self.cover_group = cover_group
-        self.dut = DUTRVCExpander(**kwargs)
+        self.dut = dut
         self.io = toffee.Bundle.from_prefix("io_", self.dut)
         self.bind(self.dut)
 
@@ -104,7 +101,7 @@ class RVCExpander(toffee.Bundle):
         self.dut.RefreshComb()
         self.cover_group.sample()
         return self.io["out_bits"].value, self.io["ill"].value
-    
+
     def stat(self):
         return {
             "instr": self.io["in"].value,
@@ -113,22 +110,15 @@ class RVCExpander(toffee.Bundle):
         }
 
 
-@pytest.fixture()
-def rvc_expander(request):
+@toffee_test.fixture
+async def rvc_expander(toffee_request: toffee_test.ToffeeRequest):
     version_check()
-    fname = request.node.name
-    wave_file = get_out_dir("decoder/rvc_expander_%s.fst" % fname)
-    coverage_file = get_out_dir("decoder/rvc_expander_%s.dat" % fname)
-    coverage_dir = os.path.dirname(coverage_file)
-    os.makedirs(coverage_dir, exist_ok=True)
-    expander = RVCExpander(g, coverage_filename=coverage_file, waveform_filename=wave_file)
+    dut = toffee_request.create_dut(DUTRVCExpander)
+    expander = RVCExpander(g, dut)
+    toffee_request.cov_groups.append(g)
     expander.dut.io_in.AsImmWrite()
     init_rvc_expander_funcov(expander, g)
-    yield expander
-    expander.dut.Finish()
-    set_line_coverage(request, coverage_file)
-    set_func_coverage(request, g)
-    g.clear()
+    return expander
 
 
 class Decode(toffee.Bundle):
@@ -152,16 +142,16 @@ class Decode(toffee.Bundle):
             "out_3_ready": 0b1,
             "out_4_ready": 0b1,
             "out_5_ready": 0b1,
-            "*": 0,             # Set other pins to 0
+            "*": 0,  # Set other pins to 0
         })
 
     def Reset(self):
         """Directly operate the dut pins to reset"""
-        self.dut.reset.value  = 0
+        self.dut.reset.value = 0
         self.dut.Step(1)
-        self.dut.reset.value  = 1
+        self.dut.reset.value = 1
         self.dut.Step(2)
-        self.dut.reset.value  = 0
+        self.dut.reset.value = 0
         self.dut.Step(1)
 
     def Input_instruction(self, i, valid, instr, isRVC, brType, isCall, isRet, pred_taken, instr_ex):
@@ -174,32 +164,32 @@ class Decode(toffee.Bundle):
             p = getattr(self.dut, f'io_in_{i}_bits_exceptionVec_{j}', None)
             if p:
                 p.value = 0
-        self.input_inst[i].bits_trigger.value                  = 0
-        self.input_inst[i].bits_preDecodeInfo_isRVC.value      = isRVC
-        self.input_inst[i].bits_preDecodeInfo_brType.value     = brType
-        self.input_inst[i].bits_pred_taken.value               = pred_taken
-        self.input_inst[i].bits_crossPageIPFFix.value          = 0
-        self.input_inst[i].bits_ftqPtr_flag.value              = 0
-        self.input_inst[i].bits_ftqPtr_value.value             = 0
-        self.input_inst[i].bits_ftqOffset.value                = 0
+        self.input_inst[i].bits_trigger.value = 0
+        self.input_inst[i].bits_preDecodeInfo_isRVC.value = isRVC
+        self.input_inst[i].bits_preDecodeInfo_brType.value = brType
+        self.input_inst[i].bits_pred_taken.value = pred_taken
+        self.input_inst[i].bits_crossPageIPFFix.value = 0
+        self.input_inst[i].bits_ftqPtr_flag.value = 0
+        self.input_inst[i].bits_ftqPtr_value.value = 0
+        self.input_inst[i].bits_ftqOffset.value = 0
 
     def FromCSR_illegalInst(self, sfenceVMA, sfencePart, hfenceGVMA, hfenceVVMA, hlsv, fsIsOff, vsIsOff, wfi, frm):
-        self.dut.io_fromCSR_illegalInst_sfenceVMA.value   = sfenceVMA
-        self.dut.io_fromCSR_illegalInst_sfencePart.value  = sfencePart
-        self.dut.io_fromCSR_illegalInst_hfenceGVMA.value  = hfenceGVMA
-        self.dut.io_fromCSR_illegalInst_hfenceVVMA.value  = hfenceVVMA
-        self.dut.io_fromCSR_illegalInst_hlsv.value        = hlsv
-        self.dut.io_fromCSR_illegalInst_fsIsOff.value     = fsIsOff
-        self.dut.io_fromCSR_illegalInst_vsIsOff.value     = vsIsOff
-        self.dut.io_fromCSR_illegalInst_wfi.value         = wfi
-        self.dut.io_fromCSR_illegalInst_frm.value         = frm
+        self.dut.io_fromCSR_illegalInst_sfenceVMA.value = sfenceVMA
+        self.dut.io_fromCSR_illegalInst_sfencePart.value = sfencePart
+        self.dut.io_fromCSR_illegalInst_hfenceGVMA.value = hfenceGVMA
+        self.dut.io_fromCSR_illegalInst_hfenceVVMA.value = hfenceVVMA
+        self.dut.io_fromCSR_illegalInst_hlsv.value = hlsv
+        self.dut.io_fromCSR_illegalInst_fsIsOff.value = fsIsOff
+        self.dut.io_fromCSR_illegalInst_vsIsOff.value = vsIsOff
+        self.dut.io_fromCSR_illegalInst_wfi.value = wfi
+        self.dut.io_fromCSR_illegalInst_frm.value = frm
 
     def FromCSR_virtualInst(self, sfenceVMA, sfencePart, hfence, hlsv, wfi):
-        self.dut.io_fromCSR_virtualInst_sfenceVMA.value   = sfenceVMA
-        self.dut.io_fromCSR_virtualInst_sfencePart.value  = sfencePart
-        self.dut.io_fromCSR_virtualInst_hfence.value      = hfence
-        self.dut.io_fromCSR_virtualInst_hlsv.value        = hlsv
-        self.dut.io_fromCSR_virtualInst_wfi.value         = wfi
+        self.dut.io_fromCSR_virtualInst_sfenceVMA.value = sfenceVMA
+        self.dut.io_fromCSR_virtualInst_sfencePart.value = sfencePart
+        self.dut.io_fromCSR_virtualInst_hfence.value = hfence
+        self.dut.io_fromCSR_virtualInst_hlsv.value = hlsv
+        self.dut.io_fromCSR_virtualInst_wfi.value = wfi
 
     def Get_input_ready(self, i):
         return self.input_inst[i].ready.value
@@ -209,66 +199,58 @@ class Decode(toffee.Bundle):
         for i in range(6):
             if self.input_inst[i].ready.value == 1:
                 cnt = i + 1
-            else: 
+            else:
                 break
         return cnt
 
     def Input_instruction_list(self, insts, valid):
         for i in range(6):
-            self.Input_instruction(i, 0, 0, 0, 0, 0, 0, 0,0)
+            self.Input_instruction(i, 0, 0, 0, 0, 0, 0, 0, 0)
         for i, inst in enumerate(insts):
-            self.Input_instruction(i, valid, inst[0], 0, 0, 0, 0, 0,inst[3])
+            self.Input_instruction(i, valid, inst[0], 0, 0, 0, 0, 0, inst[3])
 
     def Get_decode_result(self):
         insts_result = []
         num = 0
         for i in range(6):
             if self.output_instrution[i].valid.value == 1 and self.output_instrution[i].bits_lastUop.value == 1:
-                insts_result.append((self.output_instrution[i].bits_instr.value, 
-                                     self.output_instrution[i].bits_exceptionVec_2.value or self.output_instrution[i].bits_exceptionVec_22.value, 
+                insts_result.append((self.output_instrution[i].bits_instr.value,
+                                     self.output_instrution[i].bits_exceptionVec_2.value or self.output_instrution[
+                                         i].bits_exceptionVec_22.value,
                                      self.output_instrution[i].bits_firstUop.value))
                 num = num + 1
         return num, insts_result
-    
+
     def Get_decode_checkpoint_illeagl_inst(self):
         illegal = 0
         for i in range(6):
             if self.output_instrution[i].valid.value == 1 and self.output_instrution[i].bits_lastUop.value == 1:
-                if (self.output_instrution[i].bits_exceptionVec_2.value or self.output_instrution[i].bits_exceptionVec_22.value):
+                if (self.output_instrution[i].bits_exceptionVec_2.value or self.output_instrution[
+                    i].bits_exceptionVec_22.value):
                     illegal = 1
         return illegal
-    
+
     def Get_decode_checkpoint_complex_inst(self):
         complex = 0
         for i in range(6):
-            if self.output_instrution[i].valid.value == 1 and self.output_instrution[i].bits_lastUop.value == 1 and self.output_instrution[i].bits_firstUop.value != 1:
+            if self.output_instrution[i].valid.value == 1 and self.output_instrution[i].bits_lastUop.value == 1 and \
+                    self.output_instrution[i].bits_firstUop.value != 1:
                 complex = 1
         return complex
-                
 
-@pytest.fixture()
-def decoder(request):
+
+@toffee_test.fixture
+async def decoder(toffee_request: toffee_test.ToffeeRequest):
+    import os
     # before test
     init_rv_decoder_funcov(g)
-    func_name = request.node.name
     # If the output directory does not exist, create it
     output_dir_path = get_out_dir("decoder/log")
     os.makedirs(output_dir_path, exist_ok=True)
-    decoder = Decode(DUTDecodeStage(
-        waveform_filename=get_out_dir("decoder/decode_%s.fst"%func_name),
-        coverage_filename=get_out_dir("decoder/decode_%s.dat"%func_name),
-    ))
-    decoder.dut.InitClock("clock")
-    decoder.dut.StepRis(lambda x: g.sample())
-    yield decoder
-    # after test
-    decoder.dut.Finish()
-    coverage_file = get_out_dir("decoder/decode_%s.dat"%func_name)
-    if not os.path.exists(coverage_file):
-        raise FileNotFoundError(f"File not found: {coverage_file}")
-    set_line_coverage(request, coverage_file, get_root_dir("scripts/backend_ctrlblock_decode"))
-    set_func_coverage(request, g)
-    g.clear()
+    dut = toffee_request.create_dut(DUTDecodeStage, "clock")
+    toffee_request.cov_groups.append(g)
+    decoder = Decode(dut)
+    return decoder
 
 
 def comapre_result(ref_value_list, dut_value_list, num):
@@ -342,15 +324,16 @@ def comapre_result_in_text(ref_value_list, dut_value_list, num):
     else:
         for i in range(num):
             # Do not change to assert for now. First, focus on implementing the functionality. Assert directly stops execution.。
-            if (ref_value_list[i][2] == 0 or (ref_value_list[i][0] == dut_value_list[i][0])) and (ref_value_list[i][1] == dut_value_list[i][1]):
+            if (ref_value_list[i][2] == 0 or (ref_value_list[i][0] == dut_value_list[i][0])) and (
+                    ref_value_list[i][1] == dut_value_list[i][1]):
                 # print("Meets expectations:（￣︶￣）↗")
                 good_info = f"good  ----- ref: {ref_value_list[i][0]}, {ref_value_list[i][1]}, {ref_value_list[i][2]}, {ref_value_list[i][3]}"
                 write_all_info_to_file(good_info)
             else:
                 # print("Not meeting expectations: <(_ _)>")
-                bad_info =  f"bad   ----- ref: {ref_value_list[i][0]}, {ref_value_list[i][1]}, {ref_value_list[i][2]}, {ref_value_list[i][3]}, old inst: {ref_value_list[i][4]},   dut: {dut_value_list[i][0]}, {dut_value_list[i][1]}, complex: {dut_value_list[i][2] == 0}"
+                bad_info = f"bad   ----- ref: {ref_value_list[i][0]}, {ref_value_list[i][1]}, {ref_value_list[i][2]}, {ref_value_list[i][3]}, old inst: {ref_value_list[i][4]},   dut: {dut_value_list[i][0]}, {dut_value_list[i][1]}, complex: {dut_value_list[i][2] == 0}"
                 write_all_info_to_file(bad_info)
-                if(ref_value_list[i][2][0] != 'v'):
+                if (ref_value_list[i][2][0] != 'v'):
                     write_err_info_to_file(bad_info)
                 eq = False
     return eq
@@ -387,7 +370,7 @@ def instr_filter(insn_disasm_text):
 
 
 # Disassemble the instruction and send it to the rvc_expand module for decoding of compressed instructions
-def convert_reference_format(rvc_expander, ref_insts, need_expand, disasm_func, disasm_free_func, disasm_arg = 0):
+def convert_reference_format(rvc_expander, ref_insts, need_expand, disasm_func, disasm_free_func, disasm_arg=0):
     inst_list = []
     for insn in ref_insts:
         c_void_ptr = disasm_func(ctypes.c_uint64(insn), disasm_arg)
@@ -397,8 +380,8 @@ def convert_reference_format(rvc_expander, ref_insts, need_expand, disasm_func, 
         if need_expand == True:
             instr_bits, instr_ex = rvc_expander.expand(insn)
         else:
-            instr_ex    = 0
-            instr_bits  = insn
+            instr_ex = 0
+            instr_bits = insn
 
         if insn_disasm == "unknown":
             inst_list.append((instr_bits, 1, insn_disasm, instr_ex, insn))
@@ -409,8 +392,8 @@ def convert_reference_format(rvc_expander, ref_insts, need_expand, disasm_func, 
 
 
 # The main part of the test environment
-def decode_run(decoder, inst_list, need_log_file, log_file_name = None):
-    if need_log_file == True:
+def decode_run(decoder, inst_list, need_log_file, log_file_name=None):
+    if need_log_file:
         open_log_file(log_file_name)
     decoder.SetDefaultValue()
     decoder.Reset()
@@ -418,23 +401,23 @@ def decode_run(decoder, inst_list, need_log_file, log_file_name = None):
     detect_pos = 0
     insts_length = len(inst_list)
     sub_valid = 1
-    sub_list  = inst_list[pos:pos+6]
+    sub_list = inst_list[pos:pos + 6]
     success = True
     while True:
-        decoder.Input_instruction_list(sub_list,sub_valid)
+        decoder.Input_instruction_list(sub_list, sub_valid)
         decoder.dut.Step(1)
         allow_number = decoder.Get_allow_input_number()
         if allow_number > 0:
             pos = pos + allow_number
-            sub_list    = inst_list[pos:pos+allow_number]
-            sub_valid   = 1
+            sub_list = inst_list[pos:pos + allow_number]
+            sub_valid = 1
         num, step_result_list = decoder.Get_decode_result()
         if num > 0:
             if need_log_file == True:
-                if comapre_result_in_text(inst_list[detect_pos:detect_pos+num], step_result_list, num) == False:
+                if comapre_result_in_text(inst_list[detect_pos:detect_pos + num], step_result_list, num) == False:
                     success = False
             else:
-                if comapre_result(inst_list[detect_pos:detect_pos+num], step_result_list, num) == False:
+                if comapre_result(inst_list[detect_pos:detect_pos + num], step_result_list, num) == False:
                     success = False
             detect_pos = detect_pos + num
         if pos >= insts_length:

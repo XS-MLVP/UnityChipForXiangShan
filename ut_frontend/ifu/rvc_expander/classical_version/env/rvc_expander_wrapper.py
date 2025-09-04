@@ -27,8 +27,6 @@ from dut.RVCExpander import *
 from toffee_test.reporter import set_func_coverage
 from toffee_test.reporter import set_line_coverage
 
-# Set the toffe log level to ERROR
-# toffee.setup_logging(toffee.ERROR)
 
 # Version check
 version_check = get_version_checker("openxiangshan-kmh-*")

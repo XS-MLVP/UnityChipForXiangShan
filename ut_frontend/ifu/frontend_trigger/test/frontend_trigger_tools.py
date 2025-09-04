@@ -69,9 +69,9 @@ def bp_update_generator(
     while True:
         pc = random.randint(0, max_pc) << 1
         action = random.randint(0, 1)
-        tselect = random.choice([True, False])
+        tselect = not random.getrandbits(1)
         match_type = random.choice([0, 2, 3])
-        chain = random.choice([True, False])
+        chain = not random.getrandbits(1)
 
         bp_update = BreakpointUpdateInfo(
             action=action, tdata2=pc, select=tselect, matchType=match_type, chain=chain
@@ -107,9 +107,9 @@ def bp_flags_generator(
         >>> assert flags.debugMode == True
     """
     while True:
-        tEnableVec = [random.choice([True, False]) for _ in range(4)]
-        debugMode = random.choice([True, False])
-        triggerCanRaiseBpExp = random.choice([True, False])
+        tEnableVec = [not random.getrandbits(1) for _ in range(4)]
+        debugMode = not random.getrandbits(1)
+        triggerCanRaiseBpExp = not random.getrandbits(1)
 
         flags = BreakpointFlags(
             tEnableVec=tEnableVec,

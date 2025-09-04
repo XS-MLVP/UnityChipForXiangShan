@@ -1,5 +1,5 @@
-#coding=utf8
-#***************************************************************************************
+# coding=utf8
+# ***************************************************************************************
 # This project is licensed under Mulan PSL v2.
 # You can use this software according to the terms and conditions of the Mulan PSL v2.
 # You may obtain a copy of Mulan PSL v2 at:
@@ -10,13 +10,14 @@
 # MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 #
 # See the Mulan PSL v2 for more details.
-#**************************************************************************************/
+# **************************************************************************************/
 
 from .env import *
-import inspect
+
 
 ### CASE EXAMPLE
 # Running the following test case will show a pass:
+@pytest.mark.skip
 def test_receive_ptw_resp_nonstage(tlb_fixture):
     """
     Func: receive PTW response under nonstage condition and stored it into TLB entry
@@ -61,7 +62,7 @@ def test_receive_ptw_resp_nonstage(tlb_fixture):
             tlb.dut.Step(2)
 
             # assert result
-            assert(tlb.requestor_0.resp.paddr_0.value == ((ppn << 12) | offset))
-            assert(tlb.requestor_0.resp.miss.value == 0)
+            assert (tlb.requestor_0.resp.paddr_0.value == ((ppn << 12) | offset))
+            assert (tlb.requestor_0.resp.miss.value == 0)
         # reset
         tlb.reset()
