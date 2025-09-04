@@ -12,24 +12,21 @@
 # See the Mulan PSL v2 for more details.
 # **************************************************************************************/
 
-import os
-import re
-import shutil
-import subprocess
-
-from pathlib import Path
-
 __all__ = [
     "get_all_rtl_files",
     "extract_signals"
 ]
 
-from collections import deque
-
+import os
+import re
+import shutil
+import subprocess
+from pathlib import Path
 from typing import List
 
 from .utils import get_root_dir
-from comm.functions.cfg import get_rtl_dir
+from ..cfg.model import UnityChipConfig
+from ..functions.cfg import get_rtl_dir
 
 
 def get_defined_modules(file: str) -> List[str]:
@@ -68,7 +65,7 @@ def get_instant_modules(file: str) -> List[str]:
     return sort_out.decode().splitlines()
 
 
-def get_all_rtl_files(top_module: str, cfg) -> list[str]:
+def get_all_rtl_files(top_module: str, cfg: UnityChipConfig = None) -> list[str]:
     """Recursively finds all Verilog source files for a given top module.
 
     This function traverses the Verilog module hierarchy starting from `top_module`
@@ -89,7 +86,7 @@ def get_all_rtl_files(top_module: str, cfg) -> list[str]:
         list[str]: An ordered list of file paths for the top module and all its
                    submodule dependencies.
     """
-    from collections import OrderedDict
+    from collections import OrderedDict, deque
 
     module_path: dict[str, str] = OrderedDict()
     instants = deque([top_module])

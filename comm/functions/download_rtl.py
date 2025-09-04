@@ -12,6 +12,8 @@
 # See the Mulan PSL v2 for more details.
 # **************************************************************************************/
 
+__all__ = ["use_rtl", "download_rtl"]
+
 import os
 import re
 import subprocess
@@ -21,8 +23,6 @@ from glob import iglob
 import requests
 
 from ..logger import warning, debug
-
-__all__ = ["use_rtl", "download_rtl"]
 
 
 def use_rtl(rtl_file: str, out_dir: str) -> None:

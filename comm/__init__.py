@@ -18,3 +18,4 @@ from .constants import *
 from .functions import *
 from .logger import *
 from .result import *
+from .export_dut import picker_export

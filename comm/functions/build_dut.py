@@ -12,6 +12,8 @@
 # See the Mulan PSL v2 for more details.
 # **************************************************************************************/
 
+__all__ = ["build_dut"]
+
 import glob
 import shutil
 import traceback
@@ -21,8 +23,6 @@ from pathlib import Path
 
 from .utils import get_root_dir
 from ..logger import warning, info
-
-__all__ = ["build_dut"]
 
 
 def _build_dut(d, cfg):
@@ -84,10 +84,9 @@ def build_dut(duts: str, cfg) -> None:
     if not dut_to_build:
         warning(f"No dut to build for: {duts}")
         return
-    info(f"Build duts: {dut_to_build} with: {searched_script}")
 
     import multiprocessing
-    with multiprocessing.Pool(32) as pool:
+    with multiprocessing.Pool() as pool:
         for dut in dut_to_build:
             if is_dut_built(dut):
                 continue

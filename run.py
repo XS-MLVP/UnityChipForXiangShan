@@ -50,7 +50,7 @@ def main():
     init_log(cfg)
     # Download rtl
     base_url = cfg.rtl.base_url.encoded_string()
-    download_rtl(base_url, get_rtl_dir(cfg=cfg), cfg.rtl.version)
+    download_rtl(base_url, cfg.rtl.cache_dir, cfg.rtl.version)
     if args.download_rtl:
         return
     # Check & Set rtl version
@@ -69,7 +69,6 @@ def main():
     cfg.no_code_cov = args.no_code_cov
     # Build dut
     if args.build:
-        init_log(cfg)
         build_dut(args.build, cfg)
         return
     else:

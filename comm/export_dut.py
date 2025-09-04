@@ -1,3 +1,5 @@
+__all__ = ["picker_export"]
+
 import os
 import shutil
 import subprocess
@@ -5,7 +7,7 @@ from tempfile import NamedTemporaryFile
 
 from toffee_test.markers import match_version
 
-from comm import get_root_dir, error, get_all_rtl_files, info, UnityChipConfig
+from .cfg.model import UnityChipConfig
 
 
 def picker_export(
@@ -54,15 +56,17 @@ def picker_export(
          - The exported DUT is placed in the {root}/dut directory
          - RTL version compatibility is checked before export
      """
-    assert source_name, "Cannot export DUT without module name"
+    from comm import get_root_dir, error, get_all_rtl_files, info
 
-    # Get all dependencies
-    dependencies = get_all_rtl_files(source_name, cfg)
-    assert dependencies, f"Cannot found any rtl for {source_name}"
+    assert source_name, "Cannot export DUT without module name"
 
     if not match_version(cfg.rtl.version, rtl_version):
         error(f"(Export {source_name}): Unsupported RTL version {cfg.rtl.version}")
         return False
+
+    # Get all dependencies
+    dependencies = get_all_rtl_files(source_name, cfg)
+    assert dependencies, f"Cannot found any rtl for {source_name}"
 
     # Mem-Direct mode only supports verilator
     if access_mode == 1:

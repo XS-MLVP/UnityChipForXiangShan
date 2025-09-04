@@ -12,10 +12,6 @@
 # See the Mulan PSL v2 for more details.
 # **************************************************************************************/
 
-import subprocess
-
-from ..logger import warning
-
 __all__ = [
     "get_git_commit",
     "is_git_dirty",
@@ -24,6 +20,10 @@ __all__ = [
     "get_git_remote_url",
     "get_git_url_with_commit",
 ]
+
+import subprocess
+
+from ..logger import warning
 
 
 def get_git_commit() -> str:
