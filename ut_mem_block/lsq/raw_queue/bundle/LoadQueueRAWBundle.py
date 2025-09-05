@@ -168,13 +168,6 @@ class _32Bundle(Bundle):
 	_maskModule_io_violationMdata = _31Bundle.from_prefix("_maskModule_io_violationMdata")
 	_lqSelect = _29Bundle.from_prefix("_lqSelect")
 
-class _33Bundle(Bundle):
-	_value_REG, _value_REG_1 = Signals(2)
-
-class _34Bundle(Bundle):
-	_0 = _33Bundle.from_prefix("_0")
-	_1 = _33Bundle.from_prefix("_1")
-
 class _35Bundle(Bundle):
 	_0 = Signal()
 
@@ -187,7 +180,6 @@ class _37Bundle(Bundle):
 	_0 = _36Bundle.from_prefix("_0")
 
 class _38Bundle(Bundle):
-	_perf = _34Bundle.from_prefix("_perf")
 	_query = _37Bundle.from_prefix("_query")
 
 class _39Bundle(Bundle):
@@ -319,14 +311,6 @@ class _61Bundle(Bundle):
 	_paddrModule_io_violationMmask = _58Bundle.from_prefix("_paddrModule_io_violationMmask")
 	_rollbackLqWb = _60Bundle.from_prefix("_rollbackLqWb")
 	_detectedRollback = _56Bundle.from_prefix("_detectedRollback")
-	_GEN, _GEN_26, _GEN_222, _GEN_212, _GEN_36, _GEN_102, _GEN_8, _GEN_379, _GEN_314, _GEN_260, _GEN_263, _GEN_235, _GEN_364, _GEN_18, _GEN_158, _GEN_51, _GEN_243, _GEN_88, _GEN_191, _GEN_209, _GEN_221, _GEN_280, _GEN_195, _GEN_373, _GEN_289, _GEN_339, _GEN_113, _GEN_32, _GEN_334, _GEN_43, _GEN_345, _GEN_12, _GEN_104, _GEN_171, _GEN_370, _GEN_254, _GEN_249, _GEN_95, _GEN_72, _GEN_118, _GEN_229, _GEN_112, _GEN_287, _GEN_227, _GEN_205, _GEN_272, _GEN_217, _GEN_355, _GEN_270, _GEN_45, _GEN_151, _GEN_156, _GEN_0, _GEN_16, _GEN_177, _GEN_315, _GEN_164, _GEN_342, _GEN_336, _GEN_201, _GEN_369, _GEN_78, _GEN_306, _GEN_381, _GEN_380, _GEN_76, _GEN_2, _GEN_267, _GEN_128, _GEN_160, _GEN_360, _GEN_99, _GEN_141, _GEN_372, _GEN_57, _GEN_48, _GEN_134, _GEN_349, _GEN_290, _GEN_107, _GEN_11, _GEN_82, _GEN_316, _GEN_346, _GEN_305, _GEN_90, _GEN_168, _GEN_307, _GEN_220, _GEN_377, _GEN_62, _GEN_81, _GEN_226, _GEN_60, _GEN_29, _GEN_375, _GEN_66, _GEN_326, _GEN_228, _GEN_366, _GEN_178, _GEN_231, _GEN_251, _GEN_214, _GEN_358, _GEN_213, _GEN_59, _GEN_74, _GEN_119, _GEN_376, _GEN_146, _GEN_252, _GEN_343, _GEN_303, _GEN_266, _GEN_352, _GEN_101, _GEN_68, _GEN_298, _GEN_170, _GEN_138, _GEN_150, _GEN_385, _GEN_125, _GEN_264, _GEN_149, _GEN_144, _GEN_234, _GEN_286, _GEN_194, _GEN_37, _GEN_341, _GEN_137, _GEN_189, _GEN_75, _GEN_232, _GEN_50, _GEN_335, _GEN_197, _GEN_28, _GEN_44, _GEN_302, _GEN_117, _GEN_348, _GEN_276, _GEN_173, _GEN_106, _GEN_176, _GEN_121, _GEN_103, _GEN_15, _GEN_159, _GEN_224, _GEN_9, _GEN_325, _GEN_258, _GEN_223, _GEN_46, _GEN_367, _GEN_70, _GEN_237, _GEN_354, _GEN_192, _GEN_293, _GEN_53, _GEN_257, _GEN_268, _GEN_324, _GEN_250, _GEN_87, _GEN_363, _GEN_123, _GEN_371, _GEN_153, _GEN_110, _GEN_129, _GEN_310, _GEN_317, _GEN_198, _GEN_130, _GEN_241, _GEN_148, _GEN_63, _GEN_291, _GEN_186, _GEN_347, _GEN_283, _GEN_321, _GEN_20, _GEN_256, _GEN_206, _GEN_265, _GEN_332, _GEN_157, _GEN_71, _GEN_24, _GEN_179, _GEN_244, _GEN_93, _GEN_174, _GEN_162, _GEN_142, _GEN_242, _GEN_361, _GEN_204, _GEN_318, _GEN_132, _GEN_152, _GEN_218, _GEN_187, _GEN_337, _GEN_135, _GEN_40, _GEN_80, _GEN_340, _GEN_94, _GEN_105, _GEN_183, _GEN_274, _GEN_131, _GEN_6, _GEN_41, _GEN_275, _GEN_67, _GEN_190, _GEN_143, _GEN_65, _GEN_42, _GEN_52, _GEN_175, _GEN_238, _GEN_215, _GEN_108, _GEN_277, _GEN_216, _GEN_47, _GEN_167, _GEN_180, _GEN_126, _GEN_98, _GEN_333, _GEN_188, _GEN_77, _GEN_312, _GEN_236, _GEN_85, _GEN_297, _GEN_56, _GEN_172, _GEN_288, _GEN_382, _GEN_253, _GEN_247, _GEN_323, _GEN_248, _GEN_207, _GEN_109, _GEN_139, _GEN_3, _GEN_365, _GEN_7, _GEN_133, _GEN_208, _GEN_282, _GEN_22, _GEN_359, _GEN_79, _GEN_25, _GEN_300, _GEN_169, _GEN_357, _GEN_278, _GEN_181, _GEN_140, _GEN_261, _GEN_301, _GEN_384, _GEN_35, _GEN_329, _GEN_116, _GEN_13, _GEN_353, _GEN_97, _GEN_19, _GEN_245, _GEN_240, _GEN_114, _GEN_259, _GEN_202, _GEN_230, _GEN_378, _GEN_38, _GEN_374, _GEN_184, _GEN_166, _GEN_122, _GEN_309, _GEN_331, _GEN_273, _GEN_185, _GEN_351, _GEN_73, _GEN_49, _GEN_54, _GEN_145, _GEN_69, _GEN_199, _GEN_14, _GEN_327, _GEN_356, _GEN_211, _GEN_193, _GEN_239, _GEN_262, _GEN_322, _GEN_83, _GEN_165, _GEN_362, _GEN_285, _GEN_64, _GEN_10, _GEN_147, _GEN_155, _GEN_61, _GEN_368, _GEN_196, _GEN_246, _GEN_91, _GEN_203, _GEN_182, _GEN_299, _GEN_163, _GEN_219, _GEN_269, _GEN_31, _GEN_281, _GEN_5, _GEN_161, _GEN_92, _GEN_200, _GEN_294, _GEN_124, _GEN_319, _GEN_1, _GEN_225, _GEN_308, _GEN_279, _GEN_30, _GEN_350, _GEN_338, _GEN_233, _GEN_21, _GEN_58, _GEN_304, _GEN_23, _GEN_27, _GEN_271, _GEN_255, _GEN_89, _GEN_34, _GEN_296, _GEN_84, _GEN_111, _GEN_383, _GEN_115, _GEN_154, _GEN_136, _GEN_311, _GEN_328, _GEN_313, _GEN_330, _GEN_100, _GEN_320, _GEN_55, _GEN_127, _GEN_4, _GEN_210, _GEN_292, _GEN_96, _GEN_39, _GEN_86, _GEN_120, _GEN_344, _GEN_295, _GEN_284, _GEN_17 = Signals(386)
-
-class _62Bundle(Bundle):
-	_value = Signal()
-
-class _63Bundle(Bundle):
-	_0 = _62Bundle.from_prefix("_0")
-	_1 = _62Bundle.from_prefix("_1")
 
 class _64Bundle(Bundle):
 	_uop = _42Bundle.from_prefix("_uop")
@@ -371,7 +355,6 @@ class _73Bundle(Bundle):
 	_1 = _72Bundle.from_prefix("_1")
 
 class _74Bundle(Bundle):
-	_perf = _63Bundle.from_prefix("_perf")
 	_rollback = _70Bundle.from_prefix("_rollback")
 	_stIssuePtr = _5Bundle.from_prefix("_stIssuePtr")
 	_stAddrReadySqPtr = _5Bundle.from_prefix("_stAddrReadySqPtr")
