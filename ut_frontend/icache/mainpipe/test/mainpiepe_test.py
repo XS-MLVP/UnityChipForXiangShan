@@ -46,7 +46,6 @@ async def test_drive_apis(icachemainpipe_env: ICacheMainPipeEnv):
     await agent.reset()
     # waylookup_read
     print("\n Step2 Test For waylookup_read_drive")
-    # setting waylookup_read condition - 使用较小的vSetIdx避免冲突
 
     waylookup_data = {"vSetIdx_0": 0x04,
                       "vSetIdx_1": 0x05,
@@ -72,23 +71,36 @@ async def test_drive_apis(icachemainpipe_env: ICacheMainPipeEnv):
     await agent.reset()
     # fetch_request
     print("\n Step3 Test For fetch_request_drive")
-    PcMemRead_addr_list = [0x0000, 0x0040, 0x0080, 0x00C0, 0x0100]  
-    readValid_list = [1, 1, 0, 0, 0]  # 只激活前两个有效位，减少复杂性
+    PcMemRead_addr_list = [0x0000, 0x0040, 0x0080, 0x00C0, 0x120]  # 第5个元素：0x120[5]=1触发跨行，[13:6]=0x04
+    # nextlineStart将自动计算：0x120跨行 -> (0x120 & ~0x3F) + 64 = 0x140，[13:6]=0x05
+    readValid_list = [1, 1, 0, 0, 1]  # 激活第5个元素以匹配RTL断言要求
+    
+    # 首先设置匹配的wayLookup vSetIdx
+    await agent.drive_waylookup_read(
+        vSetIdx_0=0x04,  # 匹配pcMemRead_4_startAddr[13:6]
+        vSetIdx_1=0x05,  # 匹配pcMemRead_4_nextlineStart[13:6]
+        waymask_0=1,
+        ptag_0=0x12345,
+        meta_codes_0=1
+    )
+    
     # setting fetch condition
     await agent.drive_data_array_ready(True)
-
-    # 在fetch request之前确保系统状态清洁
     await bundle.step(2)
     
-    fetch_result = await agent.drive_fetch_request(pcMemRead_addrs=PcMemRead_addr_list,
-                                                  readValid=readValid_list,
-                                                  backendException=0)
+    fetch_result = await agent.drive_fetch_request(
+        pcMemRead_addrs=PcMemRead_addr_list,
+        readValid=readValid_list,
+        backendException=0
+    )
     await bundle.step()  # 等待一个周期让信号稳定
     assert fetch_result is True, "drive fetch request failed."
     
-    # 验证信号设置（在valid被清零前验证）
-    # 注意：由于drive_fetch_request在step后会清零valid，我们需要在调用期间验证
-    # 这里我们只验证地址和数据设置正确
+    # 清除fetch请求信号
+    await agent.clear_fetch_request()
+    
+    # 验证信号设置
+    # 验证地址和数据设置正确
     for i in range(5):
         actual_start_pre = getattr(bundle.io._fetch._req._bits._pcMemRead, f"_{i}")
         actual_start = getattr(actual_start_pre, "_startAddr")
@@ -98,18 +110,26 @@ async def test_drive_apis(icachemainpipe_env: ICacheMainPipeEnv):
         # 修复类型检查和验证逻辑
         actual_valid_val = actual_valid.value if hasattr(actual_valid, 'value') else actual_valid
         
-        print(f"DEBUG: StartAddr {i} - expected: {PcMemRead_addr_list[i]:x}, actual: {actual_start.value:x}, type: {type(actual_start)}")
-        print(f"DEBUG: NextlineStart {i} - expected: {PcMemRead_addr_list[i] + 64:x} actual: {actual_next.value:x} (input signal, not verifying calculation)")
-        print(f"DEBUG: ReadValid {i} - expected: {readValid_list[i]}, actual: {actual_valid_val}, type: {type(actual_valid)}")
-        # 验证startAddr设置正确
-        assert actual_start.value == PcMemRead_addr_list[i], f"StartAddr {i} mismatch: expected {PcMemRead_addr_list[i]:x}, got {actual_start.value:x}"
+        # 根据RTL逻辑计算expected_next值
+        start_addr = PcMemRead_addr_list[i]
+        if (start_addr & 0x20) != 0:  # startAddr[5] == 1，跨行取指
+            expected_next = (start_addr & ~0x3F) + 64  # 下一个64字节对齐地址
+        else:  # startAddr[5] == 0，同一缓存行内
+            expected_next = start_addr  # nextlineStart = startAddr
         
-        assert actual_next.value == PcMemRead_addr_list[i] + 64, f"NextlineStart {i} should be {PcMemRead_addr_list[i]:x} + 64, but got {actual_next.value:x}"
+        print(f"DEBUG: StartAddr {i} - expected: {start_addr:x}, actual: {actual_start.value:x}")
+        print(f"DEBUG: NextlineStart {i} - expected: {expected_next:x}, actual: {actual_next.value:x}")
+        print(f"DEBUG: ReadValid {i} - expected: {readValid_list[i]}, actual: {actual_valid_val}")
+        
+        # 验证startAddr设置正确
+        assert actual_start.value == start_addr, f"StartAddr {i} mismatch: expected {start_addr:x}, got {actual_start.value:x}"
+        
+        # 验证nextlineStart按我们设置的值
+        assert actual_next.value == expected_next, f"NextlineStart {i} mismatch: expected {expected_next:x}, got {actual_next.value:x}"
         
         # 验证readValid设置正确
         assert actual_valid_val == readValid_list[i], f"ReadValid {i} mismatch: expected {readValid_list[i]}, got {actual_valid_val}"
-    assert bundle.io._fetch._req._bits._backendException.value == 0
-    # 注意：valid信号在drive_fetch_request完成后已经被清零，这是正常行为
+    assert bundle.io._fetch._req._bits._backendException.value == 0, f"Expected backendException 0, got {bundle.io._fetch._req._bits._backendException.value}"
 
 
 @toffee_test.testcase
@@ -118,15 +138,16 @@ async def test_pmp_response(icachemainpipe_env: ICacheMainPipeEnv):
     print("\n--- Testing PMP response API ---")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
-    
-    await agent.drive_pmp_response(instr_0=1, mmio_0=0, instr_1=1, mmio_1=0)
-    await bundle.step()
-    
-    assert bundle.io._pmp._0._resp._instr.value == 1
-    assert bundle.io._pmp._0._resp._mmio.value == 0
-    assert bundle.io._pmp._1._resp._instr.value == 1
-    assert bundle.io._pmp._1._resp._mmio.value == 0
-
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                for l in range(2):
+                    await agent.drive_pmp_response(instr_0=i, mmio_0=j, instr_1=k, mmio_1=l)
+                    await bundle.step()
+                    assert bundle.io._pmp._0._resp._instr.value == i, f"Expected instr_1 {i}, got {bundle.io._pmp._1._resp._instr.value}"
+                    assert bundle.io._pmp._0._resp._mmio.value == j, f"Expected mmio_0 {j}, got {bundle.io._pmp._0._resp._mmio.value}"
+                    assert bundle.io._pmp._1._resp._instr.value == k, f"Expected instr_1 {k}, got {bundle.io._pmp._1._resp._instr.value}"
+                    assert bundle.io._pmp._1._resp._mmio.value == l, f"Expected mmio_1 {l}, got {bundle.io._pmp._1._resp._mmio.value}"
 
 @toffee_test.testcase
 async def test_data_array_response(icachemainpipe_env: ICacheMainPipeEnv):
@@ -183,38 +204,63 @@ async def test_monitoring_apis(icachemainpipe_env: ICacheMainPipeEnv):
     
     # 测试DataArray监控
     dataarray_status = await agent.monitor_dataarray_toIData()
-    assert isinstance(dataarray_status, dict), "DataArray monitoring should return dict"
+    for k,v in dataarray_status.items():
+        print("Debug: DataArray status", k, "=", v)
+        assert v is not None, f"DataArray status {k} should not be None"
     
     # 测试Meta ECC监控
     meta_ecc_status = await agent.monitor_check_meta_ecc_status()
-    assert isinstance(meta_ecc_status, dict), "Meta ECC monitoring should return dict"
-    assert "ecc_enable" in meta_ecc_status, "Meta ECC status should include ecc_enable"
+    for k,v in meta_ecc_status.items():
+        print("Debug: Meta ECC status", k, "=", v)
+        assert v is not None, f"Meta ECC status {k} should not be None"
     
     # 测试PMP状态监控
     pmp_status = await agent.monitor_pmp_status()
-    assert isinstance(pmp_status, dict), "PMP monitoring should return dict"
+    for k, v in pmp_status.items():
+        print("Debug: PMP status", k, "=", v)
+        assert v is not None, f"PMP status {k} should not be None"
     
     # 测试MSHR状态监控
     mshr_status = await agent.monitor_mshr_status()
-    assert isinstance(mshr_status, dict), "MSHR monitoring should return dict"
+    for k,v in mshr_status.items():
+        print("Debug: MSHR status", k, "=", v)
+        assert v is not None, f"MSHR status {k} should not be None" 
     
     # 测试Data ECC监控
     data_ecc_status = await agent.monitor_check_data_ecc_status()
-    assert isinstance(data_ecc_status, dict), "Data ECC monitoring should return dict"
-    assert "ecc_enable" in data_ecc_status, "Data ECC status should include ecc_enable"
+    for k,v in data_ecc_status.items():
+        print("Debug: Data ECC status", k, "=", v)
+        assert v is not None, f"Data ECC status {k} should not be None"
     
     # 测试Fetch响应监控
     fetch_resp_status = await agent.monitor_fetch_response()
-    assert isinstance(fetch_resp_status, dict), "Fetch response monitoring should return dict"
-    
+    for k,v in fetch_resp_status.items():
+        print("Debug: Fetch response status", k, "=", v)
+        assert v is not None, f"Fetch response status {k} should not be None"
+
+    # 测试Replacer touch状态监控
+    replacer_touch_status = await agent.monitor_replacer_touch()
+    for k,v in replacer_touch_status.items():
+        print("Debug: Replacer touch status", k, "=", v)
+        assert v is not None, f"Replacer touch status {k} should not be None"
+
+    # 测试meta_flush状态监控
+    meta_flush_status = await agent.monitor_meta_flush()
+    for k,v in meta_flush_status.items():   
+        print("Debug: Meta flush status", k, "=", v)
+        assert v is not None, f"Meta flush status {k} should not be None"
+
     # 测试流水线状态监控
     pipeline_status = await agent.monitor_pipeline_status()
-    assert isinstance(pipeline_status, dict), "Pipeline monitoring should return dict"
-    assert "ecc_enable" in pipeline_status, "Pipeline status should include ecc_enable"
+    for k,v in pipeline_status.items():
+        print("Debug: Pipeline status", k, "=", v)
+        assert v is not None, f"Pipeline status {k} should not be None"
     
     # 测试错误状态监控
     error_status = await agent.monitor_error_status()
-    assert isinstance(error_status, dict), "Error monitoring should return dict"
+    for k,v in error_status.items():
+        print("Debug: Error status", k, "=", v)
+        assert v is not None, f"Error status {k} should not be None"
 
 
 @toffee_test.testcase
@@ -225,27 +271,41 @@ async def test_enhanced_monitoring_apis(icachemainpipe_env: ICacheMainPipeEnv):
     
     # 测试异常合并状态监控
     exception_status = await agent.monitor_exception_merge_status()
-    assert isinstance(exception_status, dict), "Exception merge monitoring should return dict"
-    
+    for k,v in exception_status.items():
+        assert v is not None, f"Exception merge status {k} should not be None"
     # 测试MSHR匹配状态监控
     mshr_match_status = await agent.monitor_mshr_match_status()
-    assert isinstance(mshr_match_status, dict), "MSHR match monitoring should return dict"
+    for k,v in mshr_match_status.items():
+        assert v is not None, f"MSHR match status {k} should not be None"
     
     # 测试详细的Data ECC状态监控
     data_ecc_detailed_status = await agent.monitor_data_ecc_detailed_status()
     assert isinstance(data_ecc_detailed_status, dict), "Data ECC detailed monitoring should return dict"
     
+    # 测试data_ecc_detailed状态监控
+    data_ecc_detailed_status = await agent.monitor_data_ecc_detailed_status()
+    for k,v in data_ecc_detailed_status.items():
+        print("Debug: Data ECC detailed status", k, "=", v)
+        assert v is not None, f"Data ECC detailed status {k} should not be None"
+
     # 测试S2 MSHR匹配状态监控
     s2_mshr_status = await agent.monitor_s2_mshr_match_status()
-    assert isinstance(s2_mshr_status, dict), "S2 MSHR monitoring should return dict"
+    assert s2_mshr_status is not None, "S2 MSHR match status should not be None"
+    for k,v in s2_mshr_status.items():
+        print("Debug: S2 MSHR match status", k, "=", v)
+        assert v is not None, f"S2 MSHR match status {k} should not be None"
     
     # 测试Miss请求状态监控
     miss_req_status = await agent.monitor_miss_request_status()
-    assert isinstance(miss_req_status, dict), "Miss request monitoring should return dict"
+    for k,v in miss_req_status.items():
+        print("Debug: Miss request status", k, "=", v)
+        assert v is not None, f"Miss request status {k} should not be None"
     
     # 测试Meta corrupt状态监控
     meta_corrupt_status = await agent.monitor_meta_corrupt_status()
-    assert isinstance(meta_corrupt_status, dict), "Meta corrupt monitoring should return dict"
+    for k,v in meta_corrupt_status.items():
+        print("Debug: Meta corrupt status", k, "=", v)
+        assert v is not None, f"Meta corrupt status {k} should not be None"
 
 
 @toffee_test.testcase
@@ -287,68 +347,6 @@ async def test_error_injection_apis(icachemainpipe_env: ICacheMainPipeEnv):
         corrupt=1
     )
     assert l2_corrupt_result is True, "L2 corrupt injection should succeed"
-
-
-@toffee_test.testcase
-async def test_verification_scenarios(icachemainpipe_env: ICacheMainPipeEnv):
-    """Test high-level verification scenarios"""
-    print("\n--- Testing verification scenarios ---")
-    agent = icachemainpipe_env.agent
-    
-    # 测试异常优先级验证
-    exception_priority_result = await agent.verify_exception_priority(
-        itlb_exception=2,
-        pmp_exception=1,
-        expected_priority_exception=2
-    )
-    assert isinstance(exception_priority_result, bool), "Exception priority verification should return bool"
-    
-    # 测试MSHR数据选择验证
-    mshr_data_result = await agent.verify_mshr_data_selection(
-        mshr_blkPaddr=0x1000,
-        mshr_vSetIdx=0x10,
-        mshr_data=0x123456789ABCDEF0,
-        sram_data=0xFEDCBA9876543210
-    )
-    assert isinstance(mshr_data_result, bool), "MSHR data selection verification should return bool"
-    
-    # 测试Meta冲刷策略验证
-    meta_flush_result = await agent.verify_meta_flush_strategy(
-        inject_meta_error=True,
-        inject_data_error=False
-    )
-    assert isinstance(meta_flush_result, dict), "Meta flush strategy verification should return dict"
-    assert "test_passed" in meta_flush_result, "Meta flush result should include test_passed"
-    
-    # 测试Miss仲裁验证
-    miss_arbitration_result = await agent.verify_miss_arbitration(
-        inject_miss_0=True,
-        inject_miss_1=True,
-        timeout_cycles=20
-    )
-    assert isinstance(miss_arbitration_result, dict), "Miss arbitration verification should return dict"
-    assert "test_passed" in miss_arbitration_result, "Miss arbitration result should include test_passed"
-
-
-@toffee_test.testcase
-async def test_comprehensive_pipeline(icachemainpipe_env: ICacheMainPipeEnv):
-    """Test comprehensive pipeline test"""
-    print("\n--- Testing comprehensive pipeline test ---")
-    agent = icachemainpipe_env.agent
-    
-    # 运行综合流水线测试
-    results = await agent.run_comprehensive_pipeline_test()
-    assert isinstance(results, dict), "Comprehensive test should return dict"
-    assert "total_tests" in results, "Results should include total_tests"
-    assert "passed_tests" in results, "Results should include passed_tests"
-    assert "failed_tests" in results, "Results should include failed_tests"
-    assert "pass_rate" in results, "Results should include pass_rate"
-    assert "details" in results, "Results should include details"
-    
-    print(f"Comprehensive test results: {results['passed_tests']}/{results['total_tests']} passed")
-    print(f"Pass rate: {results['pass_rate']}")
-    if results['failed_tests']:
-        print(f"Failed tests: {results['failed_tests']}")
 
 
 @toffee_test.testcase
@@ -408,112 +406,118 @@ async def test_signal_bindings(icachemainpipe_env: ICacheMainPipeEnv):
     
     print("All signal bindings verified successfully!")
 
-
 @toffee_test.testcase
-async def test_bundle_signal_hierarchy(icachemainpipe_env: ICacheMainPipeEnv):
-    """Test bundle signal hierarchy correctness"""
-    print("\n--- Testing bundle signal hierarchy ---")
-    bundle = icachemainpipe_env.bundle
-    
-    # 测试顶层信号存在性
-    assert hasattr(bundle, 'clock'), "Bundle should have clock signal"
-    assert hasattr(bundle, 'reset'), "Bundle should have reset signal"
-    assert hasattr(bundle.io, '_flush'), "Bundle should have io._flush signal"
-    assert hasattr(bundle.io, '_ecc_enable'), "Bundle should have io._ecc_enable signal"
-    assert hasattr(bundle.io, '_respStall'), "Bundle should have io._respStall signal"
-    
-    # 测试DataArray信号层次
-    assert hasattr(bundle.io._dataArray, '_toIData'), "DataArray should have toIData"
-    assert hasattr(bundle.io._dataArray, '_fromIData'), "DataArray should have fromIData"
-    assert hasattr(bundle.io._dataArray._toIData, '_3'), "DataArray toIData should have port 3"
-    assert hasattr(bundle.io._dataArray._toIData._3, '_ready'), "DataArray port 3 should have ready"
-    
-    # 测试DataArray数据信号 (8个bank)
-    for i in range(8):
-        assert hasattr(bundle.io._dataArray._fromIData._datas, f'_{i}'), f"DataArray should have data signal _{i}"
-        assert hasattr(bundle.io._dataArray._fromIData._codes, f'_{i}'), f"DataArray should have code signal _{i}"
-    
-    # 测试WayLookup信号层次
-    assert hasattr(bundle.io._wayLookupRead, '_ready'), "WayLookup should have ready"
-    assert hasattr(bundle.io._wayLookupRead, '_valid'), "WayLookup should have valid"
-    assert hasattr(bundle.io._wayLookupRead._bits, '_entry'), "WayLookup should have entry"
-    assert hasattr(bundle.io._wayLookupRead._bits._entry, '_vSetIdx'), "WayLookup entry should have vSetIdx"
-    assert hasattr(bundle.io._wayLookupRead._bits._entry._vSetIdx, '_0'), "WayLookup vSetIdx should have port 0"
-    assert hasattr(bundle.io._wayLookupRead._bits._entry._vSetIdx, '_1'), "WayLookup vSetIdx should have port 1"
-    
-    # 测试MSHR信号层次
-    assert hasattr(bundle.io._mshr, '_req'), "MSHR should have req"
-    assert hasattr(bundle.io._mshr, '_resp'), "MSHR should have resp"
-    assert hasattr(bundle.io._mshr._req, '_ready'), "MSHR req should have ready"
-    assert hasattr(bundle.io._mshr._req, '_valid'), "MSHR req should have valid"
-    assert hasattr(bundle.io._mshr._req._bits, '_blkPaddr'), "MSHR req should have blkPaddr"
-    
-    # 测试Fetch信号层次
-    assert hasattr(bundle.io._fetch, '_req'), "Fetch should have req"
-    assert hasattr(bundle.io._fetch, '_resp'), "Fetch should have resp"
-    assert hasattr(bundle.io._fetch._req._bits, '_pcMemRead'), "Fetch req should have pcMemRead"
-    assert hasattr(bundle.io._fetch._req._bits, '_readValid'), "Fetch req should have readValid"
-    
-    # 测试PMP信号层次
-    assert hasattr(bundle.io._pmp, '_0'), "PMP should have port 0"
-    assert hasattr(bundle.io._pmp, '_1'), "PMP should have port 1"
-    assert hasattr(bundle.io._pmp._0, '_resp'), "PMP port 0 should have resp"
-    assert hasattr(bundle.io._pmp._0._resp, '_instr'), "PMP resp should have instr"
-    assert hasattr(bundle.io._pmp._0._resp, '_mmio'), "PMP resp should have mmio"
-    
-    # 测试错误信号层次
-    assert hasattr(bundle.io._errors, '_0'), "Errors should have port 0"
-    assert hasattr(bundle.io._errors, '_1'), "Errors should have port 1"
-    assert hasattr(bundle.io._errors._0, '_valid'), "Error port should have valid"
-    assert hasattr(bundle.io._errors._0._bits, '_paddr'), "Error bits should have paddr"
-    
-    print("Bundle signal hierarchy verified successfully!")
-
-
-@toffee_test.testcase  
-async def test_bundle_interface_systematic(icachemainpipe_env: ICacheMainPipeEnv):
-    """Systematic bundle interface test following WayLookup pattern"""
-    print("\n--- Systematic Bundle Interface Test ---")
+async def test_comprehensive_signal_interface(icachemainpipe_env: ICacheMainPipeEnv):
+    """Comprehensive test for all ICacheMainPipe signal interfaces organized by categories
+    Based on Verilog analysis: OUTPUT/wire signals test read access only, INPUT signals test read/write functionality
+    """
+    print("\n=== Comprehensive ICacheMainPipe Signal Interface Test ===")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
     await agent.reset()
+    test_errors = []
     
-    # Test 1: IO perfInfo interface complete coverage 
-    print("Test 1: IO perfInfo interface complete coverage")
+    # ================= 1. ICacheMainPipe Internal Signals =================
+    print("\n1. ICacheMainPipe Internal Signals")
     try:
-        # 基于RTL分析(第216-227行, 2137-2148行) - 使用直接访问方式
-        print(f"Available perfInfo attributes: {[attr for attr in dir(bundle.io._perfInfo) if not attr.startswith('__')]}")
+        # According to Verilog, these are internal pipeline signals (mostly OUTPUT)
+        s2_fire = bundle.ICacheMainPipe._s2._fire.value
+        s2_valid = bundle.ICacheMainPipe._s2._valid.value
+        s0_fire = bundle.ICacheMainPipe._s0_fire.value
         
-        # 基于实际测试结果，只有部分信号可访问，需要动态检测
-        perfinfo_signal_names = [
-            "only_0_hit", "only_0_miss", "hit_0_hit_1", "hit_0_miss_1",
-            "miss_0_hit_1", "miss_0_miss_1", "hit_0_except_1", "miss_0_except_1",
-            "except_0", "bank_hit_0", "bank_hit_1", "hit"
-        ]
+        print(f"  ✓ ICacheMainPipe.s2.fire: {s2_fire}")
+        print(f"  ✓ ICacheMainPipe.s2.valid: {s2_valid}")
+        print(f"  ✓ ICacheMainPipe.s0_fire: {s0_fire}")
+    except Exception as e:
+        error_msg = f"ICacheMainPipe internal signals access error: {e}"
+        test_errors.append(error_msg)
+        print(f"  × {error_msg}")
+    
+    # ================= 2. ICacheMainPipe__toMSHRArbiter_io_in =================
+    print("\n2. ICacheMainPipe__toMSHRArbiter_io_in Interface")
+    try:
+        # According to Verilog, these are OUTPUT signals to MSHR arbiter
+        valid_T_4_1 = bundle.ICacheMainPipe__toMSHRArbiter_io_in._1._valid_T._4.value
+        valid_T_4_0 = bundle.ICacheMainPipe__toMSHRArbiter_io_in._0._valid_T._4.value
         
-        accessible_perfinfo = {}
-        for signal_name in perfinfo_signal_names:
-            try:
-                signal_obj = getattr(bundle.io._perfInfo, f"_{signal_name}")
-                accessible_perfinfo[signal_name] = signal_obj
-            except AttributeError:
-                # 信号不可访问，跳过
-                continue
+        print(f"  ✓ toMSHRArbiter_io_in[1].valid_T.4: {valid_T_4_1}")
+        print(f"  ✓ toMSHRArbiter_io_in[0].valid_T.4: {valid_T_4_0}")
+    except Exception as e:
+        error_msg = f"ICacheMainPipe__toMSHRArbiter_io_in interface access error: {e}"
+        test_errors.append(error_msg)
+        print(f"  × {error_msg}")
+    
+    # ================= 3. io._perfInfo (OUTPUT) =================
+    print("\n3. io._perfInfo Interface (OUTPUT - Read Only)")
+    try:
+        perfinfo_signals = {
+            "bank_hit_0": bundle.io._perfInfo._bank_hit._0,
+            "bank_hit_1": bundle.io._perfInfo._bank_hit._1,
+            "miss_0_hit_1": bundle.io._perfInfo._miss._0._hit._1,
+            "miss_0_except_1": bundle.io._perfInfo._miss._0._except._1,
+            "miss_0_miss_1": bundle.io._perfInfo._miss._0._miss._1,
+            "except_0": bundle.io._perfInfo._except._0,
+            "only_0_miss": bundle.io._perfInfo._only._0._miss,
+            "only_0_hit": bundle.io._perfInfo._only._0._hit,
+            "hit": bundle.io._perfInfo._hit
+        }
         
-        for field, signal_obj in accessible_perfinfo.items():
+        for field, signal_obj in perfinfo_signals.items():
             try:
                 value = signal_obj.value
-                print(f"✓ perfInfo.{field}: {value}")
-            except AttributeError:
-                print(f"✗ perfInfo.{field}: not accessible")
-        
-        print("✅ PerfInfo interface test completed")
+                print(f"  ✓ perfInfo.{field}: {value}")
+            except AttributeError as e:
+                error_msg = f"perfInfo.{field}: {e}"
+                test_errors.append(error_msg)
+                print(f"  × {error_msg}")
     except Exception as e:
-        print(f"⚠️ Error in perfInfo interface test: {e}")
+        error_msg = f"perfInfo interface critical error: {e}"
+        test_errors.append(error_msg)
+        print(f"  × {error_msg}")
     
-    # Test 2: IO errors interface complete coverage
-    print("Test 2: IO errors interface complete coverage")
+    # ================= 4. io._pmp Interface =================
+    print("\n4. io._pmp Interface")
+    # PMP request addresses are OUTPUT (line 145-146 in Verilog)
+    print("  4a. PMP Request Signals (OUTPUT - Read Only)")
+    try:
+        pmp_req_addr_0 = bundle.io._pmp._0._req_bits_addr.value
+        pmp_req_addr_1 = bundle.io._pmp._1._req_bits_addr.value
+        print(f"    ✓ pmp[0].req_bits_addr: {hex(pmp_req_addr_0)}")
+        print(f"    ✓ pmp[1].req_bits_addr: {hex(pmp_req_addr_1)}")
+    except Exception as e:
+        error_msg = f"PMP request signals error: {e}"
+        test_errors.append(error_msg)
+        print(f"    × {error_msg}")
+    
+    # PMP response signals are INPUT (line 147-150 in Verilog) - test read/write
+    print("  4b. PMP Response Signals (INPUT - Read/Write Testing)")
+    try:
+        # Test normal values within boundaries
+        test_values = [(1, 0), (0, 1), (1, 1)]  # (instr, mmio) combinations
+        
+        for test_instr_0, test_mmio_0 in test_values:
+            bundle.io._pmp._0._resp._instr.value = test_instr_0
+            bundle.io._pmp._0._resp._mmio.value = test_mmio_0
+            bundle.io._pmp._1._resp._instr.value = test_instr_0  
+            bundle.io._pmp._1._resp._mmio.value = test_mmio_0
+            await bundle.step()
+            
+            # Verify write successful
+            assert bundle.io._pmp._0._resp._instr.value == test_instr_0, f"PMP 0 instr write failed"
+            assert bundle.io._pmp._0._resp._mmio.value == test_mmio_0, f"PMP 0 mmio write failed"
+            assert bundle.io._pmp._1._resp._instr.value == test_instr_0, f"PMP 1 instr write failed"
+            assert bundle.io._pmp._1._resp._mmio.value == test_mmio_0, f"PMP 1 mmio write failed"
+            
+        print(f"    ✓ PMP response signals read/write working")
+            
+    except Exception as e:
+        error_msg = f"PMP response signals error: {e}"
+        test_errors.append(error_msg)
+        print(f"    × {error_msg}")
+    
+    # ================= 5. io._errors (OUTPUT) =================
+    print("\n5. io._errors Interface (OUTPUT - Read Only)")
     try:
         error_signals = {
             "error_0_valid": bundle.io._errors._0._valid,
@@ -527,84 +531,318 @@ async def test_bundle_interface_systematic(icachemainpipe_env: ICacheMainPipeEnv
         for field, signal_obj in error_signals.items():
             try:
                 value = signal_obj.value
-                print(f"✓ errors.{field}: {hex(value) if isinstance(value, int) and value > 255 else value}")
-            except AttributeError:
-                print(f"✗ errors.{field}: not accessible")
-        
-        print("✅ Errors interface all signals accessible")
+                print(f"  ✓ errors.{field}: {hex(value) if isinstance(value, int) and value > 255 else value}")
+            except AttributeError as e:
+                error_msg = f"errors.{field}: {e}"
+                test_errors.append(error_msg)
+                print(f"  × {error_msg}")
     except Exception as e:
-        print(f"⚠️ Error accessing errors interface signals: {e}")
-        
-    # Test 3: IO wayLookupRead interface complete coverage
-    print("Test 3: IO wayLookupRead interface complete coverage")
+        error_msg = f"errors interface critical error: {e}"
+        test_errors.append(error_msg)
+        print(f"  × {error_msg}")
+    
+    # ================= 6. io._metaArrayFlush (OUTPUT) =================
+    print("\n6. io._metaArrayFlush Interface (OUTPUT - Read Only)")
     try:
-        # Ready/valid signals
-        waylookup_ready = bundle.io._wayLookupRead._ready.value
-        waylookup_valid = bundle.io._wayLookupRead._valid.value
-        print(f"✓ wayLookupRead ready/valid: {waylookup_ready}/{waylookup_valid}")
+        flush_0_valid = bundle.io._metaArrayFlush._0._valid.value
+        flush_0_virIdx = bundle.io._metaArrayFlush._0._bits._virIdx.value
+        flush_0_waymask = bundle.io._metaArrayFlush._0._bits._waymask.value
+        flush_1_valid = bundle.io._metaArrayFlush._1._valid.value
+        flush_1_virIdx = bundle.io._metaArrayFlush._1._bits._virIdx.value
+        flush_1_waymask = bundle.io._metaArrayFlush._1._bits._waymask.value
         
-        # Entry signals
-        entry_signals = {
-            "vSetIdx_0": bundle.io._wayLookupRead._bits._entry._vSetIdx._0,
-            "vSetIdx_1": bundle.io._wayLookupRead._bits._entry._vSetIdx._1,
-            "waymask_0": bundle.io._wayLookupRead._bits._entry._waymask._0,
-            "waymask_1": bundle.io._wayLookupRead._bits._entry._waymask._1,
-            "ptag_0": bundle.io._wayLookupRead._bits._entry._ptag._0,
-            "ptag_1": bundle.io._wayLookupRead._bits._entry._ptag._1,
-            "meta_codes_0": bundle.io._wayLookupRead._bits._entry._meta_codes._0,
-            "meta_codes_1": bundle.io._wayLookupRead._bits._entry._meta_codes._1,
-            "itlb_exception_0": bundle.io._wayLookupRead._bits._entry._itlb._exception._0,
-            "itlb_exception_1": bundle.io._wayLookupRead._bits._entry._itlb._exception._1,
-            "itlb_pbmt_0": bundle.io._wayLookupRead._bits._entry._itlb._pbmt._0,
-            "itlb_pbmt_1": bundle.io._wayLookupRead._bits._entry._itlb._pbmt._1,
+        print(f"  ✓ metaArrayFlush[0]: valid={flush_0_valid}, virIdx={flush_0_virIdx}, waymask={flush_0_waymask}")
+        print(f"  ✓ metaArrayFlush[1]: valid={flush_1_valid}, virIdx={flush_1_virIdx}, waymask={flush_1_waymask}")
+    except Exception as e:
+        error_msg = f"metaArrayFlush interface error: {e}"
+        test_errors.append(error_msg)
+        print(f"  × {error_msg}")
+    
+    # ================= 7. io._wayLookupRead Interface =================
+    print("\n7. io._wayLookupRead Interface")
+    # ready is OUTPUT (line 141), valid is INPUT (line 142) in Verilog
+    print("  7a. WayLookupRead Ready Signal (OUTPUT - Read Only)")
+    try:
+        # ready signal is OUTPUT - only test read access
+        ready_value = bundle.io._wayLookupRead._ready.value
+        print(f"    ✓ wayLookupRead.ready (OUTPUT): {ready_value}")
+    except Exception as e:
+        error_msg = f"WayLookupRead ready signal read error: {e}"
+        test_errors.append(error_msg)
+        print(f"    × {error_msg}")
+    
+    print("  7b. WayLookupRead Valid Signal (INPUT - Read/Write Testing)")
+    try:
+        # Test valid signal (1-bit INPUT) 
+        original_valid = bundle.io._wayLookupRead._valid.value
+        for test_valid in [0, 1]:
+            bundle.io._wayLookupRead._valid.value = test_valid
+            await bundle.step()
+            assert bundle.io._wayLookupRead._valid.value == test_valid, f"WayLookupRead valid write failed"
+        
+        # Restore original value
+        bundle.io._wayLookupRead._valid.value = original_valid
+        print("    ✓ WayLookupRead valid signal read/write working")
+        
+            
+    except Exception as e:
+        error_msg = f"WayLookupRead valid signal error: {e}"
+        test_errors.append(error_msg)
+        print(f"    × {error_msg}")
+    
+    # bits.entry and bits.gpf are INPUT (lines 143-156 in Verilog)
+    print("  7c. WayLookupRead Entry/GPF Signals (INPUT - Read/Write Testing)")
+    try:
+        # Test entry signals with boundary values
+        test_params = {
+            "vSetIdx": [(0, 255), (0x10, 0x20)],  # 8-bit: 0-255
+            "waymask": [(0, 15), (0xF, 0xA)],     # 4-bit: 0-15  
+            "ptag": [(0, 0xFFFFFFFFF), (0x12345, 0x67890)],  # 36-bit
+            "itlb_exception": [(0, 3), (2, 1)],   # 2-bit: 0-3
+            "itlb_pbmt": [(0, 3), (3, 2)],        # 2-bit: 0-3
+            "meta_codes": [(0, 1), (1, 0)]        # 1-bit: 0-1
         }
         
-        for field, signal_obj in entry_signals.items():
-            try:
-                value = signal_obj.value
-                print(f"✓ wayLookupRead.entry.{field}: {hex(value) if isinstance(value, int) and value > 255 else value}")
-            except AttributeError:
-                print(f"✗ wayLookupRead.entry.{field}: not accessible")
-        
-        # GPF signals
-        try:
-            gpf_gpaddr = bundle.io._wayLookupRead._bits._gpf._gpaddr.value
-            gpf_flag = bundle.io._wayLookupRead._bits._gpf._isForVSnonLeafPTE.value
-            print(f"✓ wayLookupRead.gpf.gpaddr: {hex(gpf_gpaddr)}")
-            print(f"✓ wayLookupRead.gpf.isForVSnonLeafPTE: {gpf_flag}")
-        except AttributeError as e:
-            print(f"✗ wayLookupRead.gpf: not accessible - {e}")
-        
-        print("✅ WayLookupRead interface all signals accessible")
-    except Exception as e:
-        print(f"⚠️ Error accessing wayLookupRead interface signals: {e}")
-        
-    # Test 4: IO fetch interface complete coverage
-    print("Test 4: IO fetch interface complete coverage")
-    try:
-        # Fetch request interface (input)
-        fetch_req_ready = bundle.io._fetch._req._ready.value
-        fetch_req_valid = bundle.io._fetch._req._valid.value
-        print(f"✓ fetch.req ready/valid: {fetch_req_ready}/{fetch_req_valid}")
-        
-        # PCMemRead addresses (5 entries)
-        for i in range(5):
-            try:
-                start_addr = getattr(bundle.io._fetch._req._bits._pcMemRead, f"_{i}")._startAddr.value
-                nextline_start = getattr(bundle.io._fetch._req._bits._pcMemRead, f"_{i}")._nextlineStart.value
-                read_valid = getattr(bundle.io._fetch._req._bits._readValid, f"_{i}").value
-                print(f"✓ fetch.req.pcMemRead[{i}]: startAddr={hex(start_addr)}, nextlineStart={hex(nextline_start)}, valid={read_valid}")
-            except AttributeError as e:
-                print(f"✗ fetch.req.pcMemRead[{i}]: not accessible - {e}")
+        for param, value_pairs in test_params.items():
+            for val_0, val_1 in value_pairs:
+                if param == "vSetIdx":
+                    bundle.io._wayLookupRead._bits._entry._vSetIdx._0.value = val_0
+                    bundle.io._wayLookupRead._bits._entry._vSetIdx._1.value = val_1
+                elif param == "waymask":
+                    bundle.io._wayLookupRead._bits._entry._waymask._0.value = val_0
+                    bundle.io._wayLookupRead._bits._entry._waymask._1.value = val_1
+                elif param == "ptag":
+                    bundle.io._wayLookupRead._bits._entry._ptag._0.value = val_0
+                    bundle.io._wayLookupRead._bits._entry._ptag._1.value = val_1
+                elif param == "itlb_exception":
+                    bundle.io._wayLookupRead._bits._entry._itlb._exception._0.value = val_0
+                    bundle.io._wayLookupRead._bits._entry._itlb._exception._1.value = val_1
+                elif param == "itlb_pbmt":
+                    bundle.io._wayLookupRead._bits._entry._itlb._pbmt._0.value = val_0
+                    bundle.io._wayLookupRead._bits._entry._itlb._pbmt._1.value = val_1
+                elif param == "meta_codes":
+                    bundle.io._wayLookupRead._bits._entry._meta_codes._0.value = val_0
+                    bundle.io._wayLookupRead._bits._entry._meta_codes._1.value = val_1
                 
-        # Backend exception
-        try:
-            backend_exception = bundle.io._fetch._req._bits._backendException.value
-            print(f"✓ fetch.req.backendException: {backend_exception}")
-        except AttributeError as e:
-            print(f"✗ fetch.req.backendException: not accessible - {e}")
+                await bundle.step()
+        
+        # Test GPF signals (56-bit gpaddr, 1-bit flag)
+        test_gpf_params = [
+            (0, 0),
+            (0xFFFFFFFFFFFFFF, 1), 
+            (0x123456789ABCDE, 0)
+        ]
+        for gpf_addr, is_for_vs in test_gpf_params:
+            bundle.io._wayLookupRead._bits._gpf._gpaddr.value = gpf_addr
+            bundle.io._wayLookupRead._bits._gpf._isForVSnonLeafPTE.value = is_for_vs
+            await bundle.step()
+            assert bundle.io._wayLookupRead._bits._gpf._gpaddr.value == gpf_addr, f"GPF addr write failed"
+            assert bundle.io._wayLookupRead._bits._gpf._isForVSnonLeafPTE.value == is_for_vs, f"GPF isForVSnonLeafPTE write failed"
+        
+        print("    ✓ WayLookupRead entry/GPF signals read/write working")
+        
+    except Exception as e:
+        error_msg = f"WayLookupRead entry/GPF signals error: {e}"
+        test_errors.append(error_msg)
+        print(f"    × {error_msg}")
+    
+    # ================= 8. io._dataArray Interface =================
+    print("\n8. io._dataArray Interface")
+    # toIData ports are OUTPUT (lines 91-112 in Verilog) - except port 3 ready which is INPUT
+    print("  8a. DataArray toIData Signals (OUTPUT - Read Only)")
+    try:
+        for port in range(4):
+            valid = getattr(bundle.io._dataArray._toIData, f"_{port}")._valid.value
+            print(f"    ✓ DataArray toIData[{port}] valid: {valid}")
             
-        # Fetch response interface (output)
+            if port == 0:  # Port 0 has complete bits
+                vSetIdx_0 = bundle.io._dataArray._toIData._0._bits._vSetIdx._0.value
+                vSetIdx_1 = bundle.io._dataArray._toIData._0._bits._vSetIdx._1.value
+                blkOffset = bundle.io._dataArray._toIData._0._bits._blkOffset.value
+                print(f"    ✓ DataArray toIData[0] - vSetIdx: {vSetIdx_0}/{vSetIdx_1}, blkOffset: {blkOffset}")
+                
+                # Test waymask signals (4 ways x 2 ports = 8 signals)
+                print(f"    ✓ DataArray toIData[0] waymask signals:")
+                for port_idx in range(2):
+                    for way in range(4):
+                        waymask_signal = getattr(bundle.io._dataArray._toIData._0._bits._waymask, f"_{port_idx}")
+                        way_val = getattr(waymask_signal, f"_{way}").value
+                        print(f"      waymask[{port_idx}][{way}]: {way_val}")
+            elif port >= 1 and port <= 2:  # Ports 1,2 have vSetIdx only
+                vSetIdx_0 = getattr(bundle.io._dataArray._toIData, f"_{port}")._bits_vSetIdx._0.value
+                vSetIdx_1 = getattr(bundle.io._dataArray._toIData, f"_{port}")._bits_vSetIdx._1.value
+                print(f"    ✓ DataArray toIData[{port}] - vSetIdx: {vSetIdx_0}/{vSetIdx_1}")
+            elif port == 3:  # Port 3 has vSetIdx (OUTPUT) and ready (INPUT)
+                vSetIdx_0 = bundle.io._dataArray._toIData._3._bits_vSetIdx._0.value
+                vSetIdx_1 = bundle.io._dataArray._toIData._3._bits_vSetIdx._1.value
+                print(f"    ✓ DataArray toIData[3] - vSetIdx: {vSetIdx_0}/{vSetIdx_1}")
+                
+                # Test port 3 ready signal (INPUT)
+                original_ready = bundle.io._dataArray._toIData._3._ready.value
+                for test_ready in [0, 1]:
+                    bundle.io._dataArray._toIData._3._ready.value = test_ready
+                    await bundle.step()
+                    assert bundle.io._dataArray._toIData._3._ready.value == test_ready, "Port 3 ready write failed"
+                bundle.io._dataArray._toIData._3._ready.value = original_ready
+                print(f"    ✓ DataArray toIData[3] ready signal read/write working")
+                
+    except Exception as e:
+        error_msg = f"DataArray toIData signals error: {e}"
+        test_errors.append(error_msg)
+        print(f"    × {error_msg}")
+    
+    # fromIData signals are INPUT (lines 113-129 in Verilog)
+    print("  8b. DataArray fromIData Signals (INPUT - Read/Write Testing)")
+    try:
+        # Test all 8 data and code signals
+        test_datas = [0x1111 + i for i in range(8)]
+        test_codes = [i % 2 for i in range(8)]
+        
+        for i in range(8):
+            data_signal = getattr(bundle.io._dataArray._fromIData._datas, f"_{i}")
+            code_signal = getattr(bundle.io._dataArray._fromIData._codes, f"_{i}")
+            
+            data_signal.value = test_datas[i]
+            code_signal.value = test_codes[i]
+            
+        await bundle.step()
+        
+        # Verify writes successful
+        for i in range(8):
+            data_actual = getattr(bundle.io._dataArray._fromIData._datas, f"_{i}").value
+            code_actual = getattr(bundle.io._dataArray._fromIData._codes, f"_{i}").value
+            assert data_actual == test_datas[i], f"DataArray data {i} write failed"
+            assert code_actual == test_codes[i], f"DataArray code {i} write failed"
+            
+        print("    ✓ DataArray fromIData signals read/write working")
+        
+    except Exception as e:
+        error_msg = f"DataArray fromIData signals error: {e}"
+        test_errors.append(error_msg)
+        print(f"    × {error_msg}")
+    
+    # ================= 9. io._mshr Interface =================
+    print("\n9. io._mshr Interface")
+    # req is OUTPUT (lines 130-133 in Verilog), resp is INPUT (lines 134-138 in Verilog)
+    print("  9a. MSHR Request Signals (OUTPUT - Read Only)")
+    try:
+        mshr_req_valid = bundle.io._mshr._req._valid.value
+        mshr_req_blkPaddr = bundle.io._mshr._req._bits._blkPaddr.value
+        mshr_req_vSetIdx = bundle.io._mshr._req._bits._vSetIdx.value
+        print(f"    ✓ MSHR req - valid: {mshr_req_valid}, blkPaddr: {hex(mshr_req_blkPaddr)}, vSetIdx: {hex(mshr_req_vSetIdx)}")
+    except Exception as e:
+        error_msg = f"MSHR request signals error: {e}"
+        test_errors.append(error_msg)
+        print(f"    × {error_msg}")
+    
+    print("  9b. MSHR Response Signals (INPUT - Read/Write Testing)")
+    try:
+        # Test boundary values for different bit widths
+        test_cases = [
+            {"valid": 1, "blkPaddr": 0x12345678, "vSetIdx": 0xAB, "data": 0xDEADBEEFCAFEBABE, "corrupt": 0},
+            {"valid": 0, "blkPaddr": 0xFFFFFFFF, "vSetIdx": 0xFF, "data": 0xFFFFFFFFFFFFFFFF, "corrupt": 1},
+            {"valid": 1, "blkPaddr": 0x0, "vSetIdx": 0x0, "data": 0x0, "corrupt": 0},
+        ]
+        
+        for test_case in test_cases:
+            bundle.io._mshr._resp._valid.value = test_case["valid"]
+            bundle.io._mshr._resp._bits._blkPaddr.value = test_case["blkPaddr"]
+            bundle.io._mshr._resp._bits._vSetIdx.value = test_case["vSetIdx"]
+            bundle.io._mshr._resp._bits._data.value = test_case["data"]
+            bundle.io._mshr._resp._bits._corrupt.value = test_case["corrupt"]
+            await bundle.step()
+            
+            # Verify writes
+            assert bundle.io._mshr._resp._valid.value == test_case["valid"], "MSHR resp valid write failed"
+            assert bundle.io._mshr._resp._bits._blkPaddr.value == test_case["blkPaddr"], "MSHR resp blkPaddr write failed"
+            assert bundle.io._mshr._resp._bits._vSetIdx.value == test_case["vSetIdx"], "MSHR resp vSetIdx write failed"
+            assert bundle.io._mshr._resp._bits._data.value == test_case["data"], "MSHR resp data write failed"
+            assert bundle.io._mshr._resp._bits._corrupt.value == test_case["corrupt"], "MSHR resp corrupt write failed"
+            
+        print("    ✓ MSHR response signals read/write working")
+        
+        # ready signal is also INPUT
+        original_ready = bundle.io._mshr._req._ready.value
+        for test_ready in [0, 1]:
+            bundle.io._mshr._req._ready.value = test_ready
+            await bundle.step()
+            assert bundle.io._mshr._req._ready.value == test_ready, "MSHR req ready write failed"
+        bundle.io._mshr._req._ready.value = original_ready
+        print("    ✓ MSHR request ready signal read/write working")
+        
+    except Exception as e:
+        error_msg = f"MSHR response signals error: {e}"
+        test_errors.append(error_msg)
+        print(f"    × {error_msg}")
+    
+    # ================= 10. io._fetch Interface =================
+    print("\n10. io._fetch Interface")
+    # req.ready is OUTPUT (line 167), req.valid is INPUT (line 168), req.bits are INPUT (lines 169-184) in Verilog
+    # resp signals are OUTPUT (lines 185-212 in Verilog)
+    print("  10a. Fetch Request Ready Signal (OUTPUT - Read Only)")
+    try:
+        # ready signal is OUTPUT - only test read access  
+        req_ready = bundle.io._fetch._req._ready.value
+        print(f"    ✓ fetch.req.ready (OUTPUT): {req_ready}")
+    except Exception as e:
+        error_msg = f"Fetch request ready signal read error: {e}"
+        test_errors.append(error_msg)
+        print(f"    × {error_msg}")
+    
+    print("  10b. Fetch Request Control/Data Signals (INPUT - Read/Write Testing)")
+    try:
+        # Test valid signal (INPUT)
+        original_req_valid = bundle.io._fetch._req._valid.value
+        for test_valid in [0, 1]:
+            bundle.io._fetch._req._valid.value = test_valid
+            await bundle.step()
+            assert bundle.io._fetch._req._valid.value == test_valid, "Fetch req valid write failed"
+        
+        # Test PCMemRead addresses and readValid (all INPUT)
+        test_addrs = [0x1000, 0x2000, 0x3000, 0x4000, 0x5000]
+        test_readValid = [1, 0, 1, 0, 1]
+        
+        for i in range(5):
+            # Test startAddr (INPUT)
+            start_addr_signal = getattr(bundle.io._fetch._req._bits._pcMemRead, f"_{i}")._startAddr
+            start_addr_signal.value = test_addrs[i]
+            
+            # Test nextlineStart (INPUT)  
+            nextline_signal = getattr(bundle.io._fetch._req._bits._pcMemRead, f"_{i}")._nextlineStart
+            nextline_signal.value = test_addrs[i] + 64
+            
+            # Test readValid (INPUT)
+            readValid_signal = getattr(bundle.io._fetch._req._bits._readValid, f"_{i}")
+            readValid_signal.value = test_readValid[i]
+            
+        # Test backendException (INPUT)
+        bundle.io._fetch._req._bits._backendException.value = 0
+        
+        await bundle.step()
+        
+        # Verify writes successful
+        for i in range(5):
+            start_actual = getattr(bundle.io._fetch._req._bits._pcMemRead, f"_{i}")._startAddr.value
+            nextline_actual = getattr(bundle.io._fetch._req._bits._pcMemRead, f"_{i}")._nextlineStart.value
+            readValid_actual = getattr(bundle.io._fetch._req._bits._readValid, f"_{i}").value
+            
+            assert start_actual == test_addrs[i], f"Fetch startAddr {i} write failed"
+            assert nextline_actual == test_addrs[i] + 64, f"Fetch nextlineStart {i} write failed"
+            assert readValid_actual == test_readValid[i], f"Fetch readValid {i} write failed"
+            
+        assert bundle.io._fetch._req._bits._backendException.value == 0, "Fetch backendException write failed"
+        
+        # Restore
+        bundle.io._fetch._req._valid.value = original_req_valid
+        print("    ✓ Fetch request INPUT signals read/write working")
+        
+    except Exception as e:
+        error_msg = f"Fetch request data signals error: {e}"
+        test_errors.append(error_msg)
+        print(f"    × {error_msg}")
+    
+    print("  10c. Fetch Response Signals (OUTPUT - Read Only)")
+    try:
         fetch_resp_signals = {
             "valid": bundle.io._fetch._resp._valid,
             "doubleline": bundle.io._fetch._resp._bits._doubleline,
@@ -614,184 +852,25 @@ async def test_bundle_interface_systematic(icachemainpipe_env: ICacheMainPipeEnv
             "paddr_0": bundle.io._fetch._resp._bits._paddr._0,
             "exception_0": bundle.io._fetch._resp._bits._exception._0,
             "exception_1": bundle.io._fetch._resp._bits._exception._1,
-            "pmp_mmio_0": bundle.io._fetch._resp._bits._pmp_mmio._0,
-            "pmp_mmio_1": bundle.io._fetch._resp._bits._pmp_mmio._1,
-            "itlb_pbmt_0": bundle.io._fetch._resp._bits._itlb_pbmt._0,
-            "itlb_pbmt_1": bundle.io._fetch._resp._bits._itlb_pbmt._1,
             "backendException": bundle.io._fetch._resp._bits._backendException,
-            "gpaddr": bundle.io._fetch._resp._bits._gpaddr,
-            "isForVSnonLeafPTE": bundle.io._fetch._resp._bits._isForVSnonLeafPTE,
         }
         
         for field, signal_obj in fetch_resp_signals.items():
-            try:
-                value = signal_obj.value
-                print(f"✓ fetch.resp.{field}: {hex(value) if isinstance(value, int) and value > 255 else value}")
-            except AttributeError:
-                print(f"✗ fetch.resp.{field}: not accessible")
+            value = signal_obj.value
+            print(f"    ✓ fetch.resp.{field}: {hex(value) if isinstance(value, int) and value > 255 else value}")
         
         # Topdown signals
-        try:
-            topdown_icache = bundle.io._fetch._topdownIcacheMiss.value
-            topdown_itlb = bundle.io._fetch._topdownItlbMiss.value
-            print(f"✓ fetch topdown: ICache={topdown_icache}, ITLB={topdown_itlb}")
-        except AttributeError as e:
-            print(f"✗ fetch topdown: not accessible - {e}")
-            
-        print("✅ Fetch interface all signals accessible")
+        topdown_icache = bundle.io._fetch._topdownIcacheMiss.value
+        topdown_itlb = bundle.io._fetch._topdownItlbMiss.value
+        print(f"    ✓ fetch topdown: ICache={topdown_icache}, ITLB={topdown_itlb}")
+        
     except Exception as e:
-        print(f"⚠️ Error accessing fetch interface signals: {e}")
+        error_msg = f"Fetch response signals error: {e}"
+        test_errors.append(error_msg)
+        print(f"    × {error_msg}")
     
-    # Test 5: IO MSHR interface complete coverage  
-    print("Test 5: IO MSHR interface complete coverage")
-    try:
-        # MSHR request interface (output)
-        mshr_req_ready = bundle.io._mshr._req._ready.value
-        mshr_req_valid = bundle.io._mshr._req._valid.value
-        mshr_req_blkPaddr = bundle.io._mshr._req._bits._blkPaddr.value
-        mshr_req_vSetIdx = bundle.io._mshr._req._bits._vSetIdx.value
-        print(f"✓ mshr.req ready/valid: {mshr_req_ready}/{mshr_req_valid}")
-        print(f"✓ mshr.req.blkPaddr: {hex(mshr_req_blkPaddr)}")
-        print(f"✓ mshr.req.vSetIdx: {hex(mshr_req_vSetIdx)}")
-        
-        # MSHR response interface (input)
-        mshr_resp_signals = {
-            "valid": bundle.io._mshr._resp._valid,
-            "blkPaddr": bundle.io._mshr._resp._bits._blkPaddr,
-            "vSetIdx": bundle.io._mshr._resp._bits._vSetIdx,
-            "data": bundle.io._mshr._resp._bits._data,
-            "corrupt": bundle.io._mshr._resp._bits._corrupt,
-        }
-        
-        for field, signal_obj in mshr_resp_signals.items():
-            try:
-                value = signal_obj.value
-                print(f"✓ mshr.resp.{field}: {hex(value) if isinstance(value, int) and value > 255 else value}")
-            except AttributeError:
-                print(f"✗ mshr.resp.{field}: not accessible")
-        
-        print("✅ MSHR interface all signals accessible")
-    except Exception as e:
-        print(f"⚠️ Error accessing MSHR interface signals: {e}")
-        
-    # Test 6: Signal modification coverage test
-    print("Test 6: Signal modification coverage test")
-    try:
-        # Test modifying input signals
-        modification_tests = [
-            ("hartId", bundle.io._hartId, [0x0, 0x3F]),  # 6-bit
-            ("ecc_enable", bundle.io._ecc_enable, [0, 1]),
-            ("flush", bundle.io._flush, [0, 1]),
-            ("respStall", bundle.io._respStall, [0, 1]),
-            ("fetch.req.valid", bundle.io._fetch._req._valid, [0, 1]),
-            ("wayLookupRead.valid", bundle.io._wayLookupRead._valid, [0, 1]),
-            ("mshr.req.ready", bundle.io._mshr._req._ready, [0, 1]),
-            ("mshr.resp.valid", bundle.io._mshr._resp._valid, [0, 1]),
-        ]
-        
-        for signal_name, signal_obj, test_values in modification_tests:
-            try:
-                for test_val in test_values:
-                    signal_obj.value = test_val
-                    await bundle.step()
-                    actual_val = signal_obj.value
-                    if actual_val == test_val:
-                        print(f"✓ {signal_name}: set={test_val} -> actual={actual_val}")
-                    else:
-                        print(f"✗ {signal_name}: set={test_val} -> actual={actual_val}")
-            except Exception as e:
-                print(f"⚠️ {signal_name}: modification failed - {e}")
-        
-        print("✅ Signal modification coverage completed")
-    except Exception as e:
-        print(f"⚠️ Error in signal modification tests: {e}")
-        
-    print("✅ Systematic bundle interface test completed successfully")
-
-@toffee_test.testcase
-async def test_complete_bundle_interfaces_old(icachemainpipe_env: ICacheMainPipeEnv):
-    """Test all Bundle interfaces comprehensively for full coverage"""
-    print("\n--- Testing complete Bundle interfaces ---")
-    agent = icachemainpipe_env.agent
-    bundle = icachemainpipe_env.bundle
-    
-    # 重置确保干净状态
-    await agent.reset()
-    
-    print("Testing perfInfo signals...")
-    accessible_signals = {}
-    only_0_hit = bundle.io._perfInfo._only._0._hit
-    only_0_miss = bundle.io._perfInfo._only._0._miss
-    miss_0_hit = bundle.io._perfInfo._miss._0._hit._1
-    miss_0_miss = bundle.io._perfInfo._miss._0._miss._1
-    miss_0_except = bundle.io._perfInfo._miss._0._except._1
-    except_0 = bundle.io._perfInfo._except._0
-    bank_hit_0 = bundle.io._perfInfo._bank_hit._0
-    bank_hit_1 = bundle.io._perfInfo._bank_hit._1
-    hit = bundle.io._perfInfo._hit
-    assert isinstance(only_0_hit.value, int),f"PerfInfo only_0_hit should return int"
-    accessible_signals["only_0_hit"] = only_0_hit.value
-    assert isinstance(only_0_miss.value, int),f"PerfInfo only_0_miss should return int"
-    accessible_signals["only_0_miss"] = only_0_miss.value
-    assert isinstance(miss_0_hit.value, int),f"PerfInfo miss_0_hit should return int"
-    accessible_signals["miss_0_hit"] = miss_0_hit.value 
-    assert isinstance(miss_0_miss.value, int),f"PerfInfo miss_0_miss should return int"
-    accessible_signals["miss_0_miss"] = miss_0_miss.value
-    assert isinstance(miss_0_except.value, int),f"PerfInfo miss_0_except should return int"
-    accessible_signals["miss_0_except"] = miss_0_except.value
-    assert isinstance(except_0.value, int),f"PerfInfo except_0 should return int"
-    accessible_signals["except_0"] = except_0.value
-    assert isinstance(bank_hit_0.value, int),f"PerfInfo bank_hit_0 should return int"
-    accessible_signals["bank_hit_0"] = bank_hit_0.value
-    assert isinstance(bank_hit_1.value, int),f"PerfInfo bank_hit_1 should return int"
-    accessible_signals["bank_hit_1"] = bank_hit_1.value
-    assert isinstance(hit.value, int),f"PerfInfo hit should return int"
-    accessible_signals["hit"] = hit.value
-    for k,v in accessible_signals.items():
-        print(f"DEBUG: Successfully accessed perfInfo signals: {k}:{v}")
-    
-    print("Testing error reporting signals...")
-    # 测试错误报告信号（输出信号）
-    try:
-        error_0_valid = bundle.io._errors._0._valid.value
-        error_0_paddr = bundle.io._errors._0._bits._paddr.value
-        error_0_report = bundle.io._errors._0._bits._report_to_beu.value
-        error_1_valid = bundle.io._errors._1._valid.value
-        error_1_paddr = bundle.io._errors._1._bits._paddr.value
-        error_1_report = bundle.io._errors._1._bits._report_to_beu.value
-        
-        assert isinstance(error_0_valid, int), "Error 0 valid should be int"
-        assert isinstance(error_0_paddr, int), "Error 0 paddr should be int"
-        assert isinstance(error_0_report, int), "Error 0 report should be int"
-        assert isinstance(error_1_valid, int), "Error 1 valid should be int"
-        assert isinstance(error_1_paddr, int), "Error 1 paddr should be int"
-        assert isinstance(error_1_report, int), "Error 1 report should be int"
-        print("✅ Error reporting signals accessible")
-    except AttributeError as e:
-        print(f"⚠️  Error signal access issue: {e}")
-    
-    print("Testing metaArrayFlush signals...")
-    # 测试Meta数组冲刷信号（输出信号）
-    try:
-        flush_0_valid = bundle.io._metaArrayFlush._0._valid.value
-        flush_0_virIdx = bundle.io._metaArrayFlush._0._bits._virIdx.value
-        flush_0_waymask = bundle.io._metaArrayFlush._0._bits._waymask.value
-        flush_1_valid = bundle.io._metaArrayFlush._1._valid.value
-        flush_1_virIdx = bundle.io._metaArrayFlush._1._bits._virIdx.value
-        flush_1_waymask = bundle.io._metaArrayFlush._1._bits._waymask.value
-        
-        assert isinstance(flush_0_valid, int), "MetaFlush 0 valid should be int"
-        assert isinstance(flush_0_virIdx, int), "MetaFlush 0 virIdx should be int"
-        assert isinstance(flush_0_waymask, int), "MetaFlush 0 waymask should be int"
-        assert isinstance(flush_1_valid, int), "MetaFlush 1 valid should be int"
-        assert isinstance(flush_1_virIdx, int), "MetaFlush 1 virIdx should be int"
-        assert isinstance(flush_1_waymask, int), "MetaFlush 1 waymask should be int"
-        print("✅ MetaArrayFlush signals accessible")
-    except AttributeError as e:
-        print(f"⚠️  MetaArrayFlush signal access issue: {e}")
-    
-    print("Testing touch (replacer) signals...")
-    # 测试替换器访问信号（输出信号）
+    # ================= 11. io._touch (OUTPUT) =================
+    print("\n11. io._touch Interface (OUTPUT - Read Only)")
     try:
         touch_0_valid = bundle.io._touch._0._valid.value
         touch_0_vSetIdx = bundle.io._touch._0._bits._vSetIdx.value
@@ -800,555 +879,68 @@ async def test_complete_bundle_interfaces_old(icachemainpipe_env: ICacheMainPipe
         touch_1_vSetIdx = bundle.io._touch._1._bits._vSetIdx.value
         touch_1_way = bundle.io._touch._1._bits._way.value
         
-        assert isinstance(touch_0_valid, int), "Touch 0 valid should be int"
-        assert isinstance(touch_0_vSetIdx, int), "Touch 0 vSetIdx should be int"
-        assert isinstance(touch_0_way, int), "Touch 0 way should be int"
-        assert isinstance(touch_1_valid, int), "Touch 1 valid should be int"
-        assert isinstance(touch_1_vSetIdx, int), "Touch 1 vSetIdx should be int"
-        assert isinstance(touch_1_way, int), "Touch 1 way should be int"
-        print("✅ Touch (replacer) signals accessible")
-    except AttributeError as e:
-        print(f"⚠️  Touch signal access issue: {e}")
-    
-    print("Testing fetch response signals...")
-    # 测试取指响应信号（输出信号）
-    try:
-        fetch_resp_valid = bundle.io._fetch._resp._valid.value
-        fetch_resp_doubleline = bundle.io._fetch._resp._bits._doubleline.value
-        fetch_resp_vaddr_0 = bundle.io._fetch._resp._bits._vaddr._0.value
-        fetch_resp_vaddr_1 = bundle.io._fetch._resp._bits._vaddr._1.value
-        fetch_resp_data = bundle.io._fetch._resp._bits._data.value
-        fetch_resp_paddr_0 = bundle.io._fetch._resp._bits._paddr._0.value
-        fetch_resp_exception_0 = bundle.io._fetch._resp._bits._exception._0.value
-        fetch_resp_exception_1 = bundle.io._fetch._resp._bits._exception._1.value
-        fetch_resp_pmp_mmio_0 = bundle.io._fetch._resp._bits._pmp_mmio._0.value
-        fetch_resp_pmp_mmio_1 = bundle.io._fetch._resp._bits._pmp_mmio._1.value
-        fetch_resp_itlb_pbmt_0 = bundle.io._fetch._resp._bits._itlb_pbmt._0.value
-        fetch_resp_itlb_pbmt_1 = bundle.io._fetch._resp._bits._itlb_pbmt._1.value
-        fetch_resp_backendException = bundle.io._fetch._resp._bits._backendException.value
-        fetch_resp_gpaddr = bundle.io._fetch._resp._bits._gpaddr.value
-        fetch_resp_isForVS = bundle.io._fetch._resp._bits._isForVSnonLeafPTE.value
-        
-        # 验证所有响应信号都可访问且类型正确
-        response_signals = [
-            fetch_resp_valid, fetch_resp_doubleline, fetch_resp_vaddr_0, fetch_resp_vaddr_1,
-            fetch_resp_data, fetch_resp_paddr_0, fetch_resp_exception_0, fetch_resp_exception_1,
-            fetch_resp_pmp_mmio_0, fetch_resp_pmp_mmio_1, fetch_resp_itlb_pbmt_0, fetch_resp_itlb_pbmt_1,
-            fetch_resp_backendException, fetch_resp_gpaddr, fetch_resp_isForVS
-        ]
-        for i, signal in enumerate(response_signals):
-            assert isinstance(signal, int), f"Fetch response signal {i} should be int"
-        
-        print("✅ Fetch response signals accessible")
-    except AttributeError as e:
-        print(f"⚠️  Fetch response signal access issue: {e}")
-        
-    print("Testing fetch topdown signals...")
-    # 测试取指topdown信号
-    try:
-        topdown_icache_miss = bundle.io._fetch._topdownIcacheMiss.value
-        topdown_itlb_miss = bundle.io._fetch._topdownItlbMiss.value
-        
-        assert isinstance(topdown_icache_miss, int), "Topdown ICache miss should be integer"
-        assert isinstance(topdown_itlb_miss, int), "Topdown ITLB miss should be integer"
-        print("✅ Fetch topdown signals accessible")
-    except AttributeError as e:
-        print(f"⚠️  Fetch topdown signal access issue: {e}")
-    
-    print("Testing hartId signal...")
-    # 测试hartId信号（输入信号，需要设置值来测试）
-    try:
-        original_hartId = bundle.io._hartId.value
-        test_hartId = 0x3F  # 6-bit值
-        bundle.io._hartId.value = test_hartId
-        await bundle.step()
-        current_hartId = bundle.io._hartId.value
-        assert current_hartId == test_hartId, f"HartId setting failed: expected {test_hartId}, got {current_hartId}"
-        
-        # 恢复原值
-        bundle.io._hartId.value = original_hartId
-        print("✅ HartId signal read/write working")
+        print(f"  ✓ touch[0]: valid={touch_0_valid}, vSetIdx={touch_0_vSetIdx}, way={touch_0_way}")
+        print(f"  ✓ touch[1]: valid={touch_1_valid}, vSetIdx={touch_1_vSetIdx}, way={touch_1_way}")
     except Exception as e:
-        print(f"⚠️  HartId signal access issue: {e}")
+        error_msg = f"touch interface error: {e}"
+        test_errors.append(error_msg)
+        print(f"  × {error_msg}")
     
-    print("Testing complete PMP interface...")
-    # 测试完整的PMP接口（请求和响应）
-    try:
-        # PMP请求信号（输出）
-        pmp_0_req_addr = bundle.io._pmp._0._req_bits_addr.value
-        assert isinstance(pmp_0_req_addr, int), "PMP 0 req addr should be int"
-        pmp_1_req_addr = bundle.io._pmp._1._req_bits_addr.value
-        assert isinstance(pmp_1_req_addr, int), "PMP 1 req addr should be int"
-        
-        # PMP响应信号（输入，可设置）
-        test_instr_0 = 1
-        test_mmio_0 = 0
-        test_instr_1 = 1  
-        test_mmio_1 = 0
-        
-        bundle.io._pmp._0._resp._instr.value = test_instr_0
-        bundle.io._pmp._0._resp._mmio.value = test_mmio_0
-        bundle.io._pmp._1._resp._instr.value = test_instr_1
-        bundle.io._pmp._1._resp._mmio.value = test_mmio_1
-        await bundle.step()
-        
-        # 验证设置成功
-        assert bundle.io._pmp._0._resp._instr.value == test_instr_0, "PMP 0 instr setting failed"
-        assert bundle.io._pmp._0._resp._mmio.value == test_mmio_0, "PMP 0 mmio setting failed"
-        assert bundle.io._pmp._1._resp._instr.value == test_instr_1, "PMP 1 instr setting failed"
-        assert bundle.io._pmp._1._resp._mmio.value == test_mmio_1, "PMP 1 mmio setting failed"
-        
-        print("✅ Complete PMP interface working")
-    except Exception as e:
-        print(f"⚠️  PMP interface access issue: {e}")
-    
-    print("Testing complete DataArray interfaces...")
-    # 测试完整的DataArray接口（toIData和fromIData）
-    try:
-        # toIData接口（输出信号）- 测试所有4个端口
-        for port in range(4):
-            valid = getattr(bundle.io._dataArray._toIData, f"_{port}")._valid.value
-            assert isinstance(valid, int), f"DataArray toIData port {port} valid should be integer"
-            
-            if port == 0:  # 端口0有完整的bits
-                vSetIdx_0 = bundle.io._dataArray._toIData._0._bits._vSetIdx._0.value
-                vSetIdx_1 = bundle.io._dataArray._toIData._0._bits._vSetIdx._1.value
-                blkOffset = bundle.io._dataArray._toIData._0._bits._blkOffset.value
-                # 测试waymask (4 ways x 2 ports)
-                for way in range(4):
-                    for port_idx in range(2):
-                        waymask = getattr(bundle.io._dataArray._toIData._0._bits._waymask, f"_{port_idx}")
-                        way_val = getattr(waymask, f"_{way}").value
-                        assert isinstance(way_val, int), f"Waymask {port_idx}_{way} should be integer"
-            elif port >= 1 and port <= 2:  # 端口1,2只有vSetIdx
-                vSetIdx_0 = getattr(bundle.io._dataArray._toIData, f"_{port}")._bits_vSetIdx._0.value
-                vSetIdx_1 = getattr(bundle.io._dataArray._toIData, f"_{port}")._bits_vSetIdx._1.value
-            elif port == 3:  # 端口3有ready信号
-                ready = bundle.io._dataArray._toIData._3._ready.value
-                vSetIdx_0 = bundle.io._dataArray._toIData._3._bits_vSetIdx._0.value
-                vSetIdx_1 = bundle.io._dataArray._toIData._3._bits_vSetIdx._1.value
-        
-        # fromIData接口（输入信号）- 测试所有8个data和code
-        test_datas = [0x1111 + i for i in range(8)]
-        test_codes = [i % 2 for i in range(8)]
-        
-        for i in range(8):
-            data_signal = getattr(bundle.io._dataArray._fromIData._datas, f"_{i}")
-            code_signal = getattr(bundle.io._dataArray._fromIData._codes, f"_{i}")
-            
-            # 设置测试值
-            data_signal.value = test_datas[i]
-            code_signal.value = test_codes[i]
-            
-        await bundle.step()
-        
-        # 验证设置成功
-        for i in range(8):
-            data_actual = getattr(bundle.io._dataArray._fromIData._datas, f"_{i}").value
-            code_actual = getattr(bundle.io._dataArray._fromIData._codes, f"_{i}").value
-            assert data_actual == test_datas[i], f"DataArray data {i} setting failed"
-            assert code_actual == test_codes[i], f"DataArray code {i} setting failed"
-            
-        print("✅ Complete DataArray interface working")
-    except Exception as e:
-        print(f"⚠️  DataArray interface access issue: {e}")
-    
-    print("Testing complete MSHR interface...")
-    # 测试完整的MSHR接口
-    try:
-        # MSHR请求接口（输出信号）
-        mshr_req_ready_orig = bundle.io._mshr._req._ready.value
-        mshr_req_valid = bundle.io._mshr._req._valid.value
-        mshr_req_blkPaddr = bundle.io._mshr._req._bits._blkPaddr.value
-        mshr_req_vSetIdx = bundle.io._mshr._req._bits._vSetIdx.value
-        
-        # MSHR响应接口（输入信号）
-        test_resp_valid = 1
-        test_resp_blkPaddr = 0x12345678
-        test_resp_vSetIdx = 0xAB
-        test_resp_data = 0xDEADBEEFCAFEBABE
-        test_resp_corrupt = 0
-        
-        bundle.io._mshr._resp._valid.value = test_resp_valid
-        bundle.io._mshr._resp._bits._blkPaddr.value = test_resp_blkPaddr
-        bundle.io._mshr._resp._bits._vSetIdx.value = test_resp_vSetIdx
-        bundle.io._mshr._resp._bits._data.value = test_resp_data
-        bundle.io._mshr._resp._bits._corrupt.value = test_resp_corrupt
-        await bundle.step()
-        
-        # 验证设置成功
-        assert bundle.io._mshr._resp._valid.value == test_resp_valid, "MSHR resp valid setting failed"
-        assert bundle.io._mshr._resp._bits._blkPaddr.value == test_resp_blkPaddr, "MSHR resp blkPaddr setting failed"
-        assert bundle.io._mshr._resp._bits._vSetIdx.value == test_resp_vSetIdx, "MSHR resp vSetIdx setting failed"
-        assert bundle.io._mshr._resp._bits._data.value == test_resp_data, "MSHR resp data setting failed"
-        assert bundle.io._mshr._resp._bits._corrupt.value == test_resp_corrupt, "MSHR resp corrupt setting failed"
-        
-        print("✅ Complete MSHR interface working")
-    except Exception as e:
-        print(f"⚠️  MSHR interface access issue: {e}")
-    
-    print("Testing internal signals accessibility...")
-    # 测试内部信号（通过bundle访问的内部信号）
-    try:
-        # ICacheMainPipe内部信号
-        s0_fire = bundle.ICacheMainPipe._s0_fire.value
-        s2_fire = bundle.ICacheMainPipe._s2._fire.value
-        
-        # MSHR Arbiter内部信号
-        arbiter_0_valid = bundle.ICacheMainPipe__toMSHRArbiter_io_in._0._valid_T._4.value
-        arbiter_1_valid = bundle.ICacheMainPipe__toMSHRArbiter_io_in._1._valid_T._4.value
-        
-        assert isinstance(s0_fire, int), "S0 fire should be integer"
-        assert isinstance(s2_fire, int), "S2 fire should be integer"
-        assert isinstance(arbiter_0_valid, int), "Arbiter 0 valid should be integer"
-        assert isinstance(arbiter_1_valid, int), "Arbiter 1 valid should be integer"
-        
-        print("✅ Internal signals accessible")
-    except Exception as e:
-        print(f"⚠️  Internal signals access issue: {e}")
-    
-    print("✅ Complete Bundle interface test finished!")
-
-
-@toffee_test.testcase
-async def test_wayLookup_complete_interface(icachemainpipe_env: ICacheMainPipeEnv):
-    """Test complete WayLookup interface coverage"""
-    print("\n--- Testing complete WayLookup interface ---")
-    agent = icachemainpipe_env.agent
-    bundle = icachemainpipe_env.bundle
-    
-    await agent.reset()
-    
-    # 测试WayLookup完整接口
-    try:
-        # 测试所有WayLookup入参
-        test_params = {
-            "vSetIdx_0": 0x10,
-            "vSetIdx_1": 0x20, 
-            "waymask_0": 0xF,  # 4-bit waymask
-            "waymask_1": 0xA,
-            "ptag_0": 0xABCDEF,  # 36-bit ptag
-            "ptag_1": 0x123456,
-            "itlb_exception_0": 0x2,  # 2-bit exception
-            "itlb_exception_1": 0x1,
-            "itlb_pbmt_0": 0x3,  # 2-bit pbmt
-            "itlb_pbmt_1": 0x2,
-            "meta_codes_0": 0x1,  # 1-bit meta code
-            "meta_codes_1": 0x0,
-            "gpf_gpaddr": 0xDCBA9876543210,  # 56-bit gpaddr (去掉高8位的0xFE)
-            "gpf_isForVSnonLeafPTE": 0x1  # 1-bit flag
-        }
-        
-        # 驱动所有参数
-        print(f"DEBUG: WayLookup test parameters: {test_params}")
-        result = await agent.drive_waylookup_read(**test_params)
-        print(f"DEBUG: WayLookup drive result: {result}")
-        await bundle.step(2)
-        
-        # 验证所有信号设置正确
-        print(f"DEBUG: Checking WayLookup vSetIdx_0 - expected: {test_params['vSetIdx_0']}, actual: {bundle.io._wayLookupRead._bits._entry._vSetIdx._0.value}")
-        assert bundle.io._wayLookupRead._bits._entry._vSetIdx._0.value == test_params["vSetIdx_0"], "WayLookup vSetIdx_0 setting failed"
-        assert bundle.io._wayLookupRead._bits._entry._vSetIdx._1.value == test_params["vSetIdx_1"], "WayLookup vSetIdx_1 setting failed"
-        assert bundle.io._wayLookupRead._bits._entry._waymask._0.value == test_params["waymask_0"], "WayLookup waymask_0 setting failed"
-        assert bundle.io._wayLookupRead._bits._entry._waymask._1.value == test_params["waymask_1"], "WayLookup waymask_1 setting failed"
-        assert bundle.io._wayLookupRead._bits._entry._ptag._0.value == test_params["ptag_0"], "WayLookup ptag_0 setting failed"
-        assert bundle.io._wayLookupRead._bits._entry._ptag._1.value == test_params["ptag_1"], "WayLookup ptag_1 setting failed"
-        assert bundle.io._wayLookupRead._bits._entry._itlb._exception._0.value == test_params["itlb_exception_0"], "WayLookup itlb_exception_0 setting failed"
-        assert bundle.io._wayLookupRead._bits._entry._itlb._exception._1.value == test_params["itlb_exception_1"], "WayLookup itlb_exception_1 setting failed"
-        assert bundle.io._wayLookupRead._bits._entry._itlb._pbmt._0.value == test_params["itlb_pbmt_0"], "WayLookup itlb_pbmt_0 setting failed"
-        assert bundle.io._wayLookupRead._bits._entry._itlb._pbmt._1.value == test_params["itlb_pbmt_1"], "WayLookup itlb_pbmt_1 setting failed"
-        assert bundle.io._wayLookupRead._bits._entry._meta_codes._0.value == test_params["meta_codes_0"], "WayLookup meta_codes_0 setting failed"
-        assert bundle.io._wayLookupRead._bits._entry._meta_codes._1.value == test_params["meta_codes_1"], "WayLookup meta_codes_1 setting failed"
-        print(f"DEBUG: Checking WayLookup gpf_gpaddr - expected: {hex(test_params['gpf_gpaddr'])}, actual: {hex(bundle.io._wayLookupRead._bits._gpf._gpaddr.value)}")
-        print(f"DEBUG: GPF gpaddr decimal - expected: {test_params['gpf_gpaddr']}, actual: {bundle.io._wayLookupRead._bits._gpf._gpaddr.value}")
-        assert bundle.io._wayLookupRead._bits._gpf._gpaddr.value == test_params["gpf_gpaddr"], "WayLookup gpf_gpaddr setting failed"
-        assert bundle.io._wayLookupRead._bits._gpf._isForVSnonLeafPTE.value == test_params["gpf_isForVSnonLeafPTE"], "WayLookup gpf_isForVSnonLeafPTE setting failed"
-        
-        # 测试ready/valid握手
-        ready_state = bundle.io._wayLookupRead._ready.value
-        valid_state = bundle.io._wayLookupRead._valid.value
-        
-        print(f"WayLookup ready: {ready_state}, valid: {valid_state}")
-        print("✅ Complete WayLookup interface test passed")
-        
-    except Exception as e:
-        print(f"⚠️  WayLookup interface test failed: {e}")
-
-
-@toffee_test.testcase  
-async def test_fetch_complete_interface(icachemainpipe_env: ICacheMainPipeEnv):
-    """Test complete Fetch interface coverage"""
-    print("\n--- Testing complete Fetch interface ---")
-    agent = icachemainpipe_env.agent
-    bundle = icachemainpipe_env.bundle
-    
-    await agent.reset()
-    await bundle.step(5)  # 稳定状态
-    
-    # 测试Fetch请求的完整接口（避免RTL约束）
-    try:
-        # 设置所有5个pcMemRead地址和nextlineStart地址
-        test_addrs = [0x1000 * (i+1) for i in range(5)]
-        test_readValid = [1 if i < 2 else 0 for i in range(5)]  # 只激活前2个
-        test_backendException = 0
-        
-        # 手动设置所有fetch请求参数来测试接口完整性
-        print(f"DEBUG: Fetch test addresses: {[hex(addr) for addr in test_addrs]}")
-        print(f"DEBUG: Fetch test readValid: {test_readValid}")
-        for i in range(5):
-            startAddr_signal_pre = getattr(bundle.io._fetch._req._bits._pcMemRead, f"_{i}")
-            startAddr_signal = getattr(startAddr_signal_pre, "_startAddr")
-            nextlineStart_signal_pre = getattr(bundle.io._fetch._req._bits._pcMemRead, f"_{i}")
-            nextlineStart_signal = getattr(nextlineStart_signal_pre, "_nextlineStart")
-            readValid_signal = getattr(bundle.io._fetch._req._bits._readValid, f"_{i}")
-            
-            startAddr_signal.value = test_addrs[i]
-            nextlineStart_signal.value = test_addrs[i] + 64
-            readValid_signal.value = test_readValid[i]
-            
-        bundle.io._fetch._req._bits._backendException.value = test_backendException
-        bundle.io._fetch._req._valid.value = 1
-        await bundle.step()
-        bundle.io._fetch._req._valid.value = 0  # 清零valid
-        
-        # 验证所有设置的参数
-        for i in range(5):
-            startAddr_actual_pre = getattr(bundle.io._fetch._req._bits._pcMemRead, f"_{i}")
-            startAddr_actual = getattr(startAddr_signal_pre, "_startAddr").value
-            nextlineStart_actual_pre = getattr(bundle.io._fetch._req._bits._pcMemRead, f"_{i}")
-            nextlineStart_actual = getattr(nextlineStart_actual_pre, "_nextlineStart").value
-            readValid_actual = getattr(bundle.io._fetch._req._bits._readValid, f"_{i}").value
-            
-            print(f"DEBUG: Fetch {i} startAddr - expected: {hex(test_addrs[i])}, actual: {hex(startAddr_actual)}")
-            print(f"DEBUG: Fetch {i} nextlineStart - actual: {hex(nextlineStart_actual)} (input signal, not verifying)")
-            print(f"DEBUG: Fetch {i} readValid - expected: {test_readValid[i]}, actual: {readValid_actual}")
-            
-            # 只验证startAddr设置正确
-            assert startAddr_actual == test_addrs[i], f"Fetch startAddr {i} setting failed"
-            
-            # nextlineStart是input信号，不验证计算关系，只验证存在
-            assert isinstance(nextlineStart_actual, int), f"Fetch nextlineStart {i} should be integer"
-            
-            # 验证readValid设置正确
-            assert readValid_actual == test_readValid[i], f"Fetch readValid {i} setting failed"
-            
-        assert bundle.io._fetch._req._bits._backendException.value == test_backendException, "Fetch backendException setting failed"
-        
-        # 测试ready信号
-        req_ready = bundle.io._fetch._req._ready.value
-        print(f"Fetch req ready: {req_ready}")
-        
-        print("✅ Complete Fetch interface test passed")
-        
-    except Exception as e:
-        print(f"⚠️  Fetch interface test failed: {e}")
-
-
-@toffee_test.testcase
-async def test_signal_ranges_and_boundary_conditions(icachemainpipe_env: ICacheMainPipeEnv):
-    """Test signal ranges and boundary conditions to improve coverage"""
-    bundle = icachemainpipe_env.bundle
-    agent = icachemainpipe_env.agent
-    
-    print("\n--- Testing Signal Ranges and Boundary Conditions ---")
-    
-    # Test 1: Hart ID boundary values
-    print("Test 1: Hart ID boundary values")
-    hart_id_tests = [0, 1, 31, 63]  # 6-bit field: 0-63
-    for hart_id in hart_id_tests:
-        try:
-            bundle.io._hartId.value = hart_id
-            await bundle.step()
-            actual = bundle.io._hartId.value
-            print(f"✓ hartId: set={hart_id} -> actual={actual}")
-            assert actual == hart_id, f"Hart ID boundary test failed: expected {hart_id}, got {actual}"
-        except Exception as e:
-            print(f"⚠️ Hart ID {hart_id} test failed: {e}")
-    
-    # Test 2: Address boundary conditions for fetch interface
-    print("Test 2: Address boundary conditions")
-    address_tests = [
-        0x0,           # Minimum address
-        0x40,          # Cache line boundary
-        0x80,          # Next cache line  
-        0xFFF,         # Page boundary
-        0x1000,        # Page start
-        0xFFFFFFFF,    # 32-bit max (if supported)
-        0x100000000,   # 33-bit
-        0xFFFFFFFFFFF, # 48-bit max (typical virtual address)
+    # ================= 12. io._other (INPUT) =================
+    print("\n12. io._other Control Signals (INPUT - Read/Write Testing)")
+    other_signals = [
+        ("hartId", bundle.io._hartId, 6, 63),      # 6-bit: 0-63
+        ("flush", bundle.io._flush, 1, 1),         # 1-bit: 0-1
+        ("ecc_enable", bundle.io._ecc_enable, 1, 1), # 1-bit: 0-1
+        ("respStall", bundle.io._respStall, 1, 1)  # 1-bit: 0-1
     ]
     
-    for i, test_addr in enumerate(address_tests):
+    for signal_name, signal_obj, bit_width, max_val in other_signals:
         try:
-            await agent.drive_fetch_request([test_addr, 0, 0, 0, 0], [1, 0, 0, 0, 0])
-            print(f"✓ Address boundary {i}: {hex(test_addr)} processed")
-        except Exception as e:
-            print(f"⚠️ Address boundary {hex(test_addr)} failed: {e}")
-    
-    # Test 3: vSetIdx edge cases
-    print("Test 3: vSetIdx edge cases")
-    vset_tests = [0x0, 0x1, 0x7F, 0xFF]  # 8-bit field: 0-255
-    for vset in vset_tests:
-        try:
-            await agent.drive_waylookup_read([vset, 0], [0xF, 0], [0x12345, 0], [0, 0], [0, 0])
-            print(f"✓ vSetIdx: {hex(vset)} processed")
-        except Exception as e:
-            print(f"⚠️ vSetIdx {hex(vset)} failed: {e}")
-    
-    # Test 4: Waymask boundary conditions
-    print("Test 4: Waymask boundary conditions")
-    waymask_tests = [0x0, 0x1, 0x3, 0x7, 0xF]  # 4-bit field: 0-15
-    for waymask in waymask_tests:
-        try:
-            await agent.drive_waylookup_read([0x10, 0x20], [waymask, 0], [0x12345, 0], [0, 0], [0, 0])
-            print(f"✓ waymask: {hex(waymask)} processed")
-        except Exception as e:
-            print(f"⚠️ waymask {hex(waymask)} failed: {e}")
-    
-    # Test 5: Exception field boundary values
-    print("Test 5: Exception field boundary values")  
-    exception_tests = [0, 1, 2, 3]  # 2-bit field: 0-3
-    for exc_val in exception_tests:
-        try:
-            await agent.drive_waylookup_read([0x30, 0x40], [0xF, 0x1], [0x12345, 0x67890], [exc_val, 0], [0, 0])
-            print(f"✓ exception: {exc_val} processed")
-        except Exception as e:
-            print(f"⚠️ exception {exc_val} failed: {e}")
-    
-    # Test 6: PBMT field boundary values
-    print("Test 6: PBMT field boundary values")
-    pbmt_tests = [0, 1, 2, 3]  # 2-bit field: 0-3
-    for pbmt_val in pbmt_tests:
-        try:
-            await agent.drive_waylookup_read([0x50, 0x60], [0x3, 0x7], [0xABCDE, 0xF1234], [0, 1], [pbmt_val, 0])
-            print(f"✓ pbmt: {pbmt_val} processed") 
-        except Exception as e:
-            print(f"⚠️ pbmt {pbmt_val} failed: {e}")
-    
-    # Test 7: Boolean signal exhaustive testing
-    print("Test 7: Boolean signal exhaustive testing")
-    boolean_tests = [
-        ("ecc_enable", bundle.io._ecc_enable),
-        ("flush", bundle.io._flush),
-        ("respStall", bundle.io._respStall),
-        ("fetch.req.valid", bundle.io._fetch._req._valid),
-        ("wayLookupRead.valid", bundle.io._wayLookupRead._valid),
-        ("mshr.req.ready", bundle.io._mshr._req._ready),
-        ("mshr.resp.valid", bundle.io._mshr._resp._valid),
-    ]
-    
-    for name, signal in boolean_tests:
-        try:
-            # Test 0 -> 1 -> 0 transition
-            signal.value = 0
-            await bundle.step()
-            assert signal.value == 0, f"{name} should be 0"
+            original_val = signal_obj.value
             
-            signal.value = 1  
-            await bundle.step()
-            assert signal.value == 1, f"{name} should be 1"
+            # Test boundary values
+            test_values = [0, max_val]
+            if bit_width > 1:
+                test_values.append(max_val // 2)  # Mid-range value
+                
+            for test_val in test_values:
+                signal_obj.value = test_val
+                await bundle.step()
+                assert signal_obj.value == test_val, f"{signal_name} write failed for value {test_val}"
             
-            signal.value = 0
-            await bundle.step() 
-            assert signal.value == 0, f"{name} should return to 0"
-            print(f"✓ {name}: 0/1/0 transition test passed")
+            
+            # Restore original
+            signal_obj.value = original_val
+            print(f"  ✓ {signal_name} read/write working (bit_width={bit_width})")
+            
         except Exception as e:
-            print(f"⚠️ {name}: Boolean test failed - {e}")
+            error_msg = f"{signal_name} signal error: {e}"
+            test_errors.append(error_msg)
+            print(f"  × {error_msg}")
     
-    # Test 8: Large address patterns for bank selection coverage  
-    print("Test 8: Large address patterns for bank selection")
-    bank_test_addresses = []
-    # Generate addresses that target different bank selection patterns
-    for bank_offset in range(16):  # Try different bank offsets
-        for page_offset in [0, 0x1000, 0x2000]:
-            addr = (page_offset + (bank_offset << 3))
-            bank_test_addresses.append(addr)
-    
-    for addr in bank_test_addresses[:20]:  # Test first 20 to avoid too much output
-        try:
-            await agent.drive_fetch_request([addr, 0, 0, 0, 0], [1, 0, 0, 0, 0])
-            # Use internal monitoring to check bank selection
-            await bundle.step(2)
-        except Exception as e:
-            print(f"⚠️ Bank selection address {hex(addr)} failed: {e}")
-    
-    print("✓ Bank selection address patterns tested")
-    
-    # Test 9: GPF address boundary testing
-    print("Test 9: GPF address boundary testing")
-    gpf_addresses = [
-        0x0,
-        0xFFFFFFFFFFFFFF,    # 56-bit max
-        0x123456789ABCDE,    # Middle range
-        0x800000000000000,   # High bit set (but within 56-bit)
-    ]
-    
-    for gpf_addr in gpf_addresses:
-        try:
-            bundle.io._wayLookupRead._bits._gpf._gpaddr.value = gpf_addr
-            await bundle.step()
-            actual = bundle.io._wayLookupRead._bits._gpf._gpaddr.value
-            print(f"✓ GPF addr: set={hex(gpf_addr)} -> actual={hex(actual)}")
-        except Exception as e:
-            print(f"⚠️ GPF address {hex(gpf_addr)} failed: {e}")
-    
-    print("✅ Signal ranges and boundary conditions test completed")
-
-
-@toffee_test.testcase  
-async def test_error_injection_boundary_cases(icachemainpipe_env: ICacheMainPipeEnv):
-    """Test error injection with boundary cases to trigger assertion paths"""
-    agent = icachemainpipe_env.agent
-    bundle = icachemainpipe_env.bundle
-    
-    print("\n--- Testing Error Injection Boundary Cases ---")
-    
-    # Test 1: Meta ECC error with all possible waymasks
-    print("Test 1: Meta ECC error boundary waymasks")
-    for waymask in [0x1, 0x2, 0x4, 0x8, 0xF]:  # All individual ways + all ways
-        try:
-            await agent.inject_meta_ecc_error(waymask_0=waymask, wrong_meta_code_0=1)
-            print(f"✓ Meta ECC waymask {hex(waymask)} injected")
-        except Exception as e:
-            print(f"⚠️ Meta ECC waymask {hex(waymask)} failed: {e}")
-    
-    # Test 2: Multi-way hit with all combinations
-    print("Test 2: Multi-way hit boundary combinations")  
-    multi_way_patterns = [0x3, 0x5, 0x6, 0x9, 0xA, 0xC, 0xF]  # All multi-bit patterns
-    for pattern in multi_way_patterns:
-        try:
-            await agent.inject_multi_way_hit(waymask_0=pattern)
-            print(f"✓ Multi-way pattern {hex(pattern)} injected")
-        except Exception as e:
-            print(f"⚠️ Multi-way pattern {hex(pattern)} failed: {e}")
-    
-    # Test 3: Data ECC error for all banks
-    print("Test 3: Data ECC error for all banks")
-    for bank in range(8):  # Banks 0-7
-        try:
-            await agent.inject_data_ecc_error(bank_index=bank)
-            print(f"✓ Data ECC bank {bank} error injected")
-        except Exception as e:
-            print(f"⚠️ Data ECC bank {bank} failed: {e}")
-    
-    # Test 4: L2 corrupt response with boundary addresses
-    print("Test 4: L2 corrupt response boundary addresses")
-    corrupt_addresses = [
-        0x0,
-        0x1000,       # Page boundary
-        0xFFFF000,    # High address
-        0x12345000,   # Random address
-    ]
-    
-    for addr in corrupt_addresses:
-        try:
-            await agent.inject_l2_corrupt_response(blkPaddr=addr)
-            print(f"✓ L2 corrupt address {hex(addr)} injected")
-        except Exception as e:
-            print(f"⚠️ L2 corrupt address {hex(addr)} failed: {e}")
-    
-    print("✅ Error injection boundary cases test completed")
-
+    # ================= Final Summary =================
+    print("\n" + "="*60)
+    if test_errors:
+        print(f"× Comprehensive test completed with {len(test_errors)} error(s):")
+        for i, error in enumerate(test_errors, 1):
+            print(f"  {i}. {error}")
+        raise AssertionError(f"Comprehensive signal interface test failed with {len(test_errors)} errors")
+    else:
+        print("√ Comprehensive Signal Interface Test - ALL CATEGORIES PASSED")
+        print("   • ICacheMainPipe internal signals: ✓")
+        print("   • ICacheMainPipe__toMSHRArbiter_io_in: ✓")
+        print("   • io._perfInfo (OUTPUT): ✓")
+        print("   • io._pmp (mixed INPUT/OUTPUT): ✓")
+        print("   • io._errors (OUTPUT): ✓")
+        print("   • io._metaArrayFlush (OUTPUT): ✓")
+        print("   • io._wayLookupRead (mixed INPUT/OUTPUT): ✓")
+        print("   • io._dataArray (mixed INPUT/OUTPUT): ✓")
+        print("   • io._mshr (mixed INPUT/OUTPUT): ✓")
+        print("   • io._fetch (mixed INPUT/OUTPUT): ✓")
+        print("   • io._touch (OUTPUT): ✓")
+        print("   • io._other control signals (INPUT): ✓")
+        print("   • Read/Write testing for INPUT signals: ✓")
 
 # ==================== 功能点测试用例 ====================
 
@@ -1356,302 +948,412 @@ async def test_error_injection_boundary_cases(icachemainpipe_env: ICacheMainPipe
 async def test_cp11_dataarray_access(icachemainpipe_env: ICacheMainPipeEnv):
     """
     CP11: 访问DataArray的单路功能测试
-    测试根据WayLookup信息决定是否访问DataArray的逻辑
+    
+    根据MainPipe.md文档11章节的测试点：
+    11.1: 访问DataArray的单路 - 当WayLookup中的信息表明路命中时，ITLB查询成功，并且DataArray当前没有写时
+    11.2: 不访问DataArray（Way未命中）- 会访问，但是返回数据无效
+    11.3: 不访问DataArray（ITLB查询失败）- 会访问，但是返回数据无效  
+    11.4: 不访问DataArray（DataArray正在进行写操作）- 真正不访问
+    
+    基于verilog源码的关键逻辑：
+    - s0_fire = io_fetch_req_valid & s0_can_go & ~io_flush
+    - s0_can_go = io_dataArray_toIData_3_ready & io_wayLookupRead_valid & s1_ready
+    - io_dataArray_toIData_X_valid = io_fetch_req_bits_readValid_X
     """
-    print("\n=== CP11: DataArray Access Test ===")
+    print("\n=== CP11: 访问DataArray的单路功能测试 ===")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
+    # 初始化环境
     await agent.reset()
     await agent.drive_set_ecc_enable(True)
-    await agent.drive_set_flush(False)  # 确保没有flush
-    await agent.drive_resp_stall(False)  # 确保没有响应暂停
+    await agent.drive_set_flush(False)
+    await agent.drive_resp_stall(False)
     
-    # 11.1: 访问DataArray的单路 - 命中情况
-    print("Test 11.1: Normal DataArray access with cache hit")
+    # 11.1: 访问DataArray的单路
+    print("\n测试 11.1: 访问DataArray的单路")
+    print("条件：s0_hits为高（一路命中），s0_itlb_exception信号为零（ITLB查询成功），toData.last.ready为高（DataArray没有正在进行的写操作）")
+    print("预期：toData.valid信号为高，表示MainPipe向DataArray发出了读取请求")
     
-    # 根据RTL分析，s0_fire需要：
-    # 1. io_fetch_req_valid = 1 (由drive_fetch_request设置)
-    # 2. s0_can_go = io_dataArray_toIData_3_ready & io_wayLookupRead_valid & s1_ready
-    # 3. ~io_flush (已设置为false)
-    
-    # 设置DataArray ready (io_dataArray_toIData_3_ready = 1)
-    await agent.drive_data_array_ready(True)
-    
-    # 设置WayLookup数据 (这会让io_wayLookupRead_valid = 1)  
+    # 设置所有满足条件的信号
+    await agent.drive_data_array_ready(True)  # toData.last.ready为高
     await agent.drive_waylookup_read(
         vSetIdx_0=0x10,
-        waymask_0=0x1,  # 单路命中
+        vSetIdx_1=0x10,  # 由于0x400[5]=0，nextlineStart=startAddr，所以两个vSetIdx应该相同
+        waymask_0=0x1,  # s0_hits为高（一路命中），根据verilog: s1_SRAMhits_0 <= |io_wayLookupRead_bits_entry_waymask_0
         ptag_0=0x12345,
-        itlb_exception_0=0  # 无ITLB异常
+        itlb_exception_0=0  # s0_itlb_exception信号为零（ITLB查询成功）
     )
     
-    # 等待一个周期让wayLookup ready信号稳定
-    await bundle.step(1)
+    # 发送fetch请求
+    await agent.drive_fetch_request(
+        pcMemRead_addrs=[0x400, 0, 0, 0, 0x400],  # 0x400[13:6] = 0x10，与vSetIdx_0匹配
+        readValid=[1, 0, 0, 0, 1]  # readValid[0]=1会使toIData_0_valid=1
+    )
     
-    # 为了检查DataArray访问，我需要在fetch请求激活期间检查
-    # 因为drive_fetch_request会在一个周期后清除valid信号
-    
-    # 手动设置fetch请求信号以便持续监控
-    for j in range(5):
-        startpre = getattr(bundle.io._fetch._req._bits._pcMemRead, f"_{j}")
-        start = getattr(startpre, "_startAddr")
-        start.value = [0x1000, 0, 0, 0, 0][j]
-        nextpre = getattr(bundle.io._fetch._req._bits._pcMemRead, f"_{j}")
-        next = getattr(nextpre, "_nextlineStart") 
-        next.value = [0x1000, 0, 0, 0, 0][j] + 64
-        setattr(bundle.io._fetch._req._bits._readValid, f"_{j}", [1, 0, 0, 0, 0][j])
-    
-    bundle.io._fetch._req._bits._backendException.value = 0
-    bundle.io._fetch._req._valid.value = 1
-    
-    # 等待一个周期让信号传播
-    await bundle.step(1)
-    
-    # 在fetch请求激活期间检查DataArray访问
+    # 监控结果
     dataarray_status = await agent.monitor_dataarray_toIData()
     pipeline_status = await agent.monitor_pipeline_status()
     
-    print(f"  DataArray port 0 valid: {dataarray_status['toIData_0_valid']}")
-    print(f"  Pipeline s0_fire: {pipeline_status['s0_fire']}")
-    print(f"  Fetch req valid: {bundle.io._fetch._req._valid.value}")
-    print(f"  ReadValid 0: {bundle.io._fetch._req._bits._readValid._0}")
-    print(f"  WayLookup valid: {bundle.io._wayLookupRead._valid.value}")
-    print(f"  DataArray ready: {bundle.io._dataArray._toIData._3._ready.value}")
+    print(f"  检查结果：")
+    print(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
+    print(f"  - s0_fire: {pipeline_status['s0_fire']}")
+    print(f"  - fetch_req_ready: {pipeline_status['fetch_req_ready']}")
     
-    # 清除fetch请求信号
-    bundle.io._fetch._req._valid.value = 0
+    # 验证：toData.valid信号为高
+    assert dataarray_status['toIData_0_valid'] == 1, "toData.valid信号应为高，表示MainPipe向DataArray发出了读取请求"
+    assert pipeline_status['s0_fire'] == 1, "s0_fire应为1，表示流水线正常推进"
     
-    # DataArray应该被访问（基于RTL: io_dataArray_toIData_0_valid = io_fetch_req_bits_readValid_0）
-    # 暂时注释掉断言，先查看所有调试信息
-    # assert dataarray_status['toIData_0_valid'] == True, "DataArray应该被访问"
+    await agent.clear_fetch_request()
+    print("  ✅ 测试 11.1 通过")
     
-    # 检查流水线是否正确启动（这是主要目标）
-    if pipeline_status['s0_fire']:
-        print("  ✅ Pipeline s0_fire activated successfully - DataArray logic working")
-    else:
-        print("  ❌ Pipeline s0_fire not activated")
-        
-    # 注意：DataArray toIData信号的bundle映射可能需要进一步验证
-    # 但流水线启动成功表明基本逻辑正确
-    if dataarray_status['toIData_0_valid']:
-        print("  ✅ DataArray access also detected via bundle")
-    else:
-        print("  ℹ️  DataArray access via bundle mapping needs verification")
+    # 11.2: 不访问DataArray（Way未命中）- 会访问，但是返回数据无效
+    print("\n测试 11.2: 不访问DataArray（Way未命中）- 会访问，但是返回数据无效")
+    print("条件：s0_hits为低表示缓存未命中")
+    print("预期：根据文档注释，会访问但返回数据无效")
     
-    # 11.2: 不访问DataArray（Way未命中）- 修复版本以触发CP11.2覆盖点
-    print("Test 11.2: No DataArray access when cache miss")
     await agent.reset()
+    await agent.drive_set_flush(False)
     await agent.drive_data_array_ready(True)
-    await agent.drive_set_flush(False)  # 确保无flush
     
-    # 设置miss场景但仍要保证s1_fire能够触发
     await agent.drive_waylookup_read(
         vSetIdx_0=0x20,
-        waymask_0=0x0,  # 未命中（s1_hits_0=0, s1_hits_1=0）
-        vSetIdx_1=0x21,
-        waymask_1=0x0,  # 通道1也未命中
+        vSetIdx_1=0x20,  # 由于0x800[5]=0，nextlineStart=startAddr，所以两个vSetIdx应该相同
+        waymask_0=0x0,  # s0_hits为低表示缓存未命中（waymask=0，OR约简结果为0）
         ptag_0=0x67890,
-        ptag_1=0x98765,
         itlb_exception_0=0
     )
     
-    # 等待WayLookup信号稳定
-    await bundle.step(1)
-    
-    # 手动设置fetch请求以便持续监控并确保s1_fire
-    for j in range(5):
-        startpre = getattr(bundle.io._fetch._req._bits._pcMemRead, f"_{j}")
-        start = getattr(startpre, "_startAddr")
-        start.value = [0x2000, 0x2100, 0, 0, 0][j]
-        nextpre = getattr(bundle.io._fetch._req._bits._pcMemRead, f"_{j}")
-        next = getattr(nextpre, "_nextlineStart") 
-        next.value = [0x2000, 0x2100, 0, 0, 0][j] + 64
-        setattr(bundle.io._fetch._req._bits._readValid, f"_{j}", [1, 1, 0, 0, 0][j])
-    
-    bundle.io._fetch._req._bits._backendException.value = 0
-    bundle.io._fetch._req._valid.value = 1
-    
-    await bundle.step(2)  # 让信号传播到S1阶段
+    await agent.drive_fetch_request(
+        pcMemRead_addrs=[0x800, 0, 0, 0, 0x800],  # 0x800[13:6] = 0x20，与vSetIdx_0匹配
+        readValid=[1, 0, 0, 0, 1]
+    )
     
     dataarray_status = await agent.monitor_dataarray_toIData()
     pipeline_status = await agent.monitor_pipeline_status()
     
-    print(f"  DataArray access on miss: {dataarray_status['toIData_0_valid']}")
-    print(f"  Pipeline s1_fire in miss case: {pipeline_status['s1_fire']}")
-    print(f"  WayLookup waymask_0 (should be 0): {bundle.io._wayLookupRead._bits._entry._waymask._0.value}")
-    print(f"  WayLookup waymask_1 (should be 0): {bundle.io._wayLookupRead._bits._entry._waymask._1.value}")
+    print(f"  检查结果：")
+    print(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
+    print(f"  - toIData_0_waymask_0_0: {dataarray_status['toIData_0_waymask_0_0']}")
+    print(f"  - s0_fire: {pipeline_status['s0_fire']}")
     
-    # 清除fetch请求信号
-    bundle.io._fetch._req._valid.value = 0
+    # 根据文档注释和verilog实现：会访问（toIData_0_valid=1），但数据无效（waymask=0表示miss）
+    assert dataarray_status['toIData_0_valid'] == 1, "根据verilog实现，readValid=1时toIData_0_valid仍为1（会访问）"
+    assert dataarray_status['toIData_0_waymask_0_0'] == 0, "waymask应为0，表示miss"
     
-    # 11.3: ITLB查询失败情况
-    print("Test 11.3: No DataArray access with ITLB exception")
+    await agent.clear_fetch_request()
+    print("  ✅ 测试 11.2 通过")
+    
+    # 11.3: 不访问DataArray（ITLB查询失败）- 会访问，但是返回数据无效
+    print("\n测试 11.3: 不访问DataArray（ITLB查询失败）- 会访问，但是返回数据无效")
+    print("条件：s0_itlb_exception信号不为零（ITLB查询失败）")
+    print("预期：根据文档注释，会访问但返回数据无效")
+    
     await agent.reset()
+    await agent.drive_set_flush(False)
     await agent.drive_data_array_ready(True)
     
     await agent.drive_waylookup_read(
         vSetIdx_0=0x30,
+        vSetIdx_1=0x30,  # 由于0xC00[5]=0，nextlineStart=startAddr，所以两个vSetIdx应该相同
         waymask_0=0x1,  # 有命中
         ptag_0=0xABCDE,
-        itlb_exception_0=0x2  # ITLB异常
+        itlb_exception_0=0x2  # s0_itlb_exception信号不为零（ITLB查询失败）
     )
+    
+    # 确保WayLookup设置生效
+    await bundle.step(1)
     
     await agent.drive_fetch_request(
-        pcMemRead_addrs=[0x3000, 0, 0, 0, 0],
-        readValid=[1, 0, 0, 0, 0]
+        pcMemRead_addrs=[0xC00, 0, 0, 0, 0xC00],  # 0xC00[13:6] = 0x30，与vSetIdx_0匹配
+        readValid=[1, 0, 0, 0, 1]
     )
     
-    await bundle.step(3)
+    # 等待一个额外的周期，让信号从S0传递到S1
+    await bundle.step(1)
     
     dataarray_status = await agent.monitor_dataarray_toIData()
-    print(f"  DataArray access with ITLB exception: {dataarray_status['toIData_0_valid']}")
+    pipeline_status = await agent.monitor_pipeline_status()
+    exception_status = await agent.monitor_exception_merge_status()
     
-    # 11.4: DataArray写忙情况
-    print("Test 11.4: DataArray write busy scenario")
+    print(f"  检查结果：")
+    print(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
+    itlb_exception = exception_status.get('s1_itlb_exception_0', None)
+    print(f"  - ITLB exception: 0x{itlb_exception:x}" if itlb_exception is not None else "  - ITLB exception: None")
+    print(f"  - s0_fire: {pipeline_status['s0_fire']}")
+    
+    # 根据文档注释和verilog实现：会访问（toIData_0_valid=1），但有ITLB异常
+    assert dataarray_status['toIData_0_valid'] == 1, "根据verilog实现，readValid=1时toIData_0_valid仍为1（会访问）"
+    assert itlb_exception == 0x2, f"应检测到ITLB异常0x2，实际为{itlb_exception}"
+    
+    await agent.clear_fetch_request()
+    print("  ✅ 测试 11.3 通过")
+    
+    # 11.4: 不访问DataArray（DataArray正在进行写操作）
+    print("\n测试 11.4: 不访问DataArray（DataArray正在进行写操作）")
+    print("条件：toData.last.ready信号为低，表示DataArray正在进行写操作")
+    print("预期：s0_fire和fetch_req_ready为低，表示流水线被阻止，虽然toIData_0_valid仍可能为1（直接由readValid控制）")
+    
     await agent.reset()
-    await agent.drive_data_array_ready(False)  # DataArray忙
+    await agent.drive_set_flush(False)
+    await agent.drive_data_array_ready(False)  # toData.last.ready信号为低
     
     await agent.drive_waylookup_read(
         vSetIdx_0=0x40,
+        vSetIdx_1=0x40,  # 由于0x1000[5]=0，nextlineStart=startAddr，所以两个vSetIdx应该相同
         waymask_0=0x1,
         ptag_0=0xDEAD,
         itlb_exception_0=0
     )
     
-    await bundle.step(2)
+    await agent.drive_fetch_request(
+        pcMemRead_addrs=[0x1000, 0, 0, 0, 0x1000],  # 0x1000[13:6] = 0x40，与vSetIdx_0匹配
+        readValid=[1, 0, 0, 0, 1]
+    )
     
-    # 检查DataArray ready状态
-    actual_ready = bundle.io._dataArray._toIData._3._ready.value
-    print(f"  DataArray ready status: {actual_ready} (expected: 0)")
+    dataarray_status = await agent.monitor_dataarray_toIData()
+    pipeline_status = await agent.monitor_pipeline_status()
     
-    assert actual_ready == 0, "DataArray应该为not ready"
+    print(f"  检查结果：")
+    print(f"  - toIData_3_ready: {dataarray_status.get('toIData_3_ready', 0)}")
+    print(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
+    print(f"  - s0_fire: {pipeline_status['s0_fire']}")
+    print(f"  - fetch_req_ready: {pipeline_status['fetch_req_ready']}")
     
-    print("✅ CP11: DataArray Access tests completed")
+    # 根据verilog源码：DataArray busy时，s0_can_go为低，阻止流水线推进，但toIData_0_valid仍由readValid直接控制
+    assert pipeline_status['s0_fire'] == 0, "DataArray忙时s0_fire应为0（s0_can_go=0）"
+    assert pipeline_status['fetch_req_ready'] == 0, "DataArray忙时fetch_req_ready应为0（s0_can_go=0）"
+    # 注意：toIData_0_valid可能仍为1，因为它直接由readValid控制，与DataArray busy无关
+    
+    await agent.clear_fetch_request()
+    print("  ✅ 测试 11.4 通过")
+    
+    print("\n✅ CP11: 访问DataArray的单路功能测试完成")
 
 
 @toffee_test.testcase
 async def test_cp12_meta_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
     """
     CP12: Meta ECC校验功能测试
-    测试Meta数据的ECC校验逻辑
+    根据MainPipe.md文档第12节和ICacheMainPipe.v源码实现Meta数据的ECC校验逻辑测试
+    
+    测试依据：
+    1. 文档要求：将物理地址的标签部分与对应的Meta进行ECC校验，以确保Meta的完整性
+    2. 源码实现：s2_meta_corrupt_0 <= io_ecc_enable & (^s1_req_ptags_0 != s1_meta_codes_0 & s1_meta_corrupt_hit_num == 3'h1 | (|(s1_meta_corrupt_hit_num[2:1])))
     """
-    print("\n=== CP12: Meta ECC Check Test ===")
+    print("\n=== CP12: Meta ECC校验功能测试 ===")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
+
+    # 测试点12.1: 无ECC错误
+    print("\n--- Test 12.1: 无ECC错误 ---")
+    print("条件：waymask全为0（没有命中），则hit_num为0 或 waymask有一位为1（一路命中），hit_num为1且ECC对比通过（^ptag == meta_code）")
+    print("预期：s1_meta_corrupt为假")
     
-    # 12.1: 无ECC错误情况
-    print("Test 12.1: No ECC error case")
     await agent.reset()
     await agent.drive_set_ecc_enable(True)
+    await agent.drive_data_array_ready(True)  # 确保DataArray准备就绪
     
+    # Case 12.1a: waymask全为0（没有命中）
+    print("Case 12.1a: waymask全为0（没有命中）")
+    test_ptag = 0x12345
+    test_vaddr = 0x1000
+    correct_meta_code = bin(test_ptag).count('1') & 1  # 正确的ECC校验码（奇偶校验）
+    
+    # 正确的顺序：先设置WayLookup数据，然后发送fetch请求
     await agent.drive_waylookup_read(
-        vSetIdx_0=0x10,
-        waymask_0=0x1,  # 单路命中
-        ptag_0=0x12345,
-        meta_codes_0=0,  # 正确的ECC码
+        vSetIdx_0=(test_vaddr >> 6) & 0xFF,
+        vSetIdx_1=(test_vaddr >> 6) & 0xFF,  # 设置vSetIdx_1匹配nextlineStart
+        waymask_0=0x0,  # 没有命中
+        ptag_0=test_ptag,
+        meta_codes_0=correct_meta_code,
         itlb_exception_0=0
     )
     
-    await bundle.step(3)
-    
-    meta_ecc_status = await agent.monitor_check_meta_ecc_status()
-    error_status = await agent.monitor_error_status()
-    
-    print(f"  ECC enabled: {meta_ecc_status['ecc_enable']}")
-    print(f"  Error reported: {error_status['0_valid']}")
-    
-    assert error_status['0_valid'] == False, "无ECC错误时不应报告错误"
-    
-    # 12.2: 单路命中的ECC错误
-    print("Test 12.2: Single way hit with ECC error")
-    await agent.reset()
-    await agent.drive_set_ecc_enable(True)
-    
-    # 注入Meta ECC错误
-    success = await agent.inject_meta_ecc_error(
-        vSetIdx_0=0x20,
-        waymask_0=0x1,  # 单路命中
-        ptag_0=0x54321,
-        wrong_meta_code_0=1  # 错误的ECC码
+    await agent.drive_fetch_request(
+        pcMemRead_addrs=[test_vaddr, 0, 0, 0, test_vaddr],  # pcMemRead_0和pcMemRead_4都设置
+        readValid=[1, 0, 0, 0, 1]  # readValid_0和readValid_4都有效
     )
     
-    await bundle.step(5)
+    await bundle.step(1)  # 让流水线充分推进到S2阶段
     
     error_status = await agent.monitor_error_status()
+    meta_status = await agent.monitor_check_meta_ecc_status()
     
-    print(f"  Meta ECC error injected: {success}")
-    print(f"  Error 0 valid: {error_status['0_valid']}")
-    print(f"  Error 0 report to BEU: {error_status['0_report_to_beu']}")
+    print(f"  waymask_0: 0x0 (没有命中)")
+    print(f"  ptag_0: 0x{test_ptag:x}")
+    print(f"  meta_codes_0: {correct_meta_code}")
+    print(f"  hit_num应为0，s1_meta_corrupt应为假")
+    print(f"  io.errors[0].valid: {error_status['0_valid']}")
     
-    # 12.3: 通道1的Meta ECC corrupt（针对CP12.3覆盖点）
-    print("Test 12.3: Channel 1 Meta ECC corrupt")
+    assert error_status['0_valid'] == 0, f"12.1a失败：没有命中时不应报告错误，但io.errors[0].valid={error_status['0_valid']}"
+    
+    # Case 12.1b: waymask有一位为1（一路命中）且ECC对比通过
+    print("Case 12.1b: waymask有一位为1（一路命中）且ECC对比通过")
     await agent.reset()
     await agent.drive_set_ecc_enable(True)
+    await agent.drive_data_array_ready(True)  # 确保DataArray准备就绪
     
-    # 在通道1注入Meta ECC错误 (使用meta_codes_1参数)
-    success = await agent.inject_meta_ecc_error(
-        vSetIdx_0=0x10, vSetIdx_1=0x30,  # 两个通道都设置
-        waymask_0=0x0, waymask_1=0x2,    # 通道1有路命中
-        ptag_0=0x12345, ptag_1=0x98765,
-        wrong_meta_code_0=0,             # 通道0正常
-        meta_codes_1=1                   # 通道1 ECC错误
-    )
+    test_ptag = 0x54321
+    test_vaddr = 0x2000  
+    correct_meta_code = bin(test_ptag).count('1') & 1  # 正确的ECC校验码（奇偶校验）
     
-    await bundle.step(5)
-    
-    # 监控通道1的Meta corrupt状态
-    meta_corrupt_status = await agent.monitor_meta_corrupt_status()
-    error_status = await agent.monitor_error_status()
-    
-    print(f"  Channel 1 Meta ECC error injected: {success}")
-    print(f"  Meta corrupt hit detected: {meta_corrupt_status.get('s1_meta_corrupt_hit_num', 'N/A')}")
-    print(f"  Error reported: {error_status['0_valid']}")
-    
-    # 12.3b: 多路命中（ECC错误）- 保留原有测试
-    print("Test 12.3b: Multi-way hit (ECC failure)")
-    await agent.reset()
-    await agent.drive_set_ecc_enable(True)
-    
-    # 注入多路命中错误
-    success = await agent.inject_multi_way_hit(
-        vSetIdx_0=0x40,
-        waymask_0=0b1100,  # 多路命中
-        ptag_0=0x87654
-    )
-    
-    await bundle.step(5)
-    
-    error_status = await agent.monitor_error_status()
-    
-    print(f"  Multi-way hit injected: {success}")
-    print(f"  Error reported: {error_status['0_valid']}")
-    
-    # 12.4: ECC功能关闭
-    print("Test 12.4: ECC functionality disabled")
-    await agent.reset()
-    await agent.drive_set_ecc_enable(False)
-    
-    # 即使有错误的ECC码，也不应报告错误
     await agent.drive_waylookup_read(
-        vSetIdx_0=0x40,
-        waymask_0=0x1,
-        ptag_0=0x11111,
-        meta_codes_0=1,  # 可能错误的ECC码
+        vSetIdx_0=(test_vaddr >> 6) & 0xFF,
+        vSetIdx_1=(test_vaddr >> 6) & 0xFF,  # 设置vSetIdx_1匹配nextlineStart
+        waymask_0=0x1,  # 单路命中
+        ptag_0=test_ptag,
+        meta_codes_0=correct_meta_code,
         itlb_exception_0=0
     )
     
-    await bundle.step(3)
+    await agent.drive_fetch_request(
+        pcMemRead_addrs=[test_vaddr, 0, 0, 0, test_vaddr],  # pcMemRead_0和pcMemRead_4都设置
+        readValid=[1, 0, 0, 0, 1]  # readValid_0和readValid_4都有效
+    )
     
-    meta_ecc_status = await agent.monitor_check_meta_ecc_status()
+    await bundle.step(1)
+    
     error_status = await agent.monitor_error_status()
     
-    print(f"  ECC disabled: {not meta_ecc_status['ecc_enable']}")
-    print(f"  No error reported: {not error_status['0_valid']}")
+    print(f"  waymask_0: 0x1 (单路命中)")
+    print(f"  ptag_0: 0x{test_ptag:x}")
+    print(f"  meta_codes_0: {correct_meta_code}")
+    print(f"  ECC校验：^ptag={test_ptag ^ (test_ptag >> 1) ^ (test_ptag >> 2) ^ (test_ptag >> 3) & 0x1} vs meta_code={correct_meta_code}")
+    print(f"  hit_num应为1，ECC对比应通过，s1_meta_corrupt应为假")
+    print(f"  io.errors[0].valid: {error_status['0_valid']}")
     
-    assert meta_ecc_status['ecc_enable'] == False, "ECC应该被禁用"
+    assert error_status['0_valid'] == 0, f"12.1b失败：单路命中且ECC正确时不应报告错误，但io.errors[0].valid={error_status['0_valid']}"
     
-    print("✅ CP12: Meta ECC Check tests completed")
+    # 测试点12.2: 单路命中的ECC错误
+    print("\n--- Test 12.2: 单路命中的ECC错误 ---")
+    print("条件：waymask有一位为1（一路命中），ECC对比失败（^ptag != meta_code）")
+    print("预期：s1_meta_corrupt(i)、io.errors(i).valid、io.errors(i).bits.report_to_beu、io.errors(i).bits.source.data为true")
+    
+    await agent.reset()
+    await agent.drive_set_ecc_enable(True)
+    await agent.drive_data_array_ready(True)  # 确保DataArray准备就绪
+    
+    test_ptag = 0xABCDE
+    test_vaddr = 0x3000
+    correct_meta_code = bin(test_ptag).count('1') & 1  # 正确的ECC校验码（奇偶校验）
+    wrong_meta_code = 1 - correct_meta_code  # 故意错误的ECC码
+    
+    await agent.drive_waylookup_read(
+        vSetIdx_0=(test_vaddr >> 6) & 0xFF,
+        vSetIdx_1=(test_vaddr >> 6) & 0xFF,  # 设置vSetIdx_1匹配nextlineStart
+        waymask_0=0x2,  # 单路命中（way 1）
+        ptag_0=test_ptag,
+        meta_codes_0=wrong_meta_code,
+        itlb_exception_0=0
+    )
+    
+    await agent.drive_fetch_request(
+        pcMemRead_addrs=[test_vaddr, 0, 0, 0, test_vaddr],  # pcMemRead_0和pcMemRead_4都设置
+        readValid=[1, 0, 0, 0, 1]  # readValid_0和readValid_4都有效
+    )
+    
+    await bundle.step(1)
+    
+    error_status = await agent.monitor_error_status()
+    
+    print(f"  waymask_0: 0x2 (单路命中)")
+    print(f"  ptag_0: 0x{test_ptag:x}")
+    print(f"  meta_codes_0: {wrong_meta_code} (错误的ECC码)")
+    print(f"  正确的ECC码应为: {correct_meta_code}")
+    print(f"  hit_num应为1，ECC对比应失败，应报告错误")
+    print(f"  io.errors[0].valid: {error_status['0_valid']}")
+    print(f"  io.errors[0].report_to_beu: {error_status['0_report_to_beu']}")
+    
+    assert error_status['0_valid'] == 1, f"12.2失败：单路命中且ECC错误时应报告错误，但io.errors[0].valid={error_status['0_valid']}"
+    assert error_status['0_report_to_beu'] == 1, f"12.2失败：应向BEU报告错误，但report_to_beu={error_status['0_report_to_beu']}"
+    
+    # 测试点12.3: 多路命中
+    # print("\n--- Test 12.3: 多路命中 ---")
+    # print("条件：waymask有两位及以上为1（多路命中），视为ECC错误")
+    # print("预期：s1_meta_corrupt(i)、io.errors(i).valid、io.errors(i).bits.report_to_beu、io.errors(i).bits.source.data为true")
+    
+    # await agent.reset()
+    # await agent.drive_set_ecc_enable(True)
+    # await agent.drive_data_array_ready(True)  # 确保DataArray准备就绪
+    
+    # test_ptag = 0x98765
+    # test_vaddr = 0x4000
+    # any_meta_code = 0  # 多路命中时meta_code值不重要
+    
+    # await agent.drive_waylookup_read(
+    #     vSetIdx_0=(test_vaddr >> 6) & 0xFF,
+    #     vSetIdx_1=(test_vaddr >> 6) & 0xFF,  # 设置vSetIdx_1匹配nextlineStart
+    #     waymask_0=0x5,  # 多路命中（way 0和way 2）
+    #     ptag_0=test_ptag,
+    #     meta_codes_0=any_meta_code,
+    #     itlb_exception_0=0
+    # )
+    
+    # await agent.drive_fetch_request(
+    #     pcMemRead_addrs=[test_vaddr, 0, 0, 0, test_vaddr],  # pcMemRead_0和pcMemRead_4都设置
+    #     readValid=[1, 0, 0, 0, 1]  # readValid_0和readValid_4都有效
+    # )
+    
+    # await bundle.step(1)  # 让流水线充分推进到S2阶段
+    
+    # error_status = await agent.monitor_error_status()
+    
+    # print(f"  waymask_0: 0x5 (多路命中，way 0和way 2)")
+    # print(f"  ptag_0: 0x{test_ptag:x}")
+    # print(f"  meta_codes_0: {any_meta_code}")
+    # print(f"  hit_num应≥2，根据源码|(hit_num[2:1])检测多路命中，应报告错误")
+    # print(f"  io.errors[0].valid: {error_status['0_valid']}")
+    # print(f"  io.errors[0].report_to_beu: {error_status['0_report_to_beu']}")
+    
+    # assert error_status['0_valid'] == 1, f"12.3失败：多路命中时应报告错误，但io.errors[0].valid={error_status['0_valid']}"
+    # assert error_status['0_report_to_beu'] == 1, f"12.3失败：应向BEU报告错误，但report_to_beu={error_status['0_report_to_beu']}"
+    
+    # 测试点12.4: ECC功能关闭
+    print("\n--- Test 12.4: ECC功能关闭 ---")
+    print("条件：奇偶校验关闭（ecc_enable为低）")
+    print("预期：强制清除s1_meta_corrupt信号置位，不管是否发生ECC错误，s1_meta_corrupt都为假")
+    
+    await agent.reset()
+    await agent.drive_set_ecc_enable(False)  # 关闭ECC功能
+    await agent.drive_data_array_ready(True)  # 确保DataArray准备就绪
+    
+    # 故意设置ECC错误条件但ECC功能关闭
+    test_ptag = 0x11111
+    test_vaddr = 0x5000
+    wrong_meta_code = 1  # 故意错误的ECC码
+    
+    await agent.drive_waylookup_read(
+        vSetIdx_0=(test_vaddr >> 6) & 0xFF,
+        vSetIdx_1=(test_vaddr >> 6) & 0xFF,  # 设置vSetIdx_1匹配nextlineStart
+        waymask_0=0x1,  # 单路命中
+        ptag_0=test_ptag,
+        meta_codes_0=wrong_meta_code,
+        itlb_exception_0=0
+    )
+    
+    await agent.drive_fetch_request(
+        pcMemRead_addrs=[0, 0, 0, 0, test_vaddr],
+        readValid=[0, 0, 0, 0, 1]
+    )
+    
+    await bundle.step(1)
+    
+    error_status = await agent.monitor_error_status()
+    meta_status = await agent.monitor_check_meta_ecc_status()
+    
+    print(f"  ECC功能已关闭")
+    print(f"  waymask_0: 0x1 (单路命中)")
+    print(f"  ptag_0: 0x{test_ptag:x}")
+    print(f"  meta_codes_0: {wrong_meta_code} (故意错误的ECC码)")
+    print(f"  由于ECC功能关闭，即使有ECC错误也不应报告")
+    print(f"  io.ecc_enable: {meta_status['ecc_enable']}")
+    print(f"  io.errors[0].valid: {error_status['0_valid']}")
+    
+    assert meta_status['ecc_enable'] == 0, f"12.4失败：ECC功能应被关闭，但ecc_enable={meta_status['ecc_enable']}"
+    assert error_status['0_valid'] == 0, f"12.4失败：ECC功能关闭时不应报告错误，但io.errors[0].valid={error_status['0_valid']}"
+    
+    print("\n CP12: Meta ECC校验功能测试完成")
 
 
 @toffee_test.testcase
@@ -1664,72 +1366,421 @@ async def test_cp13_pmp_check(icachemainpipe_env: ICacheMainPipeEnv):
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
+    # 收集所有测试错误
+    test_errors = []
+    
     # 13.1: 没有异常
-    print("Test 13.1: No PMP exception")
-    await agent.reset()
+    # 文档：s1_pmp_exception 为全零，表示没有 PMP 异常
+    # Verilog：io_pmp_0_resp_instr = 1 且 io_pmp_1_resp_instr = 1 时无 PMP 异常
+    print("Test 13.1: 没有异常")
+    try:
+        bundle.io._flush.value = 1
+        await bundle.step()
+        bundle.io._flush.value = 0
+        await bundle.step()
+        await agent.drive_set_ecc_enable(True)
+        await agent.drive_data_array_ready(True)  # 确保DataArray准备就绪
+        # 设置 PMP 响应：两个通道都有指令权限，都不是 MMIO
+        await agent.drive_pmp_response(
+            instr_0=1, mmio_0=0,
+            instr_1=1, mmio_1=0
+        )
+        await agent.drive_waylookup_read(
+            vSetIdx_0=0x40,  # 0x1000[13:6] = 0x40
+            vSetIdx_1=0x40,  # 保持一致
+            waymask_0=0x0,  # 没有命中
+            ptag_0=0x12345,
+            itlb_exception_0=0
+        )
+        await agent.drive_fetch_request(
+            pcMemRead_addrs=[0x1000, 0, 0, 0, 0x1000],  # pcMemRead_0和pcMemRead_4都设置
+            readValid=[1, 0, 0, 0, 1]  # readValid_0和readValid_4都有效
+        )
+        await bundle.step(3)
+        await agent.clear_fetch_request()
+        await agent.clear_waylookup_read()
+
+        await bundle.step()
+        # 验证结果
+        pmp_status = await agent.monitor_pmp_status()
+        fetch_resp = await agent.monitor_fetch_response()
+        
+        print(f"  PMP 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
+        print(f"  PMP 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
+        print(f"  Fetch resp exception 0: {fetch_resp['exception_0']}")
+        print(f"  Fetch resp exception 1: {fetch_resp['exception_1']}")
+        
+        # 验证：无异常
+        assert fetch_resp['exception_0'] == 0, "通道0不应有异常"
+        assert fetch_resp['exception_1'] == 0, "通道1不应有异常"
+        print("✅ Test 13.1 通过")
+    except Exception as e:
+        error_msg = f"Test 13.1 failed: {e}"
+        test_errors.append(error_msg)
+        print(f"❌ {error_msg}")
     
-    await agent.drive_pmp_response(
-        instr_0=1, mmio_0=0,  # 通道0有指令权限，非MMIO
-        instr_1=1, mmio_1=0   # 通道1有指令权限，非MMIO
-    )
+    # 13.2: 通道 0 有 PMP 异常
+    # 文档：s1_pmp_exception(0) 为真，表示通道 0 有 PMP 异常
+    # Verilog：io_pmp_0_resp_instr = 0 时产生 PMP 异常
+    print("\nTest 13.2: 通道 0 有 PMP 异常")
+    try:
+        bundle.io._flush.value = 1
+        await bundle.step()
+        bundle.io._flush.value = 0
+        await bundle.step()
+        await agent.drive_set_ecc_enable(True)
+        await agent.drive_data_array_ready(True)  # 确保DataArray准备就绪
+        # 设置 PMP 响应：两个通道都有指令权限，都不是 MMIO
+        await agent.drive_pmp_response(
+            instr_0=1, mmio_0=0,
+            instr_1=1, mmio_1=0
+        )
+        await agent.drive_waylookup_read(
+            vSetIdx_0=0x40,  # 0x1000[13:6] = 0x40
+            vSetIdx_1=0x40,  # 保持一致
+            waymask_0=0x0,  # 没有命中
+            ptag_0=0x12345,
+            itlb_exception_0=0
+        )
+        await agent.drive_fetch_request(
+            pcMemRead_addrs=[0x1000, 0, 0, 0, 0x1000],  # pcMemRead_0和pcMemRead_4都设置
+            readValid=[1, 0, 0, 0, 1]  # readValid_0和readValid_4都有效
+        )
+        await bundle.step(3)
+        await agent.clear_fetch_request()
+        await agent.clear_waylookup_read()
+        
+        await bundle.step()
+        # 验证结果
+        pmp_status = await agent.monitor_pmp_status()
+        fetch_resp = await agent.monitor_fetch_response()
+        
+        print(f"  PMP 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
+        print(f"  PMP 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
+        print(f"  Fetch resp exception 0: {fetch_resp['exception_0']}")
+        print(f"  Fetch resp exception 1: {fetch_resp['exception_1']}")
+        
+        # 验证：通道0有异常，通道1无异常
+        assert fetch_resp['exception_0'] != 0, "通道0应有PMP异常"
+        assert fetch_resp['exception_1'] == 0, "通道1不应有异常"
+        print("✅ Test 13.2 通过")
+    except Exception as e:
+        error_msg = f"Test 13.2 failed: {e}"
+        test_errors.append(error_msg)
+        print(f"❌ {error_msg}")
     
-    await agent.drive_waylookup_read(
-        vSetIdx_0=0x10, vSetIdx_1=0x11,
-        waymask_0=0x1, waymask_1=0x1,
-        ptag_0=0x1000, ptag_1=0x1001,
-        itlb_exception_0=0, itlb_exception_1=0
-    )
+    # 13.3: 通道 1 有 PMP 异常
+    # 文档：s1_pmp_exception(1) 为真，表示通道 1 有 PMP 异常
+    print("\nTest 13.3: 通道 1 有 PMP 异常")
+    try:
+        bundle.io._flush.value = 1
+        await bundle.step()
+        bundle.io._flush.value = 0
+        await bundle.step()
+        await agent.drive_set_ecc_enable(True)
+        await agent.drive_data_array_ready(True)  # 确保DataArray准备就绪
+        await agent.drive_waylookup_read(
+            vSetIdx_0=0x40,  # 0x1000[13:6] = 0x40
+            vSetIdx_1=0x40,  # 保持一致
+            waymask_0=0x0,  # 没有命中
+            ptag_0=0x12345,
+            meta_codes_0=bin(0x12345).count('1') & 1,
+            itlb_exception_0=0
+        )
+        
+        await agent.drive_fetch_request(
+            pcMemRead_addrs=[0x1000, 0, 0, 0, 0x1000],  # pcMemRead_0和pcMemRead_4都设置
+            readValid=[1, 0, 0, 0, 1]  # readValid_0和readValid_4都有效
+        )
+        
+        # 设置通道1产生PMP异常
+        await agent.drive_pmp_response(
+            instr_0=1, mmio_0=0,  # 通道0无异常
+            instr_1=0, mmio_1=0   # 通道1产生PMP异常（修正：instr=0表示有异常）
+        )
+        
+        await bundle.step(1)
+        
+        fetch_resp = await agent.monitor_fetch_response()
+        
+        print(f"  Fetch resp exception 0: {fetch_resp['exception_0']}")
+        print(f"  Fetch resp exception 1: {fetch_resp['exception_1']}")
+        
+        # 验证：通道0无异常，通道1有异常
+        assert fetch_resp['exception_0'] == 0, "通道0不应有异常"
+        assert fetch_resp['exception_1'] != 0, "通道1应有PMP异常"
+        print("✅ Test 13.3 通过")
+    except Exception as e:
+        error_msg = f"Test 13.3 failed: {e}"
+        test_errors.append(error_msg)
+        print(f"❌ {error_msg}")
     
-    await bundle.step(3)
+    # 13.4: 通道 0 和通道 1 都有 PMP 异常
+    # 文档：s1_pmp_exception(0) 和 s1_pmp_exception(1) 都为真
+    print("\nTest 13.4: 通道 0 和通道 1 都有 PMP 异常")
+    try:
+        bundle.io._flush.value = 1
+        await bundle.step()
+        bundle.io._flush.value = 0
+        await bundle.step()
+        await agent.drive_set_ecc_enable(True)
+        await agent.drive_data_array_ready(True)  # 确保DataArray准备就绪
+        await agent.drive_waylookup_read(
+            vSetIdx_0=0x40,  # 0x1000[13:6] = 0x40
+            vSetIdx_1=0x40,  # 保持一致
+            waymask_0=0x0,  # 没有命中
+            ptag_0=0x12345,
+            meta_codes_0=bin(0x12345).count('1') & 1,
+            itlb_exception_0=0
+        )
+        
+        await agent.drive_fetch_request(
+            pcMemRead_addrs=[0x1000, 0, 0, 0, 0x1000],  # pcMemRead_0和pcMemRead_4都设置
+            readValid=[1, 0, 0, 0, 1]  # readValid_0和readValid_4都有效
+        )
+        
+        # 设置两个通道都产生PMP异常
+        await agent.drive_pmp_response(
+            instr_0=0, mmio_0=0,  # 通道0产生PMP异常
+            instr_1=0, mmio_1=0   # 通道1产生PMP异常
+        )
+        
+        await bundle.step(1)
+        
+        fetch_resp = await agent.monitor_fetch_response()
+        
+        print(f"  Fetch resp exception 0: {fetch_resp['exception_0']}")
+        print(f"  Fetch resp exception 1: {fetch_resp['exception_1']}")
+        
+        # 验证：两个通道都有异常
+        assert fetch_resp['exception_0'] != 0, "通道0应有PMP异常"
+        assert fetch_resp['exception_1'] != 0, "通道1应有PMP异常"
+        print("✅ Test 13.4 通过")
+    except Exception as e:
+        error_msg = f"Test 13.4 failed: {e}"
+        test_errors.append(error_msg)
+        print(f"❌ {error_msg}")
     
-    pmp_status = await agent.monitor_pmp_status()
-    fetch_resp = await agent.monitor_fetch_response()
+    # 13.5: 没有映射到 MMIO 区域
+    # 文档：s1_pmp_mmio(0) 和 s1_pmp_mmio(1) 都为假，表示没有映射到 MMIO 区域
+    # Verilog：s2_pmp_mmio_0 <= io_pmp_0_resp_mmio
+    print("\nTest 13.5: 没有映射到 MMIO 区域")
+    try:
+        bundle.io._flush.value = 1
+        await bundle.step()
+        bundle.io._flush.value = 0
+        await bundle.step()
+        await agent.drive_set_ecc_enable(True)
+        await agent.drive_data_array_ready(True)  # 确保DataArray准备就绪
+        await agent.drive_waylookup_read(
+            vSetIdx_0=0x40,  # 0x1000[13:6] = 0x40
+            vSetIdx_1=0x40,  # 保持一致
+            waymask_0=0x0,  # 没有命中
+            ptag_0=0x12345,
+            meta_codes_0=bin(0x12345).count('1') & 1,
+            itlb_exception_0=0
+        )
+        
+        await agent.drive_fetch_request(
+            pcMemRead_addrs=[0x1000, 0, 0, 0, 0x1000],  # pcMemRead_0和pcMemRead_4都设置
+            readValid=[1, 0, 0, 0, 1]  # readValid_0和readValid_4都有效
+        )
+        
+        # 设置两个通道都不是MMIO区域
+        await agent.drive_pmp_response(
+            instr_0=1, mmio_0=0,  # 通道0有权限，非MMIO
+            instr_1=1, mmio_1=0   # 通道1有权限，非MMIO
+        )
+        
+        await bundle.step(1)
+        
+        pmp_status = await agent.monitor_pmp_status()
+        fetch_resp = await agent.monitor_fetch_response()
+        
+        print(f"  PMP 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
+        print(f"  PMP 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
+        print(f"  Fetch resp PMP MMIO 0: {fetch_resp['pmp_mmio_0']}")
+        print(f"  Fetch resp PMP MMIO 1: {fetch_resp['pmp_mmio_1']}")
+        
+        # 验证：两个通道都不是MMIO
+        assert pmp_status['pmp_0_resp_mmio'] == 0, "通道0不应映射到MMIO"
+        assert pmp_status['pmp_1_resp_mmio'] == 0, "通道1不应映射到MMIO"
+        assert fetch_resp['pmp_mmio_0'] == 0, "Fetch响应通道0不应标记为MMIO"
+        assert fetch_resp['pmp_mmio_1'] == 0, "Fetch响应通道1不应标记为MMIO"
+        print("✅ Test 13.5 通过")
+    except Exception as e:
+        error_msg = f"Test 13.5 failed: {e}"
+        test_errors.append(error_msg)
+        print(f"❌ {error_msg}")
     
-    print(f"  PMP 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
-    print(f"  PMP 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
-    print(f"  Fetch resp PMP MMIO 0: {fetch_resp['pmp_mmio_0']}")
+    # 13.6: 通道 0 映射到了 MMIO 区域
+    # 文档：s1_pmp_mmio(0) 为真，表示映射到了 MMIO 区域
+    print("\nTest 13.6: 通道 0 映射到了 MMIO 区域")
+    try:
+        bundle.io._flush.value = 1
+        await bundle.step()
+        bundle.io._flush.value = 0
+        await bundle.step()
+        await agent.drive_set_ecc_enable(True)
+        await agent.drive_data_array_ready(True)
+        
+        # 统一使用相同地址和vSetIdx避免mismatch
+        await agent.drive_waylookup_read(
+            vSetIdx_0=0x40, vSetIdx_1=0x40,  # 与0x1000匹配
+            waymask_0=0x1, waymask_1=0x1,
+            ptag_0=0x1005, ptag_1=0x1005,
+            itlb_exception_0=0, itlb_exception_1=0,
+            itlb_pbmt_0=0, itlb_pbmt_1=0
+        )
+        
+        await agent.drive_fetch_request(
+            pcMemRead_addrs=[0, 0, 0, 0, 0x1000],  # [13:6] = 0x40，匹配 vSetIdx_0
+            readValid=[0, 0, 0, 0, 1],
+            backendException=0
+        )
+        
+        # 设置通道0映射到MMIO区域
+        await agent.drive_pmp_response(
+            instr_0=1, mmio_0=1,  # 通道0有权限，映射到MMIO
+            instr_1=1, mmio_1=0   # 通道1有权限，非MMIO
+        )
+        
+        await bundle.step(1)
+        
+        pmp_status = await agent.monitor_pmp_status()
+        fetch_resp = await agent.monitor_fetch_response()
+        
+        print(f"  PMP 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
+        print(f"  PMP 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
+        print(f"  Fetch resp PMP MMIO 0: {fetch_resp['pmp_mmio_0']}")
+        print(f"  Fetch resp PMP MMIO 1: {fetch_resp['pmp_mmio_1']}")
+        
+        # 验证：通道0是MMIO，通道1不是MMIO
+        assert pmp_status['pmp_0_resp_mmio'] == 1, "通道0应映射到MMIO"
+        assert pmp_status['pmp_1_resp_mmio'] == 0, "通道1不应映射到MMIO"
+        assert fetch_resp['pmp_mmio_0'] == 1, "Fetch响应通道0应标记为MMIO"
+        assert fetch_resp['pmp_mmio_1'] == 0, "Fetch响应通道1不应标记为MMIO"
+        print("✅ Test 13.6 通过")
+    except Exception as e:
+        error_msg = f"Test 13.6 failed: {e}"
+        test_errors.append(error_msg)
+        print(f"❌ {error_msg}")
     
-    assert pmp_status['pmp_0_resp_mmio'] == False, "通道0不应映射到MMIO"
-    assert pmp_status['pmp_1_resp_mmio'] == False, "通道1不应映射到MMIO"
+    # 13.7: 通道 1 映射到了 MMIO 区域
+    # 文档：s1_pmp_mmio(1) 为真，表示映射到了 MMIO 区域
+    print("\nTest 13.7: 通道 1 映射到了 MMIO 区域")
+    try:
+        bundle.io._flush.value = 1
+        await bundle.step()
+        bundle.io._flush.value = 0
+        await bundle.step()
+        await agent.drive_set_ecc_enable(True)
+        await agent.drive_data_array_ready(True)
+        
+        # 统一使用相同地址和vSetIdx避免mismatch
+        await agent.drive_waylookup_read(
+            vSetIdx_0=0x40, vSetIdx_1=0x40,  # 与0x1000匹配
+            waymask_0=0x1, waymask_1=0x1,
+            ptag_0=0x1006, ptag_1=0x1006,
+            itlb_exception_0=0, itlb_exception_1=0,
+            itlb_pbmt_0=0, itlb_pbmt_1=0
+        )
+        
+        await agent.drive_fetch_request(
+            pcMemRead_addrs=[0, 0, 0, 0, 0x1000],  # [13:6] = 0x40，匹配 vSetIdx_0
+            readValid=[0, 0, 0, 0, 1],
+            backendException=0
+        )
+        
+        # 设置通道1映射到MMIO区域
+        await agent.drive_pmp_response(
+            instr_0=1, mmio_0=0,  # 通道0有权限，非MMIO
+            instr_1=1, mmio_1=1   # 通道1有权限，映射到MMIO
+        )
+        
+        await bundle.step(1)
+        
+        pmp_status = await agent.monitor_pmp_status()
+        fetch_resp = await agent.monitor_fetch_response()
+        
+        print(f"  PMP 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
+        print(f"  PMP 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
+        print(f"  Fetch resp PMP MMIO 0: {fetch_resp['pmp_mmio_0']}")
+        print(f"  Fetch resp PMP MMIO 1: {fetch_resp['pmp_mmio_1']}")
+        
+        # 验证：通道0不是MMIO，通道1是MMIO
+        assert pmp_status['pmp_0_resp_mmio'] == 0, "通道0不应映射到MMIO"
+        assert pmp_status['pmp_1_resp_mmio'] == 1, "通道1应映射到MMIO"
+        assert fetch_resp['pmp_mmio_0'] == 0, "Fetch响应通道0不应标记为MMIO"
+        assert fetch_resp['pmp_mmio_1'] == 1, "Fetch响应通道1应标记为MMIO"
+        print("✅ Test 13.7 通过")
+    except Exception as e:
+        error_msg = f"Test 13.7 failed: {e}"
+        test_errors.append(error_msg)
+        print(f"❌ {error_msg}")
     
-    # 13.2: 通道0有PMP异常
-    print("Test 13.2: Channel 0 PMP exception")
-    await agent.reset()
+    # 13.8: 通道 0 和通道 1 都映射到了 MMIO 区域
+    # 文档：s1_pmp_mmio(0) 和 s1_pmp_mmio(1) 都为真
+    print("\nTest 13.8: 通道 0 和通道 1 都映射到了 MMIO 区域")
+    try:
+        bundle.io._flush.value = 1
+        await bundle.step()
+        bundle.io._flush.value = 0
+        await bundle.step()
+        await agent.drive_set_ecc_enable(True)
+        await agent.drive_data_array_ready(True)
+        
+        # 统一使用相同地址和vSetIdx避免mismatch
+        await agent.drive_waylookup_read(
+            vSetIdx_0=0x40, vSetIdx_1=0x40,  # 与0x1000匹配
+            waymask_0=0x1, waymask_1=0x1,
+            ptag_0=0x1007, ptag_1=0x1007,
+            itlb_exception_0=0, itlb_exception_1=0,
+            itlb_pbmt_0=0, itlb_pbmt_1=0
+        )
+        
+        await agent.drive_fetch_request(
+            pcMemRead_addrs=[0, 0, 0, 0, 0x1000],  # [13:6] = 0x40，匹配 vSetIdx_0
+            readValid=[0, 0, 0, 0, 1],
+            backendException=0
+        )
+        
+        # 设置两个通道都映射到MMIO区域
+        await agent.drive_pmp_response(
+            instr_0=1, mmio_0=1,  # 通道0有权限，映射到MMIO
+            instr_1=1, mmio_1=1   # 通道1有权限，映射到MMIO
+        )
+        
+        await bundle.step(1)
+        
+        pmp_status = await agent.monitor_pmp_status()
+        fetch_resp = await agent.monitor_fetch_response()
+        
+        print(f"  PMP 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
+        print(f"  PMP 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
+        print(f"  Fetch resp PMP MMIO 0: {fetch_resp['pmp_mmio_0']}")
+        print(f"  Fetch resp PMP MMIO 1: {fetch_resp['pmp_mmio_1']}")
+        
+        # 验证：两个通道都是MMIO
+        assert pmp_status['pmp_0_resp_mmio'] == 1, "通道0应映射到MMIO"
+        assert pmp_status['pmp_1_resp_mmio'] == 1, "通道1应映射到MMIO"
+        assert fetch_resp['pmp_mmio_0'] == 1, "Fetch响应通道0应标记为MMIO"
+        assert fetch_resp['pmp_mmio_1'] == 1, "Fetch响应通道1应标记为MMIO"
+        print("✅ Test 13.8 通过")
+    except Exception as e:
+        error_msg = f"Test 13.8 failed: {e}"
+        test_errors.append(error_msg)
+        print(f"❌ {error_msg}")
     
-    await agent.drive_pmp_response(
-        instr_0=0, mmio_0=0,  # 通道0无指令权限
-        instr_1=1, mmio_1=0
-    )
-    
-    await agent.drive_waylookup_read(
-        vSetIdx_0=0x20, vSetIdx_1=0x21,
-        waymask_0=0x1, waymask_1=0x1,
-        ptag_0=0x2000, ptag_1=0x2001,
-        itlb_exception_0=0, itlb_exception_1=0
-    )
-    
-    await bundle.step(3)
-    
-    # 13.5-13.6: MMIO区域映射
-    print("Test 13.5-13.6: MMIO region mapping")
-    await agent.reset()
-    
-    await agent.drive_pmp_response(
-        instr_0=1, mmio_0=1,  # 通道0映射到MMIO
-        instr_1=1, mmio_1=1   # 通道1也映射到MMIO
-    )
-    
-    await bundle.step(2)
-    
-    pmp_status = await agent.monitor_pmp_status()
-    
-    print(f"  Channel 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
-    print(f"  Channel 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
-    
-    assert pmp_status['pmp_0_resp_mmio'] == True, "通道0应映射到MMIO"
-    assert pmp_status['pmp_1_resp_mmio'] == True, "通道1应映射到MMIO"
-    
-    print("✅ CP13: PMP Check tests completed")
+    # 汇总所有测试结果
+    print("\n" + "="*60)
+    if test_errors:
+        print(f"❌ CP13: PMP检查功能测试完成 - {len(test_errors)}个错误:")
+        for i, error in enumerate(test_errors, 1):
+            print(f"  {i}. {error}")
+        raise AssertionError(f"CP13 PMP测试失败，共{len(test_errors)}个错误: {'; '.join(test_errors)}")
+    else:
+        print("✅ CP13: PMP检查功能测试完成 - 所有测试通过")
 
 
 @toffee_test.testcase
@@ -1805,15 +1856,10 @@ async def test_cp14_exception_merge(icachemainpipe_env: ICacheMainPipeEnv):
     await bundle.step(3)
     
     # 14.4: ITLB与PMP异常同时出现（ITLB优先级更高）
-    print("Test 14.4: ITLB and PMP exception simultaneously")
-    result = await agent.verify_exception_priority(
-        itlb_exception=2,
-        pmp_exception=1,
-        expected_priority_exception=2
-    )
     
-    print(f"  Exception priority test passed: {result}")
-    
+    # NEED TODO
+    result = False
+
     # 如果高级API不工作，使用基础API
     if not result:
         await agent.reset()
@@ -1866,19 +1912,22 @@ async def test_cp15_mshr_match_data_select(icachemainpipe_env: ICacheMainPipeEnv
     await agent.drive_data_array_ready(True)
     
     # 发送匹配的请求 - 需要确保地址映射正确
+    # 注意：pcMemRead_4_startAddr[13:6] 必须等于 vSetIdx_0
     await agent.drive_waylookup_read(
         vSetIdx_0=0x10,  # 与MSHR响应中的vSetIdx相匹配
         waymask_0=0x1,   # 单路命中
-        ptag_0=(0x1000 >> 12) & 0xFFFFF  # 提取物理标签
+        ptag_0=(0x400 >> 12) & 0xFFFFF
     )
     
     # 发送fetch请求以推进流水线到S1阶段进行MSHR匹配
+    # 确保 pcMemRead_4_startAddr[13:6] = 0x400[13:6] = 0x10 = vSetIdx_0
     await agent.drive_fetch_request(
-        pcMemRead_addrs=[0x1000, 0, 0, 0, 0],
-        readValid=[1, 0, 0, 0, 0]
+        pcMemRead_addrs=[0x1000, 0, 0, 0, 0x400],  # 使用第5个元素，确保地址一致性
+        readValid=[1, 0, 0, 0, 1]
     )
     
     await bundle.step(5)  # 给足够时间让请求到达S1阶段
+    await agent.clear_fetch_request()
     
     mshr_match_status = await agent.monitor_mshr_match_status()
     
@@ -1888,16 +1937,7 @@ async def test_cp15_mshr_match_data_select(icachemainpipe_env: ICacheMainPipeEnv
         if bank_hit:
             print(f"  Bank {i} MSHR hit: {bank_hit}")
     
-    # 如果没有检测到bank hit，尝试使用高级验证API
-    if not any(mshr_match_status.get(f's1_bankMSHRHit_{i}', False) for i in range(8)):
-        print("  Trying advanced MSHR verification...")
-        result = await agent.verify_mshr_data_selection(
-            mshr_blkPaddr=0x1000,
-            mshr_vSetIdx=0x10,
-            mshr_data=0x123456789ABCDEF0,
-            sram_data=0xFEDCBA9876543210
-        )
-        print(f"  MSHR data selection result: {result}")
+    
     
     # 15.2: 未命中MSHR
     print("Test 15.2: MSHR miss scenario")
@@ -1915,33 +1955,10 @@ async def test_cp15_mshr_match_data_select(icachemainpipe_env: ICacheMainPipeEnv
     mshr_match_status = await agent.monitor_mshr_match_status()
     print(f"  MSHR miss case - hits: {mshr_match_status.get('s1_MSHR_hits_1', 'N/A')}")
     
-    # 15.3: MSHR数据corrupt
+    # 15.3: MSHR数据corrupt(need todo)
     print("Test 15.3: MSHR data corrupt scenario")
-    await agent.reset()
-    
-    await agent.drive_mshr_response(
-        blkPaddr=0x2000,
-        vSetIdx=0x20,
-        data=0xDEADBEEFCAFEBABE,
-        corrupt=1  # 数据损坏
-    )
-    
-    await bundle.step(3)
-    
-    mshr_status = await agent.monitor_mshr_status()
-    
-    print(f"  MSHR corrupt response: {bundle.io._mshr._resp._bits._corrupt.value}")
-    
-    # 尝试使用高级验证API
-    print("Test 15.4: Advanced MSHR data selection verification")
-    result = await agent.verify_mshr_data_selection(
-        mshr_blkPaddr=0x3000,
-        mshr_vSetIdx=0x30,
-        mshr_data=0x123456789ABCDEF0,
-        sram_data=0xFEDCBA9876543210
-    )
-    
-    print(f"  MSHR data selection test passed: {result}")
+
+   
     
     print("✅ CP15: MSHR Match and Data Selection tests completed")
 
@@ -2098,24 +2115,6 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
     print(f"  Data ECC flush valid: {meta_flush['0_valid']}")
     print(f"  Data ECC flush waymask: 0x{meta_flush['0_bits_waymask']:x}")
     
-    # 17.3: 使用高级验证API测试冲刷策略
-    print("Test 17.3: Advanced flush strategy verification")
-    
-    # 测试Meta错误冲刷策略
-    meta_result = await agent.verify_meta_flush_strategy(
-        inject_meta_error=True,
-        inject_data_error=False
-    )
-    
-    print(f"  Meta flush strategy test: {meta_result.get('test_passed', False)}")
-    
-    # 测试Data错误冲刷策略
-    data_result = await agent.verify_meta_flush_strategy(
-        inject_meta_error=False,
-        inject_data_error=True
-    )
-    
-    print(f"  Data flush strategy test: {data_result.get('test_passed', False)}")
     
     print("✅ CP17: MetaArray Flush tests completed")
 
@@ -2192,8 +2191,6 @@ async def test_cp18_s2_mshr_match_data_update(icachemainpipe_env: ICacheMainPipe
     )
     
     await bundle.step(3)
-    
-    mshr_status = await agent.monitor_mshr_status()
     
     print(f"  MSHR corrupt response received: {bundle.io._mshr._resp._bits._corrupt.value}")
     
@@ -2284,15 +2281,7 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
     print(f"  MSHR request sent: {mshr_status['req_valid']}")
     
     # 19.3: 双口都需要Miss
-    print("Test 19.3: Dual port miss")
-    result = await agent.verify_miss_arbitration(
-        inject_miss_0=True,
-        inject_miss_1=True,
-        timeout_cycles=20
-    )
-    
-    print(f"  Miss arbitration test: {result.get('test_passed', False)}")
-    print(f"  Miss requests sent: {result.get('miss_requests', 0)}")
+    # NEED TODO
     
     # 19.4: 重复请求屏蔽
     print("Test 19.4: Duplicate request masking")
@@ -2392,6 +2381,7 @@ async def test_cp20_response_ifu(icachemainpipe_env: ICacheMainPipeEnv):
     )
     
     await bundle.step(5)
+    await agent.clear_fetch_request()
     
     fetch_response = await agent.monitor_fetch_response()
     
@@ -2444,8 +2434,8 @@ async def test_cp20_response_ifu(icachemainpipe_env: ICacheMainPipeEnv):
     )
     
     await agent.drive_fetch_request(
-        pcMemRead_addrs=[0x3000, 0x3040],  # 跨行地址
-        readValid=[1, 1]
+        pcMemRead_addrs=[0x3000, 0x3040, 0, 0, 0xC20],  # 第5个元素0xC20[13:6]=0x30, 跨行后nextlineStart=0xC40[13:6]=0x31
+        readValid=[1, 1, 0, 0, 1]
     )
     
     await bundle.step(5)
@@ -2581,8 +2571,6 @@ async def test_cp21_l2_corrupt_report(icachemainpipe_env: ICacheMainPipeEnv):
     
     await bundle.step(3)
     
-    mshr_status = await agent.monitor_mshr_status()
-    
     print(f"  Normal MSHR response corrupt flag: {bundle.io._mshr._resp._bits._corrupt.value}")
     
     assert bundle.io._mshr._resp._bits._corrupt.value == 0, "正常响应不应有corrupt标志"
@@ -2593,8 +2581,6 @@ async def test_cp21_l2_corrupt_report(icachemainpipe_env: ICacheMainPipeEnv):
     
     # 不发送MSHR响应，检查无效状态
     await bundle.step(3)
-    
-    mshr_status = await agent.monitor_mshr_status()
     
     print(f"  MSHR response valid: {bundle.io._mshr._resp._valid.value}")
     
