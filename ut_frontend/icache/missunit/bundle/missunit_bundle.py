@@ -2,6 +2,7 @@ from toffee import Bundle, Signals, Signal
 
 class _0Bundle(Bundle):
 	_acquire_valid, _req_ready = Signals(2)
+	_resp_bits_blkPaddr, _resp_bits_vSetIdx = Signals(2)
 
 class _1Bundle(Bundle):
 	_io = _0Bundle.from_prefix("_io")
@@ -27,6 +28,8 @@ class _3Bundle(Bundle):
 class _4Bundle(Bundle):
 	_prefetchMSHRs = _3Bundle.from_prefix("_prefetchMSHRs")
 	_fetchMSHRs = _2Bundle.from_prefix("_fetchMSHRs")
+	last_fire_r, last_fire = Signals(2)
+	fetchHit, prefetchHit = Signals(2)
 
 class _5Bundle(Bundle):
 	_data, _virIdx, _waymask = Signals(3)
@@ -59,6 +62,7 @@ class _12Bundle(Bundle):
 class _13Bundle(Bundle):
 	_bits = _12Bundle.from_prefix("_bits")
 	_valid, _ready = Signals(2)
+	_valid_T_probe,_ready_T = Signals(2) 
 
 class _14Bundle(Bundle):
 	_source, _corrupt, _data, _size, _opcode = Signals(5)
@@ -94,7 +98,19 @@ class _21Bundle(Bundle):
 	_prefetch_req = _8Bundle.from_prefix("_prefetch_req")
 	_fencei, _flush, _hartId = Signals(3)
 
+class _22Bundle(Bundle):
+	_io_enq = _13Bundle.from_prefix("_io_enq")
+	_io_deq = _13Bundle.from_prefix("_io_deq")
+	_io_deq_bits = Signal()
+
+
+class _24Bundle(Bundle):
+	_io_chosen, _io_in_ready, _io_in_valid_T_1 = Signals(3)
+
 class ICacheMissUnitBundle(Bundle):
 	io = _21Bundle.from_prefix("io")
+	priorityFIFO = _22Bundle.from_prefix("ICacheMissUnit__priorityFIFO")
 	ICacheMissUnit_ = _4Bundle.from_prefix("ICacheMissUnit_")
+	prefetchDemux = _24Bundle.from_prefix("ICacheMissUnit__prefetchDemux")
+	fetchDemux = _24Bundle.from_prefix("ICacheMissUnit__fetchDemux")
 	reset, clock = Signals(2)
