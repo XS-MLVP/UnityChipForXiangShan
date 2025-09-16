@@ -1,5 +1,5 @@
-#coding=utf8
-#***************************************************************************************
+# coding=utf8
+# ***************************************************************************************
 # This project is licensed under Mulan PSL v2.
 # You can use this software according to the terms and conditions of the Mulan PSL v2.
 # You may obtain a copy of Mulan PSL v2 at:
@@ -10,55 +10,16 @@
 # MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 #
 # See the Mulan PSL v2 for more details.
-#**************************************************************************************/
+# **************************************************************************************/
 
 
-import os
-from comm import warning, info, get_all_rtl_files
+from comm.export_dut import picker_export
+
+TARGET_NAME = "TLBuffer"
 
 
 def build(cfg):
-    # import base modules
-    from tempfile import NamedTemporaryFile
-    from toffee_test.markers import match_version
-    from comm import is_all_file_exist, get_rtl_dir, exe_cmd, get_root_dir
-    # check version
-    if not match_version(cfg.rtl.version, "openxiangshan-kmh-*"):
-        warning("frontend_tlbuffer: %s" % f"Unsupported RTL version {cfg.rtl.version}")
-        return False
-    # find source files for TLBuffer
-    rtl_files = get_all_rtl_files("TLBuffer", cfg=cfg)
-    info(f"rtl_files: {rtl_files}")
-    assert rtl_files, "Cannot find RTL files of TLBuffer"
-
-    # check files
-    f = is_all_file_exist(["rtl/TLBuffer.sv"], get_rtl_dir(cfg=cfg))
-    assert f is True, f"File {f} not found"
-    # build
-    # export TLBuffer.sv
-    if not os.path.exists(get_root_dir("dut/TLBuffer")):
-        info("Exporting TLBuffer.sv")
-        with NamedTemporaryFile("w+", encoding="utf-8", suffix=".txt") as filelist:
-            filelist.write("\n".join(rtl_files))
-            filelist.flush()
-            s, _, err = exe_cmd(
-                f"picker export --cp_lib false {rtl_files[0]} --fs {filelist.name} --lang python --tdir " 
-                f"{get_root_dir('dut')}/ -w TLBuffer.fst -c")
-        assert s, err
-    return True
-
-
-def get_metadata():
-    return {
-        "dut_name": "frontend_tlbuffer",
-        "dut_dir": "TLBuffer",
-        "test_targets": [
-            "ut_frontend/itlb/submodules/TLBuffer",
-            "ut_frontend/itlb/submodules",
-            "ut_frontend/itlb",
-            "ut_frontend"
-        ]
-    }
+    return picker_export(TARGET_NAME, cfg)
 
 
 def line_coverage_files(cfg):

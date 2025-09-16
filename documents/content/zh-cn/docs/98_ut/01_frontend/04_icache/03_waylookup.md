@@ -14,7 +14,7 @@ weight: 12
     <center>	
     <img src="../waylookup_structure_rw.png"
          alt="WayLookup 读写结构"
-         style="zoom:100%"/>
+         style="zoom:40%"/>
     <br>		
     WayLookup 读写结构	
     </center>
@@ -26,7 +26,7 @@ weight: 12
     <center>	
     <img src="../waylookup_structure_update.png"
          alt="WayLookup 更新结构"
-         style="zoom:100%"/>
+         style="zoom:40%"/>
     <br>		
     WayLookup 更新结构	
     </center>

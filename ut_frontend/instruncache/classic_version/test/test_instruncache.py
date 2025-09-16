@@ -1,5 +1,6 @@
 import random
 
+import pytest
 import toffee_test
 #from picker_out_instruncache import DUTInstrUncache
 from dut.InstrUncache import DUTInstrUncache
@@ -28,9 +29,8 @@ class InstrUncacheBundle(Bundle):
 
 
 @toffee_test.testcase
+@pytest.mark.skip("Duplicated testcase")
 async def test_instruncache_smoke(toffee_request: toffee_test.ToffeeRequest):
-
-    toffee.setup_logging(toffee.WARNING)
     instruncache = toffee_request.create_dut(DUTInstrUncache, "clock")
     toffee.start_clock(instruncache)
 
@@ -211,9 +211,8 @@ async def _request_data(instruncache_bundle, req_addr, \
 #
 
 @toffee_test.testcase
+@pytest.mark.skip("Duplicated testcase")
 async def test_instruncache_addr_alignment(toffee_request: toffee_test.ToffeeRequest):
-
-    toffee.setup_logging(toffee.WARNING)
     instruncache = toffee_request.create_dut(DUTInstrUncache, "clock")
     toffee.start_clock(instruncache)
 
@@ -247,9 +246,8 @@ async def test_instruncache_addr_alignment(toffee_request: toffee_test.ToffeeReq
 #  simpley ignore the address bit 0
 #
 @toffee_test.testcase
+@pytest.mark.skip("Duplicated testcase")
 async def test_instruncache_addr_misalign(toffee_request: toffee_test.ToffeeRequest):
-
-    toffee.setup_logging(toffee.WARNING)
     instruncache = toffee_request.create_dut(DUTInstrUncache, "clock")
     toffee.start_clock(instruncache)
 

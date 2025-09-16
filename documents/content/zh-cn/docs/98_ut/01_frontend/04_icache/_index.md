@@ -82,7 +82,7 @@ DCache 数据一致性是一个重要的问题。因为数据可能会被多个�
     <center>	
     <img src="difference between cpu and memory.png"
          alt="CPU 和内存的性能差异"
-         style="zoom:100%"/>
+         style="zoom:40%"/>
     <br>		<!--换行-->
     CPU 和内存的性能差异	<!--标题-->
     </center>
@@ -150,7 +150,7 @@ DCache 数据一致性是一个重要的问题。因为数据可能会被多个�
     <center>	<!--将图片和文字居中-->
     <img src="ftq_pointer.png"
          alt="FTQ 指针示意"
-         style="zoom:100%"/>
+         style="zoom:10%"/>
     <br>		<!--换行-->
     FTQ 指针示意	<!--标题-->
     </center>
@@ -164,7 +164,7 @@ FTQ 中存储着 BPU 生成的预测块，fetchPtr 指向取指预测块，prefe
     <center>	
     <img src="icache_structure.png"
          alt="ICache整体数据流向图"
-         style="zoom:100%"/>
+         style="zoom:25%"/>
     <br>		
     ICache整体数据流向图	
     </center>
@@ -195,7 +195,7 @@ ICache 结构如上图所示，有 MainPipe 和 IPrefetchPipe 两个流水线，
     <center>	
     <img src="icache_stages.png"
          alt="ICache 两条流水线的关系"
-         style="zoom:100%"/>
+         style="zoom:80%"/>
     <br>		
     ICache 两条流水线的关系	
     </center>
@@ -282,7 +282,7 @@ ICache 负责对取指请求的地址进行权限检查（通过 ITLB 和 PMP）
     <center>	
     <img src="dataarray_bank.png"
          alt="DataArray 分 bank 示意图"
-         style="zoom:100%"/>
+         style="zoom:20%"/>
     <br>		
     DataArray 分 bank 示意图	
     </center>
@@ -1398,6 +1398,7 @@ req 的结构如下：
 | ---------- | ------------------------------------------------------ |
 |blkPaddr|要从 tilelink 获取的缓存行的物理地址。|
 |vSetIdx|虚拟地址的缓存组索引。|
+
 resp 的结构如下：
 | 接口名 | 解释 |
 | ---------- | ------------------------------------------------------ |
@@ -1432,7 +1433,6 @@ backendException：是否有来自后端的 Exception。
 
 | 接口名 | 解释 |
 | ------ | ---- |
-
 |doubleLine| 指示预测块是否跨缓存行。|
 |vaddr |指令块起始虚拟地址、下一个缓存行的虚拟地址。|
 |data |要传送的缓存行。|

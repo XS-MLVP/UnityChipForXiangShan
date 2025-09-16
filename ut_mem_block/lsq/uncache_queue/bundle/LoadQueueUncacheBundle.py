@@ -315,7 +315,6 @@ class _69Bundle(Bundle):
 	_io = _58Bundle.from_prefix("_io")
 	_oldestRedirect_T = _65Bundle.from_prefix("_oldestRedirect_T")
 	_freeList_io = _56Bundle.from_prefix("_freeList_io")
-	_GEN, _GEN_11, _GEN_24, _GEN_23, _GEN_25, _GEN_17, _GEN_8, _GEN_3, _GEN_6, _GEN_12, _GEN_14, _GEN_21, _GEN_9, _GEN_28, _GEN_4, _GEN_15, _GEN_2, _GEN_26, _GEN_0, _GEN_20, _GEN_18, _GEN_22, _GEN_5, _GEN_19, _GEN_10, _GEN_16, _GEN_27, _GEN_13, _GEN_7 = Signals(29)
 
 class _70Bundle(Bundle):
 	_bits_uop = _45Bundle.from_prefix("_bits_uop")

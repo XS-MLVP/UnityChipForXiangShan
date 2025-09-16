@@ -57,9 +57,6 @@ class _10Bundle(Bundle):
 	_10 = _3Bundle.from_prefix("_10")
 	_3 = _3Bundle.from_prefix("_3")
 	_12 = _3Bundle.from_prefix("_12")
-	_carryRight = _9Bundle.from_prefix("_carryRight")
-	_lowPCEqual = _7Bundle.from_prefix("_lowPCEqual")
-	_lowPCGreater = _7Bundle.from_prefix("_lowPCGreater")
 	_carry = _7Bundle.from_prefix("_carry")
 	_highPC1Equal, _highPCGreater, _highPCEqual, _highPCLess, _highPC1Equal_2, _highPC1Equal_3, _highPC1Equal_1, _highPCGreater_2, _highPCGreater_3, _highPCGreater_1, _highPCEqual_2, _highPCEqual_3, _highPCEqual_1, _highPCLess_2, _highPCLess_3, _highPCLess_1 = Signals(16)
 

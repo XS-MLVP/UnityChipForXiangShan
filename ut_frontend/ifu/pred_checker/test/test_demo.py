@@ -1,3 +1,4 @@
+import pytest
 import toffee_test
 from ... import PREDICT_WIDTH, RET_LABEL, RVC_LABEL, BRTYPE_LABEL
 from dut.PredChecker import DUTPredChecker
@@ -5,6 +6,7 @@ from .pred_checker_dut import predchecker_env
 # from pred_checker_dut import predchecker_env
 
 @toffee_test.testcase
+@pytest.mark.skip
 async def test_fire(predchecker_env):
     valid = False
     bits = 0

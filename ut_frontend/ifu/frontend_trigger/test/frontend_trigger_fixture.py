@@ -144,7 +144,6 @@ def init_frontend_trigger_funcov(dut: DUTFrontendTrigger, g: fc.CovGroup):
 
 @toffee_test.fixture
 async def frontend_trigger_env(toffee_request: toffee_test.ToffeeRequest):
-    toffee.setup_logging(toffee.INFO, log_file="toffee.log")
     dut = toffee_request.create_dut(DUTFrontendTrigger)
     # toffee_request.add_cov_groups(pred_checker_cover_point(dut))
     dut.InitClock("clock")

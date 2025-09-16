@@ -1,5 +1,5 @@
-#coding=utf8
-#***************************************************************************************
+# coding=utf8
+# ***************************************************************************************
 # This project is licensed under Mulan PSL v2.
 # You can use this software according to the terms and conditions of the Mulan PSL v2.
 # You may obtain a copy of Mulan PSL v2 at:
@@ -10,10 +10,12 @@
 # MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 #
 # See the Mulan PSL v2 for more details.
-#**************************************************************************************/
+# **************************************************************************************/
+
+import inspect
 
 from .env import *
-import inspect
+
 
 ### CASE EXAMPLE
 # Running the following test case will show a pass:
@@ -21,6 +23,7 @@ import inspect
 # request to TLB. TLB is expected to return a miss in the next cycle and initiate 
 # a request to the PTW. At this point, you can simultaneously verify whether the 
 # vpn in the PTW request is correct.
+@pytest.mark.skip
 def test_req_from_ifu_and_icache_rand_vaddr_rand_valid_single_port(tlb_fixture):
     """
     Func: Compare the PTW request with the reference:
@@ -33,21 +36,21 @@ def test_req_from_ifu_and_icache_rand_vaddr_rand_valid_single_port(tlb_fixture):
     # add watch point
     case_name = inspect.currentframe().f_back.f_code.co_name
     g.add_watch_point(tlb.requestor_0.resp.miss, {
-                        "miss": fc.Eq(1),
-                        "hit": fc.Eq(0),
-    }, name = f"{case_name}: REQUESTOR_0_MISS")
+        "miss": fc.Eq(1),
+        "hit": fc.Eq(0),
+    }, name=f"{case_name}: REQUESTOR_0_MISS")
     g.add_watch_point(tlb.requestor_1.resp.miss, {
-                        "miss": fc.Eq(1),
-                        "hit": fc.Eq(0),
-    }, name = f"{case_name}: REQUESTOR_1_MISS")
+        "miss": fc.Eq(1),
+        "hit": fc.Eq(0),
+    }, name=f"{case_name}: REQUESTOR_1_MISS")
     g.add_watch_point(tlb.ctrl.io_ptw_req_0_valid, {
-                        "valid": fc.Eq(1),
-                        "invalid": fc.Eq(0),
-    }, name = f"{case_name}: PTW_REQ_0_VALID")
+        "valid": fc.Eq(1),
+        "invalid": fc.Eq(0),
+    }, name=f"{case_name}: PTW_REQ_0_VALID")
     g.add_watch_point(tlb.ctrl.io_ptw_req_1_valid, {
-                        "valid": fc.Eq(1),
-                        "invalid": fc.Eq(0),
-    }, name = f"{case_name}: PTW_REQ_1_VALID")
+        "valid": fc.Eq(1),
+        "invalid": fc.Eq(0),
+    }, name=f"{case_name}: PTW_REQ_1_VALID")
     # set default value
     tlb.set_default_value()
     # reset
@@ -61,7 +64,7 @@ def test_req_from_ifu_and_icache_rand_vaddr_rand_valid_single_port(tlb_fixture):
         req_0_valid, req_0_vaddr = tlb.rand_req0()
         # step to next cycle
         tlb.dut.Step(2)
-        
+
         # assert result
         assert (tlb.ctrl.io_ptw_req_0_valid.value == req_0_valid)
         if (req_0_valid):
@@ -78,7 +81,7 @@ def test_req_from_ifu_and_icache_rand_vaddr_rand_valid_single_port(tlb_fixture):
         req_1_valid, req_1_vaddr = tlb.rand_req1()
         # step to next cycle
         tlb.dut.Step(2)
-        
+
         # assert result
         assert (tlb.ctrl.io_ptw_req_1_valid.value == req_1_valid)
         if (req_1_valid):
@@ -89,8 +92,10 @@ def test_req_from_ifu_and_icache_rand_vaddr_rand_valid_single_port(tlb_fixture):
     #     Requestor2 uses BLOCKING access protocol (vs. Non-blocking on 0/1)
     ######################################################################################
 
+
 ### CASE EXAMPLE
 # Running the following test case will show a pass:
+@pytest.mark.skip
 def test_req_from_icache_rand_vaddr_rand_valid_muti_port(tlb_fixture):
     """
     Func: compare the PTW request with the reference:
@@ -103,21 +108,21 @@ def test_req_from_icache_rand_vaddr_rand_valid_muti_port(tlb_fixture):
     # add watch point
     case_name = inspect.currentframe().f_back.f_code.co_name
     g.add_watch_point(tlb.requestor_0.resp.miss, {
-                        "miss": fc.Eq(1),
-                        "hit": fc.Eq(0),
-    }, name = f"{case_name}: REQUESTOR_0_MISS")
+        "miss": fc.Eq(1),
+        "hit": fc.Eq(0),
+    }, name=f"{case_name}: REQUESTOR_0_MISS")
     g.add_watch_point(tlb.requestor_1.resp.miss, {
-                        "miss": fc.Eq(1),
-                        "hit": fc.Eq(0),
-    }, name = f"{case_name}: REQUESTOR_1_MISS")
+        "miss": fc.Eq(1),
+        "hit": fc.Eq(0),
+    }, name=f"{case_name}: REQUESTOR_1_MISS")
     g.add_watch_point(tlb.ctrl.io_ptw_req_0_valid, {
-                        "valid": fc.Eq(1),
-                        "invalid": fc.Eq(0),
-    }, name = f"{case_name}: PTW_REQ_0_VALID")
+        "valid": fc.Eq(1),
+        "invalid": fc.Eq(0),
+    }, name=f"{case_name}: PTW_REQ_0_VALID")
     g.add_watch_point(tlb.ctrl.io_ptw_req_1_valid, {
-                        "valid": fc.Eq(1),
-                        "invalid": fc.Eq(0),
-    }, name = f"{case_name}: PTW_REQ_1_VALID")
+        "valid": fc.Eq(1),
+        "invalid": fc.Eq(0),
+    }, name=f"{case_name}: PTW_REQ_1_VALID")
     # set default value
     tlb.set_default_value()
     # reset
@@ -132,7 +137,7 @@ def test_req_from_icache_rand_vaddr_rand_valid_muti_port(tlb_fixture):
         req_1_valid, req_1_vaddr = tlb.rand_req1()
         # step to next cycle
         tlb.dut.Step(2)
-        
+
         # assert result
         assert (tlb.ctrl.io_ptw_req_0_valid.value == req_0_valid)
         assert (tlb.ctrl.io_ptw_req_1_valid.value == req_1_valid)

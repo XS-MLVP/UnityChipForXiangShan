@@ -241,9 +241,9 @@ class pred_checker_sqr:
             # randOffset_1: true jump instr location
             if randOffset != 15:
                 randOffset_1 = random.randint(randOffset + 1, 15)
-                pds[randOffset_1] = random.choice([{RVC_LABEL: random.choice([True, False]), RET_LABEL: True, BRTYPE_LABEL: 3},
-                                                   {RVC_LABEL: random.choice([True, False]), RET_LABEL: False, BRTYPE_LABEL: 2}])
-                # {RVC_LABEL: random.choice([True, False]), RET_LABEL:False, BRTYPE_LABEL:1}])
+                pds[randOffset_1] = random.choice([{RVC_LABEL: not random.getrandbits(1), RET_LABEL: True, BRTYPE_LABEL: 3},
+                                                   {RVC_LABEL: not random.getrandbits(1), RET_LABEL: False, BRTYPE_LABEL: 2}])
+                # {RVC_LABEL: not random.getrandbits(1), RET_LABEL:False, BRTYPE_LABEL:1}])
                 jumpOffset[randOffset_1] = random.randint(
                     0, 2**50 - pc_0 - 2**6)
                 tgt = pc[randOffset_1] + jumpOffset[randOffset_1]
@@ -260,10 +260,10 @@ class pred_checker_sqr:
             instrValid = [True for _ in range(PREDICT_WIDTH)]
             pds = [{RVC_LABEL: random.choice(
                 [True, False]), RET_LABEL: False, BRTYPE_LABEL: 0} for _ in range(PREDICT_WIDTH)]
-            pds[randOffset] = random.choice([{RVC_LABEL: random.choice([True, False]), RET_LABEL: True, BRTYPE_LABEL: 3},
+            pds[randOffset] = random.choice([{RVC_LABEL: not random.getrandbits(1), RET_LABEL: True, BRTYPE_LABEL: 3},
                                              {RVC_LABEL: random.choice(
                                                  [True, False]), RET_LABEL: False, BRTYPE_LABEL: 2},
-                                             {RVC_LABEL: random.choice([True, False]), RET_LABEL: False, BRTYPE_LABEL: 1}])
+                                             {RVC_LABEL: not random.getrandbits(1), RET_LABEL: False, BRTYPE_LABEL: 1}])
             pc = self._gen_pc_list(pc_0, pds)
             jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
             jumpOffset[randOffset] = random.randint(0, 2**50 - pc_0 - 2**6)
@@ -288,10 +288,10 @@ class pred_checker_sqr:
             # randOffset_1: true jump instr location
             if randOffset != 15:
                 randOffset_1 = random.randint(randOffset + 1, 15)
-                pds[randOffset_1] = random.choice([{RVC_LABEL: random.choice([True, False]), RET_LABEL: True, BRTYPE_LABEL: 3},
+                pds[randOffset_1] = random.choice([{RVC_LABEL: not random.getrandbits(1), RET_LABEL: True, BRTYPE_LABEL: 3},
                                                    {RVC_LABEL: random.choice(
                                                        [True, False]), RET_LABEL: False, BRTYPE_LABEL: 2},
-                                                   {RVC_LABEL: random.choice([True, False]), RET_LABEL: False, BRTYPE_LABEL: 1}])
+                                                   {RVC_LABEL: not random.getrandbits(1), RET_LABEL: False, BRTYPE_LABEL: 1}])
                 jumpOffset[randOffset_1] = random.randint(
                     0, 2**50 - pc_0 - 2**6)
             pc = self._gen_pc_list(pc_0, pds)
@@ -325,10 +325,10 @@ class pred_checker_sqr:
             instrValid = [True for _ in range(PREDICT_WIDTH)]
             pds = [{RVC_LABEL: random.choice(
                 [True, False]), RET_LABEL: False, BRTYPE_LABEL: 0} for _ in range(PREDICT_WIDTH)]
-            pds[randOffset] = random.choice([{RVC_LABEL: random.choice([True, False]), RET_LABEL: True, BRTYPE_LABEL: 3},
+            pds[randOffset] = random.choice([{RVC_LABEL: not random.getrandbits(1), RET_LABEL: True, BRTYPE_LABEL: 3},
                                              {RVC_LABEL: random.choice(
                                                  [True, False]), RET_LABEL: False, BRTYPE_LABEL: 2},
-                                             {RVC_LABEL: random.choice([True, False]), RET_LABEL: False, BRTYPE_LABEL: 1}])
+                                             {RVC_LABEL: not random.getrandbits(1), RET_LABEL: False, BRTYPE_LABEL: 1}])
             pc = self._gen_pc_list(pc_0, pds)
             jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
             jumpOffset[randOffset] = random.randint(4, 2**50 - pc_0)
@@ -345,10 +345,10 @@ class pred_checker_sqr:
             instrValid = [True for _ in range(PREDICT_WIDTH)]
             pds = [{RVC_LABEL: random.choice(
                 [True, False]), RET_LABEL: False, BRTYPE_LABEL: 0} for _ in range(PREDICT_WIDTH)]
-            pds[randOffset] = random.choice([{RVC_LABEL: random.choice([True, False]), RET_LABEL: True, BRTYPE_LABEL: 3},
+            pds[randOffset] = random.choice([{RVC_LABEL: not random.getrandbits(1), RET_LABEL: True, BRTYPE_LABEL: 3},
                                              {RVC_LABEL: random.choice(
                                                  [True, False]), RET_LABEL: False, BRTYPE_LABEL: 2},
-                                             {RVC_LABEL: random.choice([True, False]), RET_LABEL: False, BRTYPE_LABEL: 1}])
+                                             {RVC_LABEL: not random.getrandbits(1), RET_LABEL: False, BRTYPE_LABEL: 1}])
             pc = self._gen_pc_list(pc_0, pds)
             jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
             jumpOffset[randOffset] = random.randint(4, 2**50 - pc_0)
@@ -362,14 +362,14 @@ class pred_checker_sqr:
             ftqOffBits = randOffset
             instrRange = [True for _ in range(
                 randOffset + 1)] + [False for _ in range(PREDICT_WIDTH - randOffset - 1)]
-            instrValid = [random.choice([True, False])
+            instrValid = [not random.getrandbits(1)
                           for _ in range(PREDICT_WIDTH)]
             pds = [{RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 0}
                    for _ in range(PREDICT_WIDTH)]
-            pds[randOffset] = random.choice([{RVC_LABEL: random.choice([True, False]), RET_LABEL: True, BRTYPE_LABEL: 3},
+            pds[randOffset] = random.choice([{RVC_LABEL: not random.getrandbits(1), RET_LABEL: True, BRTYPE_LABEL: 3},
                                              {RVC_LABEL: random.choice(
                                                  [True, False]), RET_LABEL: False, BRTYPE_LABEL: 2},
-                                             {RVC_LABEL: random.choice([True, False]), RET_LABEL: False, BRTYPE_LABEL: 1}])
+                                             {RVC_LABEL: not random.getrandbits(1), RET_LABEL: False, BRTYPE_LABEL: 1}])
             pc = self._gen_pc_list(pc_0, pds)
             jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
             negJumpOffset = - 2**50
@@ -391,14 +391,14 @@ class pred_checker_sqr:
             ftqOffBits = randOffset
             instrRange = [True for _ in range(
                 randOffset + 1)] + [False for _ in range(PREDICT_WIDTH - randOffset - 1)]
-            instrValid = [random.choice([True, False])
+            instrValid = [not random.getrandbits(1)
                           for _ in range(PREDICT_WIDTH)]
             pds = [{RVC_LABEL: False, RET_LABEL: False, BRTYPE_LABEL: 0}
                    for _ in range(PREDICT_WIDTH)]
-            pds[randOffset] = random.choice([{RVC_LABEL: random.choice([True, False]), RET_LABEL: True, BRTYPE_LABEL: 3},
+            pds[randOffset] = random.choice([{RVC_LABEL: not random.getrandbits(1), RET_LABEL: True, BRTYPE_LABEL: 3},
                                              {RVC_LABEL: random.choice(
                                                  [True, False]), RET_LABEL: False, BRTYPE_LABEL: 2},
-                                             {RVC_LABEL: random.choice([True, False]), RET_LABEL: False, BRTYPE_LABEL: 1}])
+                                             {RVC_LABEL: not random.getrandbits(1), RET_LABEL: False, BRTYPE_LABEL: 1}])
             pc = self._gen_pc_list(pc_0, pds)
             jumpOffset = [0 for _ in range(PREDICT_WIDTH)]
             negJumpOffset = - 2**50

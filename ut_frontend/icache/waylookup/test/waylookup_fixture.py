@@ -8,7 +8,6 @@ import asyncio
 
 @toffee_test.fixture
 async def waylookup_env(toffee_request: toffee_test.ToffeeRequest):
-    toffee.setup_logging(toffee.ERROR)
     dut = toffee_request.create_dut(DUTWayLookup)
     dut.InitClock("clock")
     start_clock(dut)

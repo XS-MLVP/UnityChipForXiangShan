@@ -8,7 +8,6 @@ from ..env import ICacheMissUnitEnv
 
 @toffee_test.fixture
 async def icachemissunit_env(toffee_request: toffee_test.ToffeeRequest):
-    toffee.setup_logging(toffee.ERROR)
     dut = toffee_request.create_dut(DUTICacheMissUnit)
     dut.InitClock("clock")
     start_clock(dut)

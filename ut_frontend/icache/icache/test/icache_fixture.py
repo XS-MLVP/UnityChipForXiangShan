@@ -8,7 +8,6 @@ from ..env import ICacheEnv
 
 @toffee_test.fixture
 async def icache_env(toffee_request: toffee_test.ToffeeRequest):
-    toffee.setup_logging(toffee.ERROR)
     dut = toffee_request.create_dut(DUTICache)
     dut.InitClock("clock")
     start_clock(dut)
