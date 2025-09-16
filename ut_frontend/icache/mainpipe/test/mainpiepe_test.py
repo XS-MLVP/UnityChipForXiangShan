@@ -964,171 +964,258 @@ async def test_cp11_dataarray_access(icachemainpipe_env: ICacheMainPipeEnv):
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
-    # 初始化环境
-    await agent.reset()
-    await agent.drive_set_ecc_enable(True)
-    await agent.drive_set_flush(False)
-    await agent.drive_resp_stall(False)
+    # 收集所有测试错误，避免单一测试错误导致后续测试停止
+    test_errors = []
     
-    # 11.1: 访问DataArray的单路
-    print("\n测试 11.1: 访问DataArray的单路")
-    print("条件：s0_hits为高（一路命中），s0_itlb_exception信号为零（ITLB查询成功），toData.last.ready为高（DataArray没有正在进行的写操作）")
-    print("预期：toData.valid信号为高，表示MainPipe向DataArray发出了读取请求")
+    try:
+        # 初始化环境，确保环境准备就绪
+        await agent.reset()
+        await agent.drive_set_ecc_enable(True)
+        await agent.drive_set_flush(False)
+        await agent.drive_resp_stall(False)
+        print("环境初始化完成")
+        
+        # 测试点11.1: 访问DataArray的单路
+        print("\n--- 测试点11.1: 访问DataArray的单路 ---")
+        print("条件：s0_hits为高（一路命中），s0_itlb_exception信号为零（ITLB查询成功），toData.last.ready为高（DataArray没有正在进行的写操作）")
+        print("预期：toData.valid信号为高，表示MainPipe向DataArray发出了读取请求")
+        
+        try:
+            # 设置环境准备就绪：DataArray ready，确保s0_can_go=1
+            await agent.drive_data_array_ready(True)
+            
+            # 先驱动WayLookup，满足地址一致性要求
+            test_addr = 0x400  # 测试地址：0x400[13:6] = 0x10
+            expected_vSetIdx = (test_addr >> 6) & 0xFF  # 0x10
+            
+            await agent.drive_waylookup_read(
+                vSetIdx_0=expected_vSetIdx,
+                vSetIdx_1=expected_vSetIdx,  # 由于0x400[5]=0，nextlineStart=startAddr，所以两个vSetIdx相同
+                waymask_0=0x1,  # s0_hits为高（一路命中），根据verilog: s1_SRAMhits_0 <= |io_wayLookupRead_bits_entry_waymask_0
+                waymask_1=0x0,
+                ptag_0=0x12345,
+                ptag_1=0x0,
+                itlb_exception_0=0,  # s0_itlb_exception信号为零（ITLB查询成功）
+                itlb_exception_1=0
+            )
+            
+            # 发送fetch请求，地址必须与WayLookup一致
+            fetch_success = await agent.drive_fetch_request(
+                pcMemRead_addrs=[test_addr, 0, 0, 0, test_addr],  # pcMemRead_4与vSetIdx匹配
+                readValid=[1, 0, 0, 0, 1]  # readValid[0]=1会使toIData_0_valid=1
+            )
+            
+            if not fetch_success:
+                raise AssertionError("地址一致性检查失败，无法发起fetch请求")
+            
+            # 监控DataArray访问状态
+            dataarray_status = await agent.monitor_dataarray_toIData()
+            pipeline_status = await agent.monitor_pipeline_status()
+            
+            print(f"  监控结果：")
+            print(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
+            print(f"  - s0_fire: {pipeline_status['s0_fire']}")
+            print(f"  - fetch_req_ready: {pipeline_status['fetch_req_ready']}")
+            
+            # 断言：根据verilog源码，toIData_X_valid = readValid_X
+            assert dataarray_status['toIData_0_valid'] == 1, "toIData_0_valid应为1，表示MainPipe向DataArray发出了读取请求"
+            assert pipeline_status['s0_fire'] == 1, "s0_fire应为1，表示流水线正常推进"
+            assert pipeline_status['fetch_req_ready'] == 1, "fetch_req_ready应为1，表示能够接收新的请求"
+            
+            # 清除请求
+            await agent.clear_fetch_request()
+            await agent.clear_waylookup_read()
+            print("  ✓ 测试点11.1通过")
+            
+        except Exception as e:
+            error_msg = f"测试点11.1失败: {str(e)}"
+            print(f"  ✗ {error_msg}")
+            test_errors.append(error_msg)
+        
+        # 测试点11.2: 不访问DataArray（Way未命中）- 会访问，但是返回数据无效
+        print("\n--- 测试点11.2: 不访问DataArray（Way未命中）- 会访问，但是返回数据无效 ---")
+        print("条件：s0_hits为低表示缓存未命中")
+        print("预期：根据文档注释，会访问但返回数据无效（waymask=0表示miss）")
+        
+        try:
+            await agent.reset()
+            await agent.drive_set_flush(False)
+            await agent.drive_data_array_ready(True)
+            
+            test_addr = 0x800  # 测试地址：0x800[13:6] = 0x20
+            expected_vSetIdx = (test_addr >> 6) & 0xFF  # 0x20
+            
+            await agent.drive_waylookup_read(
+                vSetIdx_0=expected_vSetIdx,
+                vSetIdx_1=expected_vSetIdx,  # 由于0x800[5]=0，nextlineStart=startAddr
+                waymask_0=0x0,  # s0_hits为低表示缓存未命中（waymask=0，OR约简结果为0）
+                waymask_1=0x0,
+                ptag_0=0x67890,
+                ptag_1=0x0,
+                itlb_exception_0=0,
+                itlb_exception_1=0
+            )
+            
+            fetch_success = await agent.drive_fetch_request(
+                pcMemRead_addrs=[test_addr, 0, 0, 0, test_addr],
+                readValid=[1, 0, 0, 0, 1]
+            )
+            
+            if not fetch_success:
+                raise AssertionError("地址一致性检查失败，无法发起fetch请求")
+            
+            dataarray_status = await agent.monitor_dataarray_toIData()
+            pipeline_status = await agent.monitor_pipeline_status()
+            
+            print(f"  监控结果：")
+            print(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
+            print(f"  - toIData_0_waymask_0_0: {dataarray_status['toIData_0_waymask_0_0']}")
+            print(f"  - s0_fire: {pipeline_status['s0_fire']}")
+            
+            # 根据文档注释和verilog实现：会访问（toIData_0_valid=1），但数据无效（waymask=0表示miss）
+            assert dataarray_status['toIData_0_valid'] == 1, "根据verilog实现，readValid=1时toIData_0_valid仍为1（会访问）"
+            assert dataarray_status['toIData_0_waymask_0_0'] == 0, "waymask应为0，表示miss"
+            assert pipeline_status['s0_fire'] == 1, "s0_fire应为1，表示流水线正常推进"
+            
+            await agent.clear_fetch_request()
+            await agent.clear_waylookup_read()
+            print("  ✓ 测试点11.2通过")
+            
+        except Exception as e:
+            error_msg = f"测试点11.2失败: {str(e)}"
+            print(f"  ✗ {error_msg}")
+            test_errors.append(error_msg)
+        
+        # 测试点11.3: 不访问DataArray（ITLB查询失败）- 会访问，但是返回数据无效
+        print("\n--- 测试点11.3: 不访问DataArray（ITLB查询失败）- 会访问，但是返回数据无效 ---")
+        print("条件：s0_itlb_exception信号不为零（ITLB查询失败）")
+        print("预期：根据文档注释，会访问但返回数据无效")
+        
+        try:
+            await agent.reset()
+            await agent.drive_set_flush(False)
+            await agent.drive_data_array_ready(True)
+            
+            test_addr = 0xC00  # 测试地址：0xC00[13:6] = 0x30
+            expected_vSetIdx = (test_addr >> 6) & 0xFF  # 0x30
+            
+            await agent.drive_waylookup_read(
+                vSetIdx_0=expected_vSetIdx,
+                vSetIdx_1=expected_vSetIdx,  # 由于0xC00[5]=0，nextlineStart=startAddr
+                waymask_0=0x1,  # 有命中
+                waymask_1=0x0,
+                ptag_0=0xABCDE,
+                ptag_1=0x0,
+                itlb_exception_0=0x2,  # s0_itlb_exception信号不为零（ITLB查询失败）
+                itlb_exception_1=0
+            )
+            
+            # 确保WayLookup设置生效
+            await bundle.step(1)
+            
+            fetch_success = await agent.drive_fetch_request(
+                pcMemRead_addrs=[test_addr, 0, 0, 0, test_addr],
+                readValid=[1, 0, 0, 0, 1]
+            )
+            
+            if not fetch_success:
+                raise AssertionError("地址一致性检查失败，无法发起fetch请求")
+            
+            # 等待一个额外的周期，让信号从S0传递到S1
+            await bundle.step(1)
+            
+            dataarray_status = await agent.monitor_dataarray_toIData()
+            pipeline_status = await agent.monitor_pipeline_status()
+            exception_status = await agent.monitor_exception_merge_status()
+            
+            print(f"  监控结果：")
+            print(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
+            itlb_exception = exception_status.get('s1_itlb_exception_0', None)
+            print(f"  - ITLB exception: 0x{itlb_exception:x}" if itlb_exception is not None else "  - ITLB exception: None")
+            print(f"  - s0_fire: {pipeline_status['s0_fire']}")
+            
+            # 根据文档注释和verilog实现：会访问（toIData_0_valid=1），但有ITLB异常
+            assert dataarray_status['toIData_0_valid'] == 1, "根据verilog实现，readValid=1时toIData_0_valid仍为1（会访问）"
+            assert itlb_exception == 0x2, f"应检测到ITLB异常0x2，实际为{itlb_exception}"
+            
+            await agent.clear_fetch_request()
+            await agent.clear_waylookup_read()
+            print("  ✓ 测试点11.3通过")
+            
+        except Exception as e:
+            error_msg = f"测试点11.3失败: {str(e)}"
+            print(f"  ✗ {error_msg}")
+            test_errors.append(error_msg)
+        
+        # 测试点11.4: 不访问DataArray（DataArray正在进行写操作）
+        print("\n--- 测试点11.4: 不访问DataArray（DataArray正在进行写操作）---")
+        print("条件：toData.last.ready信号为低，表示DataArray正在进行写操作")
+        print("预期：s0_fire和fetch_req_ready为低，表示流水线被阻止，虽然toIData_0_valid仍可能为1（直接由readValid控制）")
+        
+        try:
+            await agent.reset()
+            await agent.drive_set_flush(False)
+            await agent.drive_data_array_ready(False)  # toData.last.ready信号为低
+            
+            test_addr = 0x1000  # 测试地址：0x1000[13:6] = 0x40
+            expected_vSetIdx = (test_addr >> 6) & 0xFF  # 0x40
+            
+            await agent.drive_waylookup_read(
+                vSetIdx_0=expected_vSetIdx,
+                vSetIdx_1=expected_vSetIdx,
+                waymask_0=0x1,
+                waymask_1=0x0,
+                ptag_0=0xDEAD,
+                ptag_1=0x0,
+                itlb_exception_0=0,
+                itlb_exception_1=0
+            )
+            
+            fetch_success = await agent.drive_fetch_request(
+                pcMemRead_addrs=[test_addr, 0, 0, 0, test_addr],
+                readValid=[1, 0, 0, 0, 1]
+            )
+            
+            if not fetch_success:
+                raise AssertionError("地址一致性检查失败，无法发起fetch请求")
+            
+            dataarray_status = await agent.monitor_dataarray_toIData()
+            pipeline_status = await agent.monitor_pipeline_status()
+            
+            print(f"  监控结果：")
+            print(f"  - toIData_3_ready: {bundle.io._dataArray._toIData._3._ready.value}")
+            print(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
+            print(f"  - s0_fire: {pipeline_status['s0_fire']}")
+            print(f"  - fetch_req_ready: {pipeline_status['fetch_req_ready']}")
+            
+            # 根据verilog源码：DataArray busy时，s0_can_go为低，阻止流水线推进，但toIData_0_valid仍由readValid直接控制
+            assert pipeline_status['s0_fire'] == 0, "DataArray忙时s0_fire应为0（s0_can_go=0）"
+            assert pipeline_status['fetch_req_ready'] == 0, "DataArray忙时fetch_req_ready应为0（s0_can_go=0）"
+            # 注意：toIData_0_valid可能仍为1，因为它直接由readValid控制，与DataArray busy无关
+            
+            await agent.clear_fetch_request()
+            await agent.clear_waylookup_read()
+            print("  ✓ 测试点11.4通过")
+            
+        except Exception as e:
+            error_msg = f"测试点11.4失败: {str(e)}"
+            print(f"  ✗ {error_msg}")
+            test_errors.append(error_msg)
     
-    # 设置所有满足条件的信号
-    await agent.drive_data_array_ready(True)  # toData.last.ready为高
-    await agent.drive_waylookup_read(
-        vSetIdx_0=0x10,
-        vSetIdx_1=0x10,  # 由于0x400[5]=0，nextlineStart=startAddr，所以两个vSetIdx应该相同
-        waymask_0=0x1,  # s0_hits为高（一路命中），根据verilog: s1_SRAMhits_0 <= |io_wayLookupRead_bits_entry_waymask_0
-        ptag_0=0x12345,
-        itlb_exception_0=0  # s0_itlb_exception信号为零（ITLB查询成功）
-    )
+    except Exception as e:
+        error_msg = f"测试初始化失败: {str(e)}"
+        print(f"✗ {error_msg}")
+        test_errors.append(error_msg)
     
-    # 发送fetch请求
-    await agent.drive_fetch_request(
-        pcMemRead_addrs=[0x400, 0, 0, 0, 0x400],  # 0x400[13:6] = 0x10，与vSetIdx_0匹配
-        readValid=[1, 0, 0, 0, 1]  # readValid[0]=1会使toIData_0_valid=1
-    )
-    
-    # 监控结果
-    dataarray_status = await agent.monitor_dataarray_toIData()
-    pipeline_status = await agent.monitor_pipeline_status()
-    
-    print(f"  检查结果：")
-    print(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
-    print(f"  - s0_fire: {pipeline_status['s0_fire']}")
-    print(f"  - fetch_req_ready: {pipeline_status['fetch_req_ready']}")
-    
-    # 验证：toData.valid信号为高
-    assert dataarray_status['toIData_0_valid'] == 1, "toData.valid信号应为高，表示MainPipe向DataArray发出了读取请求"
-    assert pipeline_status['s0_fire'] == 1, "s0_fire应为1，表示流水线正常推进"
-    
-    await agent.clear_fetch_request()
-    print("  √ 测试 11.1 通过")
-    
-    # 11.2: 不访问DataArray（Way未命中）- 会访问，但是返回数据无效
-    print("\n测试 11.2: 不访问DataArray（Way未命中）- 会访问，但是返回数据无效")
-    print("条件：s0_hits为低表示缓存未命中")
-    print("预期：根据文档注释，会访问但返回数据无效")
-    
-    await agent.reset()
-    await agent.drive_set_flush(False)
-    await agent.drive_data_array_ready(True)
-    
-    await agent.drive_waylookup_read(
-        vSetIdx_0=0x20,
-        vSetIdx_1=0x20,  # 由于0x800[5]=0，nextlineStart=startAddr，所以两个vSetIdx应该相同
-        waymask_0=0x0,  # s0_hits为低表示缓存未命中（waymask=0，OR约简结果为0）
-        ptag_0=0x67890,
-        itlb_exception_0=0
-    )
-    
-    await agent.drive_fetch_request(
-        pcMemRead_addrs=[0x800, 0, 0, 0, 0x800],  # 0x800[13:6] = 0x20，与vSetIdx_0匹配
-        readValid=[1, 0, 0, 0, 1]
-    )
-    
-    dataarray_status = await agent.monitor_dataarray_toIData()
-    pipeline_status = await agent.monitor_pipeline_status()
-    
-    print(f"  检查结果：")
-    print(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
-    print(f"  - toIData_0_waymask_0_0: {dataarray_status['toIData_0_waymask_0_0']}")
-    print(f"  - s0_fire: {pipeline_status['s0_fire']}")
-    
-    # 根据文档注释和verilog实现：会访问（toIData_0_valid=1），但数据无效（waymask=0表示miss）
-    assert dataarray_status['toIData_0_valid'] == 1, "根据verilog实现，readValid=1时toIData_0_valid仍为1（会访问）"
-    assert dataarray_status['toIData_0_waymask_0_0'] == 0, "waymask应为0，表示miss"
-    
-    await agent.clear_fetch_request()
-    print("  √ 测试 11.2 通过")
-    
-    # 11.3: 不访问DataArray（ITLB查询失败）- 会访问，但是返回数据无效
-    print("\n测试 11.3: 不访问DataArray（ITLB查询失败）- 会访问，但是返回数据无效")
-    print("条件：s0_itlb_exception信号不为零（ITLB查询失败）")
-    print("预期：根据文档注释，会访问但返回数据无效")
-    
-    await agent.reset()
-    await agent.drive_set_flush(False)
-    await agent.drive_data_array_ready(True)
-    
-    await agent.drive_waylookup_read(
-        vSetIdx_0=0x30,
-        vSetIdx_1=0x30,  # 由于0xC00[5]=0，nextlineStart=startAddr，所以两个vSetIdx应该相同
-        waymask_0=0x1,  # 有命中
-        ptag_0=0xABCDE,
-        itlb_exception_0=0x2  # s0_itlb_exception信号不为零（ITLB查询失败）
-    )
-    
-    # 确保WayLookup设置生效
-    await bundle.step(1)
-    
-    await agent.drive_fetch_request(
-        pcMemRead_addrs=[0xC00, 0, 0, 0, 0xC00],  # 0xC00[13:6] = 0x30，与vSetIdx_0匹配
-        readValid=[1, 0, 0, 0, 1]
-    )
-    
-    # 等待一个额外的周期，让信号从S0传递到S1
-    await bundle.step(1)
-    
-    dataarray_status = await agent.monitor_dataarray_toIData()
-    pipeline_status = await agent.monitor_pipeline_status()
-    exception_status = await agent.monitor_exception_merge_status()
-    
-    print(f"  检查结果：")
-    print(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
-    itlb_exception = exception_status.get('s1_itlb_exception_0', None)
-    print(f"  - ITLB exception: 0x{itlb_exception:x}" if itlb_exception is not None else "  - ITLB exception: None")
-    print(f"  - s0_fire: {pipeline_status['s0_fire']}")
-    
-    # 根据文档注释和verilog实现：会访问（toIData_0_valid=1），但有ITLB异常
-    assert dataarray_status['toIData_0_valid'] == 1, "根据verilog实现，readValid=1时toIData_0_valid仍为1（会访问）"
-    assert itlb_exception == 0x2, f"应检测到ITLB异常0x2，实际为{itlb_exception}"
-    
-    await agent.clear_fetch_request()
-    print("  √ 测试 11.3 通过")
-    
-    # 11.4: 不访问DataArray（DataArray正在进行写操作）
-    print("\n测试 11.4: 不访问DataArray（DataArray正在进行写操作）")
-    print("条件：toData.last.ready信号为低，表示DataArray正在进行写操作")
-    print("预期：s0_fire和fetch_req_ready为低，表示流水线被阻止，虽然toIData_0_valid仍可能为1（直接由readValid控制）")
-    
-    await agent.reset()
-    await agent.drive_set_flush(False)
-    await agent.drive_data_array_ready(False)  # toData.last.ready信号为低
-    
-    await agent.drive_waylookup_read(
-        vSetIdx_0=0x40,
-        vSetIdx_1=0x40,  # 由于0x1000[5]=0，nextlineStart=startAddr，所以两个vSetIdx应该相同
-        waymask_0=0x1,
-        ptag_0=0xDEAD,
-        itlb_exception_0=0
-    )
-    
-    await agent.drive_fetch_request(
-        pcMemRead_addrs=[0x1000, 0, 0, 0, 0x1000],  # 0x1000[13:6] = 0x40，与vSetIdx_0匹配
-        readValid=[1, 0, 0, 0, 1]
-    )
-    
-    dataarray_status = await agent.monitor_dataarray_toIData()
-    pipeline_status = await agent.monitor_pipeline_status()
-    
-    print(f"  检查结果：")
-    print(f"  - toIData_3_ready: {dataarray_status.get('toIData_3_ready', 0)}")
-    print(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
-    print(f"  - s0_fire: {pipeline_status['s0_fire']}")
-    print(f"  - fetch_req_ready: {pipeline_status['fetch_req_ready']}")
-    
-    # 根据verilog源码：DataArray busy时，s0_can_go为低，阻止流水线推进，但toIData_0_valid仍由readValid直接控制
-    assert pipeline_status['s0_fire'] == 0, "DataArray忙时s0_fire应为0（s0_can_go=0）"
-    assert pipeline_status['fetch_req_ready'] == 0, "DataArray忙时fetch_req_ready应为0（s0_can_go=0）"
-    # 注意：toIData_0_valid可能仍为1，因为它直接由readValid控制，与DataArray busy无关
-    
-    await agent.clear_fetch_request()
-    print("  √ 测试 11.4 通过")
-    
-    print("\n√ CP11: 访问DataArray的单路功能测试完成")
+    # 汇总测试结果
+    if test_errors:
+        print(f"\n=== CP11测试完成，发现{len(test_errors)}个错误 ===")
+        for i, error in enumerate(test_errors, 1):
+            print(f"  {i}. {error}")
+        # 抛出汇总的错误信息
+        raise AssertionError(f"CP11测试失败，共{len(test_errors)}个错误：" + "; ".join(test_errors))
+    else:
+        print("\n✓ CP11: 访问DataArray的单路功能测试完成，所有测试点通过")
 
 
 @toffee_test.testcase
@@ -1140,220 +1227,360 @@ async def test_cp12_meta_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
     测试依据：
     1. 文档要求：将物理地址的标签部分与对应的Meta进行ECC校验，以确保Meta的完整性
     2. 源码实现：s2_meta_corrupt_0 <= io_ecc_enable & (^s1_req_ptags_0 != s1_meta_codes_0 & s1_meta_corrupt_hit_num == 3'h1 | (|(s1_meta_corrupt_hit_num[2:1])))
+    3. Hit数量计算：s1_meta_corrupt_hit_num = s1_waymasks_0_0 + s1_waymasks_0_1 + s1_waymasks_0_2 + s1_waymasks_0_3
     """
     print("\n=== CP12: Meta ECC校验功能测试 ===")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
-
-    # 测试点12.1: 无ECC错误
-    print("\n--- Test 12.1: 无ECC错误 ---")
-    print("条件：waymask全为0（没有命中），则hit_num为0 或 waymask有一位为1（一路命中），hit_num为1且ECC对比通过（^ptag == meta_code）")
-    print("预期：s1_meta_corrupt为假")
     
-    await agent.reset()
-    await agent.drive_set_ecc_enable(True)
-    await agent.drive_data_array_ready(True)  # 确保DataArray准备就绪
+    # 收集所有测试错误，确保每个测试点都能执行
+    test_errors = []
+    
+    # ==================== 测试点12.1: 无ECC错误 ====================
+    print("\n--- Test 12.1: 无ECC错误 ---")
+    print("条件：waymask全为0（没有命中）或waymask有一位为1（单路命中）且ECC对比通过")
+    print("预期：s1_meta_corrupt为假，不报告错误")
     
     # Case 12.1a: waymask全为0（没有命中）
-    print("Case 12.1a: waymask全为0（没有命中）")
-    test_ptag = 0x12345
-    test_vaddr = 0x1000
-    correct_meta_code = bin(test_ptag).count('1') & 1  # 正确的ECC校验码（奇偶校验）
+    try:
+        print("\nCase 12.1a: waymask全为0（没有命中）")
+        await agent.reset()
+        await agent.drive_set_ecc_enable(True)
+        await agent.drive_data_array_ready(True)
+        
+        test_vaddr = 0x1000
+        test_ptag = 0x12345
+        # 计算正确的ECC校验码（XOR奇偶校验）
+        correct_meta_code = 0
+        temp_ptag = test_ptag
+        while temp_ptag:
+            correct_meta_code ^= temp_ptag & 1
+            temp_ptag >>= 1
+        
+        # 监控流水线状态
+        pipeline_status = await agent.monitor_pipeline_status()
+        print(f"  初始流水线状态: s0_fire={pipeline_status['s0_fire']}, ecc_enable={pipeline_status['ecc_enable']}")
+        
+        # 设置WayLookup：waymask全为0（没有命中）
+        waylookup_result = await agent.drive_waylookup_read(
+            vSetIdx_0=(test_vaddr >> 6) & 0xFF,
+            vSetIdx_1=(test_vaddr >> 6) & 0xFF,
+            waymask_0=0x0,  # 没有命中
+            waymask_1=0x0,
+            ptag_0=test_ptag,
+            ptag_1=0,
+            meta_codes_0=correct_meta_code,
+            meta_codes_1=0
+        )
+        print(f"  WayLookup设置成功: {waylookup_result['send_success']}")
+        
+        # 发起fetch请求（满足地址一致性约束）
+        fetch_success = await agent.drive_fetch_request(
+            pcMemRead_addrs=[0, 0, 0, 0, test_vaddr],  # pcMemRead_4设置为test_vaddr
+            readValid=[0, 0, 0, 0, 1]  # 只有readValid_4有效
+        )
+        print(f"  Fetch请求发起成功: {fetch_success}")
+        assert fetch_success, "12.1a: 地址一致性检查失败，无法发起fetch请求"
+        
+        # 推进流水线，让数据到达S2阶段进行ECC校验
+        await bundle.step(3)
+        
+        # 监控错误状态
+        error_status = await agent.monitor_error_status()
+        meta_status = await agent.monitor_check_meta_ecc_status()
+        
+        print(f"  waymask_0: 0x0 (没有命中)")
+        print(f"  ptag_0: 0x{test_ptag:x}")
+        print(f"  meta_codes_0: {correct_meta_code}")
+        print(f"  预期：hit_num为0，s1_meta_corrupt应为假")
+        print(f"  实际：io.errors[0].valid={error_status['0_valid']}")
+        
+        # 断言：没有命中时不应报告错误
+        assert error_status['0_valid'] == 0, f"12.1a失败：没有命中时不应报告错误，但io.errors[0].valid={error_status['0_valid']}"
+        
+        # 清除请求
+        await agent.clear_waylookup_read()
+        await agent.clear_fetch_request()
+        print("  ✓ Case 12.1a通过")
+        
+    except Exception as e:
+        error_msg = f"12.1a测试失败: {str(e)}"
+        print(f"  ✗ {error_msg}")
+        test_errors.append(error_msg)
     
-    # 正确的顺序：先设置WayLookup数据，然后发送fetch请求
-    await agent.drive_waylookup_read(
-        vSetIdx_0=(test_vaddr >> 6) & 0xFF,
-        vSetIdx_1=(test_vaddr >> 6) & 0xFF,  # 设置vSetIdx_1匹配nextlineStart
-        waymask_0=0x0,  # 没有命中
-        ptag_0=test_ptag,
-        meta_codes_0=correct_meta_code,
-        itlb_exception_0=0
-    )
+    # Case 12.1b: waymask有一位为1（单路命中）且ECC对比通过
+    try:
+        print("\nCase 12.1b: waymask有一位为1（单路命中）且ECC对比通过")
+        await agent.reset()
+        await agent.drive_set_ecc_enable(True)
+        await agent.drive_data_array_ready(True)
+        
+        test_vaddr = 0x2000
+        test_ptag = 0x54321
+        # 计算正确的ECC校验码
+        correct_meta_code = 0
+        temp_ptag = test_ptag
+        while temp_ptag:
+            correct_meta_code ^= temp_ptag & 1
+            temp_ptag >>= 1
+        
+        # 设置WayLookup：单路命中且ECC正确
+        await agent.drive_waylookup_read(
+            vSetIdx_0=(test_vaddr >> 6) & 0xFF,
+            vSetIdx_1=(test_vaddr >> 6) & 0xFF,
+            waymask_0=0x1,  # 单路命中（way 0）
+            waymask_1=0x0,
+            ptag_0=test_ptag,
+            ptag_1=0,
+            meta_codes_0=correct_meta_code,  # 正确的ECC码
+            meta_codes_1=0
+        )
+        
+        # 发起fetch请求
+        fetch_success = await agent.drive_fetch_request(
+            pcMemRead_addrs=[0, 0, 0, 0, test_vaddr],
+            readValid=[0, 0, 0, 0, 1]
+        )
+        assert fetch_success, "12.1b: 地址一致性检查失败"
+        
+        # 推进流水线
+        await bundle.step(1)
+        
+        # 监控状态
+        error_status = await agent.monitor_error_status()
+        meta_corrupt_status = await agent.monitor_meta_corrupt_status()
+        
+        print(f"  waymask_0: 0x1 (单路命中)")
+        print(f"  ptag_0: 0x{test_ptag:x}")
+        print(f"  meta_codes_0: {correct_meta_code} (正确的ECC码)")
+        print(f"  hit_num应为1，ECC对比应通过，s1_meta_corrupt应为假")
+        print(f"  实际：io.errors[0].valid={error_status['0_valid']}")
+        if meta_corrupt_status:
+            print(f"  s1_meta_corrupt_hit_num: {meta_corrupt_status.get('s1_meta_corrupt_hit_num', 'N/A')}")
+        
+        # 断言：单路命中且ECC正确时不应报告错误
+        assert error_status['0_valid'] == 0, f"12.1b失败：单路命中且ECC正确时不应报告错误，但io.errors[0].valid={error_status['0_valid']}"
+        
+        # 清除请求
+        await agent.clear_waylookup_read()
+        await agent.clear_fetch_request()
+        print("  ✓ Case 12.1b通过")
+        
+    except Exception as e:
+        error_msg = f"12.1b测试失败: {str(e)}"
+        print(f"  ✗ {error_msg}")
+        test_errors.append(error_msg)
     
-    await agent.drive_fetch_request(
-        pcMemRead_addrs=[test_vaddr, 0, 0, 0, test_vaddr],  # pcMemRead_0和pcMemRead_4都设置
-        readValid=[1, 0, 0, 0, 1]  # readValid_0和readValid_4都有效
-    )
-    
-    await bundle.step(1)  # 让流水线充分推进到S2阶段
-    
-    error_status = await agent.monitor_error_status()
-    meta_status = await agent.monitor_check_meta_ecc_status()
-    
-    print(f"  waymask_0: 0x0 (没有命中)")
-    print(f"  ptag_0: 0x{test_ptag:x}")
-    print(f"  meta_codes_0: {correct_meta_code}")
-    print(f"  hit_num应为0，s1_meta_corrupt应为假")
-    print(f"  io.errors[0].valid: {error_status['0_valid']}")
-    
-    assert error_status['0_valid'] == 0, f"12.1a失败：没有命中时不应报告错误，但io.errors[0].valid={error_status['0_valid']}"
-    
-    # Case 12.1b: waymask有一位为1（一路命中）且ECC对比通过
-    print("Case 12.1b: waymask有一位为1（一路命中）且ECC对比通过")
-    await agent.reset()
-    await agent.drive_set_ecc_enable(True)
-    await agent.drive_data_array_ready(True)  # 确保DataArray准备就绪
-    
-    test_ptag = 0x54321
-    test_vaddr = 0x2000  
-    correct_meta_code = bin(test_ptag).count('1') & 1  # 正确的ECC校验码（奇偶校验）
-    
-    await agent.drive_waylookup_read(
-        vSetIdx_0=(test_vaddr >> 6) & 0xFF,
-        vSetIdx_1=(test_vaddr >> 6) & 0xFF,  # 设置vSetIdx_1匹配nextlineStart
-        waymask_0=0x1,  # 单路命中
-        ptag_0=test_ptag,
-        meta_codes_0=correct_meta_code,
-        itlb_exception_0=0
-    )
-    
-    await agent.drive_fetch_request(
-        pcMemRead_addrs=[test_vaddr, 0, 0, 0, test_vaddr],  # pcMemRead_0和pcMemRead_4都设置
-        readValid=[1, 0, 0, 0, 1]  # readValid_0和readValid_4都有效
-    )
-    
-    await bundle.step(1)
-    
-    error_status = await agent.monitor_error_status()
-    
-    print(f"  waymask_0: 0x1 (单路命中)")
-    print(f"  ptag_0: 0x{test_ptag:x}")
-    print(f"  meta_codes_0: {correct_meta_code}")
-    print(f"  ECC校验：^ptag={test_ptag ^ (test_ptag >> 1) ^ (test_ptag >> 2) ^ (test_ptag >> 3) & 0x1} vs meta_code={correct_meta_code}")
-    print(f"  hit_num应为1，ECC对比应通过，s1_meta_corrupt应为假")
-    print(f"  io.errors[0].valid: {error_status['0_valid']}")
-    
-    assert error_status['0_valid'] == 0, f"12.1b失败：单路命中且ECC正确时不应报告错误，但io.errors[0].valid={error_status['0_valid']}"
-    
-    # 测试点12.2: 单路命中的ECC错误
+    # ==================== 测试点12.2: 单路命中的ECC错误 ====================
     print("\n--- Test 12.2: 单路命中的ECC错误 ---")
-    print("条件：waymask有一位为1（一路命中），ECC对比失败（^ptag != meta_code）")
-    print("预期：s1_meta_corrupt(i)、io.errors(i).valid、io.errors(i).bits.report_to_beu、io.errors(i).bits.source.data为true")
+    print("条件：waymask有一位为1（单路命中），ECC对比失败（^ptag != meta_code）")
+    print("预期：s2_meta_corrupt、io.errors.valid、io.errors.bits.report_to_beu为true")
     
-    await agent.reset()
-    await agent.drive_set_ecc_enable(True)
-    await agent.drive_data_array_ready(True)  # 确保DataArray准备就绪
+    try:
+        await agent.reset()
+        await agent.drive_set_ecc_enable(True)
+        await agent.drive_data_array_ready(True)
+        
+        test_vaddr = 0x3000
+        test_ptag = 0xABCDE
+        # 计算正确的ECC码，然后故意提供错误的ECC码
+        correct_meta_code = 0
+        temp_ptag = test_ptag
+        while temp_ptag:
+            correct_meta_code ^= temp_ptag & 1
+            temp_ptag >>= 1
+        wrong_meta_code = 1 - correct_meta_code  # 故意错误的ECC码
+        
+        print(f"  ptag: 0x{test_ptag:x}")
+        print(f"  正确ECC码: {correct_meta_code}")
+        print(f"  错误ECC码: {wrong_meta_code}")
+        
+        # 使用错误注入API设置单路命中的ECC错误
+        inject_success = await agent.inject_meta_ecc_error(
+            vSetIdx_0=(test_vaddr >> 6) & 0xFF,
+            vSetIdx_1=(test_vaddr >> 6) & 0xFF,
+            waymask_0=0x2,  # 单路命中（way 1）
+            waymask_1=0x0,
+            ptag_0=test_ptag,
+            ptag_1=0,
+            wrong_meta_code_0=wrong_meta_code
+        )
+        assert inject_success, "12.2: Meta ECC错误注入失败"
+        
+        # 发起fetch请求
+        fetch_success = await agent.drive_fetch_request(
+            pcMemRead_addrs=[0, 0, 0, 0, test_vaddr],
+            readValid=[0, 0, 0, 0, 1]
+        )
+        assert fetch_success, "12.2: 地址一致性检查失败"
+        
+        # 监控错误状态和内部信号
+        error_status = await agent.monitor_error_status()
+        meta_corrupt_status = await agent.monitor_meta_corrupt_status()
+        pipeline_status = await agent.monitor_pipeline_status()
+        
+        print(f"  waymask_0: 0x2 (单路命中，way 1)")
+        print(f"  hit_num应为1，ECC对比应失败，应报告错误")
+        print(f"  流水线状态: s0_fire={pipeline_status['s0_fire']}, s1_fire={pipeline_status.get('s1_fire', 'N/A')}, s2_fire={pipeline_status['s2_fire']}")
+        print(f"  实际：io.errors[0].valid={error_status['0_valid']}")
+        print(f"  实际：io.errors[0].report_to_beu={error_status['0_report_to_beu']}")
+        if meta_corrupt_status:
+            print(f"  s1_meta_corrupt_hit_num: {meta_corrupt_status.get('s1_meta_corrupt_hit_num', 'N/A')}")
+        
+        # 根据Verilog源码验证ECC错误检测逻辑：
+        # s2_meta_corrupt_0 <= io_ecc_enable & (^s1_req_ptags_0 != s1_meta_codes_0 & s1_meta_corrupt_hit_num == 3'h1 | (|(s1_meta_corrupt_hit_num[2:1])))
+        # io_errors_0_valid = REG_4 | s2_corrupt_refetch_0 & io_errors_0_valid_REG
+        # s2_corrupt_refetch_0 = s2_meta_corrupt_0 | s2_data_corrupt_0
+        assert error_status['0_valid'] == 1, f"12.2失败：单路命中且ECC错误时应报告错误，但io.errors[0].valid={error_status['0_valid']}"
+        assert error_status['0_report_to_beu'] == 1, f"12.2失败：应向BEU报告错误，但report_to_beu={error_status['0_report_to_beu']}"
+        
+        # 清除请求
+        await agent.clear_waylookup_read()
+        await agent.clear_fetch_request()
+        print("  ✓ Test 12.2通过")
+        
+    except Exception as e:
+        error_msg = f"12.2测试失败: {str(e)}"
+        print(f"  ✗ {error_msg}")
+        test_errors.append(error_msg)
     
-    test_ptag = 0xABCDE
-    test_vaddr = 0x3000
-    correct_meta_code = bin(test_ptag).count('1') & 1  # 正确的ECC校验码（奇偶校验）
-    wrong_meta_code = 1 - correct_meta_code  # 故意错误的ECC码
+    # ==================== 测试点12.3: 多路命中 ====================
+    print("\n--- Test 12.3: 多路命中 ---")
+    print("条件：waymask有两位及以上为1（多路命中），视为ECC错误")
+    print("预期：s2_meta_corrupt、io.errors.valid、io.errors.bits.report_to_beu为true")
     
-    await agent.drive_waylookup_read(
-        vSetIdx_0=(test_vaddr >> 6) & 0xFF,
-        vSetIdx_1=(test_vaddr >> 6) & 0xFF,  # 设置vSetIdx_1匹配nextlineStart
-        waymask_0=0x2,  # 单路命中（way 1）
-        ptag_0=test_ptag,
-        meta_codes_0=wrong_meta_code,
-        itlb_exception_0=0
-    )
+    try:
+        await agent.reset()
+        await agent.drive_set_ecc_enable(True)
+        await agent.drive_data_array_ready(True)
+        
+        test_vaddr = 0x4000
+        test_ptag = 0x98765
+        
+        print(f"  ptag: 0x{test_ptag:x}")
+        print(f"  多路命中：waymask=0x5 (way 0和way 2同时命中)")
+        
+        # 使用多路命中错误注入API
+        inject_success = await agent.inject_multi_way_hit(
+            vSetIdx_0=(test_vaddr >> 6) & 0xFF,
+            vSetIdx_1=(test_vaddr >> 6) & 0xFF,
+            waymask_0=0x5,  # 多路命中（way 0和way 2）
+            waymask_1=0x0,
+            ptag_0=test_ptag,
+            ptag_1=0
+        )
+        assert inject_success, "12.3: 多路命中错误注入失败"
+        
+        # 发起fetch请求
+        fetch_success = await agent.drive_fetch_request(
+            pcMemRead_addrs=[0, 0, 0, 0, test_vaddr],
+            readValid=[0, 0, 0, 0, 1]
+        )
+        assert fetch_success, "12.3: 地址一致性检查失败"
+        
+        # 推进流水线
+        await bundle.step(1)
+        
+        # 监控错误状态
+        error_status = await agent.monitor_error_status()
+        meta_corrupt_status = await agent.monitor_meta_corrupt_status()
+        
+        print(f"  waymask_0: 0x5 (多路命中，way 0和way 2)")
+        print(f"  hit_num应≥2，根据源码|(hit_num[2:1])检测多路命中，应报告错误")
+        print(f"  实际：io.errors[0].valid={error_status['0_valid']}")
+        print(f"  实际：io.errors[0].report_to_beu={error_status['0_report_to_beu']}")
+        if meta_corrupt_status:
+            print(f"  s1_meta_corrupt_hit_num: {meta_corrupt_status.get('s1_meta_corrupt_hit_num', 'N/A')}")
+        
+        # 根据Verilog源码，多路命中通过(|(s1_meta_corrupt_hit_num[2:1]))检测
+        assert error_status['0_valid'] == 1, f"12.3失败：多路命中时应报告错误，但io.errors[0].valid={error_status['0_valid']}"
+        assert error_status['0_report_to_beu'] == 1, f"12.3失败：应向BEU报告错误，但report_to_beu={error_status['0_report_to_beu']}"
+        
+        # 清除请求
+        await agent.clear_waylookup_read()
+        await agent.clear_fetch_request()
+        print("  ✓ Test 12.3通过")
+        
+    except Exception as e:
+        error_msg = f"12.3测试失败: {str(e)}"
+        print(f"  ✗ {error_msg}")
+        test_errors.append(error_msg)
     
-    await agent.drive_fetch_request(
-        pcMemRead_addrs=[test_vaddr, 0, 0, 0, test_vaddr],  # pcMemRead_0和pcMemRead_4都设置
-        readValid=[1, 0, 0, 0, 1]  # readValid_0和readValid_4都有效
-    )
-    
-    await bundle.step(1)
-    
-    error_status = await agent.monitor_error_status()
-    
-    print(f"  waymask_0: 0x2 (单路命中)")
-    print(f"  ptag_0: 0x{test_ptag:x}")
-    print(f"  meta_codes_0: {wrong_meta_code} (错误的ECC码)")
-    print(f"  正确的ECC码应为: {correct_meta_code}")
-    print(f"  hit_num应为1，ECC对比应失败，应报告错误")
-    print(f"  io.errors[0].valid: {error_status['0_valid']}")
-    print(f"  io.errors[0].report_to_beu: {error_status['0_report_to_beu']}")
-    
-    assert error_status['0_valid'] == 1, f"12.2失败：单路命中且ECC错误时应报告错误，但io.errors[0].valid={error_status['0_valid']}"
-    assert error_status['0_report_to_beu'] == 1, f"12.2失败：应向BEU报告错误，但report_to_beu={error_status['0_report_to_beu']}"
-    
-    # 测试点12.3: 多路命中
-    # print("\n--- Test 12.3: 多路命中 ---")
-    # print("条件：waymask有两位及以上为1（多路命中），视为ECC错误")
-    # print("预期：s1_meta_corrupt(i)、io.errors(i).valid、io.errors(i).bits.report_to_beu、io.errors(i).bits.source.data为true")
-    
-    # await agent.reset()
-    # await agent.drive_set_ecc_enable(True)
-    # await agent.drive_data_array_ready(True)  # 确保DataArray准备就绪
-    
-    # test_ptag = 0x98765
-    # test_vaddr = 0x4000
-    # any_meta_code = 0  # 多路命中时meta_code值不重要
-    
-    # await agent.drive_waylookup_read(
-    #     vSetIdx_0=(test_vaddr >> 6) & 0xFF,
-    #     vSetIdx_1=(test_vaddr >> 6) & 0xFF,  # 设置vSetIdx_1匹配nextlineStart
-    #     waymask_0=0x5,  # 多路命中（way 0和way 2）
-    #     ptag_0=test_ptag,
-    #     meta_codes_0=any_meta_code,
-    #     itlb_exception_0=0
-    # )
-    
-    # await agent.drive_fetch_request(
-    #     pcMemRead_addrs=[test_vaddr, 0, 0, 0, test_vaddr],  # pcMemRead_0和pcMemRead_4都设置
-    #     readValid=[1, 0, 0, 0, 1]  # readValid_0和readValid_4都有效
-    # )
-    
-    # await bundle.step(1)  # 让流水线充分推进到S2阶段
-    
-    # error_status = await agent.monitor_error_status()
-    
-    # print(f"  waymask_0: 0x5 (多路命中，way 0和way 2)")
-    # print(f"  ptag_0: 0x{test_ptag:x}")
-    # print(f"  meta_codes_0: {any_meta_code}")
-    # print(f"  hit_num应≥2，根据源码|(hit_num[2:1])检测多路命中，应报告错误")
-    # print(f"  io.errors[0].valid: {error_status['0_valid']}")
-    # print(f"  io.errors[0].report_to_beu: {error_status['0_report_to_beu']}")
-    
-    # assert error_status['0_valid'] == 1, f"12.3失败：多路命中时应报告错误，但io.errors[0].valid={error_status['0_valid']}"
-    # assert error_status['0_report_to_beu'] == 1, f"12.3失败：应向BEU报告错误，但report_to_beu={error_status['0_report_to_beu']}"
-    
-    # 测试点12.4: ECC功能关闭
+    # ==================== 测试点12.4: ECC功能关闭 ====================
     print("\n--- Test 12.4: ECC功能关闭 ---")
     print("条件：奇偶校验关闭（ecc_enable为低）")
     print("预期：强制清除s1_meta_corrupt信号置位，不管是否发生ECC错误，s1_meta_corrupt都为假")
     
-    await agent.reset()
-    await agent.drive_set_ecc_enable(False)  # 关闭ECC功能
-    await agent.drive_data_array_ready(True)  # 确保DataArray准备就绪
+    try:
+        await agent.reset()
+        await agent.drive_set_ecc_enable(False)  # 关闭ECC功能
+        await agent.drive_data_array_ready(True)
+        
+        test_vaddr = 0x5000
+        test_ptag = 0x11111
+        # 故意设置ECC错误条件但ECC功能关闭
+        wrong_meta_code = 1  # 故意错误的ECC码
+        
+        print(f"  ECC功能已关闭")
+        print(f"  ptag: 0x{test_ptag:x}")
+        print(f"  故意设置错误ECC码: {wrong_meta_code}")
+        
+        # 设置ECC错误条件但ECC功能关闭
+        await agent.drive_waylookup_read(
+            vSetIdx_0=(test_vaddr >> 6) & 0xFF,
+            vSetIdx_1=(test_vaddr >> 6) & 0xFF,
+            waymask_0=0x1,  # 单路命中
+            waymask_1=0x0,
+            ptag_0=test_ptag,
+            ptag_1=0,
+            meta_codes_0=wrong_meta_code,  # 故意错误的ECC码
+            meta_codes_1=0
+        )
+        
+        # 发起fetch请求
+        fetch_success = await agent.drive_fetch_request(
+            pcMemRead_addrs=[0, 0, 0, 0, test_vaddr],
+            readValid=[0, 0, 0, 0, 1]
+        )
+        assert fetch_success, "12.4: 地址一致性检查失败"
+        
+        # 推进流水线
+        await bundle.step(3)
+        
+        # 监控错误状态
+        error_status = await agent.monitor_error_status()
+        meta_status = await agent.monitor_check_meta_ecc_status()
+        
+        print(f"  waymask_0: 0x1 (单路命中)")
+        print(f"  由于ECC功能关闭，即使有ECC错误也不应报告")
+        print(f"  实际：io.ecc_enable={meta_status['ecc_enable']}")
+        print(f"  实际：io.errors[0].valid={error_status['0_valid']}")
+        
+        # 根据Verilog源码，ECC关闭时强制清除错误信号
+        # s2_meta_corrupt_0 <= io_ecc_enable & (...)，当io_ecc_enable=0时，s2_meta_corrupt_0=0
+        assert meta_status['ecc_enable'] == 0, f"12.4失败：ECC功能应被关闭，但ecc_enable={meta_status['ecc_enable']}"
+        assert error_status['0_valid'] == 0, f"12.4失败：ECC功能关闭时不应报告错误，但io.errors[0].valid={error_status['0_valid']}"
+        
+        # 清除请求
+        await agent.clear_waylookup_read()
+        await agent.clear_fetch_request()
+        print("  ✓ Test 12.4通过")
+        
+    except Exception as e:
+        error_msg = f"12.4测试失败: {str(e)}"
+        print(f"  ✗ {error_msg}")
+        test_errors.append(error_msg)
     
-    # 故意设置ECC错误条件但ECC功能关闭
-    test_ptag = 0x11111
-    test_vaddr = 0x5000
-    wrong_meta_code = 1  # 故意错误的ECC码
-    
-    await agent.drive_waylookup_read(
-        vSetIdx_0=(test_vaddr >> 6) & 0xFF,
-        vSetIdx_1=(test_vaddr >> 6) & 0xFF,  # 设置vSetIdx_1匹配nextlineStart
-        waymask_0=0x1,  # 单路命中
-        ptag_0=test_ptag,
-        meta_codes_0=wrong_meta_code,
-        itlb_exception_0=0
-    )
-    
-    await agent.drive_fetch_request(
-        pcMemRead_addrs=[0, 0, 0, 0, test_vaddr],
-        readValid=[0, 0, 0, 0, 1]
-    )
-    
-    await bundle.step(1)
-    
-    error_status = await agent.monitor_error_status()
-    meta_status = await agent.monitor_check_meta_ecc_status()
-    
-    print(f"  ECC功能已关闭")
-    print(f"  waymask_0: 0x1 (单路命中)")
-    print(f"  ptag_0: 0x{test_ptag:x}")
-    print(f"  meta_codes_0: {wrong_meta_code} (故意错误的ECC码)")
-    print(f"  由于ECC功能关闭，即使有ECC错误也不应报告")
-    print(f"  io.ecc_enable: {meta_status['ecc_enable']}")
-    print(f"  io.errors[0].valid: {error_status['0_valid']}")
-    
-    assert meta_status['ecc_enable'] == 0, f"12.4失败：ECC功能应被关闭，但ecc_enable={meta_status['ecc_enable']}"
-    assert error_status['0_valid'] == 0, f"12.4失败：ECC功能关闭时不应报告错误，但io.errors[0].valid={error_status['0_valid']}"
-    
-    print("\n CP12: Meta ECC校验功能测试完成")
+    # ==================== 测试结果汇总 ====================
+    print(f"\n=== CP12测试结果汇总 ===")
+    if test_errors:
+        print(f"测试失败数量: {len(test_errors)}")
+        for error in test_errors:
+            print(f"  - {error}")
+        # 抛出汇总的错误信息
+        raise AssertionError(f"CP12: Meta ECC校验功能测试有{len(test_errors)}个失败:\n" + "\n".join(test_errors))
+    else:
+        print("✓ CP12: Meta ECC校验功能测试完成，所有测试点通过")
 
 
 @toffee_test.testcase
@@ -1436,9 +1663,9 @@ async def test_cp13_pmp_check(icachemainpipe_env: ICacheMainPipeEnv):
             instr_1=1, mmio_1=0
         )
         await agent.drive_waylookup_read(
-            vSetIdx_0=0x40,  # 0x1000[13:6] = 0x40
-            vSetIdx_1=0x40,  # 保持一致
-            waymask_0=0x0,  # 没有命中
+            vSetIdx_0=0x40, 
+            vSetIdx_1=0x40, 
+            waymask_0=0x0, 
             ptag_0=0x12345,
             itlb_exception_0=0
         )
