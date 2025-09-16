@@ -123,7 +123,6 @@ def define_mainpipe_coverage(bundle, dut):
     
     # =================================================================
     # CP 11: 访问 DataArray 的单路
-    # 监控目标：S0阶段根据WayLookup信息决定是否访问DataArray
     # =================================================================
     g.add_watch_point(
         {
@@ -185,7 +184,6 @@ def define_mainpipe_coverage(bundle, dut):
     
     # =================================================================
     # CP 12: Meta ECC 校验
-    # 监控目标：S2阶段Meta ECC校验逻辑，检查数据完整性
     # =================================================================
     g.add_watch_point(
         {
@@ -310,8 +308,7 @@ def define_mainpipe_coverage(bundle, dut):
     
     # =================================================================
     # CP 14: 异常合并
-    # 监控目标：基于实际verilog实现的S2阶段ITLB和PMP异常合并
-    # 注意：文档中的s1_exception_out等信号在verilog中不存在
+    # 监控目标：ITLB和PMP异常合并
     # =================================================================
     g.add_watch_point(
         {
@@ -327,7 +324,7 @@ def define_mainpipe_coverage(bundle, dut):
             "fetch_resp_exception_1": bundle.io._fetch._resp._bits._exception._1,
         },
         bins={
-            # 14.1: 没有异常（按文档逻辑：s1_exception_out为全零）
+            # 14.1: 没有异常（s1_exception_out为全零）
             # 实际：无ITLB异常，有PMP权限，S2异常合并结果为全零
             "CP14.1_no_exception": lambda d: d["wayLookupRead_entry_itlb_exception_0"].value == 0 and \
                                             d["wayLookupRead_entry_itlb_exception_1"].value == 0 and \
@@ -337,21 +334,21 @@ def define_mainpipe_coverage(bundle, dut):
                                             d["s2_exception_1"].value == 0 and \
                                             d["fetch_resp_valid"].value == 1,
             
-            # 14.2: 只有ITLB异常（按文档逻辑：s1_exception_out和s1_itlb_exception一致）
+            # 14.2: 只有ITLB异常（s1_exception_out和s1_itlb_exception一致）
             # 实际：有ITLB异常，S2异常合并结果等于ITLB异常
             "CP14.2_only_itlb_exception": lambda d: d["wayLookupRead_entry_itlb_exception_0"].value != 0 and \
                                                    d["pmp_0_resp_instr"].value == 1 and \
                                                    d["s2_exception_0"].value == d["wayLookupRead_entry_itlb_exception_0"].value and \
                                                    d["fetch_resp_valid"].value == 1,
             
-            # 14.3: 只有PMP异常（按文档逻辑：s1_exception_out和s1_pmp_exception一致）
+            # 14.3: 只有PMP异常（s1_exception_out和s1_pmp_exception一致）
             # 实际：无ITLB异常，有PMP异常，S2异常合并结果反映PMP状态
             "CP14.3_only_pmp_exception": lambda d: d["wayLookupRead_entry_itlb_exception_0"].value == 0 and \
                                                   d["pmp_0_resp_instr"].value == 0 and \
                                                   d["s2_exception_0"].value != 0 and \
                                                   d["fetch_resp_valid"].value == 1,
             
-            # 14.4: ITLB与PMP异常同时出现（按文档逻辑：ITLB优先）
+            # 14.4: ITLB与PMP异常同时出现（ITLB优先）
             # 实际：有ITLB异常和PMP异常，S2异常合并结果等于ITLB异常（优先级体现）
             "CP14.4_itlb_pmp_both_itlb_priority": lambda d: d["wayLookupRead_entry_itlb_exception_0"].value != 0 and \
                                                            d["pmp_0_resp_instr"].value == 0 and \
@@ -363,7 +360,6 @@ def define_mainpipe_coverage(bundle, dut):
     
     # =================================================================
     # CP 15: MSHR 匹配和数据选择
-    # 监控目标：按照文档要求的三个测试子点进行验证
     # =================================================================
     g.add_watch_point(
         {
@@ -374,7 +370,6 @@ def define_mainpipe_coverage(bundle, dut):
             "s1_MSHR_hits_1": dut.GetInternalSignal(MainPipe_dict["s1_MSHR_hits_1"], use_vpi=False),
             "s1_data_is_from_MSHR_0": dut.GetInternalSignal(MainPipe_dict["s1_data_is_from_MSHR_0"], use_vpi=False),
             "s1_data_is_from_MSHR_1": dut.GetInternalSignal(MainPipe_dict["s1_data_is_from_MSHR_1"], use_vpi=False),
-            # 代表性bank信号
             "s1_bankMSHRHit_0": dut.GetInternalSignal(MainPipe_dict["s1_bankMSHRHit_0"], use_vpi=False),
             # 阶段控制信号
             "s1_fire": dut.GetInternalSignal(MainPipe_dict["s1_fire"], use_vpi=False),
@@ -407,9 +402,6 @@ def define_mainpipe_coverage(bundle, dut):
     
     # =================================================================
     # CP 16: Data ECC 校验
-    # 监控目标：S2阶段的数据ECC校验
-    # 注意：文档中的io.errors(i).bits.source.data信号在Verilog中不存在
-    # 实际验证基于s2_data_corrupt信号和错误报告接口
     # =================================================================
     g.add_watch_point(
         {
@@ -486,8 +478,6 @@ def define_mainpipe_coverage(bundle, dut):
     
     # =================================================================
     # CP 17: 冲刷 MetaArray
-    # 监控目标：Meta或者Data ECC校验错误时，会冲刷MetaArray，为重取做准备
-    # 严格按照MainPipe.md文档定义的三个测试子点
     # =================================================================
     g.add_watch_point(
         {
@@ -501,7 +491,6 @@ def define_mainpipe_coverage(bundle, dut):
             "s2_meta_corrupt_1": dut.GetInternalSignal(MainPipe_dict["s2_meta_corrupt_1"], use_vpi=False),
             "s2_data_corrupt_0": dut.GetInternalSignal(MainPipe_dict["s2_data_corrupt_0"], use_vpi=False),
             "s2_data_corrupt_1": dut.GetInternalSignal(MainPipe_dict["s2_data_corrupt_1"], use_vpi=False),
-            # 阶段控制信号
             "s2_fire": bundle.ICacheMainPipe._s2._fire,
         },
         bins={
@@ -560,8 +549,6 @@ def define_mainpipe_coverage(bundle, dut):
     
     # =================================================================
     # CP 18: 监控 MSHR 匹配与数据更新
-    # 监控目标：判断是否命中MSHR，根据MSHR是否命中和s1阶段是否发射来更新s2的数据、命中状态和l2是否损坏
-    # 基于步骤一到四的分析，按照跨行/不跨行分类，保持18.1和18.2编号
     # =================================================================
     g.add_watch_point(
         {
@@ -650,9 +637,6 @@ def define_mainpipe_coverage(bundle, dut):
     
     # =================================================================
     # CP 19: Miss 请求发送逻辑和合并异常
-    # 监控目标：通过计算s2_should_fetch判断是否需要向MSHR发送Miss请求，
-    # 使用Arbiter将多个端口请求合并，通过s2_has_send避免重复请求，
-    # 将S2阶段ITLB/PMP异常与L2 Cache异常进行合并
     # =================================================================
     g.add_watch_point(
         {
@@ -773,27 +757,23 @@ def define_mainpipe_coverage(bundle, dut):
     
     # =================================================================
     # CP 20: 响应 IFU
-    # 监控目标：S2阶段向IFU的响应逻辑
-    # 根据文档要求：若当前周期S2成功发射(s2_fire=true)且数据获取完毕(s2_fetch_finish)，
-    # 则把数据、异常信息、物理地址等打包到toIFU.bits输出
     # =================================================================
     g.add_watch_point(
         {
-            # 核心控制信号 (对应文档toIFU.valid = s2_fire)
+            # 核心控制信号 (对应toIFU.valid = s2_fire)
             "fetch_resp_valid": bundle.io._fetch._resp._valid,
             "s2_fire": bundle.ICacheMainPipe._s2._fire,
             
-            # S2阶段内部状态信号 (使用确认存在的bundle信号)
+            # S2阶段内部状态信号
             "s2_valid": bundle.ICacheMainPipe._s2._valid,
             
-            # 需要通过GetInternalSignal获取的信号
             "s2_hits_0": dut.GetInternalSignal(MainPipe_dict["s2_hits_0"], use_vpi=False),
             "s2_hits_1": dut.GetInternalSignal(MainPipe_dict["s2_hits_1"], use_vpi=False),
             "s2_doubleline": dut.GetInternalSignal(MainPipe_dict["s2_doubleline"], use_vpi=False),
             "s2_should_fetch_0": dut.GetInternalSignal(MainPipe_dict["s2_should_fetch_0"], use_vpi=False),
             "s2_should_fetch_1": dut.GetInternalSignal(MainPipe_dict["s2_should_fetch_1"], use_vpi=False),
             
-            # 输出响应信号 (bundle IO接口信号)
+            # 输出响应信号
             "fetch_resp_doubleline": bundle.io._fetch._resp._bits._doubleline,
             "fetch_resp_data": bundle.io._fetch._resp._bits._data,
             "fetch_resp_paddr_0": bundle.io._fetch._resp._bits._paddr._0,
@@ -811,9 +791,9 @@ def define_mainpipe_coverage(bundle, dut):
         bins={
             # 20.1: 正常命中并返回
             # 文档条件：不存在任何异常或Miss，s2命中，s2阶段取指完成，外部respStall停止信号也为低
-            # 文档期望：toIFU.valid=true，toIFU.bits.data为正确Cacheline数据，exception/pmp_mmio/itlb_pbmt=none
+            # 期望：toIFU.valid=true，toIFU.bits.data为正确Cacheline数据，exception/pmp_mmio/itlb_pbmt=none
             "CP20.1_normal_hit_response": lambda d: (
-                # 核心条件：s2_fire = true (对应文档s2成功发射)
+                # 核心条件：s2_fire = true (对应s2成功发射)
                 d["s2_fire"].value == 1 and
                 d["fetch_resp_valid"].value == 1 and
                 # s2命中条件
@@ -834,8 +814,8 @@ def define_mainpipe_coverage(bundle, dut):
             ),
             
             # 20.2: 异常返回
-            # 文档条件：设置ITLB、PMP、或L2 corrupt异常
-            # 文档期望：toIFU.bits.exception(i)=对应异常类型，pmp_mmio、itlb_pbmt根据异常设置
+            # 条件：设置ITLB、PMP、或L2 corrupt异常
+            # 期望：toIFU.bits.exception(i)=对应异常类型，pmp_mmio、itlb_pbmt根据异常设置
             "CP20.2_exception_response": lambda d: (
                 d["s2_fire"].value == 1 and
                 d["fetch_resp_valid"].value == 1 and
@@ -849,8 +829,8 @@ def define_mainpipe_coverage(bundle, dut):
             ),
             
             # 20.3: 跨行取指
-            # 文档条件：s2_doubleline=true，同时检查第一路、第二路返回情况
-            # 文档期望：toIFU.bits.doubleline=true，第二路异常处理
+            # 条件：s2_doubleline=true，同时检查第一路、第二路返回情况
+            # 期望：toIFU.bits.doubleline=true，第二路异常处理
             "CP20.3_doubleline_fetch": lambda d: (
                 d["s2_fire"].value == 1 and
                 d["fetch_resp_valid"].value == 1 and
@@ -861,8 +841,8 @@ def define_mainpipe_coverage(bundle, dut):
             ),
             
             # 20.4: RespStall阻塞响应
-            # 文档条件：外部io.respStall=true，导致S2阶段无法发射到IFU
-            # 文档期望：s2_fire=false，toIFU.valid也不拉高，S2保持原状态等待
+            # 条件：外部io.respStall=true，导致S2阶段无法发射到IFU
+            # 期望：s2_fire=false，toIFU.valid也不拉高，S2保持原状态等待
             "CP20.4_resp_stall_block": lambda d: (
                 d["respStall"].value == 1 and
                 d["s2_fire"].value == 0 and
@@ -876,9 +856,6 @@ def define_mainpipe_coverage(bundle, dut):
     
     # =================================================================
     # CP 21: L2 Corrupt 报告
-    # 监控目标：当检测到L2 Cache返回的corrupt标记时，在S2完成发射后向外部错误接口报告
-    # 注意：文档中的io.errors(i).bits.source.l2字段在Verilog中不存在
-    # 实际验证基于s2_l2_corrupt信号、s2_fire时序控制和错误报告接口
     # =================================================================
     g.add_watch_point(
         {
@@ -894,7 +871,6 @@ def define_mainpipe_coverage(bundle, dut):
             "s2_fire": bundle.ICacheMainPipe._s2._fire,
             "s1_fire": dut.GetInternalSignal(MainPipe_dict["s1_fire"], use_vpi=False),
             
-            # 关键内部信号（通过GetInternalSignal获取）
             "s2_l2_corrupt_0": dut.GetInternalSignal(MainPipe_dict["s2_l2_corrupt_0"], use_vpi=False),
             "s2_l2_corrupt_1": dut.GetInternalSignal(MainPipe_dict["s2_l2_corrupt_1"], use_vpi=False),
             "s2_bankMSHRHit_7": dut.GetInternalSignal(MainPipe_dict["s2_bankMSHRHit_7"], use_vpi=False),
@@ -904,7 +880,7 @@ def define_mainpipe_coverage(bundle, dut):
         },
         bins={
             # 21.1: L2 Corrupt单路
-            # 文档要求：s2阶段准备完成可以发射（s2_fire为高），s2_MSHR_hits(0)和fromMSHR.bits.corrupt为高
+            # 要求：s2阶段准备完成可以发射（s2_fire为高），s2_MSHR_hits(0)和fromMSHR.bits.corrupt为高
             # s2_l2_corrupt(0) = true，io.errors(0).valid = true，io.errors(0).bits.source.l2 = true
             "CP21.1_l2_corrupt_single": lambda d: (
                 d["s2_fire"].value == 1 and
@@ -917,7 +893,7 @@ def define_mainpipe_coverage(bundle, dut):
             ),
             
             # 21.2: 双路同时corrupt
-            # 文档要求：端口0和端口1都从L2 corrupt数据中获取
+            # 要求：端口0和端口1都从L2 corrupt数据中获取
             # s2_l2_corrupt均为true，发射后分别报告到io.errors(0)和io.errors(1)
             "CP21.2_dual_port_corrupt": lambda d: (
                 d["s2_fire"].value == 1 and
@@ -938,7 +914,6 @@ def define_mainpipe_coverage(bundle, dut):
     
     # =================================================================
     # CP 22: 刷新机制
-    # 监控目标：流水线刷新控制逻辑，验证各阶段对io_flush信号的正确响应
     # =================================================================
     g.add_watch_point(
         {
@@ -963,25 +938,25 @@ def define_mainpipe_coverage(bundle, dut):
         },
         bins={
             # 22.1: 全局刷新 - io.flush = true 时，各阶段都正确响应刷新
-            # 文档要求：s0_flush, s1_flush, s2_flush = true（功能等价：各fire信号 = false）
+            # 要求：s0_flush, s1_flush, s2_flush = true（功能等价：各fire信号 = false）
             "CP22.1_global_flush": lambda d: d["flush"].value == 1 and \
                                             d["s0_fire"].value == 0 and \
                                             d["s1_fire"].value == 0 and \
                                             d["s2_fire"].value == 0,
             
             # 22.2: S0阶段刷新效果 - s0_flush = true 时 s0_fire = false
-            # 文档要求：s0_flush = true, s0_fire = false（功能等价：flush时s0_fire被阻止）
+            # 要求：s0_flush = true, s0_fire = false（功能等价：flush时s0_fire被阻止）
             "CP22.2_s0_flush_effect": lambda d: d["flush"].value == 1 and \
                                                d["s0_fire"].value == 0,
             
             # 22.3: S1阶段刷新效果 - s1_flush = true 时 s1_valid, s1_fire = false
-            # 文档要求：s1_flush = true, s1_valid, s1_fire = false（功能等价：flush时s1被清除）
+            # 要求：s1_flush = true, s1_valid, s1_fire = false（功能等价：flush时s1被清除）
             "CP22.3_s1_flush_effect": lambda d: d["flush"].value == 1 and \
                                                d["s1_fire"].value == 0,
                                                # 注意：s1_valid的清除在时序逻辑中体现，flush时s1_valid会被异步清除
             
             # 22.4: S2阶段刷新效果 - s2_flush = true 时多个信号被清除
-            # 文档要求：s2_flush = true, s2_valid, toMSHRArbiter.io.in(i).valid, s2_fire = false
+            # 要求：s2_flush = true, s2_valid, toMSHRArbiter.io.in(i).valid, s2_fire = false
             "CP22.4_s2_flush_effect": lambda d: d["flush"].value == 1 and \
                                                d["s2_fire"].value == 0 and \
                                                d["mshr_req_valid"].value == 0,
