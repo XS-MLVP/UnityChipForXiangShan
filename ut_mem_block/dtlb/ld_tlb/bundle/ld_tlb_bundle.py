@@ -1,7 +1,5 @@
 from toffee import Bundle, Signal, Signals, SignalList, BundleList
 
-class CtrlBundle(Bundle):
-    clock, reset = Signals(2)
 #------------------------------------------------------------------------
 class SfenceBundle(Bundle):
     valid, \
@@ -19,6 +17,12 @@ class ATPBundle(Bundle):
     ppn = Signal()
     changed = Signal()
 
+class HGATPBundle(Bundle):
+    mode = Signal()
+    vmid = Signal()
+    ppn = Signal()
+    changed = Signal()
+
 class PMMBundle(Bundle):
     mseccfg, menvcfg, henvcfg, hstatus, senvcfg = Signals(5)
 
@@ -28,7 +32,7 @@ class CSRBundle(Bundle):
 
     Satp = ATPBundle.from_prefix('satp_')
     Vsatp = ATPBundle.from_prefix('vsatp_')
-    HGatp = ATPBundle.from_prefix('hgatp_')
+    HGatp = HGATPBundle.from_prefix('hgatp_')
     PMM = PMMBundle.from_prefix('pmm_')
 #------------------------------------------------------------------------
 class RequestorReqBundle(Bundle):
