@@ -5,8 +5,8 @@ TARGET_NAME = "StoreUnit"
 
 def build(cfg):
 
-    # export ICacheMainPipe.sv
-    return picker_export(TARGET_NAME, cfg, internal_file=internal_signals_path)
+    # export StoreUnit.sv
+    return picker_export(TARGET_NAME, cfg)
 
 
 def line_coverage_files(cfg):
