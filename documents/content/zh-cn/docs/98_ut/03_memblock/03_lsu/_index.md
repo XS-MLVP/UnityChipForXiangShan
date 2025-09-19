@@ -1,7 +1,7 @@
 ---
 title: LSU
 linkTitle: 香山LSU模块
-#menu: {main: {weight: 20}}
+
 weight: 20
 ---
 
