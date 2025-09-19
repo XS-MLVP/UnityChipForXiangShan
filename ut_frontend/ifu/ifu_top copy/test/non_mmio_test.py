@@ -118,8 +118,7 @@ async def test_cross_prediction_block(ifu_top_env):
 @toffee_test.testcase
 async def test_random_non_mmios(ifu_top_env):
     top_agent : OutsideAgent = ifu_top_env.top_agent
-    random.seed(1105)
-    print(f"Random seed set to: {random.seed}")
+    print(random.seed)
     for _ in range(10000):
         req : NonMMIOReq = NonMMIOReq()
         req.randomize()
