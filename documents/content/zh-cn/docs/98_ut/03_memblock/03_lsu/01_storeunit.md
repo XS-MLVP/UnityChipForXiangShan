@@ -1,4 +1,3 @@
-
 ---
 title: StoreUnit
 linkTitle: StoreUnit
@@ -28,17 +27,9 @@ StoreUnit 是存储指令执行单元 ，由多个协同工作的子模块组成
 
 #### 存储地址流水线
 
-<div>			
-    <center>	
 
-    <img src="../../../../../../static/docs/98_ut/03_memblock/03_storeunit/scalar.png"
+![sw指令流水示意图](../../../../../../static/docs/98_ut/03_memblock/03_storeunit/scalar.png)
 
-         alt="sw指令流水示意图"
-         style="zoom:100%"/>
-    <br>
-    图1：LoadQueueRAR结构示意图<br><br>
-    </center>
-</div>
 
 
 由4级结构组成：
@@ -95,17 +86,9 @@ StoreUnit 是存储指令执行单元 ，由多个协同工作的子模块组成
 对于除 SEG指令外的向量内存访问指令，VSSplit 负责接收向量内存访问指令发射队列发送的微操作（uop），并将该微操作拆分为多个元素。随后VSSplit 将这些元素发送至StoreUnit 执行，执行流程与标量内存访问指令相同。执行完成后，元素会被写回至 VSMerge，其中 Merge 模块会将这些元素收集并组合成微操作，最终写回向量寄存器文件。
 SEG 指令则由独立的 VSegmentUnit 模块处理。
 
-<div>			
-    <center>	
 
-    <img src="../../../../../../static/docs/98_ut/03_memblock/03_storeunit/vector.png"
+![vse指令流水示意图](../../../../../../static/docs/98_ut/03_memblock/03_storeunit/vector.png)
 
-         alt="vse指令流水示意图"
-         style="zoom:100%"/>
-    <br>
-    图2：LoadQueueRAR结构示意图<br><br>
-    </center>
-</div>
 
 
 StoreUnit处理非对齐Store指令流程和标量类似，特别的:
@@ -140,15 +123,8 @@ StoreUnit处理非对齐Store指令流程和标量类似，特别的:
 
 原子指令、MMIO与NC地址空间均不支持非对齐访问，这些情况将触发AccessFault异常。
 
-<div>			
-    <center>	
-    <img src="../../../../../../static/docs/98_ut/03_memblock/03_storeunit/misalign.png"
-         alt="非对齐sd指令流水示意图"
-         style="zoom:100%"/>
-    <br>
-    图3：非对齐sd指令流水示意图<br><br>
-    </center>
-</div>
+![非对齐sd指令流水示意图](../../../../../../static/docs/98_ut/03_memblock/03_storeunit/misalign.png)
+
 
 
 StoreUnit处理非对齐Store指令流程和标量类似，特别的:
@@ -178,15 +154,8 @@ RAW内存违例：处理器核执行的Load指令的结果应来源于当前处�
 
 Store指令地址流水线分为S0/S1/S2/S3四级,如图所示：
 
-<div>			
-    <center>	
-    <img src="../../../../../../static/docs/98_ut/03_memblock/03_storeunit/StoreUnit.png"
-         alt="StoreUnit整体框图"
-         style="zoom:100%"/>
-    <br>
-    图4：StoreUnit整体框图<br><br>
-    </center>
-</div>
+![整体框图](../../../../../../static/docs/98_ut/03_memblock/03_storeunit/StoreUnit.png)
+
 
 
 接收store地址发射队列发来的请求，处理完成之后需要给后端和向量部分响应，处理过程中需要给发射队列反馈信息，给StoreQueue反馈信息，最后写回, 如果中间出现异常则从发射队列重新发射。
@@ -740,15 +709,7 @@ SBuffer支持超时清空机制；超过2^20周期未被换出的数据块将被
 
 ### 接口时序实例
 
-<div>			
-    <center>	
-    <img src="../../../../../../static/docs/98_ut/03_memblock/03_storeunit/LSU-StoreUnit-Timing.svg"
-         alt="StoreUnit接口时序"
-         style="zoom:100%"/>
-    <br>
-    图1：StoreUnit接口时序<br><br>
-    </center>
-</div>
+![StoreUnit接口时序](../../../../../../static/docs/98_ut/03_memblock/03_storeunit/LSU-StoreUnit-Timing.svg)
 
 
 
