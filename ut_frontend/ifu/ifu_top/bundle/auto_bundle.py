@@ -302,6 +302,7 @@ class InternalBundle(Bundle):
 	_f0_flush_from_bpu_probe = Signal()
 	_f2_ready = Signal()
 	_f2_fire = Signal()
+	_f0_fire, _wb_enable = Signals(2)
 	_f2_valid = Signal()
 	_f3_ready = Signal()
 	_icacheRespAllValid = Signal()
@@ -315,6 +316,12 @@ class InternalBundle(Bundle):
 	_f3_instr_range = Signal()
 	pre_decoder = PredecodeBundle.from_prefix("_preDecoder")
 	pred_checker = PredCheckerBundle.from_prefix("_predChecker")
+
+	_mmio_state = Signal()
+	_is_first_instr = Signal()
+	
+	# mmio_wb_pd_0 = mmioFlushPdBundle.from_prefix("_mmioFlushWb_bits_pd_0")
+ 
 	# preDecoder_io_in_bits_data = SignalList("_preDecoder_io_in_bits_data_#", 17)
 
 	
@@ -326,6 +333,5 @@ class IFUTopBundle(Bundle):
 	_icacheInterCtrl = ICacheInterCtrlBundle.from_prefix("io") #done
 	to_ibuffer_all = ToIbufferBundle.from_prefix("io") # done
 	mmio_needed = MMIONeededBundle.from_prefix("io") 
-	performance = PerformanceBundle.from_prefix("io") # not need
 	io_frontendTrigger = FrontendTriggerBundle.from_prefix("io_frontendTrigger") # done
 	internal_wires = InternalBundle.from_prefix("NewIFU") # done
