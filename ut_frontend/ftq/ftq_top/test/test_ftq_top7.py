@@ -10,7 +10,7 @@ async def test_example7_integration_with_agent(ftq_env):
     await ftq_env.ftq_agent.set_write_mode_as_imme()
     bpu_value = 0
     bpu_flag = 0
-    for test_iter in range(300):
+    for test_iter in range(3000):
         selected = random.choice(FTQ_BACKEND_UPDATE_SCENARIOS)
         random_pc            = random.randint(0, 0xFFFFFFFF)
         random_target        = random.randint(0, 0xFFFFFFFF)

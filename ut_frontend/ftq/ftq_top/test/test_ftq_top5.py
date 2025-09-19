@@ -9,7 +9,7 @@ async def test_example5_integration_with_agent(ftq_env):
     dut = ftq_env.dut
     await ftq_env.ftq_agent.set_write_mode_as_imme()
     await ftq_env.ftq_agent.reset5(ftq_env.dut)
-    num_experiments = 300
+    num_experiments = 3000
     for i in range(num_experiments):
         logic_goal = random.choice(BACKEND_REDIRECT_LOGIC_GOALS)
         redirect_path = random.choice(BACKEND_REDIRECT_PATHS) # << 随机选择时序路径
@@ -71,7 +71,7 @@ async def test_example5_integration_with_agent(ftq_env):
                 cfiUpdate_taken=1,
                 ftqIdxSelOH_bits=1
             )
-            dut.RefreshComb()  #不能删掉
+            dut.RefreshComb()
         elif redirect_path == 'NORMAL_REDIRECT':
             await ftq_env.ftq_agent.drive_backend_inputs(
                 valid=1,
