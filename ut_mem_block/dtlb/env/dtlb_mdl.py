@@ -109,7 +109,7 @@ class DTLBPLRURefModel(Model):
         self.plru = TreePLRU48()
 
     # ---------------- driver_hook #1：命中查询 ----------------
-    @driver_hook(agent_name="req", driver_name="drive_request")
+    @driver_hook(agent_name="agent", driver_name="drive_request")
     def drive_request(
         self,
         port: int,
@@ -136,7 +136,7 @@ class DTLBPLRURefModel(Model):
         return None
 
     # ---------------- driver_hook #2：PTW 回填（无 invalid 优先） ----------------
-    @driver_hook(agent_name="req", driver_name="set_ptw_resp")
+    @driver_hook(agent_name="agent", driver_name="set_ptw_resp")
     def set_ptw_resp(self, vaddr, paddr, level, *,
                         # S1/S2 选择
                         valid: bool = True,

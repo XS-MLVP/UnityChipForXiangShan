@@ -1,6 +1,6 @@
 from toffee.agent import Agent, driver_method, monitor_method
 from toffee import Value
-from ..bundle.ld_tlb_bundle import DTLBBundle, RequestorBundle, CSRBundle, PTWBundle, PMPBundle
+from ..bundle.dtlb_bundle import DTLBBundle, RequestorBundle, CSRBundle, PTWBundle, PMPBundle
 
 def _canon_sv39_vaddr(va: int) -> int:
     """把 64 位 VA 规范化为 Sv39 canonical 形式（按 bit[38] 符号扩展）"""
@@ -53,7 +53,7 @@ class DTLBAgent(Agent):
         req = self.requestor[port].req
         
         req.valid.value = 0
-        req.bits_vaddr.value = canon & ((1 << 50) - 1)   # 你的接口是 50 位，这里保守取低 50 位
+        req.bits_vaddr.value = canon & ((1 << 39) - 1)   # 你的接口是 50 位，这里保守取低 50 位
         req.bits_fullva.value = fullva                   # 完整 64 位
         req.bits_checkfullva.value = 1 if check_fullva else 0
 
@@ -62,7 +62,7 @@ class DTLBAgent(Agent):
         req.bits_hlvx.value = 1 if hlvx else 0
         req.bits_kill.value = 1 if kill else 0
         req.bits_isPrefetch.value = 1 if is_prefetch else 0
-        req.bits_no_translate.value = 0
+        req.bits_no_translate.value = 1 if no_translate else 0
 
         req.bits_pmp_addr.value = pmp & ((1 << 48) - 1)
 
@@ -148,7 +148,10 @@ class DTLBAgent(Agent):
         ppn = (paddr >> 12)
         addr_low = vpn & 0b111                 # vpn[2:0]
         entry_tag = vpn >> 3                   # 与硬件压缩槽对齐
-        entry_ppn = (ppn >> 3) & ((1 << 21) - 1)   # 高 21 位（低 3 位走 ppn_low[]）
+        if s2xlate == 0:
+            entry_ppn = (ppn >> 3) & ((1 << 21) - 1)   # 高 21 位（低 3 位走 ppn_low[]）
+        else:
+            entry_ppn = (ppn >> 3) & ((1 << 26) - 1)
         ppn_low_val = ppn & 0b111
 
         # -------- （valid 暂时保持 0）--------

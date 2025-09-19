@@ -1,7 +1,7 @@
 # env/dtlb_env.py
 from toffee import Env
-from ..bundle.ld_tlb_bundle import DTLBBundle
-from ..agent.ld_dtlb_agent import DTLBAgent
+from ..bundle.dtlb_bundle import DTLBBundle
+from ..agent.dtlb_agent import DTLBAgent
 from .dtlb_mdl import DTLBPLRURefModel
 
 class DTLBEnv_PLRU(Env):
@@ -9,8 +9,7 @@ class DTLBEnv_PLRU(Env):
         super().__init__()
         self.dut = dut
         self.bundle = DTLBBundle.from_prefix("io_").bind(dut)
-        # 事务级 agent
-        self.req = DTLBAgent(self.bundle)
+        self.agent = DTLBAgent(self.bundle)
         self.mdl = DTLBPLRURefModel()
         self.attach(self.mdl)
         
@@ -46,8 +45,7 @@ class DTLBEnv(Env):
         super().__init__()
         self.dut = dut
         self.bundle = DTLBBundle.from_prefix("io_").bind(dut)
-        # 事务级 agent
-        self.req = DTLBAgent(self.bundle)
+        self.agent = DTLBAgent(self.bundle)
 
 
     async def set_sv39_defaults(self):
