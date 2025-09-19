@@ -28,17 +28,7 @@ StoreUnit 是存储指令执行单元 ，由多个协同工作的子模块组成
 #### 存储地址流水线
 
 ![sw指令流水示意图](../../../../../../static/docs/98_ut/03_memblock/03_storeunit/scalar.png)
-<div>			
-    <center>	
 
-    <img src="../../../../../../static/docs/98_ut/03_memblock/03_storeunit/scalar.png"
-
-         alt="sw指令流水示意图"
-         style="zoom:100%"/>
-    <br>
-    图1：LoadQueueRAR结构示意图<br><br>
-    </center>
-</div>
 
 
 由4级结构组成：
@@ -96,17 +86,6 @@ StoreUnit 是存储指令执行单元 ，由多个协同工作的子模块组成
 SEG 指令则由独立的 VSegmentUnit 模块处理。
 
 ![vse指令流水示意图](../../../../../../static/docs/98_ut/03_memblock/03_storeunit/vector.png)
-<div>			
-    <center>	
-
-    <img src="../../../../../../static/docs/98_ut/03_memblock/03_storeunit/vector.png"
-
-         alt="vse指令流水示意图"
-         style="zoom:100%"/>
-    <br>
-    图2：LoadQueueRAR结构示意图<br><br>
-    </center>
-</div>
 
 
 StoreUnit处理非对齐Store指令流程和标量类似，特别的:
@@ -141,7 +120,6 @@ StoreUnit处理非对齐Store指令流程和标量类似，特别的:
 
 原子指令、MMIO与NC地址空间均不支持非对齐访问，这些情况将触发AccessFault异常。
 
-#### 非对齐sd指令流水示意图
 ![非对齐sd指令流水示意图](../../../../../../static/docs/98_ut/03_memblock/03_storeunit/misalign.png)
 
 
