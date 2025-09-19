@@ -28,7 +28,8 @@ StoreUnit 是存储指令执行单元 ，由多个协同工作的子模块组成
 #### 存储地址流水线
 
 
-![sw指令流水示意图](../../../../../../static/docs/98_ut/03_memblock/03_storeunit/scalar.png)
+![sw指令流水示意图](../../scalar.png)
+
 
 
 
@@ -87,7 +88,7 @@ StoreUnit 是存储指令执行单元 ，由多个协同工作的子模块组成
 SEG 指令则由独立的 VSegmentUnit 模块处理。
 
 
-![vse指令流水示意图](../../../../../../static/docs/98_ut/03_memblock/03_storeunit/vector.png)
+![vse指令流水示意图](../../vector.png)
 
 
 
@@ -123,8 +124,9 @@ StoreUnit处理非对齐Store指令流程和标量类似，特别的:
 
 原子指令、MMIO与NC地址空间均不支持非对齐访问，这些情况将触发AccessFault异常。
 
-![非对齐sd指令流水示意图](../../../../../../static/docs/98_ut/03_memblock/03_storeunit/misalign.png)
 
+![非对齐sd指令流水示意图](../../misalign.png)
+in
 
 
 StoreUnit处理非对齐Store指令流程和标量类似，特别的:
@@ -154,7 +156,9 @@ RAW内存违例：处理器核执行的Load指令的结果应来源于当前处�
 
 Store指令地址流水线分为S0/S1/S2/S3四级,如图所示：
 
-![整体框图](../../../../../../static/docs/98_ut/03_memblock/03_storeunit/StoreUnit.png)
+
+![整体框图](../../StoreUnit.png)
+
 
 
 
@@ -709,7 +713,9 @@ SBuffer支持超时清空机制；超过2^20周期未被换出的数据块将被
 
 ### 接口时序实例
 
-![StoreUnit接口时序](../../../../../../static/docs/98_ut/03_memblock/03_storeunit/LSU-StoreUnit-Timing.svg)
+
+![StoreUnit接口时序](../../LSU-StoreUnit-Timing.svg)
+
 
 
 
