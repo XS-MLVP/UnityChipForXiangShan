@@ -205,7 +205,7 @@ async def random_once_req(top_agent: OutsideAgent):
 async def test_random_resends(ifu_top_env):
     top_agent: OutsideAgent = ifu_top_env.top_agent
     random.seed(1105)
-    print(f"Random seed set to: {random.seed}")
+    print(f"Random seed set to: 1105 | {random.seed}")
     for _ in range(5000):
         await random_once_req(top_agent)
 

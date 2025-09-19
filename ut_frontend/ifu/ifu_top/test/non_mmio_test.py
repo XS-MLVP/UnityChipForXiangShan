@@ -119,8 +119,8 @@ async def test_cross_prediction_block(ifu_top_env):
 async def test_random_non_mmios(ifu_top_env):
     top_agent : OutsideAgent = ifu_top_env.top_agent
     random.seed(1105)
-    print(f"Random seed set to: {random.seed}")
-    for _ in range(10000):
+    print(f"Random seed set to: 1105 | {random.seed}")
+    for _ in range(12000):
         req : NonMMIOReq = NonMMIOReq()
         req.randomize()
         await top_agent.deal_with_non_mmio(req)    
