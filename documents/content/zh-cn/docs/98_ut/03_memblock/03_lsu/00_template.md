@@ -1,8 +1,10 @@
+
 ---
 title: 微报告模板
 linkTitle: 微报告模板
 weight: 12
 ---
+
 
 ***SCALAR_DISPATCH 测试点***
 ### 功能描述
