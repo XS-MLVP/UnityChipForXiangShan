@@ -30,7 +30,7 @@ StoreUnit 是存储指令执行单元 ，由多个协同工作的子模块组成
 
 <div>			
     <center>	
-    <img src="../scalar.png"
+    <img src="../../../../../../static/docs/98_ut/03_memblock/03_storeunit/scalar.png"
          alt="sw指令流水示意图"
          style="zoom:100%"/>
     <br>
@@ -95,7 +95,7 @@ SEG 指令则由独立的 VSegmentUnit 模块处理。
 
 <div>			
     <center>	
-    <img src="../vector.png"
+    <img src="../../../../../../static/docs/98_ut/03_memblock/03_storeunit/vector.png"
          alt="vse指令流水示意图"
          style="zoom:100%"/>
     <br>
@@ -138,7 +138,7 @@ StoreUnit处理非对齐Store指令流程和标量类似，特别的:
 
 <div>			
     <center>	
-    <img src="../misalign.png"
+    <img src="../../../../../../static/docs/98_ut/03_memblock/03_storeunit/misalign.png"
          alt="非对齐sd指令流水示意图"
          style="zoom:100%"/>
     <br>
@@ -176,7 +176,7 @@ Store指令地址流水线分为S0/S1/S2/S3四级,如图所示：
 
 <div>			
     <center>	
-    <img src="../StoreUnit.png"
+    <img src="../../../../../../static/docs/98_ut/03_memblock/03_storeunit/StoreUnit.png"
          alt="StoreUnit整体框图"
          style="zoom:100%"/>
     <br>
@@ -738,7 +738,7 @@ SBuffer支持超时清空机制；超过2^20周期未被换出的数据块将被
 
 <div>			
     <center>	
-    <img src="../LSU-StoreUnit-Timing.svg"
+    <img src="../../../../../../static/docs/98_ut/03_memblock/03_storeunit/LSU-StoreUnit-Timing.svg"
          alt="StoreUnit接口时序"
          style="zoom:100%"/>
     <br>
