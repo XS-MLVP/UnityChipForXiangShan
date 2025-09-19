@@ -1,13 +1,4 @@
 
----
-title: StoreUnit
-linkTitle: StoreUnit
-weight: 12
----
-
-# StoreUnit
-#### 本文档参考[香山StoreUnit设计文档](https://github.com/OpenXiangShan/XiangShan-Design-Doc/blob/master/docs/zh/memblock/LSU/index.md)写成
-请注意，本文档撰写的测试点仅供参考，如能补充更多测试点，最终获得的奖励可能更高！
 # StoreUnit说明文档
 ## 文档概述
 本文档描述了StoreUnit的结构与功能，并根据功能给出测试点参考，方便测试的参与者理解测试需求，编写相关测试用例。
@@ -28,8 +19,6 @@ StoreUnit 是存储指令执行单元 ，由多个协同工作的子模块组成
 内存单元里包含2条Store地址流水线与2条Store数据流水线。各流水线独立接收并执行对应发射队列派发的指令。
 
 #### 存储地址流水线
-
-![Scalar](scalar.png)
 
 由4级结构组成：
 
@@ -85,7 +74,6 @@ StoreUnit 是存储指令执行单元 ，由多个协同工作的子模块组成
 对于除 SEG指令外的向量内存访问指令，VSSplit 负责接收向量内存访问指令发射队列发送的微操作（uop），并将该微操作拆分为多个元素。随后VSSplit 将这些元素发送至StoreUnit 执行，执行流程与标量内存访问指令相同。执行完成后，元素会被写回至 VSMerge，其中 Merge 模块会将这些元素收集并组合成微操作，最终写回向量寄存器文件。
 SEG 指令则由独立的 VSegmentUnit 模块处理。
 
-![Vector](vector.png)
 
 StoreUnit处理非对齐Store指令流程和标量类似，特别的:
 
@@ -119,8 +107,6 @@ StoreUnit处理非对齐Store指令流程和标量类似，特别的:
 
 原子指令、MMIO与NC地址空间均不支持非对齐访问，这些情况将触发AccessFault异常。
 
-![Misalign](misalign.png)
-
 StoreUnit处理非对齐Store指令流程和标量类似，特别的:
 
 * stage 0:
@@ -146,9 +132,7 @@ RAW内存违例：处理器核执行的Load指令的结果应来源于当前处�
 
 ## 整体框图及流水级
 
-Store指令地址流水线分为S0/S1/S2/S3四级,如图所示：
-
-![StoreUnit整体框图](StoreUnit.png)
+Store指令地址流水线分为S0/S1/S2/S3四级。
 
 接收store地址发射队列发来的请求，处理完成之后需要给后端和向量部分响应，处理过程中需要给发射队列反馈信息，给StoreQueue反馈信息，最后写回, 如果中间出现异常则从发射队列重新发射。
 
@@ -697,12 +681,6 @@ SBuffer支持超时清空机制；超过2^20周期未被换出的数据块将被
 | io_misalign_buf_bits_mbIndex | output | 4 | Misalign缓冲区块索引，表示该向量操作的块索引 |
 | io_s0_s1_valid | output | 1 | S0/S1有效信号，指示S0/S1阶段是否有效 |
 
-## 接口时序
-
-### 接口时序实例
-
-![StoreUnit接口时序](LSU-StoreUnit-Timing.svg)
-
 
 
 ## 测试点总表
@@ -734,4 +712,5 @@ SBuffer支持超时清空机制；超过2^20周期未被换出的数据块将被
 | 10.2 | SU_ATOMIC  | OPS |验证原子操作（如AMO）执行正确性。|
 
 </mrs-testpoints>
+
 

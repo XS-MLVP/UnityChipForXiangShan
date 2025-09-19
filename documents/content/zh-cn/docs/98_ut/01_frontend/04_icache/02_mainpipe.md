@@ -132,7 +132,7 @@ MainPipe 为 ICache 的主流水，为三级流水设计，负责从 DataArray �
 4. 通道 0 和通道 1 都有 PMP 异常
    - s1_pmp_exception(0) 和 s1_pmp_exception(1) 都为真，表示通道 0 和通道 1 都有 PMP 异常。
 5. 没有映射到 MMIO 区域
-   - s1_pmp_mmio（0） 和 s1_pmp_mergemmio（1） 都为假，表示没有映射到 MMIO 区域。
+   - s1_pmp_mmio（0） 和 s1_pmp_mmio（1） 都为假，表示没有映射到 MMIO 区域。
 6. 通道 0 映射到了 MMIO 区域
    - s1_pmp_mmio（0） 为真，表示映射到了 MMIO 区域。
 7. 通道 1 映射到了 MMIO 区域
@@ -142,7 +142,7 @@ MainPipe 为 ICache 的主流水，为三级流水设计，负责从 DataArray �
 
 ### 异常合并
 
-- 将 s1_itlbmergeption 与 s1_pmp_exception 合并生成 s1_exception_out。
+- 将 s1_itlb_exception 与 s1_pmp_exception 合并生成 s1_exception_out。
 - ITLB 异常通常优先于 PMP 异常。merge
 
 1. 没有异常
