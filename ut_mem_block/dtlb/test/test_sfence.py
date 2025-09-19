@@ -65,7 +65,7 @@ async def test_sfence_vma_global_noG(dtlb_env):
     await dtlb_env.bundle.step()
 
     # miss → 回填（非 G）→ hit
-    assert await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD, return_on_miss=True) is None
+    assert await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD) is None
     _, s2x, _ = await _wait_ptw_req_and_capture(dtlb_env, va)
     await dtlb_env.agent.set_ptw_resp(vaddr=va, paddr=pa, level=0,
                                s1_asid=asid, s1_perm_r=True, s1_perm_a=True, s1_perm_g=False,
@@ -77,7 +77,7 @@ async def test_sfence_vma_global_noG(dtlb_env):
     await do_sfence(dtlb_env, hv=False, hg=False, rs1=False, rs2=False)
 
     # 应 miss
-    assert await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD, return_on_miss=True) is None
+    assert await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD) is None
 
 
 # =========================
@@ -103,7 +103,7 @@ async def test_sfence_vma_by_asid(dtlb_env):
 
     
 
-    assert await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD, return_on_miss=True) is None
+    assert await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD) is None
     _, s2x, _ = await _wait_ptw_req_and_capture(dtlb_env, va)
     await dtlb_env.agent.set_ptw_resp(vaddr=va, paddr=pa, level=0,
                                s1_asid=asid, s1_perm_r=True, s1_perm_a=True, s1_perm_g=False,
@@ -112,7 +112,7 @@ async def test_sfence_vma_by_asid(dtlb_env):
 
     # 按当前 satp.asid 清（id 用 CSR.Satp.asid）
     await do_sfence(dtlb_env, hv=False, hg=False, rs1=False, rs2=True, id_=asid)
-    assert await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD, return_on_miss=True) is None
+    assert await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD) is None
 
 
 # =========================
@@ -137,7 +137,7 @@ async def test_sfence_vma_by_va(dtlb_env):
     await dtlb_env.bundle.step()
 
 
-    assert await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD, return_on_miss=True) is None
+    assert await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD) is None
     _, s2x, _ = await _wait_ptw_req_and_capture(dtlb_env, va)
     await dtlb_env.agent.set_ptw_resp(vaddr=va, paddr=pa, level=0,
                                s1_asid=asid, s1_perm_r=True, s1_perm_a=True, s1_perm_g=False,
@@ -145,7 +145,7 @@ async def test_sfence_vma_by_va(dtlb_env):
     assert await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD) == ((pa & ~0xFFF) | (va & 0xFFF))
 
     await do_sfence(dtlb_env, hv=False, hg=False, rs1=True, addr=va, rs2=False)
-    assert await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD, return_on_miss=True) is None
+    assert await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD) is None
 
 
 # =========================
@@ -171,7 +171,7 @@ async def test_sfence_vma_by_va_asid(dtlb_env):
 
     
 
-    assert await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD, return_on_miss=True) is None
+    assert await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD) is None
     _, s2x, _ = await _wait_ptw_req_and_capture(dtlb_env, va)
     await dtlb_env.agent.set_ptw_resp(vaddr=va, paddr=pa, level=0,
                                s1_asid=asid, s1_perm_r=True, s1_perm_a=True, s1_perm_g=False,
@@ -179,7 +179,7 @@ async def test_sfence_vma_by_va_asid(dtlb_env):
     assert await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD) == ((pa & ~0xFFF) | (va & 0xFFF))
 
     await do_sfence(dtlb_env, hv=False, hg=False, rs1=True, addr=va, rs2=True, id_=asid)
-    assert await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD, return_on_miss=True) is None
+    assert await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD) is None
 
 
 # =========================
@@ -208,7 +208,7 @@ async def test_hfence_vvma_by_vmid(dtlb_env):
 
     
 
-    assert await dtlb_env.agent.drive_request(port=port, vaddr=gva, cmd=LOAD, return_on_miss=True) is None
+    assert await dtlb_env.agent.drive_request(port=port, vaddr=gva, cmd=LOAD) is None
     _, s2x, _ = await _wait_ptw_req_and_capture(dtlb_env, gva)
     await dtlb_env.agent.set_ptw_resp(vaddr=gva, paddr=gpa, level=0,
                                s1_asid=asid, s1_vmid=vmid,
@@ -218,7 +218,7 @@ async def test_hfence_vvma_by_vmid(dtlb_env):
 
     # VVMA：hv=1，通常按 VMID 过滤需 rs2=1；VMID 来源于 CSR.HGATP.vmid（id 忽略）
     await do_sfence(dtlb_env, hv=True, hg=False, rs1=False, rs2=True, id_=vmid)
-    assert await dtlb_env.agent.drive_request(port=port, vaddr=gva, cmd=LOAD, return_on_miss=True) is None
+    assert await dtlb_env.agent.drive_request(port=port, vaddr=gva, cmd=LOAD) is None
 
 
 # =========================
@@ -245,7 +245,7 @@ async def test_hfence_vvma_by_gva_vmid(dtlb_env):
     csr.HGatp.vmid.value = vmid
     await dtlb_env.bundle.step()
 
-    assert await dtlb_env.agent.drive_request(port=port, vaddr=gva, cmd=LOAD, return_on_miss=True) is None
+    assert await dtlb_env.agent.drive_request(port=port, vaddr=gva, cmd=LOAD) is None
     _, s2x, _ = await _wait_ptw_req_and_capture(dtlb_env, gva)
     await dtlb_env.agent.set_ptw_resp(vaddr=gva, paddr=gpa, level=0,
                                s1_asid=asid, s1_vmid=vmid,
@@ -254,7 +254,7 @@ async def test_hfence_vvma_by_gva_vmid(dtlb_env):
     assert await dtlb_env.agent.drive_request(port=port, vaddr=gva, cmd=LOAD) == ((gpa & ~0xFFF) | (gva & 0xFFF))
 
     await do_sfence(dtlb_env, hv=True, hg=False, rs1=True, addr=gva, rs2=True, id_=vmid)
-    assert await dtlb_env.agent.drive_request(port=port, vaddr=gva, cmd=LOAD, return_on_miss=True) is None
+    assert await dtlb_env.agent.drive_request(port=port, vaddr=gva, cmd=LOAD) is None
 
 
 # =========================
@@ -279,7 +279,7 @@ async def test_hfence_gvma_by_vmid(dtlb_env):
     csr.HGatp.vmid.value = vmid
     await dtlb_env.bundle.step()
 
-    assert await dtlb_env.agent.drive_request(port=port, vaddr=gpa_in, cmd=LOAD, return_on_miss=True) is None
+    assert await dtlb_env.agent.drive_request(port=port, vaddr=gpa_in, cmd=LOAD) is None
     _, s2x, getGpa_req = await _wait_ptw_req_and_capture(dtlb_env, gpa_in)
     await dtlb_env.agent.set_ptw_resp(vaddr=gpa_in, paddr=0, level=0, s1_v=False,
                                s2xlate=s2x, getGpa=getGpa_req,
@@ -290,7 +290,7 @@ async def test_hfence_gvma_by_vmid(dtlb_env):
 
     # GVMA：hg=1，按 VMID（来自 bits_id）清 S2
     await do_sfence(dtlb_env, hv=False, hg=True, rs1=False, rs2=True, id_=vmid)
-    assert await dtlb_env.agent.drive_request(port=port, vaddr=gpa_in, cmd=LOAD, return_on_miss=True) is None
+    assert await dtlb_env.agent.drive_request(port=port, vaddr=gpa_in, cmd=LOAD) is None
 
 
 # =========================
@@ -315,7 +315,7 @@ async def test_hfence_gvma_by_gpa_vmid(dtlb_env):
     csr.HGatp.vmid.value = vmid
     await dtlb_env.bundle.step()
 
-    assert await dtlb_env.agent.drive_request(port=port, vaddr=gpa_in, cmd=LOAD, return_on_miss=True) is None
+    assert await dtlb_env.agent.drive_request(port=port, vaddr=gpa_in, cmd=LOAD) is None
     _, s2x, getGpa_req = await _wait_ptw_req_and_capture(dtlb_env, gpa_in)
     await dtlb_env.agent.set_ptw_resp(vaddr=gpa_in, paddr=0, level=0, s1_v=False,
                                s2xlate=s2x, getGpa=getGpa_req,
@@ -325,4 +325,4 @@ async def test_hfence_gvma_by_gpa_vmid(dtlb_env):
     assert await dtlb_env.agent.drive_request(port=port, vaddr=gpa_in, cmd=LOAD) == ((hpa & ~0xFFF) | (gpa_in & 0xFFF))
 
     await do_sfence(dtlb_env, hv=False, hg=True, rs1=True, addr=gpa_in, rs2=True, id_=vmid)
-    assert await dtlb_env.agent.drive_request(port=port, vaddr=gpa_in, cmd=LOAD, return_on_miss=True) is None
+    assert await dtlb_env.agent.drive_request(port=port, vaddr=gpa_in, cmd=LOAD) is None

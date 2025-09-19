@@ -34,13 +34,7 @@ class DTLBAgent(Agent):
         debug_robIdx_flag: int = 0,
         debug_robIdx_value: int = 0,
         debug_isFirstIssue: int = 0,
-        return_on_miss: bool = False,
     ):
-        """
-        命中且无异常 => 返回 paddr_0 (int)
-        miss / 异常 => 返回 None
-        return_on_miss=True: 一旦看到 miss 就立即返回 None（便于“下一拍注入”）
-        """
         if not 0 <= port < 4:
             raise ValueError("Port must be 0..N-1")
 
@@ -74,11 +68,8 @@ class DTLBAgent(Agent):
             await self.bundle.step()
         
         req.valid.value = 1
-        # print("resp_miss before request : ",self.requestor[port].resp.bits_miss.value, flush=True)
-        await Value(self.requestor[port].resp.valid, 1)  # 发起
+        await Value(self.requestor[port].resp.valid, 1)
         req.valid.value = 0 
-        # print("resp_miss after request  : ",self.requestor[port].resp.bits_miss.value, flush=True)
-        
         
         resp = self.requestor[port].resp
         
@@ -86,7 +77,6 @@ class DTLBAgent(Agent):
         if miss == 1:
             return None
 
-        # 汇总异常位（ld/st 都看一遍更稳）
         # print("resp_excp_0_pf_ld : ",resp.bits_excp_0_pf_ld.value, flush=True)
         # print("resp_excp_0_pf_st : ",resp.bits_excp_0_pf_st.value, flush=True)
         # print("resp_excp_0_af_ld : ",resp.bits_excp_0_af_ld.value, flush=True)
@@ -105,7 +95,6 @@ class DTLBAgent(Agent):
 
     @driver_method()
     async def set_ptw_resp(self, vaddr, paddr, level, *,
-                        # S1/S2 选择
                         valid: bool = True,
                         s2xlate: int = 0,
                         getGpa: bool = False,
@@ -114,13 +103,12 @@ class DTLBAgent(Agent):
                         s1_vmid: int = 0,
                         s1_n: bool = False,
                         s1_pbmt: int = 0,
-                        # 权限位
                         s1_perm_d: bool = False, s1_perm_a: bool = True, s1_perm_g: bool = False,
                         s1_perm_u: bool = True, s1_perm_x: bool = False, s1_perm_w: bool = False, s1_perm_r: bool = True,
-                        s1_v: bool = True,              # 表项有效位
-                        s1_ppn_low: list[int] | None = None, # 直接给 ppn_low[8] 列表
-                        s1_valididx: list[int] | None = None, # 直接给 valididx[8] 列表
-                        s1_pteidx: list[int] | None = None,   # 直接给 pteidx[8] 列表
+                        s1_v: bool = True,             
+                        s1_ppn_low: list[int] | None = None, 
+                        s1_valididx: list[int] | None = None, 
+                        s1_pteidx: list[int] | None = None,   
                         s1_pf: bool = False, s1_af: bool = False,
                         # ---------- S2 entry ----------
                         s2_tag: int = 0,
@@ -133,23 +121,14 @@ class DTLBAgent(Agent):
                         s2_level: int = 0,
                         s2_gpf: bool = False, s2_gaf: bool = False,
                     ):
-        """
-        依据 vaddr/paddr 自动拼好 PTWResp：addr_low/entry_tag/entry_ppn/ppn_low/valididx/pteidx 等，
-        并在观测到 ptw.req[i] 匹配的当下打一拍 resp.valid。
-        约定（Sv39）：
-        - vpn = va>>12（27 位），addr_low = vpn[2:0]，entry_tag = vpn>>3
-        - ppn = pa>>12，entry_ppn = ppn>>3，ppn_low[addr_low] = ppn[2:0]
-        - 4KB 页 level=2（2MB=1，1GB=0）
-        """
-        # -------- 计算索引/字段 --------
         vaddr = int(vaddr) & ((1 << 64) - 1)
-        paddr = int(paddr) & ((1 << 56) - 1)   # 物理位宽保守截断
-        vpn = (vaddr >> 12) & ((1 << 27) - 1)  # Sv39 VPN
+        paddr = int(paddr) & ((1 << 56) - 1)  
+        vpn = (vaddr >> 12) & ((1 << 27) - 1) 
         ppn = (paddr >> 12)
-        addr_low = vpn & 0b111                 # vpn[2:0]
-        entry_tag = vpn >> 3                   # 与硬件压缩槽对齐
+        addr_low = vpn & 0b111
+        entry_tag = vpn >> 3 
         if s2xlate == 0:
-            entry_ppn = (ppn >> 3) & ((1 << 21) - 1)   # 高 21 位（低 3 位走 ppn_low[]）
+            entry_ppn = (ppn >> 3) & ((1 << 21) - 1)
         else:
             entry_ppn = (ppn >> 3) & ((1 << 26) - 1)
         ppn_low_val = ppn & 0b111
@@ -221,49 +200,6 @@ class DTLBAgent(Agent):
         await self.bundle.step()
         self.bundle.ptw.resp.valid.value = 0
     
-    # @driver_method()
-    # async def set_csr(self,*,
-    #                 priv_mxr  = 0, priv_sum  = 0,
-    #                 priv_vmxr = 0, priv_vsum = 0,
-    #                 priv_virt = 0, priv_spvp = 0,
-    #                 priv_imode = 0, priv_dmode = 0,
-
-    #                 Satp_mode    = 8,  # Sv39 常见编码
-    #                 Satp_asid    = 0,
-    #                 Satp_ppn     = 0,
-    #                 Satp_changed = 0,
-
-    #                 Vsatp_mode    = 0,
-    #                 Vsatp_asid    = 0,
-    #                 Vsatp_ppn     = 0,
-    #                 Vsatp_changed = 0,
-
-    #                 HGatp_mode    = 0,
-    #                 HGatp_vmid    = 0,
-    #                 HGatp_ppn     = 0,
-    #                 HGatp_changed = 0,):
-    #     csr = self.bundle.csr
-    #     csr.bits_priv_mxr.value   = priv_mxr
-    #     csr.bits_priv_sum.value   = priv_sum
-    #     csr.bits_priv_vmxr.value  = priv_vmxr
-    #     csr.bits_priv_vsum.value  = priv_vsum
-    #     csr.bits_priv_virt.value  = priv_virt
-    #     csr.bits_priv_spvp.value  = priv_spvp
-    #     csr.bits_priv_imode.value = priv_imode
-    #     csr.bits_priv_dmode.value = priv_dmode
-    #     csr.bits_Satp_mode.value    = Satp_mode
-    #     csr.bits_Satp_asid.value    = Satp_asid
-    #     csr.bits_Satp_ppn.value     = Satp_ppn
-    #     csr.bits_Satp_changed.value = Satp_changed
-    #     csr.bits_Vsatp_mode.value    = Vsatp_mode
-    #     csr.bits_Vsatp_asid.value    = Vsatp_asid
-    #     csr.bits_Vsatp_ppn.value     = Vsatp_ppn
-    #     csr.bits_Vsatp_changed.value = Vsatp_changed
-    #     csr.bits_HGatp_mode.value    = HGatp_mode
-    #     csr.bits_HGatp_vmid.value    = HGatp_vmid
-    #     csr.bits_HGatp_ppn.value     = HGatp_ppn
-    #     csr.bits_HGatp_changed.value = HGatp_changed
-    #     await self.bundle.step()
     
     @monitor_method()
     async def monitor_ptw_req(self):

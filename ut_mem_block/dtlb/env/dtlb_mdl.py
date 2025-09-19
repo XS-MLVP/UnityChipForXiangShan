@@ -2,7 +2,6 @@
 from __future__ import annotations
 from toffee.model import Model, driver_hook
 
-# ---------------------- Sv39 规范化 + page key ----------------------
 def _canon_sv39_vaddr(va: int) -> int:
     va = int(va) & ((1 << 64) - 1)
     low39 = va & ((1 << 39) - 1)
@@ -13,19 +12,15 @@ def _canon_sv39_vaddr(va: int) -> int:
 def _page_key_from_va(va: int) -> int:
     canon = _canon_sv39_vaddr(va)
     va39  = canon & ((1 << 39) - 1)
-    return va39 & ~0xFFF  # 清 4KB 偏移
+    return va39 & ~0xFFF  
 
 # ---------------------- 不平衡 48-way Tree-PLRU（根 32/16） ----------------------
 class TreePLRU48:
-    """
-    48 路 Tree-PLRU（根拆成 左32/右16，不平衡）
-    规则：victim 时 bit=0 走左、bit=1 走右；touch 某 way 时，沿路径把该结点位改成“指向另一侧”为冷。
-    """
     class Node:
         __slots__ = ("L", "R", "bit", "lch", "rch")
         def __init__(self, L, R):
-            self.L, self.R = L, R   # 左/右子树包含的叶子数
-            self.bit = 0            # 0=左冷(选左)、1=右冷(选右)
+            self.L, self.R = L, R 
+            self.bit = 0     
             self.lch = None
             self.rch = None
 
@@ -41,34 +36,23 @@ class TreePLRU48:
         build(self.root)
 
     def pick_victim(self) -> int:
-        """
-        无条件由 PLRU 选路（不做 invalid 优先）。当选择命中“叶子侧”时不再下探，直接终止。
-        返回 0..47 的 way 索引。
-        """
         n = self.root
         idx = 0
         while True:
-            # 到叶（单侧 1 个元素）
             if n.L + n.R == 1:
                 break
             if n.bit == 1:
-                # 走右侧
                 idx += n.L
                 if n.R == 1:
                     break           # 右侧是叶，不再往下
                 n = n.rch
             else:
-                # 走左侧
                 if n.L == 1:
                     break           # 左侧是叶，不再往下
                 n = n.lch
         return idx
 
     def touch(self, i: int) -> None:
-        """
-        命中/回填后：沿着 i 的路径把结点位改成“指向另一侧”为冷。
-        当命中的是叶子侧时，同样不再向下走。
-        """
         n = self.root
         idx = i
         while n and (n.L + n.R > 1):
@@ -94,13 +78,8 @@ class TreePLRU48:
         walk(self.root)
 
 
-# ---------------------- 参考模型：48 项全相联（无 invalid 优先） ----------------------
+# ---------------------- 参考模型：48 项全相联 ----------------------
 class DTLBPLRURefModel(Model):
-    """
-    - 48 项全相联缓存：每项保存 {valid, va_page_key(39b), pa_page_base}
-    - 替换：无条件 PLRU 选 way（不做 invalid 优先）；写入后 touch
-    - 命中：返回 (pa_page_base | (vaddr & 0xFFF))
-    """
     CAP = 48
 
     def __init__(self):
@@ -108,7 +87,6 @@ class DTLBPLRURefModel(Model):
         self.entries = [{"valid": False, "va": 0, "pa": 0} for _ in range(self.CAP)]
         self.plru = TreePLRU48()
 
-    # ---------------- driver_hook #1：命中查询 ----------------
     @driver_hook(agent_name="agent", driver_name="drive_request")
     def drive_request(
         self,
@@ -135,7 +113,6 @@ class DTLBPLRURefModel(Model):
                 return int(e["pa"] | (int(vaddr) & 0xFFF))
         return None
 
-    # ---------------- driver_hook #2：PTW 回填（无 invalid 优先） ----------------
     @driver_hook(agent_name="agent", driver_name="set_ptw_resp")
     def set_ptw_resp(self, vaddr, paddr, level, *,
                         # S1/S2 选择
@@ -147,15 +124,13 @@ class DTLBPLRURefModel(Model):
                         s1_vmid: int = 0,
                         s1_n: bool = False,
                         s1_pbmt: int = 0,
-                        # 权限位（按 D/A/G/U/X/W/R 的顺序给）
                         s1_perm_d: bool = False, s1_perm_a: bool = True, s1_perm_g: bool = False,
                         s1_perm_u: bool = True, s1_perm_x: bool = False, s1_perm_w: bool = False, s1_perm_r: bool = True,
-                        s1_v: bool = True,              # 表项有效位
-                        s1_ppn_low: list[int] | None = None, # 直接给 ppn_low[8] 列表
-                        s1_valididx: list[int] | None = None, # 直接给 valididx[8] 列表
-                        s1_pteidx: list[int] | None = None,   # 直接给 pteidx[8] 列表
+                        s1_v: bool = True,              
+                        s1_ppn_low: list[int] | None = None, 
+                        s1_valididx: list[int] | None = None, 
+                        s1_pteidx: list[int] | None = None,   
                         s1_pf: bool = False, s1_af: bool = False,
-                        # ---------- S2 entry（当 s2xlate=1 时生效） ----------
                         s2_tag: int = 0,
                         s2_vmid: int = 0,
                         s2_n: bool = False,
@@ -166,10 +141,6 @@ class DTLBPLRURefModel(Model):
                         s2_level: int = 0,
                         s2_gpf: bool = False, s2_gaf: bool = False,
                     ):
-        """
-        与 DUT 对齐：不找空槽，始终由 PLRU 选 way。
-        若已存在同 VA，做覆写并 touch（不新增）。
-        """
         if not valid:
             return None
 

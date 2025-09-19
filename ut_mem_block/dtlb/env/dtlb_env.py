@@ -47,7 +47,6 @@ class DTLBEnv(Env):
         self.bundle = DTLBBundle.from_prefix("io_").bind(dut)
         self.agent = DTLBAgent(self.bundle)
 
-
     async def set_sv39_defaults(self):
         csr = self.bundle.csr
         csr.priv_mxr.value  = 0; csr.priv_sum.value  = 0

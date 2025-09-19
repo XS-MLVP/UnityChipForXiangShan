@@ -100,7 +100,7 @@ async def test_ptwresp_s2_gpf_propagates_to_requestor(dtlb_env):
         port = 0
         gpa = _canon_sv39_vaddr(random.randint(2 ** 12, 2 ** 39 - 1))
         
-        r0 = await dtlb_env.agent.drive_request(port=port, vaddr=gpa, cmd=LOAD, return_on_miss=True)
+        r0 = await dtlb_env.agent.drive_request(port=port, vaddr=gpa, cmd=LOAD)
         assert r0 is None
 
         _, s2x, _ = await _wait_ptw_req_and_capture(dtlb_env, gpa)
@@ -118,8 +118,6 @@ async def test_ptwresp_s2_gpf_propagates_to_requestor(dtlb_env):
 
 @toffee_test.testcase
 async def test_priv_mxr_allows_read_exec_only(dtlb_env):
-    
-
     dtlb_env.dut.reset.value = 1; await dtlb_env.bundle.step()
     dtlb_env.dut.reset.value = 0; await dtlb_env.bundle.step()
     await dtlb_env.set_sv39_defaults(); await dtlb_env.bundle.step()
@@ -135,7 +133,7 @@ async def test_priv_mxr_allows_read_exec_only(dtlb_env):
     va = _canon_sv39_vaddr(random.randint(2 ** 12, 2 ** 39 - 1))
     pa = random.randint(2 ** 12, 2 ** 36 - 1)
 
-    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD, return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD)
     assert r0 is None
     _, s2x, _ = await _wait_ptw_req_and_capture(dtlb_env, va)
     await dtlb_env.agent.set_ptw_resp(
@@ -157,7 +155,6 @@ async def test_priv_mxr_allows_read_exec_only(dtlb_env):
 
 @toffee_test.testcase
 async def test_priv_sum_supervisor_can_read_user_page(dtlb_env):
-    
     dtlb_env.dut.reset.value = 1; await dtlb_env.bundle.step()
     dtlb_env.dut.reset.value = 0; await dtlb_env.bundle.step()
     await dtlb_env.set_sv39_defaults(); await dtlb_env.bundle.step()
@@ -173,7 +170,7 @@ async def test_priv_sum_supervisor_can_read_user_page(dtlb_env):
     va = _canon_sv39_vaddr(random.randint(2 ** 12, 2 ** 39 - 1))
     pa = random.randint(2 ** 12, 2 ** 36 - 1)
 
-    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD, return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD)
     assert r0 is None
     _, s2x, _ = await _wait_ptw_req_and_capture(dtlb_env, va)
     await dtlb_env.agent.set_ptw_resp(
@@ -195,7 +192,6 @@ async def test_priv_sum_supervisor_can_read_user_page(dtlb_env):
 
 @toffee_test.testcase
 async def test_priv_vmxr_vs_allows_read_exec_only(dtlb_env):
-    
     dtlb_env.dut.reset.value = 1; await dtlb_env.bundle.step()
     dtlb_env.dut.reset.value = 0; await dtlb_env.bundle.step()
     await dtlb_env.set_sv39_defaults(); await dtlb_env.bundle.step()
@@ -211,7 +207,7 @@ async def test_priv_vmxr_vs_allows_read_exec_only(dtlb_env):
     va   = 0x0000_0000_8020_3000
     gpa  = 0x0000_0002_2222_3000  
 
-    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD, return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD)
     assert r0 is None
     _, s2x, _ = await _wait_ptw_req_and_capture(dtlb_env, va) 
     await dtlb_env.agent.set_ptw_resp(
@@ -250,7 +246,7 @@ async def test_priv_vsum_vs_supervisor_can_read_user_page(dtlb_env):
     va = _canon_sv39_vaddr(random.randint(2 ** 12, 2 ** 39 - 1))
     gpa = random.randint(2 ** 12, 2 ** 41 - 1)
 
-    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD, return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD)
     assert r0 is None
     _, s2x, _ = await _wait_ptw_req_and_capture(dtlb_env, va)
     await dtlb_env.agent.set_ptw_resp(
@@ -288,7 +284,7 @@ async def test_asid_isolation_bare(dtlb_env):
     pa = random.randint(2 ** 12, 2 ** 36 - 1)
 
 
-    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD, return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD)
     assert r0 is None
     _, s2x, _ = await _wait_ptw_req_and_capture(dtlb_env, va) 
     await dtlb_env.agent.set_ptw_resp(
@@ -304,7 +300,7 @@ async def test_asid_isolation_bare(dtlb_env):
     await dtlb_env.bundle.step()
     csr.Satp.changed.value = False
 
-    r2 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD, return_on_miss=True)
+    r2 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD)
     assert r2 is None
 
 @toffee_test.testcase
@@ -324,7 +320,7 @@ async def test_asid_isolation_onlyStage1(dtlb_env):
     port = 0
     va = _canon_sv39_vaddr(random.randint(2 ** 12, 2 ** 39 - 1))
     gpa = random.randint(2 ** 12, 2 ** 41 - 1) 
-    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD, return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD)
     assert r0 is None
     _, s2x, _ = await _wait_ptw_req_and_capture(dtlb_env, va) 
     await dtlb_env.agent.set_ptw_resp(
@@ -340,7 +336,7 @@ async def test_asid_isolation_onlyStage1(dtlb_env):
     csr.Vsatp.changed.value = True
     await dtlb_env.bundle.step()
     csr.Vsatp.changed.value = False
-    r2 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD, return_on_miss=True)
+    r2 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD)
     assert r2 is None
 
     csr.Vsatp.asid.value = 0x33
@@ -351,7 +347,7 @@ async def test_asid_isolation_onlyStage1(dtlb_env):
     csr.Vsatp.changed.value = False
     csr.HGatp.changed.value = False
     
-    r3 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD, return_on_miss=True)
+    r3 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD)
     assert r3 is None
 
 @toffee_test.testcase
@@ -371,7 +367,7 @@ async def test_vmid_isolation_onlyStage2(dtlb_env):
     gpa_in = _canon_sv39_vaddr(random.randint(2 ** 12, 2 ** 39 - 1))
     hpa = random.randint(2 ** 12, 2 ** 36 - 1)
 
-    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=gpa_in, cmd=LOAD, return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=gpa_in, cmd=LOAD)
     assert r0 is None
     _, s2x, getGpa_req = await _wait_ptw_req_and_capture(dtlb_env, gpa_in)
     await dtlb_env.agent.set_ptw_resp(
@@ -391,7 +387,7 @@ async def test_vmid_isolation_onlyStage2(dtlb_env):
     await dtlb_env.bundle.step()
     csr.HGatp.changed.value = False
 
-    r2 = await dtlb_env.agent.drive_request(port=port, vaddr=gpa_in, cmd=LOAD, return_on_miss=True)
+    r2 = await dtlb_env.agent.drive_request(port=port, vaddr=gpa_in, cmd=LOAD)
     assert r2 is None
 
 @toffee_test.testcase
@@ -410,7 +406,7 @@ async def test_hit_onlyStage1(dtlb_env):
     va = _canon_sv39_vaddr(random.randint(2 ** 12, 2 ** 39 - 1))
     gpa = random.randint(2 ** 12, 2 ** 41 - 1)
 
-    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD ,return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=va, cmd=LOAD)
     assert r0 is None
 
     ptw_port, s2x, getGpa_req = await _wait_ptw_req_and_capture(dtlb_env, va)
@@ -442,7 +438,7 @@ async def test_hit_onlyStage2_4k(dtlb_env):
     gpa = _canon_sv39_vaddr(random.randint(2 ** 12, 2 ** 39 - 1))
     hpa = random.randint(2 ** 12, 2 ** 36 - 1)
 
-    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=gpa, cmd=LOAD, return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=gpa, cmd=LOAD)
     assert r0 is None
 
     _, s2x, getGpa_req = await _wait_ptw_req_and_capture(dtlb_env, gpa)
@@ -477,7 +473,7 @@ async def test_hit_onlyStage2_2m(dtlb_env):
     gpa = _canon_sv39_vaddr(random.randint(2 ** 12, 2 ** 39 - 1)) & ~((1<<21)-1)
     hpa = random.randint(2 ** 12, 2 ** 36 - 1) & ~((1<<21)-1)
 
-    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=gpa, cmd=LOAD, return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=gpa, cmd=LOAD)
     assert r0 is None
 
     _, s2x, getGpa_req = await _wait_ptw_req_and_capture(dtlb_env, gpa)
@@ -513,7 +509,7 @@ async def test_hit_onlyStage2_1g(dtlb_env):
     gpa = _canon_sv39_vaddr(random.randint(2 ** 12, 2 ** 39 - 1)) & ~((1<<30)-1)
     hpa = random.randint(2 ** 12, 2 ** 36 - 1) & ~((1<<30)-1)
 
-    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=gpa, cmd=LOAD, return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=gpa, cmd=LOAD)
     assert r0 is None
 
     _, s2x, getGpa_req = await _wait_ptw_req_and_capture(dtlb_env, gpa)
@@ -553,7 +549,7 @@ async def test_hit_allStage(dtlb_env):
 
 
 
-    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=gva, cmd=LOAD, return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=gva, cmd=LOAD)
     assert r0 is None
 
     _, s2x, getGpa_ptw = await _wait_ptw_req_and_capture(dtlb_env, gva)
@@ -586,7 +582,7 @@ async def test_hit_allStage_with_getGpa(dtlb_env):
     gpa = random.randint(2 ** 12, 2 ** 41 -1)
     hpa = random.randint(2 ** 12, 2 ** 36 - 1)
 
-    _ = await dtlb_env.agent.drive_request(port=0, vaddr=gva, cmd=LOAD, return_on_miss=True)
+    _ = await dtlb_env.agent.drive_request(port=0, vaddr=gva, cmd=LOAD)
     _, s2x, getGpa_ptw = await _wait_ptw_req_and_capture(dtlb_env, gva)
 
     await dtlb_env.agent.set_ptw_resp(
@@ -600,7 +596,6 @@ async def test_hit_allStage_with_getGpa(dtlb_env):
 
     _, s2x_req, getGpa_req = await _wait_ptw_req_and_capture(dtlb_env, gva)
     assert getGpa_req == 1 
-
 
 @toffee_test.testcase
 async def test_parallel_simul_req_miss(dtlb_env):
@@ -640,7 +635,6 @@ async def test_parallel_simul_req_miss(dtlb_env):
     requestor[2].req.valid.value = 0
     await dtlb_env.bundle.step()
 
-
 @toffee_test.testcase
 async def test_parallel_simul_req_hit(dtlb_env):
     requestor = dtlb_env.bundle.requestor
@@ -648,14 +642,13 @@ async def test_parallel_simul_req_hit(dtlb_env):
     dtlb_env.dut.reset.value = 1; await dtlb_env.bundle.step()
     dtlb_env.dut.reset.value = 0; await dtlb_env.bundle.step()
     await dtlb_env.set_sv39_defaults(); await dtlb_env.bundle.step()
-    VA0 = _canon_sv39_vaddr(random.randint(2 ** 12, 2 ** 39 - 1))
-    VA1 = _canon_sv39_vaddr(random.randint(2 ** 12, 2 ** 39 - 1))
-    VA2 = _canon_sv39_vaddr(random.randint(2 ** 12, 2 ** 39 - 1))
-    PA0 = random.randint(2 ** 12, 2** 36 - 1)
-    PA1 = random.randint(2 ** 12, 2** 36 - 1)
-    PA2 = random.randint(2 ** 12, 2** 36 - 1)
+    VA0 = 0x0000_0000_8000_0000
+    VA1 = 0x0000_0000_8000_1000
+    VA2 = 0x0000_0000_8000_2000
+    PA0 = 0x0000_0001_0000_0000
+    PA1 = 0x0000_0001_0000_1000
+    PA2 = 0x0000_0001_0000_2000
 
-    
     assert await dtlb_env.agent.drive_request(port=0, vaddr=VA0, cmd=LOAD) == None
     await dtlb_env.agent.set_ptw_resp(vaddr=VA0,paddr=PA0,level=0)
     assert await dtlb_env.agent.drive_request(port=0, vaddr=VA0, cmd=LOAD) == ((VA0 & (0xFFF)) | (PA0 & ~(0xFFF)))
@@ -668,25 +661,22 @@ async def test_parallel_simul_req_hit(dtlb_env):
     await dtlb_env.agent.set_ptw_resp(vaddr=VA2,paddr=PA2,level=0)
     assert await dtlb_env.agent.drive_request(port=0, vaddr=VA2, cmd=LOAD) == ((VA2 & (0xFFF)) | (PA2 & ~(0xFFF)))
     await dtlb_env.bundle.step()
-    fullva_0 = int(VA0) & ((1 << 64) - 1)       # 完整 64 位
-    VA0  = _canon_sv39_vaddr(fullva_0)          # Sv39 规范化（再按端口位宽截取）
+
     requestor[0].req.valid.value = 1
     requestor[0].req.bits_vaddr.value = VA0
-    requestor[0].req.bits_fullva.value = fullva_0
+    requestor[0].req.bits_fullva.value = VA0
     requestor[0].req.bits_cmd.value = LOAD
     requestor[0].req.bits_no_translate.value = 0
-    fullva_1 = int(VA1) & ((1 << 64) - 1)       # 完整 64 位
-    VA1  = _canon_sv39_vaddr(fullva_1)          # Sv39 规范化（再按端口位宽截取）
+
     requestor[1].req.valid.value = 1
     requestor[1].req.bits_vaddr.value = VA1
-    requestor[1].req.bits_fullva.value = fullva_1
+    requestor[1].req.bits_fullva.value = VA1
     requestor[1].req.bits_cmd.value = LOAD
     requestor[1].req.bits_no_translate.value = 0
-    fullva_2 = int(VA2) & ((1 << 64) - 1)       # 完整 64 位
-    VA2  = _canon_sv39_vaddr(fullva_2)          # Sv39 规范化（再按端口位宽截取）
+
     requestor[2].req.valid.value = 1
     requestor[2].req.bits_vaddr.value = VA2
-    requestor[2].req.bits_fullva.value = fullva_2
+    requestor[2].req.bits_fullva.value = VA2
     requestor[2].req.bits_cmd.value = LOAD
     requestor[2].req.bits_no_translate.value = 0
 
@@ -696,6 +686,7 @@ async def test_parallel_simul_req_hit(dtlb_env):
     requestor[1].req.valid.value = 0
     requestor[2].req.valid.value = 0
     await dtlb_env.bundle.step()
+
 @toffee_test.testcase
 async def test_store_2mb_page(dtlb_env):
     
@@ -706,7 +697,7 @@ async def test_store_2mb_page(dtlb_env):
     va_base = _canon_sv39_vaddr(random.randint(2 ** 12, 2 ** 39 - 1)) & ~((1<<21)-1)
     pa_base = random.randint(2 ** 12, 2 ** 36 - 1) & ~((1<<21)-1)
 
-    r0 = await dtlb_env.agent.drive_request(port=0, vaddr=va_base, cmd=LOAD, return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=0, vaddr=va_base, cmd=LOAD)
     assert r0 is None
 
     await dtlb_env.agent.set_ptw_resp(
@@ -730,7 +721,7 @@ async def test_store_1gb_page(dtlb_env):
     va_base = _canon_sv39_vaddr(random.randint(2 ** 12, 2 ** 39 - 1)) & ~((1<<30)-1)
     pa_base = random.randint(2 ** 12, 2 ** 36 - 1) & ~((1<<30)-1)
 
-    r0 = await dtlb_env.agent.drive_request(port=0, vaddr=va_base, cmd=LOAD, return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=0, vaddr=va_base, cmd=LOAD)
     assert r0 is None
 
     await dtlb_env.agent.set_ptw_resp(
@@ -758,7 +749,7 @@ async def test_express_random(dtlb_env):
     va = _canon_sv39_vaddr(random.randint(2 ** 12, 2 ** 39 - 1))
     pa = random.randint(2 ** 12, 2 ** 36 - 1)
     
-    r0 = await dtlb_env.agent.drive_request(port=0, vaddr=va, cmd=LOAD, return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=0, vaddr=va, cmd=LOAD)
     assert r0 is None
     vpn_low = (va >> 12) & 0x7
     rand_valididx = [0]*8
@@ -801,7 +792,7 @@ async def test_express_full(dtlb_env):
     
     va = _canon_sv39_vaddr(random.randint(2 ** 12, 2 ** 39 - 1))
     pa = random.randint(2 ** 12, 2 ** 36 - 1)
-    r0 = await dtlb_env.agent.drive_request(port=0, vaddr=va, cmd=LOAD, return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=0, vaddr=va, cmd=LOAD)
     assert r0 is None
     vpn_low = (va >> 12) & 0x7
     pteidx = [0]*8
@@ -863,7 +854,6 @@ async def test_req_notranslate(dtlb_env):
     r0 = await dtlb_env.agent.drive_request(port=0, vaddr=va, cmd=LOAD, no_translate = 1)
     assert r0 == va
     
-
 @toffee_test.testcase
 async def test_hit_smoke(dtlb_env):
     
@@ -877,7 +867,7 @@ async def test_hit_smoke(dtlb_env):
     va = _canon_sv39_vaddr(random.randint(2 ** 12, 2 ** 39 - 1))
     pa = random.randint(2 ** 12, 2 ** 36 - 1)
     
-    r0 = await dtlb_env.agent.drive_request(port=0, vaddr=va, cmd=LOAD, return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=0, vaddr=va, cmd=LOAD)
     assert r0 is None
     
     await dtlb_env.agent.set_ptw_resp(
@@ -901,6 +891,6 @@ async def test_miss_smoke(dtlb_env):
     await dtlb_env.set_sv39_defaults()
     await dtlb_env.bundle.step()
     
-    r0 = await dtlb_env.agent.drive_request(port=0, vaddr=0x0000_0000_8020_1000, cmd=LOAD, kill=False ,no_translate=False ,return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=0, vaddr=0x0000_0000_8020_1000, cmd=LOAD, kill=False ,no_translate=False)
     
     assert r0 is None

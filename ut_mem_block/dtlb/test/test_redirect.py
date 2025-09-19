@@ -32,7 +32,7 @@ async def test_redirect_masks_miss_via_lastCycleRedirect(dtlb_env):
     gpa  = 0x0000_0001_2345_0000
     hpa  = 0x0000_0003_ABCD_0000
 
-    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=gva, cmd=0, return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=gva, cmd=LOAD)
     assert r0 is None
     _, s2x, getGpa_flag = await _wait_ptw_req_and_capture(dtlb_env, gva)
 
@@ -90,7 +90,7 @@ async def test_redirect_level0_kill_younger(dtlb_env):
     gpa  = 0x0000_0001_2345_0000
     hpa  = 0x0000_0003_ABCD_0000
 
-    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=gva, cmd=LOAD, return_on_miss=True)
+    r0 = await dtlb_env.agent.drive_request(port=port, vaddr=gva, cmd=LOAD)
     assert r0 is None
     _, s2x, _ = await _wait_ptw_req_and_capture(dtlb_env, gva)
     await dtlb_env.agent.set_ptw_resp(

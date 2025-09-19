@@ -33,21 +33,7 @@ def init_dtlb_funcov(dut, g: fc.CovGroup):
                                        and getattr(d, f"io_ptw_req_{i}_bits_s2xlate").value == 3 for i in range(4)),
     }, name="F2_S2XLATE_MODES")
 
-    # getGpa 路径（GPF 需要先走 getGpa，不入 TLBuffer 的 resp）
-    g.add_watch_point(dut, {
-        "F2.getGpa==1_seen": lambda d: any(getattr(d, f"io_ptw_req_{i}_bits_getGpa").value == 1 for i in range(4)),
-    }, name="F2_GETGPA")
-
-    # PTW resp/fault 标志
-    g.add_watch_point(dut, {
-        "F2.ptw_resp_valid": lambda d: getattr(d, "io_ptw_resp_valid").value == 1,
-        "F10.s1_pf":         lambda d: getattr(d, "io_ptw_resp_valid").value == 1
-                                    and getattr(d, "io_ptw_resp_bits_s1_pf").value == 1,
-        "F10.s1_af":         lambda d: getattr(d, "io_ptw_resp_valid").value == 1
-                                    and getattr(d, "io_ptw_resp_bits_s1_af").value == 1,
-        "F10.s2_gpf":        lambda d: getattr(d, "io_ptw_resp_valid").value == 1
-                                    and getattr(d, "io_ptw_resp_bits_s2_gpf").value == 1, 
-    }, name="F2_PTW_RESP_FAULTS")
+    
 
     # ---------------- 功能点3：hit 返回（paddr/gpaddr/页内偏移一致） ----------
     for i in range(4):
@@ -62,7 +48,18 @@ def init_dtlb_funcov(dut, g: fc.CovGroup):
                                             and getattr(d, f"io_requestor_{i}_resp_bits_gpaddr_0").value != 0,
         }, name=f"F3_RET_gpaddr_P{i}")
 
-
+    # ---------------- 功能点4：getGpa 功能测试 ----------
+    g.add_watch_point(dut, {
+        "F4.getGpa==1_seen": lambda d: any(getattr(d, f"io_ptw_req_{i}_bits_getGpa").value == 1 for i in range(4)),
+    }, name="F4_GETGPA")
+    
+    # ---------------- 功能点5：H扩展功能测试 ----------
+    g.add_watch_point(dut, {
+        "F5.Bare": lambda d: any(getattr(d, f"io_ptw_req_{i}_bits_s2xlate").value == 0 for i in range(4)),
+        "F5.onlyStage1": lambda d: any(getattr(d, f"io_ptw_req_{i}_bits_s2xlate").value == 1 for i in range(4)),
+        "F5.onlyStage2": lambda d: any(getattr(d, f"io_ptw_req_{i}_bits_s2xlate").value == 2 for i in range(4)),
+        "F5.allStage": lambda d: any(getattr(d, f"io_ptw_req_{i}_bits_s2xlate").value == 3 for i in range(4)),
+    }, name="F5_S2XLATE_MODES")
 
     # ---------------- 功能点6：TLB 压缩（valididx 统计） --------------------
     # io_ptw_resp_bits_s1_valididx_0..7 为 8 位 one-hot/稀疏集合
@@ -117,12 +114,20 @@ def init_dtlb_funcov(dut, g: fc.CovGroup):
                 f"F9.0.af.st": lambda d: getattr(d, f"io_requestor_0_resp_bits_excp_0_af_st").value == 1,
             }, name=f"F9_EXCP_st_P0")
     # ---------------- 功能点10：异常（GPF/GAF） ----------------------------
+    g.add_watch_point(dut, {
+        "F10.s1_pf":         lambda d: getattr(d, "io_ptw_resp_valid").value == 1
+                                    and getattr(d, "io_ptw_resp_bits_s1_pf").value == 1,
+        "F10.s1_af":         lambda d: getattr(d, "io_ptw_resp_valid").value == 1
+                                    and getattr(d, "io_ptw_resp_bits_s1_af").value == 1,
+        "F10.s2_gpf":        lambda d: getattr(d, "io_ptw_resp_valid").value == 1
+                                    and getattr(d, "io_ptw_resp_bits_s2_gpf").value == 1, 
+    }, name="F10_PTW_RESP_FAULTS")
     for i in range(4):
         g.add_watch_point(dut, {
             f"F10.{i}.gpf.ld": lambda d, i=i: getattr(d, f"io_requestor_{i}_resp_bits_excp_0_gpf_ld").value == 1,
         }, name=f"F10_GPF_ld_P{i}")
     g.add_watch_point(dut, {
-            f"F9.0.gpf.st": lambda d: getattr(d, f"io_requestor_0_resp_bits_excp_0_gpf_st").value == 1,
+            f"F10.0.gpf.st": lambda d: getattr(d, f"io_requestor_0_resp_bits_excp_0_gpf_st").value == 1,
         }, name=f"F10_GPF_st_P0")
     
     # ---------------- 功能点11：隔离（ASID/VMID/changed） -------------------

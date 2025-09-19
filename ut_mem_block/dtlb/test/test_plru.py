@@ -39,7 +39,7 @@ async def test_plru_random(dtlb_env_plru):
         vaddr = va[index] 
         paddr = pa[index]
         
-        r0 = await dtlb_env_plru.agent.drive_request(port=0, vaddr=vaddr, cmd=LOAD, return_on_miss=True)
+        r0 = await dtlb_env_plru.agent.drive_request(port=0, vaddr=vaddr, cmd=LOAD)
         
         if r0 == None:
             await dtlb_env_plru.agent.set_ptw_resp(
@@ -63,7 +63,7 @@ async def test_plru_sweep(dtlb_env_plru):
         va = BASE_VA + i * 0x8000
         pa = BASE_PA + i * 0x1000
         
-        r0 = await dtlb_env_plru.agent.drive_request(port=1, vaddr=va, cmd=LOAD, return_on_miss=True)
+        r0 = await dtlb_env_plru.agent.drive_request(port=1, vaddr=va, cmd=LOAD)
         assert r0 is None
         _, s2x, _ = await _wait_ptw_req_and_capture(dtlb_env_plru, va)
         await dtlb_env_plru.agent.set_ptw_resp(
@@ -71,14 +71,12 @@ async def test_plru_sweep(dtlb_env_plru):
             s1_perm_r=True, s1_perm_a=True, s1_perm_u=True,
             s2xlate=s2x
         )
-        
         r2 = await dtlb_env_plru.agent.drive_request(port=1, vaddr=va, cmd=LOAD)
         expect = (pa & ~0xFFF) | (va & 0xFFF)
         assert r2 == expect
-
     new_va = BASE_VA + 0x1000 * 50
     new_pa = BASE_PA + 0x1000 * 50
-    r0 = await dtlb_env_plru.agent.drive_request(port=1, vaddr=new_va, cmd=LOAD, return_on_miss=True)
+    r0 = await dtlb_env_plru.agent.drive_request(port=1, vaddr=new_va, cmd=LOAD)
     assert r0 is None
     _, s2x, _ = await _wait_ptw_req_and_capture(dtlb_env_plru, new_va)
     await dtlb_env_plru.agent.set_ptw_resp(
@@ -86,12 +84,9 @@ async def test_plru_sweep(dtlb_env_plru):
         s1_perm_r=True, s1_perm_a=True, s1_perm_u=True,
         s2xlate=s2x
     )
-    
     r2 = await dtlb_env_plru.agent.drive_request(port=1, vaddr=new_va, cmd=LOAD)
     expect = (new_pa & ~0xFFF) | (new_va & 0xFFF)
     assert r2 == expect
-
-
     miss_cnt = 0
     for i in range(48):
         va = BASE_VA + i * 0x8000
