@@ -705,7 +705,7 @@ SBuffer支持超时清空机制；超过2^20周期未被换出的数据块将被
 
 ### 接口时序实例
 
-![StoreUnit接口时序]../../../../../../static/docs/98_ut/03_memblock/03_storeunit/LSU-StoreUnit-Timing.svg）
+![StoreUnit接口时序](../../../../../../static/docs/98_ut/03_memblock/03_storeunit/LSU-StoreUnit-Timing.svg)
 
 
 
