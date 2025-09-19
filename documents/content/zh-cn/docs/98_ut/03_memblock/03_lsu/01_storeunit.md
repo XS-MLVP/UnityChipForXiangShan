@@ -30,7 +30,9 @@ StoreUnit 是存储指令执行单元 ，由多个协同工作的子模块组成
 ![sw指令流水示意图](../../../../../../static/docs/98_ut/03_memblock/03_storeunit/scalar.png)
 <div>			
     <center>	
+
     <img src="../../../../../../static/docs/98_ut/03_memblock/03_storeunit/scalar.png"
+
          alt="sw指令流水示意图"
          style="zoom:100%"/>
     <br>
@@ -96,7 +98,9 @@ SEG 指令则由独立的 VSegmentUnit 模块处理。
 ![vse指令流水示意图](../../../../../../static/docs/98_ut/03_memblock/03_storeunit/vector.png)
 <div>			
     <center>	
+
     <img src="../../../../../../static/docs/98_ut/03_memblock/03_storeunit/vector.png"
+
          alt="vse指令流水示意图"
          style="zoom:100%"/>
     <br>
