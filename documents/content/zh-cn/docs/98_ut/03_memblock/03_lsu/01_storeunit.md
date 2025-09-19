@@ -27,6 +27,7 @@ StoreUnit 是存储指令执行单元 ，由多个协同工作的子模块组成
 
 #### 存储地址流水线
 
+
 ![sw指令流水示意图](../../../../../../static/docs/98_ut/03_memblock/03_storeunit/scalar.png)
 
 
@@ -85,7 +86,9 @@ StoreUnit 是存储指令执行单元 ，由多个协同工作的子模块组成
 对于除 SEG指令外的向量内存访问指令，VSSplit 负责接收向量内存访问指令发射队列发送的微操作（uop），并将该微操作拆分为多个元素。随后VSSplit 将这些元素发送至StoreUnit 执行，执行流程与标量内存访问指令相同。执行完成后，元素会被写回至 VSMerge，其中 Merge 模块会将这些元素收集并组合成微操作，最终写回向量寄存器文件。
 SEG 指令则由独立的 VSegmentUnit 模块处理。
 
+
 ![vse指令流水示意图](../../../../../../static/docs/98_ut/03_memblock/03_storeunit/vector.png)
+
 
 
 StoreUnit处理非对齐Store指令流程和标量类似，特别的:
@@ -121,6 +124,7 @@ StoreUnit处理非对齐Store指令流程和标量类似，特别的:
 原子指令、MMIO与NC地址空间均不支持非对齐访问，这些情况将触发AccessFault异常。
 
 ![非对齐sd指令流水示意图](../../../../../../static/docs/98_ut/03_memblock/03_storeunit/misalign.png)
+
 
 
 StoreUnit处理非对齐Store指令流程和标量类似，特别的:
