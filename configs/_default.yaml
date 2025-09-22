@@ -1,5 +1,5 @@
-#coding=utf8
-#***************************************************************************************
+# coding=utf8
+# ***************************************************************************************
 # This project is licensed under Mulan PSL v2.
 # You can use this software according to the terms and conditions of the Mulan PSL v2.
 # You may obtain a copy of Mulan PSL v2 at:
@@ -10,7 +10,7 @@
 # MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 #
 # See the Mulan PSL v2 for more details.
-#**************************************************************************************/
+# **************************************************************************************/
 
 # Default configuration file
 # Configuration load order: _default.yaml -> user-specified *.yaml -> command line arguments e.g., log.term-level='debug'
@@ -60,10 +60,11 @@ report:
     line_grate: 99
     # Other information to display, key is the title, value is the content
     meta:
-      Version: "%{giturl}"
+      version: "%{giturl}"
 
 # Log configuration
 log:
+  # Level categories: debug, info, warning, error
   # Root log level
   root-level: "debug"
   # Terminal log level

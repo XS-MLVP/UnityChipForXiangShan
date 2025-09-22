@@ -8,7 +8,6 @@ from ..env.watch_point import create_iprefetchpipe_coverage_groups
 
 @toffee_test.fixture
 async def iprefetchpipe_env(toffee_request: toffee_test.ToffeeRequest):
-    toffee.setup_logging(toffee.ERROR)
     dut = toffee_request.create_dut(DUTIPrefetchPipe)
     dut.InitClock("clock")
     start_clock(dut)

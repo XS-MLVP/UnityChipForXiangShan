@@ -1,5 +1,5 @@
-#coding=utf8
-#***************************************************************************************
+# coding=utf8
+# ***************************************************************************************
 # This project is licensed under Mulan PSL v2.
 # You can use this software according to the terms and conditions of the Mulan PSL v2.
 # You may obtain a copy of Mulan PSL v2 at:
@@ -10,26 +10,14 @@
 # MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 #
 # See the Mulan PSL v2 for more details.
-#**************************************************************************************/
+# **************************************************************************************/
 
 
-import os
+TARGET_NAME = "FTB"
 
 
 def build(cfg):
     return False
-
-
-def get_metadata():
-    return {
-        "dut_name": "frontend_bpu_ftb",
-        "dut_dir": "FTB",
-        "test_targets": [
-            "ut_frontend/bpu/ftb",
-            "ut_frontend/bpu",
-            "ut_frontend"
-        ]
-    }
 
 
 def line_coverage_files(cfg):

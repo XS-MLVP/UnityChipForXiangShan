@@ -8,7 +8,6 @@ from ..env import CtrlUnitEnv
 
 @toffee_test.fixture
 async def ctrlunit_env(toffee_request: toffee_test.ToffeeRequest):
-    toffee.setup_logging(toffee.ERROR)
     dut = toffee_request.create_dut(DUTICacheCtrlUnit)
     dut.InitClock("clock")
     start_clock(dut)

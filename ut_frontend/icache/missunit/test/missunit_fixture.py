@@ -8,7 +8,6 @@ from ..env.missunit_coverage import create_all_coverage_groups
 
 @toffee_test.fixture
 async def icachemissunit_env(toffee_request: toffee_test.ToffeeRequest):
-    toffee.setup_logging(toffee.ERROR)
     dut = toffee_request.create_dut(DUTICacheMissUnit)
     start_clock(dut)
     icachemissunit_env = ICacheMissUnitEnv(dut)
