@@ -1,7 +1,6 @@
 ---
 title: LSU
-linkTitle: 香山LSU模块
-
+linkTitle: LSU
 weight: 20
 ---
 

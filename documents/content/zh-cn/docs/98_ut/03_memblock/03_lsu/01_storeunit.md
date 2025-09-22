@@ -169,7 +169,9 @@ Store指令地址流水线分为S0/S1/S2/S3四级,如图所示：
 ## StoreUnit功能说明
 StoreUnit是存储指令的逻辑，功能被解构并集成到了 ​Memory Dispatch Queue、STA、STD、Integer ALUs、StoreQueue、SBuffer、LoadQueueRAW/RAR以及 DTLB​ 等一系列子模块中。
 
-###  1.内存指令派发
+
+### 内存指令派发
+
 Store指令存在复杂的控制机制（如顺序、转发、违例等），因此需要队列来保存Store指令的先进先出顺序以进行相关控制，该队列即StoreQueue。Store指令在完成译码、重命名等操作后，需要派发至ROB与LSQ，分配对应的robIdx、lqIdx与sqIdx，随后进入各自发射队列。在所有源操作数就绪后发射至MemBlock中的流水线。在MemBlock中的执行生命周期内，Store指令会携带lqIdx与sqIdx，用于内存违例检测与数据转发时的顺序维护。
 
 对于标量内存访问指令，一条指令分配一个StoreQueue表项。
@@ -181,7 +183,8 @@ Store指令存在复杂的控制机制（如顺序、转发、违例等），因
 | 1.1 | SU_DISPATCH | SCALAR_DISPATCH  | 验证标量Store指令派发时分配一个StoreQueue条目。|
 | 1.2 |SU_DISPATCH | VECTOR_DISPATCH | 验证向量Store指令的一个uop分配多个LSQ条目（根据元素数量）。|
 
-### 2.地址流水线
+### 地址流水线
+
 
 | 序号 |  功能名称 | 测试点名称      | 描述                  |
 | ----- |-----------------|---------------------|------------------------------------|
@@ -189,7 +192,9 @@ Store指令存在复杂的控制机制（如顺序、转发、违例等），因
 | 2.2 | SU_STORE  | S1_RAW_CHECK|验证s1阶段RAW冒险检测。|
 | 2.3 | SU_STORE  | S2_SQ_MARK_READY |验证s2阶段StoreQueue地址就绪标记。|
 
-### 3.向量内存指令执行
+
+### 向量内存指令执行
+
 
 | 序号 |  功能名称 | 测试点名称      | 描述                  |
 | ----- |-----------------|---------------------|------------------------------------|
@@ -197,11 +202,13 @@ Store指令存在复杂的控制机制（如顺序、转发、违例等），因
 | 3.2 | SU_VECTOR  | OFFSET |元素偏移计算|
 
 
-### 4.重执行​
+
+### 重执行​
 
 存储指令会被发射队列重新传输，在一个存储指令被发射队列发射后，队列不会立即清除该指令，直到StoreUnit返回信号。StoreUnit根据TLB是否命中发送相应反馈。如果TLB未命中，则由指令发射队列负责重新发送该指令。
 
-### 5.RAW处理
+### RAW处理
+
 RAW内存访问违例检测：LoadQueue中的LoadQueueRAW模块通过FreeList结构记录所有可能地址相同但尚未执行更早Store的Load指令。当Load指令在LoadUnit执行到s2阶段（此时地址转换与PMA/PMP检查已完成）时，会分配LoadQueueRAW表项。当StoreQueue中所有Store地址就绪后，LoadQueueRAW中的所有Load可释放；或当程序顺序早于它的所有Store地址就绪后，该Load可从LoadQueueRAW释放。若Store指令在查询LoadQueueRAW时发现存在地址相同的更晚Load，则发生RAW内存访问违例，需要回滚。
 
 RAW内存访问违例恢复：检测到RAW违例时，由LoadQueueRAW发起回滚，从造成违例的Store指令的下一条指令开始清空流水线。
@@ -211,7 +218,9 @@ RAW内存访问违例恢复：检测到RAW违例时，由LoadQueueRAW发起回�
 | 5.1 | SU_RAW  | VIOLATION |验证RAW违例检测。|
 | 5.2 | SU_RAW  | RECOVERY_MECH |验证检测到RAW违例后的恢复（流水线清空）。|
 
-### 6.SBuffer优化
+
+### SBuffer优化
+
 根据RVWMO模型，在多核场景下（无FENCE等栅栏语义指令时），一个核的Store指令可以比地址不同的更晚Load指令更晚对其他核可见。该内存模型规则主要优化Store指令性能。RVWMO等弱一致性模型允许处理器核包含SBuffer，暂时保存已提交的Store写操作，合并这些写操作后再写入DCache，从而减少Store指令对DCache SRAM端口的争用，提高Load指令执行带宽。
 
 SBuffer为16×512B的全相联结构。当多个Store地址落在同一缓存块时，SBuffer会合并这些Store。
@@ -231,7 +240,9 @@ SBuffer支持超时清空机制；超过2^20周期未被换出的数据块将被
 | 6.1 | SU_SBUFFER  | WRITE_MERGE|验证同一缓存块的多个Store在SBuffer中合并。|
 | 6.2 | SU_SBUFFER  | 	PLRU_REPLACE |验证SBuffer满时按PLRU策略替换。|
 
-### 7.MMIO处理
+
+### MMIO处理
+
 香山核仅允许标量内存访问指令访问MMIO地址空间。MMIO访问与任何其他内存操作强顺序。因此，MMIO指令必须等待成为ROB头（即所有前序指令均完成）时才能执行。对于MMIO Store指令，需完成虚地址到实地址转换，通过实地址检查，且写数据就绪。随后LSQ将内存请求发送至Uncache模块，通过总线访问外设。结果返回LSQ后写回至ROB。
 
 原子指令与向量指令不支持MMIO访问。若此类指令访问MMIO地址空间，将触发对应AccessFault异常。
@@ -240,7 +251,8 @@ SBuffer支持超时清空机制；超过2^20周期未被换出的数据块将被
 | 7.1 | SU_MMIO  | ORDER |验证MMIO指令强顺序执行（成为ROB头）。|
 | 7.2 | SU_MMIO  | EXCEPTION |验证原子/向量指令访问MMIO触发异常。|
 
-### 8.Uncache指令执行
+### Uncache指令执行
+
 香山核除支持访问非幂等、强顺序的MMIO地址空间外，还支持访问幂等、弱一致性（RVWMO）的Non-cacheable地址空间，简称NC。软件通过页表PBMT字段配置为NC以覆盖原有PMA属性。与MMIO访问不同，NC访问允许乱序内存操作。
 
 在StoreUnit流水线中被识别为NC地址（PBMT = NC）的内存访问指令会在LSQ中标记。LSQ负责将NC访问发送至Uncache模块。Uncache支持同时处理多个NC请求，支持请求合并，并负责向正在LoadUnit执行的NC Load转发Stores。
@@ -250,7 +262,9 @@ SBuffer支持超时清空机制；超过2^20周期未被换出的数据块将被
 | 8.1 | SU_NC | EXEC |验证NC访问允许乱序执行。|
 | 8.2 | SU_NC  | FORWARD |验证Uncache模块的Store到Load转发。|
 
-### 9.非对齐内存访问
+
+### 非对齐内存访问
+
 
 | 序号 |  功能名称 | 测试点名称      | 描述  |
 | ----- |-----------------|---------------------|------------------------------------|
@@ -258,7 +272,9 @@ SBuffer支持超时清空机制；超过2^20周期未被换出的数据块将被
 | 9.2 | SU_MISALIGN  | SEG_HANDLE |验证向量Segment指令的非对齐处理（独立路径）。|
 | 9.3 | SU_MISALIGN  | EXCEPTION |验证原子指令、MMIO、NC空间非对齐访问触发异常。|
 
-### 10.原子指令执行
+
+### 原子指令执行
+
 香山核支持RVA与Zacas指令集。香山当前设计中，原子指令需先将访问的缓存块缓存至DCache，再进行原子操作。
 
 内存访问单元监控Store发射队列发射的地址与数据，若为原子指令则进入AtomicsUnit。AtomicsUnit执行一系列操作，包括TLB地址转换、清空SBuffer、访问DCache等。
