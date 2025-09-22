@@ -239,7 +239,12 @@ class ICacheMainPipeAgent(Agent):
                 getattr(self.bundle.io._dataArray._fromIData._datas, f"_{i}").value = datas[i]
                 getattr(self.bundle.io._dataArray._fromIData._codes, f"_{i}").value = codes[i]
             await self.bundle.step()
+            # 只显示非零的数据和码，便于调试
+            non_zero_datas = [(i, hex(d)) for i, d in enumerate(datas) if d != 0]
+            non_zero_codes = [(i, c) for i, c in enumerate(codes) if c != 0]
             print(f"DataArray response set: datas[:2]={[hex(d) for d in datas[:2]]}, codes[:2]={codes[:2]}")
+            if non_zero_datas or non_zero_codes:
+                print(f"Non-zero injections: datas={non_zero_datas}, codes={non_zero_codes}")
             return True
         else:
             print(f"参数错误: datas长度={len(datas)}, codes长度={len(codes)}, 都需要为8")
@@ -265,7 +270,6 @@ class ICacheMainPipeAgent(Agent):
         self.bundle.io._mshr._resp._bits._vSetIdx.value = vSetIdx
         self.bundle.io._mshr._resp._bits._data.value = data
         self.bundle.io._mshr._resp._bits._corrupt.value = corrupt
-        await self.bundle.step()
         print(f"MSHR response set: blkPaddr=0x{blkPaddr:x}, vSetIdx=0x{vSetIdx:x}, corrupt={corrupt}")
         return True
     # ==================== 监控API ====================
@@ -436,6 +440,7 @@ class ICacheMainPipeAgent(Agent):
             s2_exception_0 = self.dut.GetInternalSignal("ICacheMainPipe_top.ICacheMainPipe.s2_exception_0", use_vpi=False)
             s2_exception_1 = self.dut.GetInternalSignal("ICacheMainPipe_top.ICacheMainPipe.s2_exception_1", use_vpi=False)
             s2_l2_corrupt_0 = self.dut.GetInternalSignal("ICacheMainPipe_top.ICacheMainPipe.s2_l2_corrupt_0", use_vpi=False)
+            s2_l2_corrupt_1 = self.dut.GetInternalSignal("ICacheMainPipe_top.ICacheMainPipe.s2_l2_corrupt_1", use_vpi=False)
             s2_exception_out_0 = s2_exception_0.value if s2_exception_0 and s2_exception_0.value != 0 else (3 if s2_l2_corrupt_0 and s2_l2_corrupt_0.value == 1 else 0)
 
             
@@ -445,6 +450,8 @@ class ICacheMainPipeAgent(Agent):
                 "s2_exception_0": s2_exception_0.value if s2_exception_0 else None,
                 "s2_exception_1": s2_exception_1.value if s2_exception_1 else None,
                 "s2_exception_out_0": s2_exception_out_0,
+                "s2_l2_corrupt_0": s2_l2_corrupt_0.value if s2_l2_corrupt_0 else None,
+                "s2_l2_corrupt_1": s2_l2_corrupt_1.value if s2_l2_corrupt_1 else None,
             }
         except Exception as e:
             print(f"Warning: Could not access internal exception signals: {e}")
@@ -653,22 +660,53 @@ class ICacheMainPipeAgent(Agent):
                                    ptag_0: int = 0x12345,
                                    ptag_1: int = 0,
                                    wrong_meta_code_0: int = None,  # 如果为None则自动生成错误的ECC码
-                                   meta_codes_1: int = 0) -> bool:
+                                   wrong_meta_code_1: int = None,  # 支持端口1的ECC错误注入
+                                   inject_port_0: bool = True,     # 是否在端口0注入错误
+                                   inject_port_1: bool = False) -> bool:   # 是否在端口1注入错误
         """
-        注入Meta ECC错误 - 针对测试点12.2: 单路命中的ECC错误
-        计算正确的ECC码然后故意提供错误的ECC码
+        注入Meta ECC错误 - 支持端口0和端口1的ECC错误注入
+        适用于非跨行取指(仅端口0)和跨行取指(端口0+端口1)场景
+        
+        参数:
+        - inject_port_0: 是否在端口0注入ECC错误
+        - inject_port_1: 是否在端口1注入ECC错误  
+        - wrong_meta_code_0/1: 指定错误的ECC码，None表示自动生成
         """
         try:
-            # 计算ptag的正确ECC码 (XOR parity)
-            correct_ecc = 0
-            temp_ptag = ptag_0
-            while temp_ptag:
-                correct_ecc ^= temp_ptag & 1
-                temp_ptag >>= 1
+            # 计算端口0的ECC码
+            correct_ecc_0 = 0
+            temp_ptag_0 = ptag_0
+            while temp_ptag_0:
+                correct_ecc_0 ^= temp_ptag_0 & 1
+                temp_ptag_0 >>= 1
             
-            # 如果没有指定错误ECC码，则使用正确ECC的反值
-            if wrong_meta_code_0 is None:
-                wrong_meta_code_0 = 1 - correct_ecc
+            # 计算端口1的ECC码
+            correct_ecc_1 = 0
+            temp_ptag_1 = ptag_1
+            while temp_ptag_1:
+                correct_ecc_1 ^= temp_ptag_1 & 1
+                temp_ptag_1 >>= 1
+            
+            # 确定最终的meta_codes
+            if inject_port_0:
+                # 端口0注入错误
+                if wrong_meta_code_0 is None:
+                    final_meta_code_0 = 1 - correct_ecc_0  # 使用错误的ECC码
+                else:
+                    final_meta_code_0 = wrong_meta_code_0
+            else:
+                # 端口0使用正确的ECC码
+                final_meta_code_0 = correct_ecc_0
+            
+            if inject_port_1:
+                # 端口1注入错误
+                if wrong_meta_code_1 is None:
+                    final_meta_code_1 = 1 - correct_ecc_1  # 使用错误的ECC码
+                else:
+                    final_meta_code_1 = wrong_meta_code_1
+            else:
+                # 端口1使用正确的ECC码
+                final_meta_code_1 = correct_ecc_1
             
             await self.drive_waylookup_read(
                 vSetIdx_0=vSetIdx_0,
@@ -677,10 +715,22 @@ class ICacheMainPipeAgent(Agent):
                 waymask_1=waymask_1,
                 ptag_0=ptag_0,
                 ptag_1=ptag_1,
-                meta_codes_0=wrong_meta_code_0,
-                meta_codes_1=meta_codes_1
+                meta_codes_0=final_meta_code_0,
+                meta_codes_1=final_meta_code_1
             )
-            print(f"Injected Meta ECC error: ptag=0x{ptag_0:x}, correct_ecc={correct_ecc}, wrong_ecc={wrong_meta_code_0}")
+            
+            # 详细的注入日志
+            inject_info = []
+            if inject_port_0:
+                inject_info.append(f"Port0(ptag=0x{ptag_0:x}, correct={correct_ecc_0}, wrong={final_meta_code_0})")
+            if inject_port_1:
+                inject_info.append(f"Port1(ptag=0x{ptag_1:x}, correct={correct_ecc_1}, wrong={final_meta_code_1})")
+            
+            if inject_info:
+                print(f"Injected Meta ECC error: {', '.join(inject_info)}")
+            else:
+                print("No Meta ECC error injected (both ports use correct ECC)")
+                
             return True
         except Exception as e:
             print(f"Failed to inject Meta ECC error: {e}")

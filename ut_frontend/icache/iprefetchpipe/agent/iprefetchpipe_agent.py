@@ -332,6 +332,19 @@ class IPrefetchPipeAgent(Agent):
             paddr = random.randint(0, (1<<50)-1)
             
         print(f"Driving ITLB response for port {port}")
+        result = False
+        
+        # Validate exception signals - ensure at most one is active (one-hot encoding required by hardware)
+        exception_count = sum([af, pf, gpf])
+        if exception_count > 1:
+            print(f"Error: Multiple exception flags set (af={af}, pf={pf}, gpf={gpf})")
+            print("Hardware requires one-hot encoding - at most one exception can be active")
+            result = False
+            return {
+                "result": result,
+                "port": port,
+                "error": "Invalid exception combination: multiple exceptions cannot be active simultaneously"
+            }
         
         # Set ITLB response
         itlb_bundle = getattr(self.bundle.io._itlb, f"_{port}")
@@ -358,8 +371,10 @@ class IPrefetchPipeAgent(Agent):
         actual_miss = bool(itlb_bundle._resp_bits._miss.value)
         actual_gpaddr = itlb_bundle._resp_bits._gpaddr._0.value
         actual_isForVSnonLeafPTE = bool(itlb_bundle._resp_bits._isForVSnonLeafPTE.value)
+        result = True
         
         return {
+            "result": result,
             "port": port,
             "paddr": actual_paddr,
             "af": actual_af,
@@ -596,7 +611,6 @@ class IPrefetchPipeAgent(Agent):
     async def set_waylookup_ready(self, ready: bool = True):
         """Set WayLookup ready signal"""
         self.bundle.io._wayLookupWrite._ready.value = int(ready)
-        await self.bundle.step()
         print(f"WayLookup ready set to {ready}")
 
     # ==================== MSHR交互API ====================
@@ -630,16 +644,17 @@ class IPrefetchPipeAgent(Agent):
         actual_blkPaddr = self.bundle.io._MSHRResp._bits._blkPaddr.value
         actual_vSetIdx = self.bundle.io._MSHRResp._bits._vSetIdx.value
         
-        # Clear valid
-        self.bundle.io._MSHRResp._valid.value = 0
-        await self.bundle.step()
-        
         return {
             "corrupt": bool(actual_corrupt),
             "waymask": actual_waymask,
             "blkPaddr": actual_blkPaddr,
             "vSetIdx": actual_vSetIdx
         }
+
+    async def clear_mshr_response(self):
+        # Clear valid
+        self.bundle.io._MSHRResp._valid.value = 0
+        await self.bundle.step()
 
     async def check_mshr_request(self, timeout_cycles: int = 10) -> dict:
         """
@@ -648,7 +663,7 @@ class IPrefetchPipeAgent(Agent):
         print(f"Checking MSHR request, timeout: {timeout_cycles} cycles")
         
         for i in range(timeout_cycles):
-            if self.bundle.io._MSHRReq._valid.value == 1:
+            if self.bundle.io._MSHRReq._valid.value == 1 and self.bundle.io._MSHRReq._ready.value == 1:
                 mshr_info = {
                     "request_sent": True,
                     "blkPaddr": self.bundle.io._MSHRReq._bits._blkPaddr.value,
@@ -838,6 +853,10 @@ class IPrefetchPipeAgent(Agent):
         self.bundle.io._flushFromBpu._s3._valid.value = 0
         self.bundle.io._flushFromBpu._s3._bits._flag.value = 0
         self.bundle.io._flushFromBpu._s3._bits._value.value = 0
+        self.bundle.io._itlb._0._resp_bits._excp._0._af_instr.value = 0
+        self.bundle.io._itlb._0._resp_bits._excp._0._pf_instr.value = 0
+        self.bundle.io._itlb._0._resp_bits._excp._0._gpf_instr.value = 0
+        self.bundle.io._MSHRResp._valid.value = 0
         
         await self.bundle.step(2)
         print(f"Environment setup completed (prefetch_enable={prefetch_enable})")

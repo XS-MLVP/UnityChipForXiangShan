@@ -734,7 +734,9 @@ def define_iprefetchpipe_coverage(bundle, dut):
             # 基本控制信号
             "s2_valid": dut.GetInternalSignal(IPrefetchPipe_dict["s2_valid"], use_vpi=False),
             "s2_doubleline": dut.GetInternalSignal(IPrefetchPipe_dict["s2_doubleline"], use_vpi=False),
-            
+            # 命中判断信号
+            "s2_miss_0": dut.GetInternalSignal(IPrefetchPipe_dict["s2_miss_0"], use_vpi=False),
+            "s2_miss_1": dut.GetInternalSignal(IPrefetchPipe_dict["s2_miss_1"], use_vpi=False),
             # SRAM waymasks信号（用于检查SRAM命中）
             "s2_waymasks_0": dut.GetInternalSignal(IPrefetchPipe_dict["s2_waymasks_0"], use_vpi=False),
             "s2_waymasks_1": dut.GetInternalSignal(IPrefetchPipe_dict["s2_waymasks_1"], use_vpi=False),
@@ -778,14 +780,16 @@ def define_iprefetchpipe_coverage(bundle, dut):
             "CP8_2_sram_hit_port0": lambda d: (
                 d["s2_valid"].value == 1 and 
                 # s2_waymasks_0中有一位为高表示SRAM命中(verilog |s2_waymasks_0)
-                d["s2_waymasks_0"].value != 0
+                d["s2_waymasks_0"].value != 0 and
+                d["s2_miss_0"].value == 0 # s2_miss_0为0表示命中
             ),
             
             "CP8_2_sram_hit_port1": lambda d: (
                 d["s2_valid"].value == 1 and 
                 d["s2_doubleline"].value == 1 and
                 # s2_waymasks_1中有一位为高表示SRAM命中(verilog |s2_waymasks_1)
-                d["s2_waymasks_1"].value != 0
+                d["s2_waymasks_1"].value != 0 and
+                d["s2_miss_1"].value == 0 # s2_miss_1为0表示命中
             ),
             
             # =========== CP 8.3: 请求未命中MSHR和SRAM ===========

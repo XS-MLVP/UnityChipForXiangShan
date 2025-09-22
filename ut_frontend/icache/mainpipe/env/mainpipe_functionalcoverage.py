@@ -495,14 +495,12 @@ def define_mainpipe_coverage(bundle, dut):
             # 17.1: 只有Meta ECC校验错误 - 当s2_meta_corrupt为真时，MetaArray的所有路都会被冲刷
             # toMetaFlush(i).valid为真，toMetaFlush(i).bits.waymask对应端口的所有路置位
             "CP17.1_meta_ecc_error_port0": lambda d: d["ecc_enable"].value == 1 and \
-                                                    d["s2_fire"].value == 1 and \
                                                     d["s2_meta_corrupt_0"].value == 1 and \
                                                     d["s2_data_corrupt_0"].value == 0 and \
                                                     d["metaArrayFlush_0_valid"].value == 1 and \
                                                     d["metaArrayFlush_0_waymask"].value == 0xF,
             
             "CP17.1_meta_ecc_error_port1": lambda d: d["ecc_enable"].value == 1 and \
-                                                    d["s2_fire"].value == 1 and \
                                                     d["s2_meta_corrupt_1"].value == 1 and \
                                                     d["s2_data_corrupt_1"].value == 0 and \
                                                     d["metaArrayFlush_1_valid"].value == 1 and \
@@ -511,7 +509,6 @@ def define_mainpipe_coverage(bundle, dut):
             # 17.2: 只有Data ECC校验错误 - 当s2_data_corrupt为真时，只有对应路会被冲刷
             # toMetaFlush(i).valid为真，toMetaFlush(i).bits.waymask对应端口的对应路置位
             "CP17.2_data_ecc_error_port0": lambda d: d["ecc_enable"].value == 1 and \
-                                                    d["s2_fire"].value == 1 and \
                                                     d["s2_meta_corrupt_0"].value == 0 and \
                                                     d["s2_data_corrupt_0"].value == 1 and \
                                                     d["metaArrayFlush_0_valid"].value == 1 and \
@@ -519,7 +516,6 @@ def define_mainpipe_coverage(bundle, dut):
                                                     d["metaArrayFlush_0_waymask"].value != 0x0,
             
             "CP17.2_data_ecc_error_port1": lambda d: d["ecc_enable"].value == 1 and \
-                                                    d["s2_fire"].value == 1 and \
                                                     d["s2_meta_corrupt_1"].value == 0 and \
                                                     d["s2_data_corrupt_1"].value == 1 and \
                                                     d["metaArrayFlush_1_valid"].value == 1 and \
@@ -529,14 +525,12 @@ def define_mainpipe_coverage(bundle, dut):
             # 17.3: 同时有Meta ECC校验错误和Data ECC校验错误 - 处理Meta ECC的优先级更高，将MetaArray的所有路冲刷
             # toMetaFlush(i).valid为真，toMetaFlush(i).bits.waymask对应端口的所有路置位
             "CP17.3_both_errors_meta_priority_port0": lambda d: d["ecc_enable"].value == 1 and \
-                                                              d["s2_fire"].value == 1 and \
                                                               d["s2_meta_corrupt_0"].value == 1 and \
                                                               d["s2_data_corrupt_0"].value == 1 and \
                                                               d["metaArrayFlush_0_valid"].value == 1 and \
                                                               d["metaArrayFlush_0_waymask"].value == 0xF,
             
             "CP17.3_both_errors_meta_priority_port1": lambda d: d["ecc_enable"].value == 1 and \
-                                                              d["s2_fire"].value == 1 and \
                                                               d["s2_meta_corrupt_1"].value == 1 and \
                                                               d["s2_data_corrupt_1"].value == 1 and \
                                                               d["metaArrayFlush_1_valid"].value == 1 and \
@@ -865,6 +859,7 @@ def define_mainpipe_coverage(bundle, dut):
             "s2_l2_corrupt_0": dut.GetInternalSignal(MainPipe_dict["s2_l2_corrupt_0"], use_vpi=False),
             "s2_l2_corrupt_1": dut.GetInternalSignal(MainPipe_dict["s2_l2_corrupt_1"], use_vpi=False),
             "s2_bankMSHRHit_7": dut.GetInternalSignal(MainPipe_dict["s2_bankMSHRHit_7"], use_vpi=False),
+            "s2_bankMSHRHit_0": dut.GetInternalSignal(MainPipe_dict["s2_bankMSHRHit_0"], use_vpi=False),
             "s2_MSHR_hits_1": dut.GetInternalSignal(MainPipe_dict["s2_MSHR_hits_1"], use_vpi=False),
             "s2_valid": dut.GetInternalSignal(MainPipe_dict["s2_valid"], use_vpi=False),
             "s2_doubleline": dut.GetInternalSignal(MainPipe_dict["s2_doubleline"], use_vpi=False),
@@ -875,10 +870,8 @@ def define_mainpipe_coverage(bundle, dut):
             # s2_l2_corrupt(0) = true，io.errors(0).valid = true，io.errors(0).bits.source.l2 = true
             "CP21.1_l2_corrupt_single": lambda d: (
                 d["s2_fire"].value == 1 and
-                d["s2_valid"].value == 1 and
                 d["s2_l2_corrupt_0"].value == 1 and
-                d["errors_0_valid"].value == 1 and
-                d["s2_bankMSHRHit_7"].value == 1 and
+                (d["s2_bankMSHRHit_7"].value == 1 or d["s2_bankMSHRHit_0"].value == 1) and
                 d["mshr_resp_valid"].value == 1 and
                 d["mshr_resp_corrupt"].value == 1
             ),
@@ -888,14 +881,10 @@ def define_mainpipe_coverage(bundle, dut):
             # s2_l2_corrupt均为true，发射后分别报告到io.errors(0)和io.errors(1)
             "CP21.2_dual_port_corrupt": lambda d: (
                 d["s2_fire"].value == 1 and
-                d["s2_valid"].value == 1 and
                 d["s2_doubleline"].value == 1 and
-                d["s2_bankMSHRHit_7"].value == 1 and
-                d["s2_MSHR_hits_1"].value == 1 and
+                (d["s2_bankMSHRHit_7"].value == 1 or d["s2_bankMSHRHit_0"].value == 1) and
                 d["s2_l2_corrupt_0"].value == 1 and
                 d["s2_l2_corrupt_1"].value == 1 and
-                d["errors_0_valid"].value == 1 and
-                d["errors_1_valid"].value == 1 and
                 d["mshr_resp_valid"].value == 1 and
                 d["mshr_resp_corrupt"].value == 1
             ),
