@@ -258,7 +258,7 @@ SBuffer支持超时清空机制；超过2^20周期未被换出的数据块将被
 | 9.2 | SU_MISALIGN  | SEG_HANDLE |验证向量Segment指令的非对齐处理（独立路径）。|
 | 9.3 | SU_MISALIGN  | EXCEPTION |验证原子指令、MMIO、NC空间非对齐访问触发异常。|
 
-### 1原子指令执行
+### 原子指令执行
 香山核支持RVA与Zacas指令集。香山当前设计中，原子指令需先将访问的缓存块缓存至DCache，再进行原子操作。
 
 内存访问单元监控Store发射队列发射的地址与数据，若为原子指令则进入AtomicsUnit。AtomicsUnit执行一系列操作，包括TLB地址转换、清空SBuffer、访问DCache等。
