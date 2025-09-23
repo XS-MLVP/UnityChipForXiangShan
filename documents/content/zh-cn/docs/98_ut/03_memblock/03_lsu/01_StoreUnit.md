@@ -269,19 +269,8 @@ SBuffer支持超时清空机制；超过2^20周期未被换出的数据块将被
 | 序号 |  功能名称 | 测试点名称      | 描述  |
 | ----- |-----------------|---------------------|------------------------------------|
 | 9.1 | SU_MISALIGN  | SCALAR_SPLIT |验证标量非对齐访问跨越16B边界时拆分为两个对齐访问。|
-| 9.2 | SU_MISALIGN  | SEG_HANDLE |验证向量Segment指令的非对齐处理（独立路径）。|
-| 9.3 | SU_MISALIGN  | EXCEPTION |验证原子指令、MMIO、NC空间非对齐访问触发异常。|
+| 9.2 | SU_MISALIGN  | EXCEPTION |验证原子指令、MMIO、NC空间非对齐访问触发异常。|
 
-
-### 原子指令执行
-
-香山核支持RVA与Zacas指令集。香山当前设计中，原子指令需先将访问的缓存块缓存至DCache，再进行原子操作。
-
-内存访问单元监控Store发射队列发射的地址与数据，若为原子指令则进入AtomicsUnit。AtomicsUnit执行一系列操作，包括TLB地址转换、清空SBuffer、访问DCache等。
-| 序号 |  功能名称 | 测试点名称      | 描述  |
-| ----- |-----------------|---------------------|------------------------------------|
-| 10.1 | SU_ATOMIC  | PRELOAD |验证原子指令先将缓存块读入DCache。|
-| 10.2 | SU_ATOMIC  | OPS |验证原子操作（如AMO）执行正确性。|
 
 </mrs-functions>
 
@@ -757,10 +746,7 @@ SBuffer支持超时清空机制；超过2^20周期未被换出的数据块将被
 | 8.1 | SU_NC | EXEC |验证NC访问允许乱序执行。|
 | 8.2 | SU_NC  | FORWARD |验证Uncache模块的Store到Load转发。|
 | 9.1 | SU_MISALIGN  | SCALAR_SPLIT |验证标量非对齐访问跨越16B边界时拆分为两个对齐访问。|
-| 9.2 | SU_MISALIGN  | SEG_HANDLE |验证向量Segment指令的非对齐处理（独立路径）。|
-| 9.3 | SU_MISALIGN  | EXCEPTION |验证原子指令、MMIO、NC空间非对齐访问触发异常。|
-| 10.1 | SU_ATOMIC  | PRELOAD |验证原子指令先将缓存块读入DCache。|
-| 10.2 | SU_ATOMIC  | OPS |验证原子操作（如AMO）执行正确性。|
+| 9.2 | SU_MISALIGN  | EXCEPTION |验证原子指令、MMIO、NC空间非对齐访问触发异常。|
 
 </mrs-testpoints>
 

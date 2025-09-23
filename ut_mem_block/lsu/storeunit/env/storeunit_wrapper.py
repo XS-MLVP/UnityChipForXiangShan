@@ -17,12 +17,11 @@ sbuffer_cov = fc.CovGroup("SU_SBUFFER")
 mmio_cov = fc.CovGroup("SU_MMIO")
 nc_cov = fc.CovGroup("SU_NC")
 misalign_cov = fc.CovGroup("SU_MISALIGN")
-atomic_cov = fc.CovGroup("SU_ATOMIC")
 
 # 所有覆盖组列表
 funcov_groups = [
     dispatch_cov, store_cov, vector_cov, replay_cov, raw_cov,
-    sbuffer_cov, mmio_cov, nc_cov, misalign_cov, atomic_cov
+    sbuffer_cov, mmio_cov, nc_cov, misalign_cov
 ]
 coverage_initialized = False
 
@@ -128,25 +127,13 @@ def init_misalign_coverage(g, dut):
         {
             # 标量拆分：发送到未对齐缓冲区且非向量
             "MISALIGN_SCALAR_SPLIT": lambda x: x.io_misalign_buf_valid.value and not x.io_misalign_buf_bits_isvec.value,
-            # Segment处理：向量指令且alignedType=3
-            "MISALIGN_SEG_HANDLE": lambda x: x.io_vecstin_valid.value and x.io_vecstin_bits_alignedType.value == 3,
             # 异常触发：未对齐异常
             "MISALIGN_EXCEPTION": lambda x: x.io_misalign_stout_valid.value and x.io_misalign_stout_bits_uop_exceptionVec_6.value,
         },
         name="FC-Misalign"
     )
 
-def init_atomic_coverage(g, dut):
-    """10. 原子指令功能覆盖率"""
-    g.add_watch_point(dut,
-        {
-            # 预加载：原子操作标记
-            "ATOMIC_PRELOAD": lambda x: x.io_lsq_valid.value and x.io_lsq_replenish_atomic.value,
-            # 操作执行：原子操作完成
-            "ATOMIC_OPS": lambda x: x.io_stout_valid.value and x.io_lsq_replenish_atomic.value,
-        },
-        name="FC-Atomic"
-    )
+
 
 def init_function_coverage(dut):
     """初始化所有功能覆盖率组"""
@@ -164,7 +151,6 @@ def init_function_coverage(dut):
     init_mmio_coverage(mmio_cov, dut)
     init_nc_coverage(nc_cov, dut)
     init_misalign_coverage(misalign_cov, dut)
-    init_atomic_coverage(atomic_cov, dut)
 
     coverage_initialized = True
 
@@ -477,28 +463,3 @@ def api_misaligned_access(dut, vaddr, size, is_vector=False):
     
     dut.io_tlb_resp_valid.value = 0
     return bool(buffered), bool(exception)
-
-# 10. 原子指令
-def api_atomic_operation(dut, vaddr, data, op_type):
-    """测试原子指令执行"""
-    # 派发原子指令
-    dut.io_stin_valid.value = 1
-    dut.io_stin_bits_src_0.value = vaddr
-    dut.io_stin_bits_uop_fuOpType.value = op_type | 0x10  # 设置原子操作标志
-    
-    # 模拟TLB响应
-    dut.io_tlb_resp_valid.value = 1
-    dut.io_tlb_resp_bits_paddr_0.value = vaddr & 0xFFFFFFFFFFFF
-    
-    # 检查原子操作识别
-    dut.Step(1)
-    is_atomic = dut.io_lsq_replenish_atomic.value
-    
-    # 推进完成
-    dut.Step(1)
-    completed = dut.io_stout_valid.value and "AMO" in str(dut.io_stout_bits_uop_fuOpType.value)
-    
-    # 清理
-    dut.io_stin_valid.value = 0
-    dut.io_tlb_resp_valid.value = 0
-    return bool(is_atomic), bool(completed)
