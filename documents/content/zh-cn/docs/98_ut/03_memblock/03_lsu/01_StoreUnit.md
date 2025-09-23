@@ -746,7 +746,7 @@ SBuffer支持超时清空机制；超过2^20周期未被换出的数据块将被
 | 8.1 | SU_NC | EXEC |验证NC访问允许乱序执行。|
 | 8.2 | SU_NC  | FORWARD |验证Uncache模块的Store到Load转发。|
 | 9.1 | SU_MISALIGN  | SCALAR_SPLIT |验证标量非对齐访问跨越16B边界时拆分为两个对齐访问。|
-| 9.2 | SU_MISALIGN  | EXCEPTION |验证原子指令、MMIO、NC空间非对齐访问触发异常。|
+| 9.2 | SU_MISALIGN  | EXCEPTION |验证原子指令、MMIO、NC空间非对齐访问触发异常。| 
 
 </mrs-testpoints>
 
