@@ -137,14 +137,6 @@ def test_scalar_split(dut):
         SU_MISALIGN.SCALAR_SPLIT
     """
 
-def test_seg_handle(dut):
-
-    """ 验证向量Segment指令的非对齐处理
-
-    测试点：
-        SU_MISALIGN.SEG_HANDLE
-    """
-
 def test_exception(dut):
 
     """ 验证原子指令、MMIO、NC空间非对齐访问触发异常
@@ -153,18 +145,3 @@ def test_exception(dut):
         SU_MISALIGN.EXCEPTION
     """
 
-def test_preload(dut):
-
-    """ 验证原子指令、MMIO、NC空间非对齐访问触发异常
-    
-    测试点：
-        SU_ATOMIC.PRELOAD
-    """
-
-def test_preload(dut):
-
-    """ 验证原子指令操作正确执行，包括数据读写和状态更新
-
-    测试点：
-        SU_ATOMIC.OPS
-    """
