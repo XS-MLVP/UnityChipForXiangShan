@@ -8,7 +8,7 @@ def build(cfg):
     internal_signals_path = "scripts/icache_related/icache_waylookup_internals.yaml"
 
     # export WayLookup.sv
-    return picker_export(TARGET_NAME, cfg, internal_file=internal_signals_path)
+    return picker_export(TARGET_NAME, cfg, access_mode=1, internal_file=internal_signals_path)
 
 
 def line_coverage_files(cfg):

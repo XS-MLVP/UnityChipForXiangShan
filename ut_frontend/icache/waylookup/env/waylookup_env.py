@@ -10,5 +10,5 @@ class WayLookupEnv(Env):
         super().__init__()
         self.dut = dut
         self.bundle = WayLookupBundle.from_prefix("").bind(dut)
-        self.agent = WayLookupAgent(self.bundle)
+        self.agent = WayLookupAgent(self.bundle, self.dut)
         self.bundle.set_all(0)
