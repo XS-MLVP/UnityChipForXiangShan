@@ -2,8 +2,6 @@ import toffee.funcov as fc
 from toffee.funcov import CovGroup
 from .test_configs import C_EMPTY, C_FLUSHED, C_COMMITTED
 
-
-
 def toifu_cov_points(g, dut, bundle):
     g.add_cover_point(bundle.toICache.req_valid, {"toicache_req_valid is 0": fc.Eq(0)}, name="ToICache req_valid is 0", once=True)
     g.add_cover_point(bundle.toICache.req_valid, {"toicache_req_valid is 1": fc.Eq(1)}, name="ToICache req_valid is 1", once=True)

@@ -1,4 +1,4 @@
-from toffee import *  # 导入 Toffee 框架
+from toffee import *  
 
 class IfuPdSlotBundle(Bundle):
     brType = Signal()
@@ -25,13 +25,13 @@ class LastStageFtbEntryBundle(Bundle):
     tailSlot_sharing = Signal()
 
 
-class ToIfuBundle(Bundle):  # 新增：专门处理 toIfu 相关信号
-    req_ready = Signal()  # 1-bit (ready)
-    req_valid = Signal()  # 新增：可能需要的信号
-      # 新增：从 example.py 看到需要这个信号
+class ToIfuBundle(Bundle):  
+    req_ready = Signal()  
+    req_valid = Signal()  
+      
 
 
-class ToICacheBundle(Bundle):  # 新增：专门处理 toICache 相关信号
+class ToICacheBundle(Bundle):  
     req_valid = Signal()
     req_bits_readValid_0 = Signal()
     req_bits_readValid_1 = Signal()
@@ -49,7 +49,7 @@ class ToICacheBundle(Bundle):  # 新增：专门处理 toICache 相关信号
     req_bits_pcMemRead_3_nextlineStart = Signal()
     req_bits_pcMemRead_4_nextlineStart = Signal()
 
-class ToPrefetchBundle(Bundle):  # 新增：专门处理 toPrefetch 相关信号
+class ToPrefetchBundle(Bundle):  
     req_ready = Signal()
     req_valid = Signal()
 
@@ -62,40 +62,39 @@ class ToPrefetchBundle(Bundle):  # 新增：专门处理 toPrefetch 相关信号
 
  
 
-class FromBpuBundle(Bundle):  # 新增子Bundle类，对应 fromBpu 相关信号，继承自 Bundle
-    # 定义 fromBpu 响应信号（基于提供的 example.py 中的信号）
+class FromBpuBundle(Bundle):  
     
-    resp_valid = Signal()  # 1-bit (valid)
+    resp_valid = Signal()  
     resp_ready = Signal()
-    resp_bits_s1_pc_3 = Signal()  # 64-bit (pc)
-    resp_bits_s1_full_pred_3_fallThroughErr = Signal()  # 1-bit (fallThruError)
+    resp_bits_s1_pc_3 = Signal()  
+    resp_bits_s1_full_pred_3_fallThroughErr = Signal()  
     
-    resp_bits_s2_valid_3 = Signal()  # 1-bit (valid)
-    resp_bits_s2_hasRedirect_3 = Signal()  # 1-bit (hasRedirect)
-    resp_bits_s2_pc_3 = Signal()  # 64-bit (pc)
-    resp_bits_s2_ftq_idx_value = Signal()  # 64-bit (ftq_idx value)
-    resp_bits_s2_ftq_idx_flag = Signal()  # 1-bit (ftq_idx flag)
-    resp_bits_s2_full_pred_3_fallThroughErr = Signal()  # 1-bit (fallThruError)
+    resp_bits_s2_valid_3 = Signal()  
+    resp_bits_s2_hasRedirect_3 = Signal()  
+    resp_bits_s2_pc_3 = Signal()  
+    resp_bits_s2_ftq_idx_value = Signal()  
+    resp_bits_s2_ftq_idx_flag = Signal()  
+    resp_bits_s2_full_pred_3_fallThroughErr = Signal()  
     resp_bits_s2_full_pred_3_hit = Signal()
     
-    resp_bits_s3_valid_3 = Signal()  # 1-bit (valid)
-    resp_bits_s3_hasRedirect_3 = Signal()  # 1-bit (hasRedirect)
-    resp_bits_s3_pc_3 = Signal()  # 64-bit (pc)
-    resp_bits_s3_ftq_idx_value = Signal()  # 64-bit (ftq_idx value)
-    resp_bits_s3_ftq_idx_flag = Signal()  # 1-bit (ftq_idx flag)
-    resp_bits_s3_full_pred_3_fallThroughErr = Signal()  # 1-bit (fallThruError)
+    resp_bits_s3_valid_3 = Signal()  
+    resp_bits_s3_hasRedirect_3 = Signal()  
+    resp_bits_s3_pc_3 = Signal()  
+    resp_bits_s3_ftq_idx_value = Signal()  
+    resp_bits_s3_ftq_idx_flag = Signal()  
+    resp_bits_s3_full_pred_3_fallThroughErr = Signal()  
 
 
     last_stage_ftb_entry = LastStageFtbEntryBundle.from_prefix("resp_bits_last_stage_ftb_entry_")
 
-class FromBackendBundle(Bundle):  # 新增：Backend 重定向信号 Bundle
-    redirect_valid = Signal()  # 1-bit (valid)
-    redirect_bits_ftqIdx_value = Signal()  # 64-bit (ftqIdx value)
+class FromBackendBundle(Bundle):  
+    redirect_valid = Signal()  
+    redirect_bits_ftqIdx_value = Signal()  
     redirect_bits_ftqIdx_flag = Signal()
-    redirect_bits_ftqOffset = Signal()  # 64-bit (ftqOffset)
-    redirect_bits_cfiUpdate_target = Signal()  # 64-bit (target)
-    redirect_bits_cfiUpdate_taken = Signal()  # 1-bit (taken)
-    redirect_bits_cfiUpdate_isMisPred = Signal()  # 1-bit (isMisPred)
+    redirect_bits_ftqOffset = Signal()  
+    redirect_bits_cfiUpdate_target = Signal()  
+    redirect_bits_cfiUpdate_taken = Signal()  
+    redirect_bits_cfiUpdate_isMisPred = Signal()  
 
     redirect_bits_level                    = Signal()
     redirect_bits_debugIsCtrl              = Signal()
@@ -114,21 +113,21 @@ class FromBackendBundle(Bundle):  # 新增：Backend 重定向信号 Bundle
     rob_commits_6 = RobCommitBundle.from_prefix("rob_commits_6_")
     rob_commits_7 = RobCommitBundle.from_prefix("rob_commits_7_")
 
-class FromIfuBundle(Bundle):  # 新增：IFU 重定向信号 Bundle
-    pdWb_bits_target = Signal()  # 64-bit (target)
-    pdWb_bits_cfiOffset_valid = Signal()  # 1-bit (cfiOffset valid)
-    pdWb_bits_misOffset_valid = Signal()  # 1-bit (misOffset valid)
-    pdWb_bits_ftqIdx_value = Signal()  # 64-bit (ftqIdx value)
+class FromIfuBundle(Bundle):  
+    pdWb_bits_target = Signal()  
+    pdWb_bits_cfiOffset_valid = Signal()  
+    pdWb_bits_misOffset_valid = Signal()  
+    pdWb_bits_ftqIdx_value = Signal()  
     pdWb_bits_ftqIdx_flag = Signal()
-    pdWb_bits_misOffset_bits = Signal()  # 64-bit (misOffset bits)
-    pdWb_valid = Signal()  # 1-bit (valid)
+    pdWb_bits_misOffset_bits = Signal()  
+    pdWb_valid = Signal()  
 
     
     
 
     
 
-        # 使用原始长名，不做精简；prefix 与 DUT 完全一致
+        
     pdWb_bits_pd_0 = IfuPdSlotBundle.from_prefix("pdWb_bits_pd_0_")
     pdWb_bits_pd_1 = IfuPdSlotBundle.from_prefix("pdWb_bits_pd_1_")
     pdWb_bits_pd_2 = IfuPdSlotBundle.from_prefix("pdWb_bits_pd_2_")
@@ -165,12 +164,11 @@ class FromIfuBundle(Bundle):  # 新增：IFU 重定向信号 Bundle
 
 class FtqBundle(Bundle):
 
-    #加from prefix只是为了给信号加前缀，并且只适用于与dut的信号绑定，与python的变量名无关。具体在agent中驱动信号名字
-    #是根据bundle的子bundle实例化名字+一个“.”符号，和我们加的前缀无关
-    fromBackend = FromBackendBundle.from_prefix("fromBackend_")  # 新增
-    fromIfu = FromIfuBundle.from_prefix("fromIfu_")  # 新增
+    
+    fromBackend = FromBackendBundle.from_prefix("fromBackend_")  
+    fromIfu = FromIfuBundle.from_prefix("fromIfu_")  
     fromBpu = FromBpuBundle.from_prefix("fromBpu_")
     toIfu = ToIfuBundle.from_prefix("toIfu_")
-    toICache = ToICacheBundle.from_prefix("toICache_")  # 新增
-    toPrefetch = ToPrefetchBundle.from_prefix("toPrefetch_")  # 新增
+    toICache = ToICacheBundle.from_prefix("toICache_")  
+    toPrefetch = ToPrefetchBundle.from_prefix("toPrefetch_")  
 
