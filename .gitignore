@@ -143,6 +143,7 @@ celerybeat.pid
 .venv
 venv/
 ENV/
+!ut_frontend/ifu/ifu_top/env/
 env.bak/
 venv.bak/
 
