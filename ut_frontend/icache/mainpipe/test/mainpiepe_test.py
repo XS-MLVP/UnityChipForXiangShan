@@ -4138,7 +4138,7 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
         print(f"  × {error_msg}")
         errors.append(error_msg)
     
-    # 19.6: 仅L2异常
+    # 19.6: 仅L2异常 TODO:此处错误触发mismatch Assertion, 因此此处测试临时注释，后续查找详细原因
     # try:
     #     print("\n--- 测试点19.6: 仅L2异常 ---")
     #     await agent.reset()
