@@ -2,6 +2,7 @@ import asyncio
 from toffee import Agent
 from ..bundle import IPrefetchPipeBundle
 import random
+import toffee
 
 
 class IPrefetchPipeAgent(Agent):
@@ -71,7 +72,7 @@ class IPrefetchPipeAgent(Agent):
         await self.bundle.step(5)
         self.bundle.reset.value = 0
         await self.bundle.step(5)
-        print("DUT reset completed")
+        toffee.info("DUT reset completed")
 
     async def set_prefetch_enable(self, enable: bool = True):
         """
@@ -86,7 +87,7 @@ class IPrefetchPipeAgent(Agent):
         """
         self.bundle.io._csr_pf_enable.value = int(enable)
         await self.bundle.step()
-        print(f"Prefetch enable set to {enable}")
+        toffee.info(f"Prefetch enable set to {enable}")
         
     async def get_prefetch_enable(self) -> bool:
         """Get current prefetch enable status"""
@@ -110,7 +111,7 @@ class IPrefetchPipeAgent(Agent):
             await self.bundle.step(duration)
             self.bundle.io._flush.value = 0
             await self.bundle.step()
-            print("Global flush completed")
+            toffee.info("Global flush completed")
             
         elif flush_type == "bpu_s2":
             ftq_flag = kwargs.get('ftq_flag', 1)
@@ -126,7 +127,7 @@ class IPrefetchPipeAgent(Agent):
             self.bundle.io._flushFromBpu._s2._bits._flag.value = 0
             self.bundle.io._flushFromBpu._s2._bits._value.value = 0
             await self.bundle.step()
-            print(f"BPU S2 flush completed (flag={ftq_flag}, value={ftq_value})")
+            toffee.info(f"BPU S2 flush completed (flag={ftq_flag}, value={ftq_value})")
             
         elif flush_type == "bpu_s3":
             ftq_flag = kwargs.get('ftq_flag', 1)
@@ -142,7 +143,7 @@ class IPrefetchPipeAgent(Agent):
             self.bundle.io._flushFromBpu._s3._bits._flag.value = 0
             self.bundle.io._flushFromBpu._s3._bits._value.value = 0
             await self.bundle.step()
-            print(f"BPU S3 flush completed (flag={ftq_flag}, value={ftq_value})")
+            toffee.info(f"BPU S3 flush completed (flag={ftq_flag}, value={ftq_value})")
             
         else:
             raise ValueError(f"Unknown flush_type: {flush_type}")
@@ -216,12 +217,12 @@ class IPrefetchPipeAgent(Agent):
         req_info["send_success"] = False
         req_info["s0_fire_detected"] = False
         
-        print(f"Attempting to send prefetch request:")
-        print(f"  startAddr: 0x{startAddr:x}")
-        print(f"  nextlineStart: 0x{nextlineStart:x}")
-        print(f"  is_doubleline: {is_doubleline} (startAddr[5]={bool(startAddr & 0x20)})")
-        print(f"  isSoftPrefetch: {isSoftPrefetch}")
-        print(f"  timeout: {timeout_cycles} cycles")
+        toffee.info(f"Attempting to send prefetch request:")
+        toffee.info(f"  startAddr: 0x{startAddr:x}")
+        toffee.info(f"  nextlineStart: 0x{nextlineStart:x}")
+        toffee.info(f"  is_doubleline: {is_doubleline} (startAddr[5]={bool(startAddr & 0x20)})")
+        toffee.info(f"  isSoftPrefetch: {isSoftPrefetch}")
+        toffee.info(f"  timeout: {timeout_cycles} cycles")
         
         for i in range(timeout_cycles):
             # Check IPrefetchPipe readiness
@@ -266,25 +267,25 @@ class IPrefetchPipeAgent(Agent):
                         "cache_line_0": f"0x{startAddr >> 6:x}",
                         "cache_line_1": f"0x{nextlineStart >> 6:x}" if is_doubleline else "N/A"
                     })
-                    print(f"✓ Prefetch request accepted at cycle {i+1}")
-                    print(f"  Cache line 0: 0x{startAddr >> 6:x} (startAddr)")
+                    toffee.info(f"✓ Prefetch request accepted at cycle {i+1}")
+                    toffee.info(f"  Cache line 0: 0x{startAddr >> 6:x} (startAddr)")
                     if is_doubleline:
-                        print(f"  Cache line 1: 0x{nextlineStart >> 6:x} (nextlineStart)")
+                        toffee.info(f"  Cache line 1: 0x{nextlineStart >> 6:x} (nextlineStart)")
                     
                     # Note: valid signal should remain asserted until caller decides to deassert
                     # This follows proper ready/valid handshake protocol
                     return req_info
                 else:
-                    print(f"✗ Request conditions not met (cycle {i+1}): "
+                    toffee.info(f"✗ Request conditions not met (cycle {i+1}): "
                           f"valid={valid_asserted}, ready={ready_active}, no_flush={no_global_flush}")
                     
                 # Keep valid asserted for next cycle attempt (proper handshake protocol)
                 await self.bundle.step()
             else:
-                print(f"⧗ IPrefetchPipe not ready (cycle {i+1})")
+                toffee.info(f"⧗ IPrefetchPipe not ready (cycle {i+1})")
                 await self.bundle.step()
         
-        print(f"✗ Timeout: Prefetch request not accepted after {timeout_cycles} cycles")
+        toffee.info(f"✗ Timeout: Prefetch request not accepted after {timeout_cycles} cycles")
         # Keep valid signal as-is, let caller manage signal lifecycle
         return req_info
 
@@ -297,7 +298,7 @@ class IPrefetchPipeAgent(Agent):
         """
         self.bundle.io._req._valid.value = 0
         await self.bundle.step()
-        print("Prefetch request valid signal deasserted")
+        toffee.info("Prefetch request valid signal deasserted")
 
     # ==================== ITLB交互API ====================
     
@@ -331,14 +332,14 @@ class IPrefetchPipeAgent(Agent):
         if paddr is None:
             paddr = random.randint(0, (1<<50)-1)
             
-        print(f"Driving ITLB response for port {port}")
+        toffee.info(f"Driving ITLB response for port {port}")
         result = False
         
         # Validate exception signals - ensure at most one is active (one-hot encoding required by hardware)
         exception_count = sum([af, pf, gpf])
         if exception_count > 1:
-            print(f"Error: Multiple exception flags set (af={af}, pf={pf}, gpf={gpf})")
-            print("Hardware requires one-hot encoding - at most one exception can be active")
+            toffee.info(f"Error: Multiple exception flags set (af={af}, pf={pf}, gpf={gpf})")
+            toffee.info("Hardware requires one-hot encoding - at most one exception can be active")
             result = False
             return {
                 "result": result,
@@ -407,7 +408,7 @@ class IPrefetchPipeAgent(Agent):
         """
         Drive PMP response for permission check
         """
-        print(f"Driving PMP response for port {port}")
+        toffee.info(f"Driving PMP response for port {port}")
         
         pmp_bundle = getattr(self.bundle.io._pmp, f"_{port}")
         pmp_bundle._resp._mmio.value = int(mmio)
@@ -444,7 +445,7 @@ class IPrefetchPipeAgent(Agent):
         Returns:
             True if ITLB response is available, False if timeout
         """
-        print(f"Waiting for ITLB response on port {port}, timeout: {timeout_cycles} cycles")
+        toffee.info(f"Waiting for ITLB response on port {port}, timeout: {timeout_cycles} cycles")
         
         for i in range(timeout_cycles):
             if port == 0:
@@ -456,12 +457,12 @@ class IPrefetchPipeAgent(Agent):
             
             # ITLB response is ready when miss=0 and paddr is valid
             if miss == 0 and paddr != 0:
-                print(f"ITLB response ready on port {port} (cycle {i+1}): paddr=0x{paddr:x}")
+                toffee.info(f"ITLB response ready on port {port} (cycle {i+1}): paddr=0x{paddr:x}")
                 return True
             
             await self.bundle.step()
         
-        print(f"ITLB response timeout on port {port} after {timeout_cycles} cycles")
+        toffee.info(f"ITLB response timeout on port {port} after {timeout_cycles} cycles")
         return False
     
     async def drive_meta_response(self,
@@ -502,7 +503,7 @@ class IPrefetchPipeAgent(Agent):
                 target_paddr = self.bundle.io._itlb._1._resp_bits._paddr._0.value
             
             if target_paddr == 0:
-                print(f"Warning: No valid physical address from ITLB for port {port}, using default")
+                toffee.info(f"Warning: No valid physical address from ITLB for port {port}, using default")
                 target_paddr = 0x80001000  # Default fallback address
         
         # Extract tag from physical address (bits [47:12])
@@ -528,12 +529,12 @@ class IPrefetchPipeAgent(Agent):
             if valid_bits is None:
                 valid_bits = auto_valid_bits
             
-        print(f"Driving MetaArray response for port {port}")
-        print(f"  target_paddr=0x{target_paddr:x}, target_tag=0x{target_tag:x}")
-        print(f"  hit_ways={hit_ways}")
-        print(f"  tags={[hex(t) for t in tags]}")
-        print(f"  valid_bits={valid_bits}")
-        print(f"  codes={codes}")
+        toffee.info(f"Driving MetaArray response for port {port}")
+        toffee.info(f"  target_paddr=0x{target_paddr:x}, target_tag=0x{target_tag:x}")
+        toffee.info(f"  hit_ways={hit_ways}")
+        toffee.info(f"  tags={[hex(t) for t in tags]}")
+        toffee.info(f"  valid_bits={valid_bits}")
+        toffee.info(f"  codes={codes}")
         
         meta_resp = self.bundle.io._metaRead._fromIMeta
         
@@ -579,7 +580,7 @@ class IPrefetchPipeAgent(Agent):
         """
         Check if WayLookup request is sent
         """
-        print(f"Checking WayLookup request, timeout: {timeout_cycles} cycles")
+        toffee.info(f"Checking WayLookup request, timeout: {timeout_cycles} cycles")
         
         for i in range(timeout_cycles):
             if self.bundle.io._wayLookupWrite._valid.value == 1 and self.bundle.io._wayLookupWrite._ready.value == 1:
@@ -600,18 +601,18 @@ class IPrefetchPipeAgent(Agent):
                     "gpf_gpaddr": self.bundle.io._wayLookupWrite._bits._gpf._gpaddr.value,
                     "gpf_isForVSnonLeafPTE": self.bundle.io._wayLookupWrite._bits._gpf._isForVSnonLeafPTE.value
                 }
-                print(f"WayLookup request detected (cycle {i+1})")
+                toffee.info(f"WayLookup request detected (cycle {i+1})")
                 return waylookup_info
             
             await self.bundle.step()
         
-        print(f"No WayLookup request detected after {timeout_cycles} cycles")
+        toffee.info(f"No WayLookup request detected after {timeout_cycles} cycles")
         return {"request_sent": False}
 
     async def set_waylookup_ready(self, ready: bool = True):
         """Set WayLookup ready signal"""
         self.bundle.io._wayLookupWrite._ready.value = int(ready)
-        print(f"WayLookup ready set to {ready}")
+        toffee.info(f"WayLookup ready set to {ready}")
 
     # ==================== MSHR交互API ====================
     
@@ -628,7 +629,7 @@ class IPrefetchPipeAgent(Agent):
         if vSetIdx is None:
             vSetIdx = random.randint(0, (1<<8)-1)
             
-        print("Driving MSHR response")
+        toffee.info("Driving MSHR response")
         
         self.bundle.io._MSHRResp._valid.value = 1
         self.bundle.io._MSHRResp._bits._corrupt.value = int(corrupt)
@@ -660,7 +661,7 @@ class IPrefetchPipeAgent(Agent):
         """
         Check if MSHR request is sent to miss unit
         """
-        print(f"Checking MSHR request, timeout: {timeout_cycles} cycles")
+        toffee.info(f"Checking MSHR request, timeout: {timeout_cycles} cycles")
         
         for i in range(timeout_cycles):
             if self.bundle.io._MSHRReq._valid.value == 1 and self.bundle.io._MSHRReq._ready.value == 1:
@@ -669,19 +670,19 @@ class IPrefetchPipeAgent(Agent):
                     "blkPaddr": self.bundle.io._MSHRReq._bits._blkPaddr.value,
                     "vSetIdx": self.bundle.io._MSHRReq._bits._vSetIdx.value
                 }
-                print(f"MSHR request detected (cycle {i+1})")
+                toffee.info(f"MSHR request detected (cycle {i+1})")
                 return mshr_info
             
             await self.bundle.step()
         
-        print(f"No MSHR request detected after {timeout_cycles} cycles")
+        toffee.info(f"No MSHR request detected after {timeout_cycles} cycles")
         return {"request_sent": False}
 
     async def set_mshr_ready(self, ready: bool = True):
         """Set MSHR ready signal"""
         self.bundle.io._MSHRReq._ready.value = int(ready)
         await self.bundle.step()
-        print(f"MSHR ready set to {ready}")
+        toffee.info(f"MSHR ready set to {ready}")
 
     # ==================== 状态查询API ====================
     
@@ -696,7 +697,7 @@ class IPrefetchPipeAgent(Agent):
         - Request acceptance capability
         """
         if dut == None:
-            print("!!!!! get pipelineline status need dut to get internal signals! !!!")
+            toffee.info("!!!!! get pipelineline status need dut to get internal signals! !!!")
             return
         try:
             # S0 Stage - Use bundle signals (already bound)
@@ -716,7 +717,7 @@ class IPrefetchPipeAgent(Agent):
             try:
                 s1_fire = bool(dut.GetInternalSignal("IPrefetchPipe_top.IPrefetchPipe.s1_fire", use_vpi=False).value)
             except:
-                print("s1 fire signals can not access.")
+                toffee.info("s1 fire signals can not access.")
                 return
             # S2 Stage - Use GetInternalSignal (not bound in bundle)
             s2_valid = None
@@ -729,7 +730,7 @@ class IPrefetchPipeAgent(Agent):
                 s2_fire = bool(dut.GetInternalSignal("IPrefetchPipe_top.IPrefetchPipe.s2_fire", use_vpi=False).value)
                 s2_finish = bool(dut.GetInternalSignal("IPrefetchPipe_top.IPrefetchPipe.s2_finish", use_vpi=False).value)
             except:
-                print("some s2 signals can not access.")
+                toffee.info("some s2 signals can not access.")
                 return
             
             # State Machine - Use bundle signal
@@ -832,7 +833,7 @@ class IPrefetchPipeAgent(Agent):
         Args:
             prefetch_enable: Whether to enable prefetch functionality
         """
-        print("Setting up IPrefetchPipe test environment...")
+        toffee.info("Setting up IPrefetchPipe test environment...")
         
         # Reset DUT
         await self.reset_dut()
@@ -859,7 +860,7 @@ class IPrefetchPipeAgent(Agent):
         self.bundle.io._MSHRResp._valid.value = 0
         
         await self.bundle.step(2)
-        print(f"Environment setup completed (prefetch_enable={prefetch_enable})")
+        toffee.info(f"Environment setup completed (prefetch_enable={prefetch_enable})")
 
     async def wait_for_condition(self, condition_func, timeout_cycles: int = 100) -> bool:
         """Wait for a custom condition to be true"""

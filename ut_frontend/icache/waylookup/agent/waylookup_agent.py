@@ -1,4 +1,5 @@
 import asyncio
+import toffee
 from toffee import Agent
 from ..bundle import WayLookupBundle
 
@@ -17,14 +18,14 @@ class WayLookupAgent(Agent):
         await self.bundle.step(5)
         self.bundle.reset.value = 0
         await self.bundle.step(5)
-        print("DUT reset completed")
+        toffee.info("DUT has been reset")
 
     async def drive_set_flush(self, value: bool):
         """Sets or clears the io_flush signal"""
         current_value = int(value)
         self.bundle.io._flush.value = current_value
         await self.bundle.step()
-        print(f"Flush signal set to {current_value}")
+        toffee.info(f"Flush signal set to {current_value}")
 
     async def flush_write_ptr(self):
         # set io_write_fire，io.write.ready is already 1
@@ -43,14 +44,14 @@ class WayLookupAgent(Agent):
         self.bundle.io._write._bits._entry._meta_codes._0.value = 0
         self.bundle.io._write._bits._entry._meta_codes._1.value = 1
         await self.bundle.step()
-        print("Before flush, write_ptr is: ", self.bundle.WayLookup._writePtr._value.value)
+        toffee.info("Before flush, write_ptr is: ", self.bundle.WayLookup._writePtr._value.value)
         
         # flush
         self.bundle.io._flush.value = 1
         await self.bundle.step()
         
-        # print
-        print("After flush, write_ptr is: ", self.bundle.WayLookup._writePtr._value.value)
+        # toffee.info
+        toffee.info("After flush, write_ptr is: ", self.bundle.WayLookup._writePtr._value.value)
         await self.bundle.step()
     # ==================== 写操作API ====================
     
@@ -71,71 +72,85 @@ class WayLookupAgent(Agent):
                                gpf_isForVSnonLeafPTE: int = 0,
                                timeout_cycles: int = 10) -> dict:
         """
-        Drive a write entry request and wait for acceptance
+        Drive a write entry request by asserting bits first, then holding valid high until ready
         Returns dict with send_success status and actual values written
         """
-        write_info = {}
-        write_info["send_success"] = False
-        
-        print(f"Attempting to write entry, timeout: {timeout_cycles} cycles")
-        
+        write_info = {"send_success": False}
+        toffee.info(f"Attempting to write entry, timeout: {timeout_cycles} cycles")
+
+        expected_bits = {
+            "vSetIdx_0": vSetIdx_0,
+            "vSetIdx_1": vSetIdx_1,
+            "waymask_0": waymask_0,
+            "waymask_1": waymask_1,
+            "ptag_0": ptag_0,
+            "ptag_1": ptag_1,
+            "itlb_exception_0": itlb_exception_0,
+            "itlb_exception_1": itlb_exception_1,
+            "itlb_pbmt_0": itlb_pbmt_0,
+            "itlb_pbmt_1": itlb_pbmt_1,
+            "meta_codes_0": meta_codes_0,
+            "meta_codes_1": meta_codes_1,
+            "gpf_gpaddr": gpf_gpaddr,
+            "gpf_isForVSnonLeafPTE": gpf_isForVSnonLeafPTE
+        }
+
+        # Drive bits first, then hold valid high until ready is observed
+        self.bundle.io._write._bits._entry._vSetIdx._0.value = vSetIdx_0
+        self.bundle.io._write._bits._entry._vSetIdx._1.value = vSetIdx_1
+        self.bundle.io._write._bits._entry._waymask._0.value = waymask_0
+        self.bundle.io._write._bits._entry._waymask._1.value = waymask_1
+        self.bundle.io._write._bits._entry._ptag._0.value = ptag_0
+        self.bundle.io._write._bits._entry._ptag._1.value = ptag_1
+        self.bundle.io._write._bits._entry._itlb._exception._0.value = itlb_exception_0
+        self.bundle.io._write._bits._entry._itlb._exception._1.value = itlb_exception_1
+        self.bundle.io._write._bits._entry._itlb._pbmt._0.value = itlb_pbmt_0
+        self.bundle.io._write._bits._entry._itlb._pbmt._1.value = itlb_pbmt_1
+        self.bundle.io._write._bits._entry._meta_codes._0.value = meta_codes_0
+        self.bundle.io._write._bits._entry._meta_codes._1.value = meta_codes_1
+        self.bundle.io._write._bits._gpf._gpaddr.value = gpf_gpaddr
+        self.bundle.io._write._bits._gpf._isForVSnonLeafPTE.value = gpf_isForVSnonLeafPTE
+
+        self.bundle.io._write._valid.value = 1
+        toffee.info("Asserted write valid, waiting for ready handshake")
+
         for i in range(timeout_cycles):
-            # Check if write is ready and we haven't already asserted valid
-            if (self.bundle.io._write._ready.value == 1 and 
-                self.bundle.io._write._valid.value == 0):
-                
-                # Set up write data
-                self.bundle.io._write._bits._entry._vSetIdx._0.value = vSetIdx_0
-                self.bundle.io._write._bits._entry._vSetIdx._1.value = vSetIdx_1
-                self.bundle.io._write._bits._entry._waymask._0.value = waymask_0
-                self.bundle.io._write._bits._entry._waymask._1.value = waymask_1
-                self.bundle.io._write._bits._entry._ptag._0.value = ptag_0
-                self.bundle.io._write._bits._entry._ptag._1.value = ptag_1
-                self.bundle.io._write._bits._entry._itlb._exception._0.value = itlb_exception_0
-                self.bundle.io._write._bits._entry._itlb._exception._1.value = itlb_exception_1
-                self.bundle.io._write._bits._entry._itlb._pbmt._0.value = itlb_pbmt_0
-                self.bundle.io._write._bits._entry._itlb._pbmt._1.value = itlb_pbmt_1
-                self.bundle.io._write._bits._entry._meta_codes._0.value = meta_codes_0
-                self.bundle.io._write._bits._entry._meta_codes._1.value = meta_codes_1
-                self.bundle.io._write._bits._gpf._gpaddr.value = gpf_gpaddr
-                self.bundle.io._write._bits._gpf._isForVSnonLeafPTE.value = gpf_isForVSnonLeafPTE
-                
-                # Assert valid
-                self.bundle.io._write._valid.value = 1
-                print(f"Write request accepted (cycle {i+1})")
-                
-                await self.bundle.step()
-                
-                # Deassert valid
-                self.bundle.io._write._valid.value = 0
-                
-                # Check if handshake completed
-                if self.bundle.io._write._ready.value == 1:
-                    write_info["send_success"] = True
-                    write_info.update({
-                        "vSetIdx_0": self.bundle.io._write._bits._entry._vSetIdx._0.value,
-                        "vSetIdx_1": self.bundle.io._write._bits._entry._vSetIdx._1.value,
-                        "waymask_0": self.bundle.io._write._bits._entry._waymask._0.value,
-                        "waymask_1": self.bundle.io._write._bits._entry._waymask._1.value,
-                        "ptag_0": self.bundle.io._write._bits._entry._ptag._0.value,
-                        "ptag_1": self.bundle.io._write._bits._entry._ptag._1.value,
-                        "itlb_exception_0": self.bundle.io._write._bits._entry._itlb._exception._0.value,
-                        "itlb_exception_1": self.bundle.io._write._bits._entry._itlb._exception._1.value,
-                        "itlb_pbmt_0": self.bundle.io._write._bits._entry._itlb._pbmt._0.value,
-                        "itlb_pbmt_1": self.bundle.io._write._bits._entry._itlb._pbmt._1.value,
-                        "meta_codes_0": self.bundle.io._write._bits._entry._meta_codes._0.value,
-                        "meta_codes_1": self.bundle.io._write._bits._entry._meta_codes._1.value,
-                        "gpf_gpaddr": self.bundle.io._write._bits._gpf._gpaddr.value,
-                        "gpf_isForVSnonLeafPTE": self.bundle.io._write._bits._gpf._isForVSnonLeafPTE.value
-                    })
-                
-                return write_info
-            else:
-                print(f"Write request not accepted (cycle {i+1}). write_ready={self.bundle.io._write._ready.value}")
-            
             await self.bundle.step()
-        
-        print(f"Timeout: Write request not accepted after {timeout_cycles} cycles")
+
+            if self.bundle.io._write._ready.value == 1 and self.bundle.io._write._valid.value == 1:
+                actual_bits = {
+                    "vSetIdx_0": self.bundle.io._write._bits._entry._vSetIdx._0.value,
+                    "vSetIdx_1": self.bundle.io._write._bits._entry._vSetIdx._1.value,
+                    "waymask_0": self.bundle.io._write._bits._entry._waymask._0.value,
+                    "waymask_1": self.bundle.io._write._bits._entry._waymask._1.value,
+                    "ptag_0": self.bundle.io._write._bits._entry._ptag._0.value,
+                    "ptag_1": self.bundle.io._write._bits._entry._ptag._1.value,
+                    "itlb_exception_0": self.bundle.io._write._bits._entry._itlb._exception._0.value,
+                    "itlb_exception_1": self.bundle.io._write._bits._entry._itlb._exception._1.value,
+                    "itlb_pbmt_0": self.bundle.io._write._bits._entry._itlb._pbmt._0.value,
+                    "itlb_pbmt_1": self.bundle.io._write._bits._entry._itlb._pbmt._1.value,
+                    "meta_codes_0": self.bundle.io._write._bits._entry._meta_codes._0.value,
+                    "meta_codes_1": self.bundle.io._write._bits._entry._meta_codes._1.value,
+                    "gpf_gpaddr": self.bundle.io._write._bits._gpf._gpaddr.value,
+                    "gpf_isForVSnonLeafPTE": self.bundle.io._write._bits._gpf._isForVSnonLeafPTE.value
+                }
+
+                mismatches = {k: (expected_bits[k], v) for k, v in actual_bits.items() if expected_bits[k] != v}
+                if mismatches:
+                    toffee.warning(f"Handshake completed with data mismatch: {mismatches}")
+                else:
+                    write_info["send_success"] = True
+                    toffee.info(f"Write handshake completed (cycle {i+1})")
+
+                write_info.update(actual_bits)
+
+                self.bundle.io._write._valid.value = 0
+                await self.bundle.step()
+                return write_info
+
+            toffee.info(f"Write not ready yet (cycle {i+1}), write_ready={self.bundle.io._write._ready.value}")
+
+        toffee.info(f"Timeout: Write request not accepted after {timeout_cycles} cycles")
         self.bundle.io._write._valid.value = 0
         await self.bundle.step()
         return write_info
@@ -178,14 +193,14 @@ class WayLookupAgent(Agent):
         Drive a read request and get response
         Returns dict with read data or None if timeout
         """
-        print(f"Attempting to read entry, timeout: {timeout_cycles} cycles")
+        toffee.info(f"Attempting to read entry, timeout: {timeout_cycles} cycles")
         
         # Set read_ready to enable reading
         self.bundle.io._read._ready.value = 1
         
         try:
             for i in range(timeout_cycles):
-                if self.bundle.io._read._valid.value == 1:
+                if self.bundle.io._read._valid.value == 1 and self.bundle.io._read._ready.value == 1:
                     read_info = {
                         "read_success": True,
                         "vSetIdx_0": self.bundle.io._read._bits._entry._vSetIdx._0.value,
@@ -203,14 +218,14 @@ class WayLookupAgent(Agent):
                         "gpf_gpaddr": self.bundle.io._read._bits._gpf._gpaddr.value,
                         "gpf_isForVSnonLeafPTE": self.bundle.io._read._bits._gpf._isForVSnonLeafPTE.value
                     }
-                    print(f"Read data captured (cycle {i+1}): vSetIdx_0={hex(read_info['vSetIdx_0'])}")
+                    toffee.info(f"Read data captured (cycle {i+1}): vSetIdx_0={hex(read_info['vSetIdx_0'])}")
                     
                     await self.bundle.step()  # Complete handshake
                     return read_info
                 
                 await self.bundle.step()
             
-            print(f"Timeout: No read data available after {timeout_cycles} cycles")
+            toffee.info(f"Timeout: No read data available after {timeout_cycles} cycles")
             return {"read_success": False}
         finally:
             # Ensure read_ready is deasserted after the operation
@@ -227,7 +242,7 @@ class WayLookupAgent(Agent):
         """
         Drive an update operation (from MissUnit)
         """
-        print(f"Driving update: blkPaddr={hex(blkPaddr)}, vSetIdx={hex(vSetIdx)}, waymask={waymask}")
+        toffee.info(f"Driving update: blkPaddr={hex(blkPaddr)}, vSetIdx={hex(vSetIdx)}, waymask={waymask}")
         
         self.bundle.io._update._valid.value = 1
         self.bundle.io._update._bits._blkPaddr.value = blkPaddr
@@ -239,7 +254,7 @@ class WayLookupAgent(Agent):
         
         # Clear update signals
         self.bundle.io._update._valid.value = 0
-        print("Update operation completed")
+        toffee.info("Update operation completed")
 
     # ==================== 状态查询API ====================
     
@@ -319,9 +334,9 @@ class WayLookupAgent(Agent):
             await self.bundle.step(2)
             if result["send_success"]:
                 written_entries.append(entry_data)
-                print(f"Filled entry {i+1}/{count}")
+                toffee.info(f"Filled entry {i+1}/{count}")
             else:
-                print(f"Failed to fill entry {i+1}/{count}, queue may be full")
+                toffee.info(f"Failed to fill entry {i+1}/{count}, queue may be full")
                 break
         
         return written_entries
@@ -332,18 +347,18 @@ class WayLookupAgent(Agent):
         
         while True:
             status = await self.get_queue_status()
-            print(f"Now there are {status['count']} entries")
+            toffee.info(f"Now there are {status['count']} entries")
             if status["empty"]:
                 break
                 
             result = await self.drive_read_entry(timeout_cycles=5)
             if result["read_success"]:
                 drained_entries.append(result)
-                print(f"Drained entry {len(drained_entries)}")
+                toffee.info(f"Drained entry {len(drained_entries)}")
             else:
                 break
         
-        print(f"Drained {len(drained_entries)} entries from queue")
+        toffee.info(f"Drained {len(drained_entries)} entries from queue")
         return drained_entries
 
     async def wait_for_condition(self, condition_func, timeout_cycles: int = 100) -> bool:

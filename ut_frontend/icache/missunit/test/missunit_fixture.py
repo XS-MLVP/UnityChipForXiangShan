@@ -15,16 +15,16 @@ async def icachemissunit_env(toffee_request: toffee_test.ToffeeRequest):
     icachemissunit_env.dut.Step(10)
     icachemissunit_env.dut.reset.value = 0
     icachemissunit_env.dut.Step(10)
-    # print(f"all signals: {icachemissunit_env.dut.GetInternalSignalList(use_vpi=False)}")
+    # toffee.info(f"all signals: {icachemissunit_env.dut.GetInternalSignalList(use_vpi=False)}")
     dut.InitClock("clock")
     
-    print("--- [FIXTURE SETUP] Defining all functional coverage groups... ---")
+    toffee.info("--- [FIXTURE SETUP] Defining all functional coverage groups... ---")
     coverage_groups = create_all_coverage_groups(icachemissunit_env.bundle, dut)
     
     # Add all coverage groups to the test request
     for coverage_group in coverage_groups:
         toffee_request.add_cov_groups(coverage_group)
-        print(f"Added coverage group: {coverage_group.name}")
+        toffee.info(f"Added coverage group: {coverage_group.name}")
 
     yield icachemissunit_env
     

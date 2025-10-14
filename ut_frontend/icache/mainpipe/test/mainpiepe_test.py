@@ -1,6 +1,7 @@
 from .mainpipe_fixture import icachemainpipe_env
 from ..env import ICacheMainPipeEnv
 import toffee_test
+import toffee
 
 # ========== ECC辅助函数 ==========
 def calculate_data_ecc_codes(datas: list) -> list:
@@ -70,14 +71,14 @@ def calculate_waylookup_params(start_addr: int) -> dict:
 @toffee_test.testcase
 async def test_smoke(icachemainpipe_env: ICacheMainPipeEnv):
     """Smoke test for MainPipe"""
-    print("\n--- Testing smoke ---")
+    toffee.info("\n--- Testing smoke ---")
     await icachemainpipe_env.agent.flush_s0_fire()
 
 
 @toffee_test.testcase
 async def test_basic_control_api(icachemainpipe_env: ICacheMainPipeEnv):
     """Test basic control apis"""
-    print("\n--- Testing basic control apis ---")
+    toffee.info("\n--- Testing basic control apis ---")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     # flush
@@ -99,18 +100,18 @@ async def test_basic_control_api(icachemainpipe_env: ICacheMainPipeEnv):
 @toffee_test.testcase
 async def test_drive_apis(icachemainpipe_env: ICacheMainPipeEnv):
     """Test driver apis"""
-    print("\n--- Testing drive apis ---")
+    toffee.info("\n--- Testing drive apis ---")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     # data_array_ready
-    print("\n Step1 Test For data_array_ready_drive")
+    toffee.info("\n Step1 Test For data_array_ready_drive")
     await agent.drive_data_array_ready(True)
     assert bundle.io._dataArray._toIData._3._ready.value == 1
     await agent.drive_data_array_ready(False)
     assert bundle.io._dataArray._toIData._3._ready.value == 0
     await agent.reset()
     # waylookup_read
-    print("\n Step2 Test For waylookup_read_drive")
+    toffee.info("\n Step2 Test For waylookup_read_drive")
 
     waylookup_data = {"vSetIdx_0": 0x04,
                       "vSetIdx_1": 0x05,
@@ -123,19 +124,19 @@ async def test_drive_apis(icachemainpipe_env: ICacheMainPipeEnv):
                                                    ptag_0 = waylookup_data["ptag_0"],
                                                    meta_codes_0 = waylookup_data["meta_codes_0"])
     await bundle.step()
-    print(read_result)
+    toffee.info(read_result)
     for k,_ in read_result.items():
         if k in waylookup_data.keys():
             assert read_result[k] == waylookup_data[k], f"Expected {k} to be {waylookup_data[k]}, but got {read_result[k]}"
-            print(f"real {read_result[k]} == except {waylookup_data[k]}")
+            toffee.info(f"real {read_result[k]} == except {waylookup_data[k]}")
         elif k == "send_success":
             assert read_result[k] is True
-            print(f"send_success: {read_result[k]}")
+            toffee.info(f"send_success: {read_result[k]}")
         else:
             assert read_result[k] == 0, f"Unexpected value for {k}: {read_result[k]}"
     await agent.reset()
     # fetch_request
-    print("\n Step3 Test For fetch_request_drive")
+    toffee.info("\n Step3 Test For fetch_request_drive")
     PcMemRead_addr_list = [0x0000, 0x0040, 0x0080, 0x00C0, 0x120]  # 第5个元素：0x120[5]=1触发跨行，[13:6]=0x04
     # nextlineStart将自动计算：0x120跨行 -> (0x120 & ~0x3F) + 64 = 0x140，[13:6]=0x05
     readValid_list = [1, 1, 0, 0, 1]  # 激活第5个元素以匹配RTL断言要求
@@ -182,9 +183,9 @@ async def test_drive_apis(icachemainpipe_env: ICacheMainPipeEnv):
         else:  # startAddr[5] == 0，同一缓存行内
             expected_next = start_addr  # nextlineStart = startAddr
         
-        print(f"DEBUG: StartAddr {i} - expected: {start_addr:x}, actual: {actual_start.value:x}")
-        print(f"DEBUG: NextlineStart {i} - expected: {expected_next:x}, actual: {actual_next.value:x}")
-        print(f"DEBUG: ReadValid {i} - expected: {readValid_list[i]}, actual: {actual_valid_val}")
+        toffee.info(f"DEBUG: StartAddr {i} - expected: {start_addr:x}, actual: {actual_start.value:x}")
+        toffee.info(f"DEBUG: NextlineStart {i} - expected: {expected_next:x}, actual: {actual_next.value:x}")
+        toffee.info(f"DEBUG: ReadValid {i} - expected: {readValid_list[i]}, actual: {actual_valid_val}")
         
         # 验证startAddr设置正确
         assert actual_start.value == start_addr, f"StartAddr {i} mismatch: expected {start_addr:x}, got {actual_start.value:x}"
@@ -200,7 +201,7 @@ async def test_drive_apis(icachemainpipe_env: ICacheMainPipeEnv):
 @toffee_test.testcase
 async def test_pmp_response(icachemainpipe_env: ICacheMainPipeEnv):
     """Test PMP response API"""
-    print("\n--- Testing PMP response API ---")
+    toffee.info("\n--- Testing PMP response API ---")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     for i in range(2):
@@ -217,7 +218,7 @@ async def test_pmp_response(icachemainpipe_env: ICacheMainPipeEnv):
 @toffee_test.testcase
 async def test_data_array_response(icachemainpipe_env: ICacheMainPipeEnv):
     """Test DataArray response API"""
-    print("\n--- Testing DataArray response API ---")
+    toffee.info("\n--- Testing DataArray response API ---")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
@@ -239,7 +240,7 @@ async def test_data_array_response(icachemainpipe_env: ICacheMainPipeEnv):
 @toffee_test.testcase
 async def test_mshr_response(icachemainpipe_env: ICacheMainPipeEnv):
     """Test MSHR response API"""
-    print("\n--- Testing MSHR response API ---")
+    toffee.info("\n--- Testing MSHR response API ---")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
@@ -264,74 +265,74 @@ async def test_mshr_response(icachemainpipe_env: ICacheMainPipeEnv):
 @toffee_test.testcase
 async def test_monitoring_apis(icachemainpipe_env: ICacheMainPipeEnv):
     """Test monitoring APIs"""
-    print("\n--- Testing monitoring APIs ---")
+    toffee.info("\n--- Testing monitoring APIs ---")
     agent = icachemainpipe_env.agent
     
     # 测试DataArray监控
     dataarray_status = await agent.monitor_dataarray_toIData()
     for k,v in dataarray_status.items():
-        print("Debug: DataArray status", k, "=", v)
+        toffee.info("Debug: DataArray status", k, "=", v)
         assert v is not None, f"DataArray status {k} should not be None"
     
     # 测试Meta ECC监控
     meta_ecc_status = await agent.monitor_check_meta_ecc_status()
     for k,v in meta_ecc_status.items():
-        print("Debug: Meta ECC status", k, "=", v)
+        toffee.info("Debug: Meta ECC status", k, "=", v)
         assert v is not None, f"Meta ECC status {k} should not be None"
     
     # 测试PMP状态监控
     pmp_status = await agent.monitor_pmp_status()
     for k, v in pmp_status.items():
-        print("Debug: PMP status", k, "=", v)
+        toffee.info("Debug: PMP status", k, "=", v)
         assert v is not None, f"PMP status {k} should not be None"
     
     # 测试MSHR状态监控
     mshr_status = await agent.monitor_mshr_status()
     for k,v in mshr_status.items():
-        print("Debug: MSHR status", k, "=", v)
+        toffee.info("Debug: MSHR status", k, "=", v)
         assert v is not None, f"MSHR status {k} should not be None" 
     
     # 测试Data ECC监控
     data_ecc_status = await agent.monitor_check_data_ecc_status()
     for k,v in data_ecc_status.items():
-        print("Debug: Data ECC status", k, "=", v)
+        toffee.info("Debug: Data ECC status", k, "=", v)
         assert v is not None, f"Data ECC status {k} should not be None"
     
     # 测试Fetch响应监控
     fetch_resp_status = await agent.monitor_fetch_response()
     for k,v in fetch_resp_status.items():
-        print("Debug: Fetch response status", k, "=", v)
+        toffee.info("Debug: Fetch response status", k, "=", v)
         assert v is not None, f"Fetch response status {k} should not be None"
 
     # 测试Replacer touch状态监控
     replacer_touch_status = await agent.monitor_replacer_touch()
     for k,v in replacer_touch_status.items():
-        print("Debug: Replacer touch status", k, "=", v)
+        toffee.info("Debug: Replacer touch status", k, "=", v)
         assert v is not None, f"Replacer touch status {k} should not be None"
 
     # 测试meta_flush状态监控
     meta_flush_status = await agent.monitor_meta_flush()
     for k,v in meta_flush_status.items():   
-        print("Debug: Meta flush status", k, "=", v)
+        toffee.info("Debug: Meta flush status", k, "=", v)
         assert v is not None, f"Meta flush status {k} should not be None"
 
     # 测试流水线状态监控
     pipeline_status = await agent.monitor_pipeline_status()
     for k,v in pipeline_status.items():
-        print("Debug: Pipeline status", k, "=", v)
+        toffee.info("Debug: Pipeline status", k, "=", v)
         assert v is not None, f"Pipeline status {k} should not be None"
     
     # 测试错误状态监控
     error_status = await agent.monitor_error_status()
     for k,v in error_status.items():
-        print("Debug: Error status", k, "=", v)
+        toffee.info("Debug: Error status", k, "=", v)
         assert v is not None, f"Error status {k} should not be None"
 
 
 @toffee_test.testcase
 async def test_enhanced_monitoring_apis(icachemainpipe_env: ICacheMainPipeEnv):
     """Test enhanced monitoring APIs"""
-    print("\n--- Testing enhanced monitoring APIs ---")
+    toffee.info("\n--- Testing enhanced monitoring APIs ---")
     agent = icachemainpipe_env.agent
     
     # 测试异常合并状态监控
@@ -350,33 +351,33 @@ async def test_enhanced_monitoring_apis(icachemainpipe_env: ICacheMainPipeEnv):
     # 测试data_ecc_detailed状态监控
     data_ecc_detailed_status = await agent.monitor_data_ecc_detailed_status()
     for k,v in data_ecc_detailed_status.items():
-        print("Debug: Data ECC detailed status", k, "=", v)
+        toffee.info("Debug: Data ECC detailed status", k, "=", v)
         assert v is not None, f"Data ECC detailed status {k} should not be None"
 
     # 测试S2 MSHR匹配状态监控
     s2_mshr_status = await agent.monitor_s2_mshr_match_status()
     assert s2_mshr_status is not None, "S2 MSHR match status should not be None"
     for k,v in s2_mshr_status.items():
-        print("Debug: S2 MSHR match status", k, "=", v)
+        toffee.info("Debug: S2 MSHR match status", k, "=", v)
         assert v is not None, f"S2 MSHR match status {k} should not be None"
     
     # 测试Miss请求状态监控
     miss_req_status = await agent.monitor_miss_request_status()
     for k,v in miss_req_status.items():
-        print("Debug: Miss request status", k, "=", v)
+        toffee.info("Debug: Miss request status", k, "=", v)
         assert v is not None, f"Miss request status {k} should not be None"
     
     # 测试Meta corrupt状态监控
     meta_corrupt_status = await agent.monitor_meta_corrupt_status()
     for k,v in meta_corrupt_status.items():
-        print("Debug: Meta corrupt status", k, "=", v)
+        toffee.info("Debug: Meta corrupt status", k, "=", v)
         assert v is not None, f"Meta corrupt status {k} should not be None"
 
 
 @toffee_test.testcase
 async def test_error_injection_apis(icachemainpipe_env: ICacheMainPipeEnv):
     """Test error injection APIs"""
-    print("\n--- Testing error injection APIs ---")
+    toffee.info("\n--- Testing error injection APIs ---")
     agent = icachemainpipe_env.agent
     
     # 测试Meta ECC错误注入
@@ -417,12 +418,12 @@ async def test_error_injection_apis(icachemainpipe_env: ICacheMainPipeEnv):
 @toffee_test.testcase
 async def test_signal_bindings(icachemainpipe_env: ICacheMainPipeEnv):
     """Test signal bindings correctness"""
-    print("\n--- Testing signal bindings ---")
+    toffee.info("\n--- Testing signal bindings ---")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
     # 测试基础信号绑定
-    print("Testing basic signal bindings...")
+    toffee.info("Testing basic signal bindings...")
     
     # 测试flush信号
     await agent.drive_set_flush(True)
@@ -469,14 +470,14 @@ async def test_signal_bindings(icachemainpipe_env: ICacheMainPipeEnv):
     assert bundle.io._wayLookupRead._bits._entry._waymask._0.value == test_waymask, "WayLookup waymask binding incorrect"
     assert bundle.io._wayLookupRead._bits._entry._ptag._0.value == test_ptag, "WayLookup ptag binding incorrect"
     
-    print("All signal bindings verified successfully!")
+    toffee.info("All signal bindings verified successfully!")
 
 @toffee_test.testcase
 async def test_comprehensive_signal_interface(icachemainpipe_env: ICacheMainPipeEnv):
     """Comprehensive test for all ICacheMainPipe signal interfaces organized by categories
     Based on Verilog analysis: OUTPUT/wire signals test read access only, INPUT signals test read/write functionality
     """
-    print("\n=== Comprehensive ICacheMainPipe Signal Interface Test ===")
+    toffee.info("\n=== Comprehensive ICacheMainPipe Signal Interface Test ===")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
@@ -484,37 +485,37 @@ async def test_comprehensive_signal_interface(icachemainpipe_env: ICacheMainPipe
     test_errors = []
     
     # ================= 1. ICacheMainPipe Internal Signals =================
-    print("\n1. ICacheMainPipe Internal Signals")
+    toffee.info("\n1. ICacheMainPipe Internal Signals")
     try:
         # According to Verilog, these are internal pipeline signals (mostly OUTPUT)
         s2_fire = bundle.ICacheMainPipe._s2._fire.value
         s2_valid = bundle.ICacheMainPipe._s2._valid.value
         s0_fire = bundle.ICacheMainPipe._s0_fire.value
         
-        print(f"  ✓ ICacheMainPipe.s2.fire: {s2_fire}")
-        print(f"  ✓ ICacheMainPipe.s2.valid: {s2_valid}")
-        print(f"  ✓ ICacheMainPipe.s0_fire: {s0_fire}")
+        toffee.info(f"  ✓ ICacheMainPipe.s2.fire: {s2_fire}")
+        toffee.info(f"  ✓ ICacheMainPipe.s2.valid: {s2_valid}")
+        toffee.info(f"  ✓ ICacheMainPipe.s0_fire: {s0_fire}")
     except Exception as e:
         error_msg = f"ICacheMainPipe internal signals access error: {e}"
         test_errors.append(error_msg)
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
     
     # ================= 2. ICacheMainPipe__toMSHRArbiter_io_in =================
-    print("\n2. ICacheMainPipe__toMSHRArbiter_io_in Interface")
+    toffee.info("\n2. ICacheMainPipe__toMSHRArbiter_io_in Interface")
     try:
         # According to Verilog, these are OUTPUT signals to MSHR arbiter
         valid_T_4_1 = bundle.ICacheMainPipe__toMSHRArbiter_io_in._1._valid_T._4.value
         valid_T_4_0 = bundle.ICacheMainPipe__toMSHRArbiter_io_in._0._valid_T._4.value
         
-        print(f"  ✓ toMSHRArbiter_io_in[1].valid_T.4: {valid_T_4_1}")
-        print(f"  ✓ toMSHRArbiter_io_in[0].valid_T.4: {valid_T_4_0}")
+        toffee.info(f"  ✓ toMSHRArbiter_io_in[1].valid_T.4: {valid_T_4_1}")
+        toffee.info(f"  ✓ toMSHRArbiter_io_in[0].valid_T.4: {valid_T_4_0}")
     except Exception as e:
         error_msg = f"ICacheMainPipe__toMSHRArbiter_io_in interface access error: {e}"
         test_errors.append(error_msg)
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
     
     # ================= 3. io._perfInfo (OUTPUT) =================
-    print("\n3. io._perfInfo Interface (OUTPUT - Read Only)")
+    toffee.info("\n3. io._perfInfo Interface (OUTPUT - Read Only)")
     try:
         perfinfo_signals = {
             "bank_hit_0": bundle.io._perfInfo._bank_hit._0,
@@ -531,32 +532,32 @@ async def test_comprehensive_signal_interface(icachemainpipe_env: ICacheMainPipe
         for field, signal_obj in perfinfo_signals.items():
             try:
                 value = signal_obj.value
-                print(f"  ✓ perfInfo.{field}: {value}")
+                toffee.info(f"  ✓ perfInfo.{field}: {value}")
             except AttributeError as e:
                 error_msg = f"perfInfo.{field}: {e}"
                 test_errors.append(error_msg)
-                print(f"  × {error_msg}")
+                toffee.info(f"  × {error_msg}")
     except Exception as e:
         error_msg = f"perfInfo interface critical error: {e}"
         test_errors.append(error_msg)
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
     
     # ================= 4. io._pmp Interface =================
-    print("\n4. io._pmp Interface")
+    toffee.info("\n4. io._pmp Interface")
     # PMP request addresses are OUTPUT (line 145-146 in Verilog)
-    print("  4a. PMP Request Signals (OUTPUT - Read Only)")
+    toffee.info("  4a. PMP Request Signals (OUTPUT - Read Only)")
     try:
         pmp_req_addr_0 = bundle.io._pmp._0._req_bits_addr.value
         pmp_req_addr_1 = bundle.io._pmp._1._req_bits_addr.value
-        print(f"    ✓ pmp[0].req_bits_addr: {hex(pmp_req_addr_0)}")
-        print(f"    ✓ pmp[1].req_bits_addr: {hex(pmp_req_addr_1)}")
+        toffee.info(f"    ✓ pmp[0].req_bits_addr: {hex(pmp_req_addr_0)}")
+        toffee.info(f"    ✓ pmp[1].req_bits_addr: {hex(pmp_req_addr_1)}")
     except Exception as e:
         error_msg = f"PMP request signals error: {e}"
         test_errors.append(error_msg)
-        print(f"    × {error_msg}")
+        toffee.info(f"    × {error_msg}")
     
     # PMP response signals are INPUT (line 147-150 in Verilog) - test read/write
-    print("  4b. PMP Response Signals (INPUT - Read/Write Testing)")
+    toffee.info("  4b. PMP Response Signals (INPUT - Read/Write Testing)")
     try:
         # Test normal values within boundaries
         test_values = [(1, 0), (0, 1), (1, 1)]  # (instr, mmio) combinations
@@ -574,15 +575,15 @@ async def test_comprehensive_signal_interface(icachemainpipe_env: ICacheMainPipe
             assert bundle.io._pmp._1._resp._instr.value == test_instr_0, f"PMP 1 instr write failed"
             assert bundle.io._pmp._1._resp._mmio.value == test_mmio_0, f"PMP 1 mmio write failed"
             
-        print(f"    ✓ PMP response signals read/write working")
+        toffee.info(f"    ✓ PMP response signals read/write working")
             
     except Exception as e:
         error_msg = f"PMP response signals error: {e}"
         test_errors.append(error_msg)
-        print(f"    × {error_msg}")
+        toffee.info(f"    × {error_msg}")
     
     # ================= 5. io._errors (OUTPUT) =================
-    print("\n5. io._errors Interface (OUTPUT - Read Only)")
+    toffee.info("\n5. io._errors Interface (OUTPUT - Read Only)")
     try:
         error_signals = {
             "error_0_valid": bundle.io._errors._0._valid,
@@ -596,18 +597,18 @@ async def test_comprehensive_signal_interface(icachemainpipe_env: ICacheMainPipe
         for field, signal_obj in error_signals.items():
             try:
                 value = signal_obj.value
-                print(f"  ✓ errors.{field}: {hex(value) if isinstance(value, int) and value > 255 else value}")
+                toffee.info(f"  ✓ errors.{field}: {hex(value) if isinstance(value, int) and value > 255 else value}")
             except AttributeError as e:
                 error_msg = f"errors.{field}: {e}"
                 test_errors.append(error_msg)
-                print(f"  × {error_msg}")
+                toffee.info(f"  × {error_msg}")
     except Exception as e:
         error_msg = f"errors interface critical error: {e}"
         test_errors.append(error_msg)
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
     
     # ================= 6. io._metaArrayFlush (OUTPUT) =================
-    print("\n6. io._metaArrayFlush Interface (OUTPUT - Read Only)")
+    toffee.info("\n6. io._metaArrayFlush Interface (OUTPUT - Read Only)")
     try:
         flush_0_valid = bundle.io._metaArrayFlush._0._valid.value
         flush_0_virIdx = bundle.io._metaArrayFlush._0._bits._virIdx.value
@@ -616,27 +617,27 @@ async def test_comprehensive_signal_interface(icachemainpipe_env: ICacheMainPipe
         flush_1_virIdx = bundle.io._metaArrayFlush._1._bits._virIdx.value
         flush_1_waymask = bundle.io._metaArrayFlush._1._bits._waymask.value
         
-        print(f"  ✓ metaArrayFlush[0]: valid={flush_0_valid}, virIdx={flush_0_virIdx}, waymask={flush_0_waymask}")
-        print(f"  ✓ metaArrayFlush[1]: valid={flush_1_valid}, virIdx={flush_1_virIdx}, waymask={flush_1_waymask}")
+        toffee.info(f"  ✓ metaArrayFlush[0]: valid={flush_0_valid}, virIdx={flush_0_virIdx}, waymask={flush_0_waymask}")
+        toffee.info(f"  ✓ metaArrayFlush[1]: valid={flush_1_valid}, virIdx={flush_1_virIdx}, waymask={flush_1_waymask}")
     except Exception as e:
         error_msg = f"metaArrayFlush interface error: {e}"
         test_errors.append(error_msg)
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
     
     # ================= 7. io._wayLookupRead Interface =================
-    print("\n7. io._wayLookupRead Interface")
+    toffee.info("\n7. io._wayLookupRead Interface")
     # ready is OUTPUT (line 141), valid is INPUT (line 142) in Verilog
-    print("  7a. WayLookupRead Ready Signal (OUTPUT - Read Only)")
+    toffee.info("  7a. WayLookupRead Ready Signal (OUTPUT - Read Only)")
     try:
         # ready signal is OUTPUT - only test read access
         ready_value = bundle.io._wayLookupRead._ready.value
-        print(f"    ✓ wayLookupRead.ready (OUTPUT): {ready_value}")
+        toffee.info(f"    ✓ wayLookupRead.ready (OUTPUT): {ready_value}")
     except Exception as e:
         error_msg = f"WayLookupRead ready signal read error: {e}"
         test_errors.append(error_msg)
-        print(f"    × {error_msg}")
+        toffee.info(f"    × {error_msg}")
     
-    print("  7b. WayLookupRead Valid Signal (INPUT - Read/Write Testing)")
+    toffee.info("  7b. WayLookupRead Valid Signal (INPUT - Read/Write Testing)")
     try:
         # Test valid signal (1-bit INPUT) 
         original_valid = bundle.io._wayLookupRead._valid.value
@@ -647,16 +648,16 @@ async def test_comprehensive_signal_interface(icachemainpipe_env: ICacheMainPipe
         
         # Restore original value
         bundle.io._wayLookupRead._valid.value = original_valid
-        print("    ✓ WayLookupRead valid signal read/write working")
+        toffee.info("    ✓ WayLookupRead valid signal read/write working")
         
             
     except Exception as e:
         error_msg = f"WayLookupRead valid signal error: {e}"
         test_errors.append(error_msg)
-        print(f"    × {error_msg}")
+        toffee.info(f"    × {error_msg}")
     
     # bits.entry and bits.gpf are INPUT (lines 143-156 in Verilog)
-    print("  7c. WayLookupRead Entry/GPF Signals (INPUT - Read/Write Testing)")
+    toffee.info("  7c. WayLookupRead Entry/GPF Signals (INPUT - Read/Write Testing)")
     try:
         # Test entry signals with boundary values
         test_params = {
@@ -704,43 +705,43 @@ async def test_comprehensive_signal_interface(icachemainpipe_env: ICacheMainPipe
             assert bundle.io._wayLookupRead._bits._gpf._gpaddr.value == gpf_addr, f"GPF addr write failed"
             assert bundle.io._wayLookupRead._bits._gpf._isForVSnonLeafPTE.value == is_for_vs, f"GPF isForVSnonLeafPTE write failed"
         
-        print("    ✓ WayLookupRead entry/GPF signals read/write working")
+        toffee.info("    ✓ WayLookupRead entry/GPF signals read/write working")
         
     except Exception as e:
         error_msg = f"WayLookupRead entry/GPF signals error: {e}"
         test_errors.append(error_msg)
-        print(f"    × {error_msg}")
+        toffee.info(f"    × {error_msg}")
     
     # ================= 8. io._dataArray Interface =================
-    print("\n8. io._dataArray Interface")
+    toffee.info("\n8. io._dataArray Interface")
     # toIData ports are OUTPUT (lines 91-112 in Verilog) - except port 3 ready which is INPUT
-    print("  8a. DataArray toIData Signals (OUTPUT - Read Only)")
+    toffee.info("  8a. DataArray toIData Signals (OUTPUT - Read Only)")
     try:
         for port in range(4):
             valid = getattr(bundle.io._dataArray._toIData, f"_{port}")._valid.value
-            print(f"    ✓ DataArray toIData[{port}] valid: {valid}")
+            toffee.info(f"    ✓ DataArray toIData[{port}] valid: {valid}")
             
             if port == 0:  # Port 0 has complete bits
                 vSetIdx_0 = bundle.io._dataArray._toIData._0._bits._vSetIdx._0.value
                 vSetIdx_1 = bundle.io._dataArray._toIData._0._bits._vSetIdx._1.value
                 blkOffset = bundle.io._dataArray._toIData._0._bits._blkOffset.value
-                print(f"    ✓ DataArray toIData[0] - vSetIdx: {vSetIdx_0}/{vSetIdx_1}, blkOffset: {blkOffset}")
+                toffee.info(f"    ✓ DataArray toIData[0] - vSetIdx: {vSetIdx_0}/{vSetIdx_1}, blkOffset: {blkOffset}")
                 
                 # Test waymask signals (4 ways x 2 ports = 8 signals)
-                print(f"    ✓ DataArray toIData[0] waymask signals:")
+                toffee.info(f"    ✓ DataArray toIData[0] waymask signals:")
                 for port_idx in range(2):
                     for way in range(4):
                         waymask_signal = getattr(bundle.io._dataArray._toIData._0._bits._waymask, f"_{port_idx}")
                         way_val = getattr(waymask_signal, f"_{way}").value
-                        print(f"      waymask[{port_idx}][{way}]: {way_val}")
+                        toffee.info(f"      waymask[{port_idx}][{way}]: {way_val}")
             elif port >= 1 and port <= 2:  # Ports 1,2 have vSetIdx only
                 vSetIdx_0 = getattr(bundle.io._dataArray._toIData, f"_{port}")._bits_vSetIdx._0.value
                 vSetIdx_1 = getattr(bundle.io._dataArray._toIData, f"_{port}")._bits_vSetIdx._1.value
-                print(f"    ✓ DataArray toIData[{port}] - vSetIdx: {vSetIdx_0}/{vSetIdx_1}")
+                toffee.info(f"    ✓ DataArray toIData[{port}] - vSetIdx: {vSetIdx_0}/{vSetIdx_1}")
             elif port == 3:  # Port 3 has vSetIdx (OUTPUT) and ready (INPUT)
                 vSetIdx_0 = bundle.io._dataArray._toIData._3._bits_vSetIdx._0.value
                 vSetIdx_1 = bundle.io._dataArray._toIData._3._bits_vSetIdx._1.value
-                print(f"    ✓ DataArray toIData[3] - vSetIdx: {vSetIdx_0}/{vSetIdx_1}")
+                toffee.info(f"    ✓ DataArray toIData[3] - vSetIdx: {vSetIdx_0}/{vSetIdx_1}")
                 
                 # Test port 3 ready signal (INPUT)
                 original_ready = bundle.io._dataArray._toIData._3._ready.value
@@ -749,15 +750,15 @@ async def test_comprehensive_signal_interface(icachemainpipe_env: ICacheMainPipe
                     await bundle.step()
                     assert bundle.io._dataArray._toIData._3._ready.value == test_ready, "Port 3 ready write failed"
                 bundle.io._dataArray._toIData._3._ready.value = original_ready
-                print(f"    ✓ DataArray toIData[3] ready signal read/write working")
+                toffee.info(f"    ✓ DataArray toIData[3] ready signal read/write working")
                 
     except Exception as e:
         error_msg = f"DataArray toIData signals error: {e}"
         test_errors.append(error_msg)
-        print(f"    × {error_msg}")
+        toffee.info(f"    × {error_msg}")
     
     # fromIData signals are INPUT (lines 113-129 in Verilog)
-    print("  8b. DataArray fromIData Signals (INPUT - Read/Write Testing)")
+    toffee.info("  8b. DataArray fromIData Signals (INPUT - Read/Write Testing)")
     try:
         # Test all 8 data and code signals
         test_datas = [0x1111 + i for i in range(8)]
@@ -779,28 +780,28 @@ async def test_comprehensive_signal_interface(icachemainpipe_env: ICacheMainPipe
             assert data_actual == test_datas[i], f"DataArray data {i} write failed"
             assert code_actual == test_codes[i], f"DataArray code {i} write failed"
             
-        print("    ✓ DataArray fromIData signals read/write working")
+        toffee.info("    ✓ DataArray fromIData signals read/write working")
         
     except Exception as e:
         error_msg = f"DataArray fromIData signals error: {e}"
         test_errors.append(error_msg)
-        print(f"    × {error_msg}")
+        toffee.info(f"    × {error_msg}")
     
     # ================= 9. io._mshr Interface =================
-    print("\n9. io._mshr Interface")
+    toffee.info("\n9. io._mshr Interface")
     # req is OUTPUT (lines 130-133 in Verilog), resp is INPUT (lines 134-138 in Verilog)
-    print("  9a. MSHR Request Signals (OUTPUT - Read Only)")
+    toffee.info("  9a. MSHR Request Signals (OUTPUT - Read Only)")
     try:
         mshr_req_valid = bundle.io._mshr._req._valid.value
         mshr_req_blkPaddr = bundle.io._mshr._req._bits._blkPaddr.value
         mshr_req_vSetIdx = bundle.io._mshr._req._bits._vSetIdx.value
-        print(f"    ✓ MSHR req - valid: {mshr_req_valid}, blkPaddr: {hex(mshr_req_blkPaddr)}, vSetIdx: {hex(mshr_req_vSetIdx)}")
+        toffee.info(f"    ✓ MSHR req - valid: {mshr_req_valid}, blkPaddr: {hex(mshr_req_blkPaddr)}, vSetIdx: {hex(mshr_req_vSetIdx)}")
     except Exception as e:
         error_msg = f"MSHR request signals error: {e}"
         test_errors.append(error_msg)
-        print(f"    × {error_msg}")
+        toffee.info(f"    × {error_msg}")
     
-    print("  9b. MSHR Response Signals (INPUT - Read/Write Testing)")
+    toffee.info("  9b. MSHR Response Signals (INPUT - Read/Write Testing)")
     try:
         # Test boundary values for different bit widths
         test_cases = [
@@ -824,7 +825,7 @@ async def test_comprehensive_signal_interface(icachemainpipe_env: ICacheMainPipe
             assert bundle.io._mshr._resp._bits._data.value == test_case["data"], "MSHR resp data write failed"
             assert bundle.io._mshr._resp._bits._corrupt.value == test_case["corrupt"], "MSHR resp corrupt write failed"
             
-        print("    ✓ MSHR response signals read/write working")
+        toffee.info("    ✓ MSHR response signals read/write working")
         
         # ready signal is also INPUT
         original_ready = bundle.io._mshr._req._ready.value
@@ -833,28 +834,28 @@ async def test_comprehensive_signal_interface(icachemainpipe_env: ICacheMainPipe
             await bundle.step()
             assert bundle.io._mshr._req._ready.value == test_ready, "MSHR req ready write failed"
         bundle.io._mshr._req._ready.value = original_ready
-        print("    ✓ MSHR request ready signal read/write working")
+        toffee.info("    ✓ MSHR request ready signal read/write working")
         
     except Exception as e:
         error_msg = f"MSHR response signals error: {e}"
         test_errors.append(error_msg)
-        print(f"    × {error_msg}")
+        toffee.info(f"    × {error_msg}")
     
     # ================= 10. io._fetch Interface =================
-    print("\n10. io._fetch Interface")
+    toffee.info("\n10. io._fetch Interface")
     # req.ready is OUTPUT (line 167), req.valid is INPUT (line 168), req.bits are INPUT (lines 169-184) in Verilog
     # resp signals are OUTPUT (lines 185-212 in Verilog)
-    print("  10a. Fetch Request Ready Signal (OUTPUT - Read Only)")
+    toffee.info("  10a. Fetch Request Ready Signal (OUTPUT - Read Only)")
     try:
         # ready signal is OUTPUT - only test read access  
         req_ready = bundle.io._fetch._req._ready.value
-        print(f"    ✓ fetch.req.ready (OUTPUT): {req_ready}")
+        toffee.info(f"    ✓ fetch.req.ready (OUTPUT): {req_ready}")
     except Exception as e:
         error_msg = f"Fetch request ready signal read error: {e}"
         test_errors.append(error_msg)
-        print(f"    × {error_msg}")
+        toffee.info(f"    × {error_msg}")
     
-    print("  10b. Fetch Request Control/Data Signals (INPUT - Read/Write Testing)")
+    toffee.info("  10b. Fetch Request Control/Data Signals (INPUT - Read/Write Testing)")
     try:
         # Test valid signal (INPUT)
         original_req_valid = bundle.io._fetch._req._valid.value
@@ -899,14 +900,14 @@ async def test_comprehensive_signal_interface(icachemainpipe_env: ICacheMainPipe
         
         # Restore
         bundle.io._fetch._req._valid.value = original_req_valid
-        print("    ✓ Fetch request INPUT signals read/write working")
+        toffee.info("    ✓ Fetch request INPUT signals read/write working")
         
     except Exception as e:
         error_msg = f"Fetch request data signals error: {e}"
         test_errors.append(error_msg)
-        print(f"    × {error_msg}")
+        toffee.info(f"    × {error_msg}")
     
-    print("  10c. Fetch Response Signals (OUTPUT - Read Only)")
+    toffee.info("  10c. Fetch Response Signals (OUTPUT - Read Only)")
     try:
         fetch_resp_signals = {
             "valid": bundle.io._fetch._resp._valid,
@@ -922,20 +923,20 @@ async def test_comprehensive_signal_interface(icachemainpipe_env: ICacheMainPipe
         
         for field, signal_obj in fetch_resp_signals.items():
             value = signal_obj.value
-            print(f"    ✓ fetch.resp.{field}: {hex(value) if isinstance(value, int) and value > 255 else value}")
+            toffee.info(f"    ✓ fetch.resp.{field}: {hex(value) if isinstance(value, int) and value > 255 else value}")
         
         # Topdown signals
         topdown_icache = bundle.io._fetch._topdownIcacheMiss.value
         topdown_itlb = bundle.io._fetch._topdownItlbMiss.value
-        print(f"    ✓ fetch topdown: ICache={topdown_icache}, ITLB={topdown_itlb}")
+        toffee.info(f"    ✓ fetch topdown: ICache={topdown_icache}, ITLB={topdown_itlb}")
         
     except Exception as e:
         error_msg = f"Fetch response signals error: {e}"
         test_errors.append(error_msg)
-        print(f"    × {error_msg}")
+        toffee.info(f"    × {error_msg}")
     
     # ================= 11. io._touch (OUTPUT) =================
-    print("\n11. io._touch Interface (OUTPUT - Read Only)")
+    toffee.info("\n11. io._touch Interface (OUTPUT - Read Only)")
     try:
         touch_0_valid = bundle.io._touch._0._valid.value
         touch_0_vSetIdx = bundle.io._touch._0._bits._vSetIdx.value
@@ -944,15 +945,15 @@ async def test_comprehensive_signal_interface(icachemainpipe_env: ICacheMainPipe
         touch_1_vSetIdx = bundle.io._touch._1._bits._vSetIdx.value
         touch_1_way = bundle.io._touch._1._bits._way.value
         
-        print(f"  ✓ touch[0]: valid={touch_0_valid}, vSetIdx={touch_0_vSetIdx}, way={touch_0_way}")
-        print(f"  ✓ touch[1]: valid={touch_1_valid}, vSetIdx={touch_1_vSetIdx}, way={touch_1_way}")
+        toffee.info(f"  ✓ touch[0]: valid={touch_0_valid}, vSetIdx={touch_0_vSetIdx}, way={touch_0_way}")
+        toffee.info(f"  ✓ touch[1]: valid={touch_1_valid}, vSetIdx={touch_1_vSetIdx}, way={touch_1_way}")
     except Exception as e:
         error_msg = f"touch interface error: {e}"
         test_errors.append(error_msg)
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
     
     # ================= 12. io._other (INPUT) =================
-    print("\n12. io._other Control Signals (INPUT - Read/Write Testing)")
+    toffee.info("\n12. io._other Control Signals (INPUT - Read/Write Testing)")
     other_signals = [
         ("hartId", bundle.io._hartId, 6, 63),      # 6-bit: 0-63
         ("flush", bundle.io._flush, 1, 1),         # 1-bit: 0-1
@@ -977,35 +978,35 @@ async def test_comprehensive_signal_interface(icachemainpipe_env: ICacheMainPipe
             
             # Restore original
             signal_obj.value = original_val
-            print(f"  ✓ {signal_name} read/write working (bit_width={bit_width})")
+            toffee.info(f"  ✓ {signal_name} read/write working (bit_width={bit_width})")
             
         except Exception as e:
             error_msg = f"{signal_name} signal error: {e}"
             test_errors.append(error_msg)
-            print(f"  × {error_msg}")
+            toffee.info(f"  × {error_msg}")
     
     # ================= Final Summary =================
-    print("\n" + "="*60)
+    toffee.info("\n" + "="*60)
     if test_errors:
-        print(f"× Comprehensive test completed with {len(test_errors)} error(s):")
+        toffee.info(f"× Comprehensive test completed with {len(test_errors)} error(s):")
         for i, error in enumerate(test_errors, 1):
-            print(f"  {i}. {error}")
+            toffee.info(f"  {i}. {error}")
         raise AssertionError(f"Comprehensive signal interface test failed with {len(test_errors)} errors")
     else:
-        print("√ Comprehensive Signal Interface Test - ALL CATEGORIES PASSED")
-        print("   • ICacheMainPipe internal signals: ✓")
-        print("   • ICacheMainPipe__toMSHRArbiter_io_in: ✓")
-        print("   • io._perfInfo (OUTPUT): ✓")
-        print("   • io._pmp (mixed INPUT/OUTPUT): ✓")
-        print("   • io._errors (OUTPUT): ✓")
-        print("   • io._metaArrayFlush (OUTPUT): ✓")
-        print("   • io._wayLookupRead (mixed INPUT/OUTPUT): ✓")
-        print("   • io._dataArray (mixed INPUT/OUTPUT): ✓")
-        print("   • io._mshr (mixed INPUT/OUTPUT): ✓")
-        print("   • io._fetch (mixed INPUT/OUTPUT): ✓")
-        print("   • io._touch (OUTPUT): ✓")
-        print("   • io._other control signals (INPUT): ✓")
-        print("   • Read/Write testing for INPUT signals: ✓")
+        toffee.info("√ Comprehensive Signal Interface Test - ALL CATEGORIES PASSED")
+        toffee.info("   • ICacheMainPipe internal signals: ✓")
+        toffee.info("   • ICacheMainPipe__toMSHRArbiter_io_in: ✓")
+        toffee.info("   • io._perfInfo (OUTPUT): ✓")
+        toffee.info("   • io._pmp (mixed INPUT/OUTPUT): ✓")
+        toffee.info("   • io._errors (OUTPUT): ✓")
+        toffee.info("   • io._metaArrayFlush (OUTPUT): ✓")
+        toffee.info("   • io._wayLookupRead (mixed INPUT/OUTPUT): ✓")
+        toffee.info("   • io._dataArray (mixed INPUT/OUTPUT): ✓")
+        toffee.info("   • io._mshr (mixed INPUT/OUTPUT): ✓")
+        toffee.info("   • io._fetch (mixed INPUT/OUTPUT): ✓")
+        toffee.info("   • io._touch (OUTPUT): ✓")
+        toffee.info("   • io._other control signals (INPUT): ✓")
+        toffee.info("   • Read/Write testing for INPUT signals: ✓")
 
 # ==================== 功能点测试用例 ====================
 
@@ -1025,7 +1026,7 @@ async def test_cp11_dataarray_access(icachemainpipe_env: ICacheMainPipeEnv):
     - s0_can_go = io_dataArray_toIData_3_ready & io_wayLookupRead_valid & s1_ready
     - io_dataArray_toIData_X_valid = io_fetch_req_bits_readValid_X
     """
-    print("\n=== CP11: 访问DataArray的单路功能测试 ===")
+    toffee.info("\n=== CP11: 访问DataArray的单路功能测试 ===")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
@@ -1038,12 +1039,12 @@ async def test_cp11_dataarray_access(icachemainpipe_env: ICacheMainPipeEnv):
         await agent.drive_set_ecc_enable(True)
         await agent.drive_set_flush(False)
         await agent.drive_resp_stall(False)
-        print("环境初始化完成")
+        toffee.info("环境初始化完成")
         
         # 测试点11.1: 访问DataArray的单路
-        print("\n--- 测试点11.1: 访问DataArray的单路 ---")
-        print("条件：s0_hits为高（一路命中），s0_itlb_exception信号为零（ITLB查询成功），toData.last.ready为高（DataArray没有正在进行的写操作）")
-        print("预期：toData.valid信号为高，表示MainPipe向DataArray发出了读取请求")
+        toffee.info("\n--- 测试点11.1: 访问DataArray的单路 ---")
+        toffee.info("条件：s0_hits为高（一路命中），s0_itlb_exception信号为零（ITLB查询成功），toData.last.ready为高（DataArray没有正在进行的写操作）")
+        toffee.info("预期：toData.valid信号为高，表示MainPipe向DataArray发出了读取请求")
         
         try:
             # 设置环境准备就绪：DataArray ready，确保s0_can_go=1
@@ -1077,10 +1078,10 @@ async def test_cp11_dataarray_access(icachemainpipe_env: ICacheMainPipeEnv):
             dataarray_status = await agent.monitor_dataarray_toIData()
             pipeline_status = await agent.monitor_pipeline_status()
             
-            print(f"  监控结果：")
-            print(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
-            print(f"  - s0_fire: {pipeline_status['s0_fire']}")
-            print(f"  - fetch_req_ready: {pipeline_status['fetch_req_ready']}")
+            toffee.info(f"  监控结果：")
+            toffee.info(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
+            toffee.info(f"  - s0_fire: {pipeline_status['s0_fire']}")
+            toffee.info(f"  - fetch_req_ready: {pipeline_status['fetch_req_ready']}")
             
             # 断言：根据verilog源码，toIData_X_valid = readValid_X
             assert dataarray_status['toIData_0_valid'] == 1, "toIData_0_valid应为1，表示MainPipe向DataArray发出了读取请求"
@@ -1090,17 +1091,17 @@ async def test_cp11_dataarray_access(icachemainpipe_env: ICacheMainPipeEnv):
             # 清除请求
             await agent.clear_fetch_request()
             await agent.clear_waylookup_read()
-            print("  ✓ 测试点11.1通过")
+            toffee.info("  ✓ 测试点11.1通过")
             
         except Exception as e:
             error_msg = f"测试点11.1失败: {str(e)}"
-            print(f"  ✗ {error_msg}")
+            toffee.info(f"  ✗ {error_msg}")
             test_errors.append(error_msg)
         
         # 测试点11.2: 不访问DataArray（Way未命中）- 会访问，但是返回数据无效
-        print("\n--- 测试点11.2: 不访问DataArray（Way未命中）- 会访问，但是返回数据无效 ---")
-        print("条件：s0_hits为低表示缓存未命中")
-        print("预期：根据文档注释，会访问但返回数据无效（waymask=0表示miss）")
+        toffee.info("\n--- 测试点11.2: 不访问DataArray（Way未命中）- 会访问，但是返回数据无效 ---")
+        toffee.info("条件：s0_hits为低表示缓存未命中")
+        toffee.info("预期：根据文档注释，会访问但返回数据无效（waymask=0表示miss）")
         
         try:
             await agent.reset()
@@ -1132,10 +1133,10 @@ async def test_cp11_dataarray_access(icachemainpipe_env: ICacheMainPipeEnv):
             dataarray_status = await agent.monitor_dataarray_toIData()
             pipeline_status = await agent.monitor_pipeline_status()
             
-            print(f"  监控结果：")
-            print(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
-            print(f"  - toIData_0_waymask_0_0: {dataarray_status['toIData_0_waymask_0_0']}")
-            print(f"  - s0_fire: {pipeline_status['s0_fire']}")
+            toffee.info(f"  监控结果：")
+            toffee.info(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
+            toffee.info(f"  - toIData_0_waymask_0_0: {dataarray_status['toIData_0_waymask_0_0']}")
+            toffee.info(f"  - s0_fire: {pipeline_status['s0_fire']}")
             
             # 根据文档注释和verilog实现：会访问（toIData_0_valid=1），但数据无效（waymask=0表示miss）
             assert dataarray_status['toIData_0_valid'] == 1, "根据verilog实现，readValid=1时toIData_0_valid仍为1（会访问）"
@@ -1144,17 +1145,17 @@ async def test_cp11_dataarray_access(icachemainpipe_env: ICacheMainPipeEnv):
             
             await agent.clear_fetch_request()
             await agent.clear_waylookup_read()
-            print("  ✓ 测试点11.2通过")
+            toffee.info("  ✓ 测试点11.2通过")
             
         except Exception as e:
             error_msg = f"测试点11.2失败: {str(e)}"
-            print(f"  ✗ {error_msg}")
+            toffee.info(f"  ✗ {error_msg}")
             test_errors.append(error_msg)
         
         # 测试点11.3: 不访问DataArray（ITLB查询失败）- 会访问，但是返回数据无效
-        print("\n--- 测试点11.3: 不访问DataArray（ITLB查询失败）- 会访问，但是返回数据无效 ---")
-        print("条件：s0_itlb_exception信号不为零（ITLB查询失败）")
-        print("预期：根据文档注释，会访问但返回数据无效")
+        toffee.info("\n--- 测试点11.3: 不访问DataArray（ITLB查询失败）- 会访问，但是返回数据无效 ---")
+        toffee.info("条件：s0_itlb_exception信号不为零（ITLB查询失败）")
+        toffee.info("预期：根据文档注释，会访问但返回数据无效")
         
         try:
             await agent.reset()
@@ -1193,11 +1194,11 @@ async def test_cp11_dataarray_access(icachemainpipe_env: ICacheMainPipeEnv):
             pipeline_status = await agent.monitor_pipeline_status()
             exception_status = await agent.monitor_exception_merge_status()
             
-            print(f"  监控结果：")
-            print(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
+            toffee.info(f"  监控结果：")
+            toffee.info(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
             itlb_exception = exception_status.get('s1_itlb_exception_0', None)
-            print(f"  - ITLB exception: 0x{itlb_exception:x}" if itlb_exception is not None else "  - ITLB exception: None")
-            print(f"  - s0_fire: {pipeline_status['s0_fire']}")
+            toffee.info(f"  - ITLB exception: 0x{itlb_exception:x}" if itlb_exception is not None else "  - ITLB exception: None")
+            toffee.info(f"  - s0_fire: {pipeline_status['s0_fire']}")
             
             # 根据文档注释和verilog实现：会访问（toIData_0_valid=1），但有ITLB异常
             assert dataarray_status['toIData_0_valid'] == 1, "根据verilog实现，readValid=1时toIData_0_valid仍为1（会访问）"
@@ -1205,17 +1206,17 @@ async def test_cp11_dataarray_access(icachemainpipe_env: ICacheMainPipeEnv):
             
             await agent.clear_fetch_request()
             await agent.clear_waylookup_read()
-            print("  ✓ 测试点11.3通过")
+            toffee.info("  ✓ 测试点11.3通过")
             
         except Exception as e:
             error_msg = f"测试点11.3失败: {str(e)}"
-            print(f"  ✗ {error_msg}")
+            toffee.info(f"  ✗ {error_msg}")
             test_errors.append(error_msg)
         
         # 测试点11.4: 不访问DataArray（DataArray正在进行写操作）
-        print("\n--- 测试点11.4: 不访问DataArray（DataArray正在进行写操作）---")
-        print("条件：toData.last.ready信号为低，表示DataArray正在进行写操作")
-        print("预期：s0_fire和fetch_req_ready为低，表示流水线被阻止，虽然toIData_0_valid仍可能为1（直接由readValid控制）")
+        toffee.info("\n--- 测试点11.4: 不访问DataArray（DataArray正在进行写操作）---")
+        toffee.info("条件：toData.last.ready信号为低，表示DataArray正在进行写操作")
+        toffee.info("预期：s0_fire和fetch_req_ready为低，表示流水线被阻止，虽然toIData_0_valid仍可能为1（直接由readValid控制）")
         
         try:
             await agent.reset()
@@ -1247,11 +1248,11 @@ async def test_cp11_dataarray_access(icachemainpipe_env: ICacheMainPipeEnv):
             dataarray_status = await agent.monitor_dataarray_toIData()
             pipeline_status = await agent.monitor_pipeline_status()
             
-            print(f"  监控结果：")
-            print(f"  - toIData_3_ready: {bundle.io._dataArray._toIData._3._ready.value}")
-            print(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
-            print(f"  - s0_fire: {pipeline_status['s0_fire']}")
-            print(f"  - fetch_req_ready: {pipeline_status['fetch_req_ready']}")
+            toffee.info(f"  监控结果：")
+            toffee.info(f"  - toIData_3_ready: {bundle.io._dataArray._toIData._3._ready.value}")
+            toffee.info(f"  - toIData_0_valid: {dataarray_status['toIData_0_valid']}")
+            toffee.info(f"  - s0_fire: {pipeline_status['s0_fire']}")
+            toffee.info(f"  - fetch_req_ready: {pipeline_status['fetch_req_ready']}")
             
             # 根据verilog源码：DataArray busy时，s0_can_go为低，阻止流水线推进，但toIData_0_valid仍由readValid直接控制
             assert pipeline_status['s0_fire'] == 0, "DataArray忙时s0_fire应为0（s0_can_go=0）"
@@ -1260,27 +1261,27 @@ async def test_cp11_dataarray_access(icachemainpipe_env: ICacheMainPipeEnv):
             
             await agent.clear_fetch_request()
             await agent.clear_waylookup_read()
-            print("  ✓ 测试点11.4通过")
+            toffee.info("  ✓ 测试点11.4通过")
             
         except Exception as e:
             error_msg = f"测试点11.4失败: {str(e)}"
-            print(f"  ✗ {error_msg}")
+            toffee.info(f"  ✗ {error_msg}")
             test_errors.append(error_msg)
     
     except Exception as e:
         error_msg = f"测试初始化失败: {str(e)}"
-        print(f"✗ {error_msg}")
+        toffee.info(f"✗ {error_msg}")
         test_errors.append(error_msg)
     
     # 汇总测试结果
     if test_errors:
-        print(f"\n=== CP11测试完成，发现{len(test_errors)}个错误 ===")
+        toffee.info(f"\n=== CP11测试完成，发现{len(test_errors)}个错误 ===")
         for i, error in enumerate(test_errors, 1):
-            print(f"  {i}. {error}")
+            toffee.info(f"  {i}. {error}")
         # 抛出汇总的错误信息
         raise AssertionError(f"CP11测试失败，共{len(test_errors)}个错误：" + "; ".join(test_errors))
     else:
-        print("\n✓ CP11: 访问DataArray的单路功能测试完成，所有测试点通过")
+        toffee.info("\n✓ CP11: 访问DataArray的单路功能测试完成，所有测试点通过")
 
 
 @toffee_test.testcase
@@ -1294,7 +1295,7 @@ async def test_cp12_meta_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
     2. 源码实现：s2_meta_corrupt_0 <= io_ecc_enable & (^s1_req_ptags_0 != s1_meta_codes_0 & s1_meta_corrupt_hit_num == 3'h1 | (|(s1_meta_corrupt_hit_num[2:1])))
     3. Hit数量计算：s1_meta_corrupt_hit_num = s1_waymasks_0_0 + s1_waymasks_0_1 + s1_waymasks_0_2 + s1_waymasks_0_3
     """
-    print("\n=== CP12: Meta ECC校验功能测试 ===")
+    toffee.info("\n=== CP12: Meta ECC校验功能测试 ===")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
@@ -1302,13 +1303,13 @@ async def test_cp12_meta_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
     test_errors = []
     
     # ==================== 测试点12.1: 无ECC错误 ====================
-    print("\n--- Test 12.1: 无ECC错误 ---")
-    print("条件：waymask全为0（没有命中）或waymask有一位为1（单路命中）且ECC对比通过")
-    print("预期：s1_meta_corrupt为假，不报告错误")
+    toffee.info("\n--- Test 12.1: 无ECC错误 ---")
+    toffee.info("条件：waymask全为0（没有命中）或waymask有一位为1（单路命中）且ECC对比通过")
+    toffee.info("预期：s1_meta_corrupt为假，不报告错误")
     
     # Case 12.1a: waymask全为0（没有命中）
     try:
-        print("\nCase 12.1a: waymask全为0（没有命中）")
+        toffee.info("\nCase 12.1a: waymask全为0（没有命中）")
         await agent.reset()
         await agent.drive_set_ecc_enable(True)
         await agent.drive_data_array_ready(True)
@@ -1324,7 +1325,7 @@ async def test_cp12_meta_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         
         # 监控流水线状态
         pipeline_status = await agent.monitor_pipeline_status()
-        print(f"  初始流水线状态: s0_fire={pipeline_status['s0_fire']}, ecc_enable={pipeline_status['ecc_enable']}")
+        toffee.info(f"  初始流水线状态: s0_fire={pipeline_status['s0_fire']}, ecc_enable={pipeline_status['ecc_enable']}")
         
         # 设置WayLookup：waymask全为0（没有命中）
         waylookup_result = await agent.drive_waylookup_read(
@@ -1337,14 +1338,14 @@ async def test_cp12_meta_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
             meta_codes_0=correct_meta_code,
             meta_codes_1=0
         )
-        print(f"  WayLookup设置成功: {waylookup_result['send_success']}")
+        toffee.info(f"  WayLookup设置成功: {waylookup_result['send_success']}")
         
         # 发起fetch请求（满足地址一致性约束）
         fetch_success = await agent.drive_fetch_request(
             pcMemRead_addrs=[0, 0, 0, 0, test_vaddr],  # pcMemRead_4设置为test_vaddr
             readValid=[0, 0, 0, 0, 1]  # 只有readValid_4有效
         )
-        print(f"  Fetch请求发起成功: {fetch_success}")
+        toffee.info(f"  Fetch请求发起成功: {fetch_success}")
         assert fetch_success, "12.1a: 地址一致性检查失败，无法发起fetch请求"
         
         # 推进流水线，让数据到达S2阶段进行ECC校验
@@ -1354,11 +1355,11 @@ async def test_cp12_meta_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         error_status = await agent.monitor_error_status()
         meta_status = await agent.monitor_check_meta_ecc_status()
         
-        print(f"  waymask_0: 0x0 (没有命中)")
-        print(f"  ptag_0: 0x{test_ptag:x}")
-        print(f"  meta_codes_0: {correct_meta_code}")
-        print(f"  预期：hit_num为0，s1_meta_corrupt应为假")
-        print(f"  实际：io.errors[0].valid={error_status['0_valid']}")
+        toffee.info(f"  waymask_0: 0x0 (没有命中)")
+        toffee.info(f"  ptag_0: 0x{test_ptag:x}")
+        toffee.info(f"  meta_codes_0: {correct_meta_code}")
+        toffee.info(f"  预期：hit_num为0，s1_meta_corrupt应为假")
+        toffee.info(f"  实际：io.errors[0].valid={error_status['0_valid']}")
         
         # 断言：没有命中时不应报告错误
         assert error_status['0_valid'] == 0, f"12.1a失败：没有命中时不应报告错误，但io.errors[0].valid={error_status['0_valid']}"
@@ -1366,16 +1367,16 @@ async def test_cp12_meta_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         # 清除请求
         await agent.clear_waylookup_read()
         await agent.clear_fetch_request()
-        print("  ✓ Case 12.1a通过")
+        toffee.info("  ✓ Case 12.1a通过")
         
     except Exception as e:
         error_msg = f"12.1a测试失败: {str(e)}"
-        print(f"  ✗ {error_msg}")
+        toffee.info(f"  ✗ {error_msg}")
         test_errors.append(error_msg)
     
     # Case 12.1b: waymask有一位为1（单路命中）且ECC对比通过
     try:
-        print("\nCase 12.1b: waymask有一位为1（单路命中）且ECC对比通过")
+        toffee.info("\nCase 12.1b: waymask有一位为1（单路命中）且ECC对比通过")
         await agent.reset()
         await agent.drive_set_ecc_enable(True)
         await agent.drive_data_array_ready(True)
@@ -1415,13 +1416,13 @@ async def test_cp12_meta_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         error_status = await agent.monitor_error_status()
         meta_corrupt_status = await agent.monitor_meta_corrupt_status()
         
-        print(f"  waymask_0: 0x1 (单路命中)")
-        print(f"  ptag_0: 0x{test_ptag:x}")
-        print(f"  meta_codes_0: {correct_meta_code} (正确的ECC码)")
-        print(f"  hit_num应为1，ECC对比应通过，s1_meta_corrupt应为假")
-        print(f"  实际：io.errors[0].valid={error_status['0_valid']}")
+        toffee.info(f"  waymask_0: 0x1 (单路命中)")
+        toffee.info(f"  ptag_0: 0x{test_ptag:x}")
+        toffee.info(f"  meta_codes_0: {correct_meta_code} (正确的ECC码)")
+        toffee.info(f"  hit_num应为1，ECC对比应通过，s1_meta_corrupt应为假")
+        toffee.info(f"  实际：io.errors[0].valid={error_status['0_valid']}")
         if meta_corrupt_status:
-            print(f"  s1_meta_corrupt_hit_num: {meta_corrupt_status.get('s1_meta_corrupt_hit_num', 'N/A')}")
+            toffee.info(f"  s1_meta_corrupt_hit_num: {meta_corrupt_status.get('s1_meta_corrupt_hit_num', 'N/A')}")
         
         # 断言：单路命中且ECC正确时不应报告错误
         assert error_status['0_valid'] == 0, f"12.1b失败：单路命中且ECC正确时不应报告错误，但io.errors[0].valid={error_status['0_valid']}"
@@ -1429,17 +1430,17 @@ async def test_cp12_meta_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         # 清除请求
         await agent.clear_waylookup_read()
         await agent.clear_fetch_request()
-        print("  ✓ Case 12.1b通过")
+        toffee.info("  ✓ Case 12.1b通过")
         
     except Exception as e:
         error_msg = f"12.1b测试失败: {str(e)}"
-        print(f"  ✗ {error_msg}")
+        toffee.info(f"  ✗ {error_msg}")
         test_errors.append(error_msg)
     
     # ==================== 测试点12.2: 单路命中的ECC错误 ====================
-    print("\n--- Test 12.2: 单路命中的ECC错误 ---")
-    print("条件：waymask有一位为1（单路命中），ECC对比失败（^ptag != meta_code）")
-    print("预期：s2_meta_corrupt、io.errors.valid、io.errors.bits.report_to_beu为true")
+    toffee.info("\n--- Test 12.2: 单路命中的ECC错误 ---")
+    toffee.info("条件：waymask有一位为1（单路命中），ECC对比失败（^ptag != meta_code）")
+    toffee.info("预期：s2_meta_corrupt、io.errors.valid、io.errors.bits.report_to_beu为true")
     
     try:
         await agent.reset()
@@ -1456,9 +1457,9 @@ async def test_cp12_meta_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
             temp_ptag >>= 1
         wrong_meta_code = 1 - correct_meta_code  # 故意错误的ECC码
         
-        print(f"  ptag: 0x{test_ptag:x}")
-        print(f"  正确ECC码: {correct_meta_code}")
-        print(f"  错误ECC码: {wrong_meta_code}")
+        toffee.info(f"  ptag: 0x{test_ptag:x}")
+        toffee.info(f"  正确ECC码: {correct_meta_code}")
+        toffee.info(f"  错误ECC码: {wrong_meta_code}")
         
         # 使用错误注入API设置单路命中的ECC错误
         inject_success = await agent.inject_meta_ecc_error(
@@ -1486,13 +1487,13 @@ async def test_cp12_meta_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         meta_corrupt_status = await agent.monitor_meta_corrupt_status()
         pipeline_status = await agent.monitor_pipeline_status()
         
-        print(f"  waymask_0: 0x2 (单路命中，way 1)")
-        print(f"  hit_num应为1，ECC对比应失败，应报告错误")
-        print(f"  流水线状态: s0_fire={pipeline_status['s0_fire']}, s1_fire={pipeline_status.get('s1_fire', 'N/A')}, s2_fire={pipeline_status['s2_fire']}")
-        print(f"  实际：io.errors[0].valid={error_status['0_valid']}")
-        print(f"  实际：io.errors[0].report_to_beu={error_status['0_report_to_beu']}")
+        toffee.info(f"  waymask_0: 0x2 (单路命中，way 1)")
+        toffee.info(f"  hit_num应为1，ECC对比应失败，应报告错误")
+        toffee.info(f"  流水线状态: s0_fire={pipeline_status['s0_fire']}, s1_fire={pipeline_status.get('s1_fire', 'N/A')}, s2_fire={pipeline_status['s2_fire']}")
+        toffee.info(f"  实际：io.errors[0].valid={error_status['0_valid']}")
+        toffee.info(f"  实际：io.errors[0].report_to_beu={error_status['0_report_to_beu']}")
         if meta_corrupt_status:
-            print(f"  s1_meta_corrupt_hit_num: {meta_corrupt_status.get('s1_meta_corrupt_hit_num', 'N/A')}")
+            toffee.info(f"  s1_meta_corrupt_hit_num: {meta_corrupt_status.get('s1_meta_corrupt_hit_num', 'N/A')}")
         
         assert error_status['0_valid'] == 1, f"12.2失败：单路命中且ECC错误时应报告错误，但io.errors[0].valid={error_status['0_valid']}"
         assert error_status['0_report_to_beu'] == 1, f"12.2失败：应向BEU报告错误，但report_to_beu={error_status['0_report_to_beu']}"
@@ -1500,17 +1501,17 @@ async def test_cp12_meta_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         # 清除请求
         await agent.clear_waylookup_read()
         await agent.clear_fetch_request()
-        print("  ✓ Test 12.2通过")
+        toffee.info("  ✓ Test 12.2通过")
         
     except Exception as e:
         error_msg = f"12.2测试失败: {str(e)}"
-        print(f"  ✗ {error_msg}")
+        toffee.info(f"  ✗ {error_msg}")
         test_errors.append(error_msg)
     
     # ==================== 测试点12.3: 多路命中 ====================
-    print("\n--- Test 12.3: 多路命中 ---")
-    print("条件：waymask有两位及以上为1（多路命中），视为ECC错误")
-    print("预期：s2_meta_corrupt、io.errors.valid、io.errors.bits.report_to_beu为true")
+    toffee.info("\n--- Test 12.3: 多路命中 ---")
+    toffee.info("条件：waymask有两位及以上为1（多路命中），视为ECC错误")
+    toffee.info("预期：s2_meta_corrupt、io.errors.valid、io.errors.bits.report_to_beu为true")
     
     try:
         await agent.reset()
@@ -1520,8 +1521,8 @@ async def test_cp12_meta_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         test_vaddr = 0x4000
         test_ptag = 0x98765
         
-        print(f"  ptag: 0x{test_ptag:x}")
-        print(f"  多路命中：waymask=0x5 (way 0和way 2同时命中)")
+        toffee.info(f"  ptag: 0x{test_ptag:x}")
+        toffee.info(f"  多路命中：waymask=0x5 (way 0和way 2同时命中)")
         
         # 使用多路命中错误注入API
         inject_success = await agent.inject_multi_way_hit(
@@ -1549,12 +1550,12 @@ async def test_cp12_meta_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         error_status = await agent.monitor_error_status()
         meta_corrupt_status = await agent.monitor_meta_corrupt_status()
         
-        print(f"  waymask_0: 0x5 (多路命中，way 0和way 2)")
-        print(f"  hit_num应≥2，根据源码|(hit_num[2:1])检测多路命中，应报告错误")
-        print(f"  实际：io.errors[0].valid={error_status['0_valid']}")
-        print(f"  实际：io.errors[0].report_to_beu={error_status['0_report_to_beu']}")
+        toffee.info(f"  waymask_0: 0x5 (多路命中，way 0和way 2)")
+        toffee.info(f"  hit_num应≥2，根据源码|(hit_num[2:1])检测多路命中，应报告错误")
+        toffee.info(f"  实际：io.errors[0].valid={error_status['0_valid']}")
+        toffee.info(f"  实际：io.errors[0].report_to_beu={error_status['0_report_to_beu']}")
         if meta_corrupt_status:
-            print(f"  s1_meta_corrupt_hit_num: {meta_corrupt_status.get('s1_meta_corrupt_hit_num', 'N/A')}")
+            toffee.info(f"  s1_meta_corrupt_hit_num: {meta_corrupt_status.get('s1_meta_corrupt_hit_num', 'N/A')}")
         
         # 根据Verilog源码，多路命中通过(|(s1_meta_corrupt_hit_num[2:1]))检测
         assert error_status['0_valid'] == 1, f"12.3失败：多路命中时应报告错误，但io.errors[0].valid={error_status['0_valid']}"
@@ -1563,17 +1564,17 @@ async def test_cp12_meta_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         # 清除请求
         await agent.clear_waylookup_read()
         await agent.clear_fetch_request()
-        print("  ✓ Test 12.3通过")
+        toffee.info("  ✓ Test 12.3通过")
         
     except Exception as e:
         error_msg = f"12.3测试失败: {str(e)}"
-        print(f"  ✗ {error_msg}")
+        toffee.info(f"  ✗ {error_msg}")
         test_errors.append(error_msg)
     
     # ==================== 测试点12.4: ECC功能关闭 ====================
-    print("\n--- Test 12.4: ECC功能关闭 ---")
-    print("条件：奇偶校验关闭（ecc_enable为低）")
-    print("预期：强制清除s1_meta_corrupt信号置位，不管是否发生ECC错误，s1_meta_corrupt都为假")
+    toffee.info("\n--- Test 12.4: ECC功能关闭 ---")
+    toffee.info("条件：奇偶校验关闭（ecc_enable为低）")
+    toffee.info("预期：强制清除s1_meta_corrupt信号置位，不管是否发生ECC错误，s1_meta_corrupt都为假")
     
     try:
         await agent.reset()
@@ -1585,9 +1586,9 @@ async def test_cp12_meta_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         # 故意设置ECC错误条件但ECC功能关闭
         wrong_meta_code = 1  # 故意错误的ECC码
         
-        print(f"  ECC功能已关闭")
-        print(f"  ptag: 0x{test_ptag:x}")
-        print(f"  故意设置错误ECC码: {wrong_meta_code}")
+        toffee.info(f"  ECC功能已关闭")
+        toffee.info(f"  ptag: 0x{test_ptag:x}")
+        toffee.info(f"  故意设置错误ECC码: {wrong_meta_code}")
         
         # 设置ECC错误条件但ECC功能关闭
         await agent.drive_waylookup_read(
@@ -1615,10 +1616,10 @@ async def test_cp12_meta_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         error_status = await agent.monitor_error_status()
         meta_status = await agent.monitor_check_meta_ecc_status()
         
-        print(f"  waymask_0: 0x1 (单路命中)")
-        print(f"  由于ECC功能关闭，即使有ECC错误也不应报告")
-        print(f"  实际：io.ecc_enable={meta_status['ecc_enable']}")
-        print(f"  实际：io.errors[0].valid={error_status['0_valid']}")
+        toffee.info(f"  waymask_0: 0x1 (单路命中)")
+        toffee.info(f"  由于ECC功能关闭，即使有ECC错误也不应报告")
+        toffee.info(f"  实际：io.ecc_enable={meta_status['ecc_enable']}")
+        toffee.info(f"  实际：io.errors[0].valid={error_status['0_valid']}")
         
         # 根据Verilog源码，ECC关闭时强制清除错误信号
         # s2_meta_corrupt_0 <= io_ecc_enable & (...)，当io_ecc_enable=0时，s2_meta_corrupt_0=0
@@ -1628,23 +1629,23 @@ async def test_cp12_meta_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         # 清除请求
         await agent.clear_waylookup_read()
         await agent.clear_fetch_request()
-        print("  ✓ Test 12.4通过")
+        toffee.info("  ✓ Test 12.4通过")
         
     except Exception as e:
         error_msg = f"12.4测试失败: {str(e)}"
-        print(f"  ✗ {error_msg}")
+        toffee.info(f"  ✗ {error_msg}")
         test_errors.append(error_msg)
     
     # ==================== 测试结果汇总 ====================
-    print(f"\n=== CP12测试结果汇总 ===")
+    toffee.info(f"\n=== CP12测试结果汇总 ===")
     if test_errors:
-        print(f"测试失败数量: {len(test_errors)}")
+        toffee.info(f"测试失败数量: {len(test_errors)}")
         for error in test_errors:
-            print(f"  - {error}")
+            toffee.info(f"  - {error}")
         # 抛出汇总的错误信息
         raise AssertionError(f"CP12: Meta ECC校验功能测试有{len(test_errors)}个失败:\n" + "\n".join(test_errors))
     else:
-        print("✓ CP12: Meta ECC校验功能测试完成，所有测试点通过")
+        toffee.info("✓ CP12: Meta ECC校验功能测试完成，所有测试点通过")
 
 
 @toffee_test.testcase
@@ -1653,7 +1654,7 @@ async def test_cp13_pmp_check(icachemainpipe_env: ICacheMainPipeEnv):
     CP13: PMP检查功能测试
     测试物理内存保护检查逻辑
     """
-    print("\n=== CP13: PMP Check Test ===")
+    toffee.info("\n=== CP13: PMP Check Test ===")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
@@ -1663,7 +1664,7 @@ async def test_cp13_pmp_check(icachemainpipe_env: ICacheMainPipeEnv):
     # 13.1: 没有异常
     # 文档：s1_pmp_exception 为全零，表示没有 PMP 异常
     # Verilog：io_pmp_0_resp_instr = 1 且 io_pmp_1_resp_instr = 1 时无 PMP 异常
-    print("Test 13.1: 没有异常")
+    toffee.info("Test 13.1: 没有异常")
     try:
         bundle.io._flush.value = 1
         await bundle.step()
@@ -1696,24 +1697,24 @@ async def test_cp13_pmp_check(icachemainpipe_env: ICacheMainPipeEnv):
         pmp_status = await agent.monitor_pmp_status()
         fetch_resp = await agent.monitor_fetch_response()
         
-        print(f"  PMP 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
-        print(f"  PMP 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
-        print(f"  Fetch resp exception 0: {fetch_resp['exception_0']}")
-        print(f"  Fetch resp exception 1: {fetch_resp['exception_1']}")
+        toffee.info(f"  PMP 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
+        toffee.info(f"  PMP 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
+        toffee.info(f"  Fetch resp exception 0: {fetch_resp['exception_0']}")
+        toffee.info(f"  Fetch resp exception 1: {fetch_resp['exception_1']}")
         
         # 验证：无异常
         assert fetch_resp['exception_0'] == 0, "通道0不应有异常"
         assert fetch_resp['exception_1'] == 0, "通道1不应有异常"
-        print("√ Test 13.1 通过")
+        toffee.info("√ Test 13.1 通过")
     except Exception as e:
         error_msg = f"Test 13.1 failed: {e}"
         test_errors.append(error_msg)
-        print(f"× {error_msg}")
+        toffee.info(f"× {error_msg}")
     
     # 13.2: 通道 0 有 PMP 异常
     # 文档：s1_pmp_exception(0) 为真，表示通道 0 有 PMP 异常
     # Verilog：io_pmp_0_resp_instr = 1 时产生 PMP 异常
-    print("\nTest 13.2: 通道 0 有 PMP 异常")
+    toffee.info("\nTest 13.2: 通道 0 有 PMP 异常")
     try:
         bundle.io._flush.value = 1
         await bundle.step()
@@ -1746,23 +1747,23 @@ async def test_cp13_pmp_check(icachemainpipe_env: ICacheMainPipeEnv):
         pmp_status = await agent.monitor_pmp_status()
         fetch_resp = await agent.monitor_fetch_response()
         
-        print(f"  PMP 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
-        print(f"  PMP 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
-        print(f"  Fetch resp exception 0: {fetch_resp['exception_0']}")
-        print(f"  Fetch resp exception 1: {fetch_resp['exception_1']}")
+        toffee.info(f"  PMP 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
+        toffee.info(f"  PMP 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
+        toffee.info(f"  Fetch resp exception 0: {fetch_resp['exception_0']}")
+        toffee.info(f"  Fetch resp exception 1: {fetch_resp['exception_1']}")
         
         # 验证：通道0有异常，通道1无异常
         assert fetch_resp['exception_0'] != 0, "通道0应有PMP异常"
         assert fetch_resp['exception_1'] == 0, "通道1不应有异常"
-        print("√ Test 13.2 通过")
+        toffee.info("√ Test 13.2 通过")
     except Exception as e:
         error_msg = f"Test 13.2 failed: {e}"
         test_errors.append(error_msg)
-        print(f"× {error_msg}")
+        toffee.info(f"× {error_msg}")
     
     # 13.3: 通道 1 有 PMP 异常
     # 文档：s1_pmp_exception(1) 为真，表示通道 1 有 PMP 异常
-    print("\nTest 13.3: 通道 1 有 PMP 异常")
+    toffee.info("\nTest 13.3: 通道 1 有 PMP 异常")
     try:
         bundle.io._flush.value = 1
         await bundle.step()
@@ -1798,21 +1799,21 @@ async def test_cp13_pmp_check(icachemainpipe_env: ICacheMainPipeEnv):
         
         fetch_resp = await agent.monitor_fetch_response()
         
-        print(f"  Fetch resp exception 0: {fetch_resp['exception_0']}")
-        print(f"  Fetch resp exception 1: {fetch_resp['exception_1']}")
+        toffee.info(f"  Fetch resp exception 0: {fetch_resp['exception_0']}")
+        toffee.info(f"  Fetch resp exception 1: {fetch_resp['exception_1']}")
         
         # 验证：通道0无异常，通道1有异常
         assert fetch_resp['exception_0'] == 0, "通道0不应有异常"
         assert fetch_resp['exception_1'] != 0, "通道1应有PMP异常"
-        print("√ Test 13.3 通过")
+        toffee.info("√ Test 13.3 通过")
     except Exception as e:
         error_msg = f"Test 13.3 failed: {e}"
         test_errors.append(error_msg)
-        print(f"× {error_msg}")
+        toffee.info(f"× {error_msg}")
     
     # 13.4: 通道 0 和通道 1 都有 PMP 异常
     # 文档：s1_pmp_exception(0) 和 s1_pmp_exception(1) 都为真
-    print("\nTest 13.4: 通道 0 和通道 1 都有 PMP 异常")
+    toffee.info("\nTest 13.4: 通道 0 和通道 1 都有 PMP 异常")
     try:
         bundle.io._flush.value = 1
         await bundle.step()
@@ -1857,22 +1858,22 @@ async def test_cp13_pmp_check(icachemainpipe_env: ICacheMainPipeEnv):
         
         fetch_resp = await agent.monitor_fetch_response()
         
-        print(f"  Fetch resp exception 0: {fetch_resp['exception_0']}")
-        print(f"  Fetch resp exception 1: {fetch_resp['exception_1']}")
+        toffee.info(f"  Fetch resp exception 0: {fetch_resp['exception_0']}")
+        toffee.info(f"  Fetch resp exception 1: {fetch_resp['exception_1']}")
         
         # 验证：两个通道都有异常
         assert fetch_resp['exception_0'] != 0, "通道0应有PMP异常"
         assert fetch_resp['exception_1'] != 0, "通道1应有PMP异常"
-        print("√ Test 13.4 通过")
+        toffee.info("√ Test 13.4 通过")
     except Exception as e:
         error_msg = f"Test 13.4 failed: {e}"
         test_errors.append(error_msg)
-        print(f"× {error_msg}")
+        toffee.info(f"× {error_msg}")
     
     # 13.5: 没有映射到 MMIO 区域
     # 文档：s1_pmp_mmio(0) 和 s1_pmp_mmio(1) 都为假，表示没有映射到 MMIO 区域
     # Verilog：s2_pmp_mmio_0 <= io_pmp_0_resp_mmio
-    print("\nTest 13.5: 没有映射到 MMIO 区域")
+    toffee.info("\nTest 13.5: 没有映射到 MMIO 区域")
     try:
         bundle.io._flush.value = 1
         await bundle.step()
@@ -1907,25 +1908,25 @@ async def test_cp13_pmp_check(icachemainpipe_env: ICacheMainPipeEnv):
         pmp_status = await agent.monitor_pmp_status()
         fetch_resp = await agent.monitor_fetch_response()
         
-        print(f"  PMP 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
-        print(f"  PMP 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
-        print(f"  Fetch resp PMP MMIO 0: {fetch_resp['pmp_mmio_0']}")
-        print(f"  Fetch resp PMP MMIO 1: {fetch_resp['pmp_mmio_1']}")
+        toffee.info(f"  PMP 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
+        toffee.info(f"  PMP 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
+        toffee.info(f"  Fetch resp PMP MMIO 0: {fetch_resp['pmp_mmio_0']}")
+        toffee.info(f"  Fetch resp PMP MMIO 1: {fetch_resp['pmp_mmio_1']}")
         
         # 验证：两个通道都不是MMIO
         assert pmp_status['pmp_0_resp_mmio'] == 0, "通道0不应映射到MMIO"
         assert pmp_status['pmp_1_resp_mmio'] == 0, "通道1不应映射到MMIO"
         assert fetch_resp['pmp_mmio_0'] == 0, "Fetch响应通道0不应标记为MMIO"
         assert fetch_resp['pmp_mmio_1'] == 0, "Fetch响应通道1不应标记为MMIO"
-        print("√ Test 13.5 通过")
+        toffee.info("√ Test 13.5 通过")
     except Exception as e:
         error_msg = f"Test 13.5 failed: {e}"
         test_errors.append(error_msg)
-        print(f"× {error_msg}")
+        toffee.info(f"× {error_msg}")
     
     # 13.6: 通道 0 映射到了 MMIO 区域
     # 文档：s1_pmp_mmio(0) 为真，表示映射到了 MMIO 区域
-    print("\nTest 13.6: 通道 0 映射到了 MMIO 区域")
+    toffee.info("\nTest 13.6: 通道 0 映射到了 MMIO 区域")
     try:
         bundle.io._flush.value = 1
         await bundle.step()
@@ -1969,25 +1970,25 @@ async def test_cp13_pmp_check(icachemainpipe_env: ICacheMainPipeEnv):
         pmp_status = await agent.monitor_pmp_status()
         fetch_resp = await agent.monitor_fetch_response()
         
-        print(f"  PMP 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
-        print(f"  PMP 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
-        print(f"  Fetch resp PMP MMIO 0: {fetch_resp['pmp_mmio_0']}")
-        print(f"  Fetch resp PMP MMIO 1: {fetch_resp['pmp_mmio_1']}")
+        toffee.info(f"  PMP 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
+        toffee.info(f"  PMP 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
+        toffee.info(f"  Fetch resp PMP MMIO 0: {fetch_resp['pmp_mmio_0']}")
+        toffee.info(f"  Fetch resp PMP MMIO 1: {fetch_resp['pmp_mmio_1']}")
         
         # 验证：通道0是MMIO，通道1不是MMIO
         assert pmp_status['pmp_0_resp_mmio'] == 1, "通道0应映射到MMIO"
         assert pmp_status['pmp_1_resp_mmio'] == 0, "通道1不应映射到MMIO"
         assert fetch_resp['pmp_mmio_0'] == 1, "Fetch响应通道0应标记为MMIO"
         assert fetch_resp['pmp_mmio_1'] == 0, "Fetch响应通道1不应标记为MMIO"
-        print("√ Test 13.6 通过")
+        toffee.info("√ Test 13.6 通过")
     except Exception as e:
         error_msg = f"Test 13.6 failed: {e}"
         test_errors.append(error_msg)
-        print(f"× {error_msg}")
+        toffee.info(f"× {error_msg}")
     
     # 13.7: 通道 1 映射到了 MMIO 区域
     # 文档：s1_pmp_mmio(1) 为真，表示映射到了 MMIO 区域
-    print("\nTest 13.7: 通道 1 映射到了 MMIO 区域")
+    toffee.info("\nTest 13.7: 通道 1 映射到了 MMIO 区域")
     try:
         bundle.io._flush.value = 1
         await bundle.step()
@@ -2024,25 +2025,25 @@ async def test_cp13_pmp_check(icachemainpipe_env: ICacheMainPipeEnv):
         pmp_status = await agent.monitor_pmp_status()
         fetch_resp = await agent.monitor_fetch_response()
         
-        print(f"  PMP 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
-        print(f"  PMP 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
-        print(f"  Fetch resp PMP MMIO 0: {fetch_resp['pmp_mmio_0']}")
-        print(f"  Fetch resp PMP MMIO 1: {fetch_resp['pmp_mmio_1']}")
+        toffee.info(f"  PMP 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
+        toffee.info(f"  PMP 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
+        toffee.info(f"  Fetch resp PMP MMIO 0: {fetch_resp['pmp_mmio_0']}")
+        toffee.info(f"  Fetch resp PMP MMIO 1: {fetch_resp['pmp_mmio_1']}")
         
         # 验证：通道0不是MMIO，通道1是MMIO
         assert pmp_status['pmp_0_resp_mmio'] == 0, "通道0不应映射到MMIO"
         assert pmp_status['pmp_1_resp_mmio'] == 1, "通道1应映射到MMIO"
         assert fetch_resp['pmp_mmio_0'] == 0, "Fetch响应通道0不应标记为MMIO"
         assert fetch_resp['pmp_mmio_1'] == 1, "Fetch响应通道1应标记为MMIO"
-        print("√ Test 13.7 通过")
+        toffee.info("√ Test 13.7 通过")
     except Exception as e:
         error_msg = f"Test 13.7 failed: {e}"
         test_errors.append(error_msg)
-        print(f"× {error_msg}")
+        toffee.info(f"× {error_msg}")
     
     # 13.8: 通道 0 和通道 1 都映射到了 MMIO 区域
     # 文档：s1_pmp_mmio(0) 和 s1_pmp_mmio(1) 都为真
-    print("\nTest 13.8: 通道 0 和通道 1 都映射到了 MMIO 区域")
+    toffee.info("\nTest 13.8: 通道 0 和通道 1 都映射到了 MMIO 区域")
     try:
         bundle.io._flush.value = 1
         await bundle.step()
@@ -2088,31 +2089,31 @@ async def test_cp13_pmp_check(icachemainpipe_env: ICacheMainPipeEnv):
         pmp_status = await agent.monitor_pmp_status()
         fetch_resp = await agent.monitor_fetch_response()
         
-        print(f"  PMP 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
-        print(f"  PMP 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
-        print(f"  Fetch resp PMP MMIO 0: {fetch_resp['pmp_mmio_0']}")
-        print(f"  Fetch resp PMP MMIO 1: {fetch_resp['pmp_mmio_1']}")
+        toffee.info(f"  PMP 0 MMIO: {pmp_status['pmp_0_resp_mmio']}")
+        toffee.info(f"  PMP 1 MMIO: {pmp_status['pmp_1_resp_mmio']}")
+        toffee.info(f"  Fetch resp PMP MMIO 0: {fetch_resp['pmp_mmio_0']}")
+        toffee.info(f"  Fetch resp PMP MMIO 1: {fetch_resp['pmp_mmio_1']}")
         
         # 验证：两个通道都是MMIO
         assert pmp_status['pmp_0_resp_mmio'] == 1, "通道0应映射到MMIO"
         assert pmp_status['pmp_1_resp_mmio'] == 1, "通道1应映射到MMIO"
         assert fetch_resp['pmp_mmio_0'] == 1, "Fetch响应通道0应标记为MMIO"
         assert fetch_resp['pmp_mmio_1'] == 1, "Fetch响应通道1应标记为MMIO"
-        print("√ Test 13.8 通过")
+        toffee.info("√ Test 13.8 通过")
     except Exception as e:
         error_msg = f"Test 13.8 failed: {e}"
         test_errors.append(error_msg)
-        print(f"× {error_msg}")
+        toffee.info(f"× {error_msg}")
     
     # 汇总所有测试结果
-    print("\n" + "="*60)
+    toffee.info("\n" + "="*60)
     if test_errors:
-        print(f"× CP13: PMP检查功能测试完成 - {len(test_errors)}个错误:")
+        toffee.info(f"× CP13: PMP检查功能测试完成 - {len(test_errors)}个错误:")
         for i, error in enumerate(test_errors, 1):
-            print(f"  {i}. {error}")
+            toffee.info(f"  {i}. {error}")
         raise AssertionError(f"CP13 PMP测试失败，共{len(test_errors)}个错误: {'; '.join(test_errors)}")
     else:
-        print("√ CP13: PMP检查功能测试完成 - 所有测试通过")
+        toffee.info("√ CP13: PMP检查功能测试完成 - 所有测试通过")
 
 
 @toffee_test.testcase
@@ -2125,7 +2126,7 @@ async def test_cp14_exception_merge(icachemainpipe_env: ICacheMainPipeEnv):
     s2_exception_0 <= (|s1_itlb_exception_0) ? s1_itlb_exception_0 : {2{io_pmp_0_resp_instr}};
     ITLB异常优先于PMP异常
     """
-    print("\n=== CP14: 异常合并功能测试 ===")
+    toffee.info("\n=== CP14: 异常合并功能测试 ===")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
@@ -2134,7 +2135,7 @@ async def test_cp14_exception_merge(icachemainpipe_env: ICacheMainPipeEnv):
     
     # 14.1: 没有异常
     try:
-        print("\n--- 测试 14.1: 没有异常 ---")
+        toffee.info("\n--- 测试 14.1: 没有异常 ---")
         await agent.reset()
         
         # 环境准备：确保流水线能够正常工作
@@ -2176,9 +2177,9 @@ async def test_cp14_exception_merge(icachemainpipe_env: ICacheMainPipeEnv):
         exception_status = await agent.monitor_exception_merge_status()
         fetch_resp = await agent.monitor_fetch_response()
         
-        print(f"  S1 ITLB异常0: {exception_status.get('s1_itlb_exception_0', 'N/A')}")
-        print(f"  S2异常0: {exception_status.get('s2_exception_0', 'N/A')}")
-        print(f"  Fetch响应异常0: {fetch_resp.get('exception_0', 'N/A')}")
+        toffee.info(f"  S1 ITLB异常0: {exception_status.get('s1_itlb_exception_0', 'N/A')}")
+        toffee.info(f"  S2异常0: {exception_status.get('s2_exception_0', 'N/A')}")
+        toffee.info(f"  Fetch响应异常0: {fetch_resp.get('exception_0', 'N/A')}")
         
         # 验证：无异常时的状态
         # verilog依据：当itlb_exception_0=0且pmp_instr=0时，s2_exception_0={2{1}}=0
@@ -2194,16 +2195,16 @@ async def test_cp14_exception_merge(icachemainpipe_env: ICacheMainPipeEnv):
         await agent.clear_fetch_request()
         await agent.clear_waylookup_read()
         
-        print("  √ 测试14.1通过：无ITLB异常，PMP正常访问权限")
+        toffee.info("  √ 测试14.1通过：无ITLB异常，PMP正常访问权限")
         
     except Exception as e:
         error_msg = f"测试14.1失败: {str(e)}"
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
         test_errors.append(error_msg)
     
     # 14.2: 只有ITLB异常
     try:
-        print("\n--- 测试 14.2: 只有ITLB异常 ---")
+        toffee.info("\n--- 测试 14.2: 只有ITLB异常 ---")
         await agent.reset()
         
         # 环境准备
@@ -2240,9 +2241,9 @@ async def test_cp14_exception_merge(icachemainpipe_env: ICacheMainPipeEnv):
         exception_status = await agent.monitor_exception_merge_status()
         fetch_resp = await agent.monitor_fetch_response()
         
-        print(f"  S1 ITLB异常0: {exception_status.get('s1_itlb_exception_0', 'N/A')}")
-        print(f"  S2异常0: {exception_status.get('s2_exception_0', 'N/A')}")
-        print(f"  Fetch响应异常0: {fetch_resp.get('exception_0', 'N/A')}")
+        toffee.info(f"  S1 ITLB异常0: {exception_status.get('s1_itlb_exception_0', 'N/A')}")
+        toffee.info(f"  S2异常0: {exception_status.get('s2_exception_0', 'N/A')}")
+        toffee.info(f"  Fetch响应异常0: {fetch_resp.get('exception_0', 'N/A')}")
         
         # 验证：只有ITLB异常时，s2_exception应与ITLB异常一致
         # verilog依据：(|s1_itlb_exception_0) ? s1_itlb_exception_0 : {2{io_pmp_0_resp_instr}}
@@ -2255,16 +2256,16 @@ async def test_cp14_exception_merge(icachemainpipe_env: ICacheMainPipeEnv):
         await agent.clear_fetch_request()
         await agent.clear_waylookup_read()
         
-        print("  √ 测试14.2通过：只有ITLB异常情况正确")
+        toffee.info("  √ 测试14.2通过：只有ITLB异常情况正确")
         
     except Exception as e:
         error_msg = f"测试14.2失败: {str(e)}"
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
         test_errors.append(error_msg)
     
     # 14.3: 只有PMP异常
     try:
-        print("\n--- 测试 14.3: 只有PMP异常 ---")
+        toffee.info("\n--- 测试 14.3: 只有PMP异常 ---")
         await agent.reset()
         
         # 环境准备
@@ -2301,10 +2302,10 @@ async def test_cp14_exception_merge(icachemainpipe_env: ICacheMainPipeEnv):
         exception_status = await agent.monitor_exception_merge_status()
         fetch_resp = await agent.monitor_fetch_response()
         
-        print(f"  S1 ITLB异常0: {exception_status.get('s1_itlb_exception_0', 'N/A')}")
-        print(f"  S2异常0: {exception_status.get('s2_exception_0', 'N/A')}")
-        print(f"  Fetch响应异常0: {fetch_resp.get('exception_0', 'N/A')}")
-        print(f"  PMP instr响应: {bundle.io._pmp._0._resp._instr.value}")
+        toffee.info(f"  S1 ITLB异常0: {exception_status.get('s1_itlb_exception_0', 'N/A')}")
+        toffee.info(f"  S2异常0: {exception_status.get('s2_exception_0', 'N/A')}")
+        toffee.info(f"  Fetch响应异常0: {fetch_resp.get('exception_0', 'N/A')}")
+        toffee.info(f"  PMP instr响应: {bundle.io._pmp._0._resp._instr.value}")
         
         # 验证：只有PMP异常时，s2_exception应反映PMP状态
         # verilog依据：当s1_itlb_exception_0=0时，s2_exception_0={2{io_pmp_0_resp_instr}}
@@ -2317,16 +2318,16 @@ async def test_cp14_exception_merge(icachemainpipe_env: ICacheMainPipeEnv):
         await agent.clear_fetch_request()
         await agent.clear_waylookup_read()
         
-        print("  √ 测试14.3通过：只有PMP异常情况正确")
+        toffee.info("  √ 测试14.3通过：只有PMP异常情况正确")
         
     except Exception as e:
         error_msg = f"测试14.3失败: {str(e)}"
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
         test_errors.append(error_msg)
     
     # 14.4: ITLB与PMP异常同时出现（ITLB优先级更高）
     try:
-        print("\n--- 测试 14.4: ITLB与PMP异常同时出现 ---")
+        toffee.info("\n--- 测试 14.4: ITLB与PMP异常同时出现 ---")
         await agent.reset()
         
         # 环境准备
@@ -2363,10 +2364,10 @@ async def test_cp14_exception_merge(icachemainpipe_env: ICacheMainPipeEnv):
         exception_status = await agent.monitor_exception_merge_status()
         fetch_resp = await agent.monitor_fetch_response()
         
-        print(f"  S1 ITLB异常0: {exception_status.get('s1_itlb_exception_0', 'N/A')}")
-        print(f"  S2异常0: {exception_status.get('s2_exception_0', 'N/A')}")
-        print(f"  Fetch响应异常0: {fetch_resp.get('exception_0', 'N/A')}")
-        print(f"  PMP instr响应: {bundle.io._pmp._0._resp._instr.value}")
+        toffee.info(f"  S1 ITLB异常0: {exception_status.get('s1_itlb_exception_0', 'N/A')}")
+        toffee.info(f"  S2异常0: {exception_status.get('s2_exception_0', 'N/A')}")
+        toffee.info(f"  Fetch响应异常0: {fetch_resp.get('exception_0', 'N/A')}")
+        toffee.info(f"  PMP instr响应: {bundle.io._pmp._0._resp._instr.value}")
         
         # 验证：ITLB与PMP异常同时出现时，ITLB优先级更高
         # verilog依据：(|s1_itlb_exception_0) ? s1_itlb_exception_0 : {2{io_pmp_0_resp_instr}}
@@ -2379,22 +2380,22 @@ async def test_cp14_exception_merge(icachemainpipe_env: ICacheMainPipeEnv):
         await agent.clear_fetch_request()
         await agent.clear_waylookup_read()
         
-        print("  √ 测试14.4通过：ITLB异常优先级正确")
+        toffee.info("  √ 测试14.4通过：ITLB异常优先级正确")
         
     except Exception as e:
         error_msg = f"测试14.4失败: {str(e)}"
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
         test_errors.append(error_msg)
     
     # 汇总测试结果
     if test_errors:
-        print(f"\n× CP14测试完成，发现 {len(test_errors)} 个错误:")
+        toffee.info(f"\n× CP14测试完成，发现 {len(test_errors)} 个错误:")
         for i, error in enumerate(test_errors, 1):
-            print(f"  {i}. {error}")
+            toffee.info(f"  {i}. {error}")
         # 抛出所有错误
         raise AssertionError(f"CP14异常合并测试失败: {'; '.join(test_errors)}")
     else:
-        print("\n√ CP14: 异常合并功能测试完成 - 所有测试通过")
+        toffee.info("\n√ CP14: 异常合并功能测试完成 - 所有测试通过")
 
 
 @toffee_test.testcase
@@ -2407,7 +2408,7 @@ async def test_cp15_mshr_match_data_select(icachemainpipe_env: ICacheMainPipeEnv
     - 15.2: 未命中 MSHR - s1_MSHR_hits(i) 为 false 时，s1_datas(i) 为 fromData.datas(i)，s1_data_is_from_MSHR(i) 为 false  
     - 15.3: MSHR 数据 corrupt - fromMSHR.bits.corrupt = true，那么 MSHR 将不匹配，应该读取 SRAM 的数据
     """
-    print("\n=== CP15: MSHR匹配和数据选择功能测试 ===")
+    toffee.info("\n=== CP15: MSHR匹配和数据选择功能测试 ===")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
@@ -2415,7 +2416,7 @@ async def test_cp15_mshr_match_data_select(icachemainpipe_env: ICacheMainPipeEnv
     
     # 15.1: 命中 MSHR 测试
     try:
-        print("\n--- 测试点 15.1: 命中 MSHR ---")
+        toffee.info("\n--- 测试点 15.1: 命中 MSHR ---")
         
         # 重置和环境准备
         await agent.reset()
@@ -2426,7 +2427,7 @@ async def test_cp15_mshr_match_data_select(icachemainpipe_env: ICacheMainPipeEnv
         
         # 监控初始状态
         initial_status = await agent.monitor_pipeline_status()
-        print(f"初始流水线状态: {initial_status}")
+        toffee.info(f"初始流水线状态: {initial_status}")
         
         test_blkPaddr = 0x1000  # 测试物理地址
         test_vSetIdx = 0x10     # 测试缓存组索引
@@ -2462,7 +2463,7 @@ async def test_cp15_mshr_match_data_select(icachemainpipe_env: ICacheMainPipeEnv
         
         # 监控MSHR匹配状态
         mshr_status = await agent.monitor_mshr_match_status()
-        print(f"MSHR匹配状态: {mshr_status}")
+        toffee.info(f"MSHR匹配状态: {mshr_status}")
         
         # 清除操作
         await agent.clear_fetch_request()
@@ -2478,15 +2479,15 @@ async def test_cp15_mshr_match_data_select(icachemainpipe_env: ICacheMainPipeEnv
         if not expected_hit:
             errors.append("测试点15.1失败: 未检测到MSHR命中")
         else:
-            print("√ 测试点15.1通过: 成功检测到MSHR命中")
+            toffee.info("√ 测试点15.1通过: 成功检测到MSHR命中")
             
     except Exception as e:
         errors.append(f"测试点15.1异常: {str(e)}")
-        print(f"× 测试点15.1发生异常: {e}")
+        toffee.info(f"× 测试点15.1发生异常: {e}")
     
     # 15.2: 未命中 MSHR 测试  
     try:
-        print("\n--- 测试点 15.2: 未命中 MSHR ---")
+        toffee.info("\n--- 测试点 15.2: 未命中 MSHR ---")
         
         # 重置环境
         await agent.reset()
@@ -2528,7 +2529,7 @@ async def test_cp15_mshr_match_data_select(icachemainpipe_env: ICacheMainPipeEnv
         
         # 监控MSHR匹配状态
         mshr_status = await agent.monitor_mshr_match_status()
-        print(f"MSHR未命中状态: {mshr_status}")
+        toffee.info(f"MSHR未命中状态: {mshr_status}")
         
         # 清除操作
         await agent.clear_fetch_request()
@@ -2543,15 +2544,15 @@ async def test_cp15_mshr_match_data_select(icachemainpipe_env: ICacheMainPipeEnv
         if any_hit:
             errors.append("测试点15.2失败: 错误地检测到MSHR命中")
         else:
-            print("√ 测试点15.2通过: 正确检测到MSHR未命中")
+            toffee.info("√ 测试点15.2通过: 正确检测到MSHR未命中")
             
     except Exception as e:
         errors.append(f"测试点15.2异常: {str(e)}")
-        print(f"× 测试点15.2发生异常: {e}")
+        toffee.info(f"× 测试点15.2发生异常: {e}")
     
     # 15.3: MSHR 数据 corrupt 测试
     try:
-        print("\n--- 测试点 15.3: MSHR 数据 corrupt ---")
+        toffee.info("\n--- 测试点 15.3: MSHR 数据 corrupt ---")
         
         # 重置环境
         await agent.reset()
@@ -2591,7 +2592,7 @@ async def test_cp15_mshr_match_data_select(icachemainpipe_env: ICacheMainPipeEnv
         
         # 监控MSHR匹配状态
         mshr_status = await agent.monitor_mshr_match_status()
-        print(f"MSHR corrupt状态: {mshr_status}")
+        toffee.info(f"MSHR corrupt状态: {mshr_status}")
         
         # 清除操作
         await agent.clear_fetch_request()
@@ -2606,22 +2607,22 @@ async def test_cp15_mshr_match_data_select(icachemainpipe_env: ICacheMainPipeEnv
         if any_hit:
             errors.append("测试点15.3失败: corrupt数据时错误地检测到MSHR命中")
         else:
-            print("√ 测试点15.3通过: corrupt数据时正确拒绝MSHR匹配")
+            toffee.info("√ 测试点15.3通过: corrupt数据时正确拒绝MSHR匹配")
             
     except Exception as e:
         errors.append(f"测试点15.3异常: {str(e)}")
-        print(f"× 测试点15.3发生异常: {e}")
+        toffee.info(f"× 测试点15.3发生异常: {e}")
     
     # 汇总测试结果
-    print(f"\n=== CP15测试完成 ===")
+    toffee.info(f"\n=== CP15测试完成 ===")
     if errors:
-        print(f"× 发现 {len(errors)} 个错误:")
+        toffee.info(f"× 发现 {len(errors)} 个错误:")
         for i, error in enumerate(errors, 1):
-            print(f"  {i}. {error}")
+            toffee.info(f"  {i}. {error}")
         # 抛出所有收集到的错误
         raise AssertionError(f"CP15测试失败，错误列表: {'; '.join(errors)}")
     else:
-        print("√ CP15: MSHR匹配和数据选择功能测试 - 所有测试点通过")
+        toffee.info("√ CP15: MSHR匹配和数据选择功能测试 - 所有测试点通过")
 
 
 @toffee_test.testcase
@@ -2636,7 +2637,7 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
     16.3: 多Bank ECC错误 - s2_bank_corrupt(bank)有两个或以上为true，相关错误信号为true  
     16.4: ECC功能关闭 - 当ecc_enable为低时，强制清除s2_data_corrupt信号
     """
-    print("\n=== CP16: Data ECC校验功能测试 ===")
+    toffee.info("\n=== CP16: Data ECC校验功能测试 ===")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
@@ -2644,7 +2645,7 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
     
     # 16.1: 无ECC错误
     try:
-        print("\n--- 16.1: 无ECC错误测试 ---")
+        toffee.info("\n--- 16.1: 无ECC错误测试 ---")
         
         # 重置环境并使能ECC
         await agent.reset()
@@ -2655,7 +2656,7 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         
         # 监控初始状态
         pipeline_status = await agent.monitor_pipeline_status()
-        print(f"初始流水线状态: s0_fire={pipeline_status['s0_fire']}, s2_fire={pipeline_status['s2_fire']}")
+        toffee.info(f"初始流水线状态: s0_fire={pipeline_status['s0_fire']}, s2_fire={pipeline_status['s2_fire']}")
         
         # 准备环境：先设置WayLookup再设置Fetch
         vSetIdx_0 = 0x10
@@ -2664,7 +2665,7 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         # 根据API约束计算正确的地址：pcMemRead_4[13:6]必须等于vSetIdx_0
         # 地址格式：[高位][ptag][vSetIdx][低6位]
         pcMemRead_addr = (vSetIdx_0 << 6) | 0x00 
-        print(f"设置地址: pcMemRead_addr=0x{pcMemRead_addr:x}, 期望vSetIdx=0x{vSetIdx_0:x}")
+        toffee.info(f"设置地址: pcMemRead_addr=0x{pcMemRead_addr:x}, 期望vSetIdx=0x{vSetIdx_0:x}")
         
         await agent.drive_waylookup_read(
             vSetIdx_0=vSetIdx_0,
@@ -2710,9 +2711,9 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         error_status = await agent.monitor_error_status()
         pipeline_status = await agent.monitor_pipeline_status()
         
-        print(f"ECC状态: enable={ecc_status['ecc_enable']}, corrupt_0={ecc_status['s2_data_corrupt_0']}, corrupt_1={ecc_status['s2_data_corrupt_1']}")
-        print(f"流水线状态: s2_fire={pipeline_status['s2_fire']}")
-        print(f"错误状态: valid_0={error_status['0_valid']}, valid_1={error_status['1_valid']}")
+        toffee.info(f"ECC状态: enable={ecc_status['ecc_enable']}, corrupt_0={ecc_status['s2_data_corrupt_0']}, corrupt_1={ecc_status['s2_data_corrupt_1']}")
+        toffee.info(f"流水线状态: s2_fire={pipeline_status['s2_fire']}")
+        toffee.info(f"错误状态: valid_0={error_status['0_valid']}, valid_1={error_status['1_valid']}")
         
         # 验证：无ECC错误时的预期行为
         if ecc_status['s2_data_corrupt_0'] != False:
@@ -2727,15 +2728,15 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         await bundle.step(2)
         
         if not errors:
-            print("✓ 16.1: 无ECC错误测试通过")
+            toffee.info("✓ 16.1: 无ECC错误测试通过")
             
     except Exception as e:
         errors.append(f"16.1测试异常: {str(e)}")
-        print(f"✗ 16.1测试异常: {e}")
+        toffee.info(f"✗ 16.1测试异常: {e}")
     
     # 16.2: 单Bank ECC错误
     try:
-        print("\n--- 16.2: 单Bank ECC错误测试 ---")
+        toffee.info("\n--- 16.2: 单Bank ECC错误测试 ---")
         
         # 重置环境并使能ECC
         await agent.reset()
@@ -2782,9 +2783,9 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         detailed_status = await agent.monitor_data_ecc_detailed_status()
         error_status = await agent.monitor_error_status()
         
-        print(f"单Bank错误状态: corrupt_0={ecc_status['s2_data_corrupt_0']}")
-        print(f"Bank corrupt状态: {detailed_status.get('s2_bank_corrupt', [])}")
-        print(f"错误报告: valid_0={error_status['0_valid']}, report_to_beu_0={error_status['0_report_to_beu']}")
+        toffee.info(f"单Bank错误状态: corrupt_0={ecc_status['s2_data_corrupt_0']}")
+        toffee.info(f"Bank corrupt状态: {detailed_status.get('s2_bank_corrupt', [])}")
+        toffee.info(f"错误报告: valid_0={error_status['0_valid']}, report_to_beu_0={error_status['0_report_to_beu']}")
         
         # 验证：单Bank ECC错误的预期行为
         # 根据verilog代码：s2_data_corrupt_0 = io_ecc_enable & (s2_bank_corrupt & s2_bankSel & ~s2_data_is_from_MSHR)
@@ -2800,15 +2801,15 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         await agent.clear_fetch_request()
         await bundle.step(2)
         
-        print("✓ 16.2: 单Bank ECC错误测试完成")
+        toffee.info("✓ 16.2: 单Bank ECC错误测试完成")
         
     except Exception as e:
         errors.append(f"16.2测试异常: {str(e)}")
-        print(f"✗ 16.2测试异常: {e}")
+        toffee.info(f"✗ 16.2测试异常: {e}")
     
     # 16.2跨行: 单Bank ECC错误（跨行取指）
     try:
-        print("\n--- 16.2跨行: 单Bank ECC错误测试（跨行取指） ---")
+        toffee.info("\n--- 16.2跨行: 单Bank ECC错误测试（跨行取指） ---")
         
         # 重置环境并使能ECC
         await agent.reset()
@@ -2818,7 +2819,7 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         # 使用辅助函数计算跨行取指参数（遵循CP17模式）
         cross_line_addr = 0x1020  # bit[5]=1，触发跨行
         params = calculate_waylookup_params(cross_line_addr)
-        print(f"跨行参数: doubleline={params['is_doubleline']}, vSetIdx_0=0x{params['vSetIdx_0']:x}, vSetIdx_1=0x{params['vSetIdx_1']:x}")
+        toffee.info(f"跨行参数: doubleline={params['is_doubleline']}, vSetIdx_0=0x{params['vSetIdx_0']:x}, vSetIdx_1=0x{params['vSetIdx_1']:x}")
         
         # 确保跨行取指并设置不同waymask避免冲突（CP17模式）
         waymask_0 = 0x1 
@@ -2841,7 +2842,7 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         # 计算两个端口对应的bank（CP17方法）
         target_bank_0 = (params['start_addr'] >> 3) & 0x7  # 端口0的bank
         target_bank_1 = (params['nextline_addr'] >> 3) & 0x7  # 端口1的bank
-        print(f"地址0x{params['start_addr']:x} -> bank {target_bank_0}, 跨行地址0x{params['nextline_addr']:x} -> bank {target_bank_1}")
+        toffee.info(f"地址0x{params['start_addr']:x} -> bank {target_bank_0}, 跨行地址0x{params['nextline_addr']:x} -> bank {target_bank_1}")
         
         # 准备Data ECC错误注入（遵循CP17的方法：同时注入两个bank）
         datas = [0] * 8
@@ -2858,16 +2859,16 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
             wrong_ecc_1 = 1 - correct_ecc_1
             datas[target_bank_1] = error_data_1
             codes[target_bank_1] = wrong_ecc_1
-            print(f"跨行模式：同时向bank {target_bank_0} 和 bank {target_bank_1} 注入错误")
+            toffee.info(f"跨行模式：同时向bank {target_bank_0} 和 bank {target_bank_1} 注入错误")
         else:
-            print(f"跨行模式：两个端口使用同一个bank {target_bank_0}")
+            toffee.info(f"跨行模式：两个端口使用同一个bank {target_bank_0}")
         
         # 先注入ECC错误，然后执行fetch请求（CP17关键顺序）
         success = await agent.drive_data_array_response(datas=datas, codes=codes)
         assert success, "Data ECC错误注入必须成功"
         
         # 执行fetch请求
-        print(f"Fetch请求: start_addr=0x{params['start_addr']:x}, nextline_addr=0x{params['nextline_addr']:x}")
+        toffee.info(f"Fetch请求: start_addr=0x{params['start_addr']:x}, nextline_addr=0x{params['nextline_addr']:x}")
         fetch_success = await agent.drive_fetch_request(
             pcMemRead_addrs=[0, 0, 0, 0, params['start_addr']],
             readValid=[0, 0, 0, 0, 1]
@@ -2887,8 +2888,8 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         corrupt_0 = data_ecc_status.get('s2_data_corrupt_0', False)
         corrupt_1 = data_ecc_status.get('s2_data_corrupt_1', False)
         
-        print(f"跨行单Bank错误状态: corrupt_0={corrupt_0}, corrupt_1={corrupt_1}")
-        print(f"错误报告: valid_0={error_status['0_valid']}, valid_1={error_status['1_valid']}")
+        toffee.info(f"跨行单Bank错误状态: corrupt_0={corrupt_0}, corrupt_1={corrupt_1}")
+        toffee.info(f"错误报告: valid_0={error_status['0_valid']}, valid_1={error_status['1_valid']}")
         
         # 验证：跨行取指时两个端口都应该检测到Data错误（CP17验证方式）
         assert corrupt_0, f"跨行取指时端口0应检测到Data ECC错误， corrupt_0={corrupt_0}"
@@ -2899,15 +2900,15 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         await agent.clear_fetch_request()
         await bundle.step(2)
         
-        print("✓ 16.2跨行: 单Bank ECC错误正确处理 (两个端口都检测到错误)")
+        toffee.info("✓ 16.2跨行: 单Bank ECC错误正确处理 (两个端口都检测到错误)")
         
     except Exception as e:
         errors.append(f"16.2跨行测试异常: {str(e)}")
-        print(f"✗ 16.2跨行测试异常: {e}")
+        toffee.info(f"✗ 16.2跨行测试异常: {e}")
     
     # 16.3: 多Bank ECC错误
     try:
-        print("\n--- 16.3: 多Bank ECC错误测试 ---")
+        toffee.info("\n--- 16.3: 多Bank ECC错误测试 ---")
         
         # 重置环境并使能ECC
         await agent.reset()
@@ -2960,9 +2961,9 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         detailed_status = await agent.monitor_data_ecc_detailed_status()
         error_status = await agent.monitor_error_status()
         
-        print(f"多Bank错误状态: corrupt_0={ecc_status['s2_data_corrupt_0']}")
-        print(f"Bank corrupt详情: {detailed_status.get('s2_bank_corrupt', [])}")
-        print(f"错误报告: valid_0={error_status['0_valid']}")
+        toffee.info(f"多Bank错误状态: corrupt_0={ecc_status['s2_data_corrupt_0']}")
+        toffee.info(f"Bank corrupt详情: {detailed_status.get('s2_bank_corrupt', [])}")
+        toffee.info(f"错误报告: valid_0={error_status['0_valid']}")
         
         # 验证：多Bank ECC错误的预期行为
         if ecc_status['s2_data_corrupt_0'] != True:
@@ -2975,15 +2976,15 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         await agent.clear_fetch_request()
         await bundle.step(2)
         
-        print("✓ 16.3: 多Bank ECC错误测试完成")
+        toffee.info("✓ 16.3: 多Bank ECC错误测试完成")
         
     except Exception as e:
         errors.append(f"16.3测试异常: {str(e)}")
-        print(f"✗ 16.3测试异常: {e}")
+        toffee.info(f"✗ 16.3测试异常: {e}")
     
     # 16.3跨行: 多Bank ECC错误（跨行取指）
     try:
-        print("\n--- 16.3跨行: 多Bank ECC错误测试（跨行取指） ---")
+        toffee.info("\n--- 16.3跨行: 多Bank ECC错误测试（跨行取指） ---")
         
         # 重置环境并使能ECC
         await agent.reset()
@@ -2993,7 +2994,7 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         # 使用辅助函数计算跨行取指参数（遵循CP17模式）
         cross_line_addr = 0x1020  # bit[5]=1，触发跨行
         params = calculate_waylookup_params(cross_line_addr)
-        print(f"跨行参数: doubleline={params['is_doubleline']}, vSetIdx_0=0x{params['vSetIdx_0']:x}, vSetIdx_1=0x{params['vSetIdx_1']:x}")
+        toffee.info(f"跨行参数: doubleline={params['is_doubleline']}, vSetIdx_0=0x{params['vSetIdx_0']:x}, vSetIdx_1=0x{params['vSetIdx_1']:x}")
         
         # 确保跨行取指并设置不同waymask避免冲突（CP17模式）
         waymask_0 = 0x1 
@@ -3016,7 +3017,7 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         # 计算两个端口对应的bank（CP17方法）
         target_bank_0 = (params['start_addr'] >> 3) & 0x7  # 端口0的bank
         target_bank_1 = (params['nextline_addr'] >> 3) & 0x7  # 端口1的bank
-        print(f"地址0x{params['start_addr']:x} -> bank {target_bank_0}, 跨行地址0x{params['nextline_addr']:x} -> bank {target_bank_1}")
+        toffee.info(f"地址0x{params['start_addr']:x} -> bank {target_bank_0}, 跨行地址0x{params['nextline_addr']:x} -> bank {target_bank_1}")
         
         # 准备Data ECC错误注入（多Bank错误：同时注入多个bank）
         datas = [0] * 8
@@ -3040,16 +3041,16 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
                 wrong_ecc = 1 - correct_ecc
                 datas[bank] = error_data
                 codes[bank] = wrong_ecc
-            print(f"跨行模式：同时向端口0(bank {error_banks_0})和端口1(bank {error_banks_1})注入多Bank错误")
+            toffee.info(f"跨行模式：同时向端口0(bank {error_banks_0})和端口1(bank {error_banks_1})注入多Bank错误")
         else:
-            print(f"跨行模式：两个端口使用重叠的bank区域")
+            toffee.info(f"跨行模式：两个端口使用重叠的bank区域")
         
         # 先注入ECC错误，然后执行fetch请求（CP17关键顺序）
         success = await agent.drive_data_array_response(datas=datas, codes=codes)
         assert success, "Data ECC错误注入必须成功"
         
         # 执行fetch请求
-        print(f"Fetch请求: start_addr=0x{params['start_addr']:x}, nextline_addr=0x{params['nextline_addr']:x}")
+        toffee.info(f"Fetch请求: start_addr=0x{params['start_addr']:x}, nextline_addr=0x{params['nextline_addr']:x}")
         fetch_success = await agent.drive_fetch_request(
             pcMemRead_addrs=[0, 0, 0, 0, params['start_addr']],
             readValid=[0, 0, 0, 0, 1]
@@ -3069,8 +3070,8 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         corrupt_0 = data_ecc_status.get('s2_data_corrupt_0', False)
         corrupt_1 = data_ecc_status.get('s2_data_corrupt_1', False)
         
-        print(f"跨行多Bank错误状态: corrupt_0={corrupt_0}, corrupt_1={corrupt_1}")
-        print(f"数据flush状态: valid_0={meta_flush['0_valid']}, waymask_0=0x{meta_flush['0_bits_waymask']:x}, valid_1={meta_flush['1_valid']}, waymask_1=0x{meta_flush['1_bits_waymask']:x}")
+        toffee.info(f"跨行多Bank错误状态: corrupt_0={corrupt_0}, corrupt_1={corrupt_1}")
+        toffee.info(f"数据flush状态: valid_0={meta_flush['0_valid']}, waymask_0=0x{meta_flush['0_bits_waymask']:x}, valid_1={meta_flush['1_valid']}, waymask_1=0x{meta_flush['1_bits_waymask']:x}")
         
         # 验证：跨行取指时两个端口都应该检测到Data错误（CP17验证方式）
         assert corrupt_0, f"跨行取指时端口0应检测到Data ECC错误， corrupt_0={corrupt_0}"
@@ -3090,15 +3091,15 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         await agent.clear_fetch_request()
         await bundle.step(2)
         
-        print("✓ 16.3跨行: Data ECC错误正确处理 (两个端口都检测到错误)")
+        toffee.info("✓ 16.3跨行: Data ECC错误正确处理 (两个端口都检测到错误)")
         
     except Exception as e:
         errors.append(f"16.3跨行测试异常: {str(e)}")
-        print(f"✗ 16.3跨行测试异常: {e}")
+        toffee.info(f"✗ 16.3跨行测试异常: {e}")
     
     # 16.4: ECC功能关闭
     try:
-        print("\n--- 16.4: ECC功能关闭测试 ---")
+        toffee.info("\n--- 16.4: ECC功能关闭测试 ---")
         
         # 重置环境并关闭ECC
         await agent.reset()
@@ -3107,7 +3108,7 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         
         # 监控ECC禁用状态
         pipeline_status = await agent.monitor_pipeline_status()
-        print(f"ECC禁用状态: ecc_enable={pipeline_status['ecc_enable']}")
+        toffee.info(f"ECC禁用状态: ecc_enable={pipeline_status['ecc_enable']}")
         
         # 准备环境
         await agent.drive_waylookup_read(
@@ -3143,8 +3144,8 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         ecc_status = await agent.monitor_check_data_ecc_status()
         error_status = await agent.monitor_error_status()
         
-        print(f"ECC关闭时状态: enable={ecc_status['ecc_enable']}, corrupt_0={ecc_status['s2_data_corrupt_0']}")
-        print(f"错误报告: valid_0={error_status['0_valid']}")
+        toffee.info(f"ECC关闭时状态: enable={ecc_status['ecc_enable']}, corrupt_0={ecc_status['s2_data_corrupt_0']}")
+        toffee.info(f"错误报告: valid_0={error_status['0_valid']}")
         
         # 验证：ECC功能关闭时的预期行为  
         # 根据verilog：s2_data_corrupt_0 = io_ecc_enable & (...)，当io_ecc_enable=False时结果为False
@@ -3160,19 +3161,19 @@ async def test_cp16_data_ecc_check(icachemainpipe_env: ICacheMainPipeEnv):
         await agent.clear_fetch_request()
         await bundle.step(2)
         
-        print("✓ 16.4: ECC功能关闭测试完成")
+        toffee.info("✓ 16.4: ECC功能关闭测试完成")
         
     except Exception as e:
         errors.append(f"16.4测试异常: {str(e)}")
-        print(f"✗ 16.4测试异常: {e}")
+        toffee.info(f"✗ 16.4测试异常: {e}")
     
     # 最终结果
     if errors:
         error_msg = "; ".join(errors)
-        print(f"\n✗ CP16测试失败，错误列表: {error_msg}")
+        toffee.info(f"\n✗ CP16测试失败，错误列表: {error_msg}")
         raise AssertionError(f"CP16测试失败，错误列表: {error_msg}")
     else:
-        print("\n✓ CP16: Data ECC校验功能测试 - 所有测试点通过")
+        toffee.info("\n✓ CP16: Data ECC校验功能测试 - 所有测试点通过")
 
 
 @toffee_test.testcase
@@ -3181,7 +3182,7 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
     CP17: 冲刷MetaArray功能测试
     根据MainPipe.md文档第439-447行和verilog源码第2079-2090行重新实现
     """
-    print("\n=== CP17: MetaArray Flush Test ===")
+    toffee.info("\n=== CP17: MetaArray Flush Test ===")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
@@ -3189,7 +3190,7 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
 
     # 17.1: 只有Meta ECC校验错误（冲刷所有路）
     # 文档依据：MainPipe.md第445行 "当s1_meta_corrupt为真时，MetaArray的所有路都会被冲刷"
-    print("\n--- Test 17.1: 只有Meta ECC校验错误 ---")
+    toffee.info("\n--- Test 17.1: 只有Meta ECC校验错误 ---")
     
     # 测试两种场景：非跨行取指和跨行取指
     test_scenarios = [
@@ -3199,7 +3200,7 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
     
     for scenario in test_scenarios:
         try:
-            print(f"\n  测试场景: {scenario['name']} (地址=0x{scenario['start_addr']:x})")
+            toffee.info(f"\n  测试场景: {scenario['name']} (地址=0x{scenario['start_addr']:x})")
             await agent.reset()
             await agent.drive_set_ecc_enable(True)
             await agent.drive_data_array_ready(True)
@@ -3207,7 +3208,7 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
             
             # 使用辅助函数计算完整参数
             params = calculate_waylookup_params(scenario['start_addr'])
-            print(f"  计算参数: doubleline={params['is_doubleline']}, vSetIdx_0=0x{params['vSetIdx_0']:x}, vSetIdx_1=0x{params['vSetIdx_1']:x}")
+            toffee.info(f"  计算参数: doubleline={params['is_doubleline']}, vSetIdx_0=0x{params['vSetIdx_0']:x}, vSetIdx_1=0x{params['vSetIdx_1']:x}")
             
             # 计算错误的ECC码
             wrong_ecc_0 = 1 - params['meta_codes_0']  
@@ -3225,13 +3226,13 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
                 meta_codes_1=wrong_ecc_1 if params['is_doubleline'] else params['meta_codes_1']  # 跨行时注入端口1错误
             )
             
-            print(f"  注入Meta ECC错误: Port0(correct={params['meta_codes_0']}, wrong={wrong_ecc_0})" + 
+            toffee.info(f"  注入Meta ECC错误: Port0(correct={params['meta_codes_0']}, wrong={wrong_ecc_0})" + 
                   (f", Port1(correct={params['meta_codes_1']}, wrong={wrong_ecc_1})" if params['is_doubleline'] else ""))
             
             # 监控流水线状态，确保环境准备就绪
             await bundle.step(2)
             status = await agent.monitor_pipeline_status()
-            print(f"  Pipeline status: s0_fire={status['s0_fire']}, ecc_enable={status['ecc_enable']}")
+            toffee.info(f"  Pipeline status: s0_fire={status['s0_fire']}, ecc_enable={status['ecc_enable']}")
             
             # 执行fetch操作，使用辅助函数计算的地址
             fetch_success = await agent.drive_fetch_request(
@@ -3246,8 +3247,8 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
             # 监控meta flush状态
             meta_flush = await agent.monitor_meta_flush()
             
-            print(f"  Meta Flush 端口0 - valid: {meta_flush['0_valid']}, waymask: 0x{meta_flush['0_bits_waymask']:x}")
-            print(f"  Meta Flush 端口1 - valid: {meta_flush['1_valid']}, waymask: 0x{meta_flush['1_bits_waymask']:x}")
+            toffee.info(f"  Meta Flush 端口0 - valid: {meta_flush['0_valid']}, waymask: 0x{meta_flush['0_bits_waymask']:x}")
+            toffee.info(f"  Meta Flush 端口1 - valid: {meta_flush['1_valid']}, waymask: 0x{meta_flush['1_bits_waymask']:x}")
             
             # 验证：Meta错误应该冲刷所有路(waymask=0xF)
             assert meta_flush['0_valid'], f"Meta ECC错误时flush端口0必须激活，当前valid={meta_flush['0_valid']}"
@@ -3257,9 +3258,9 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
             if params['is_doubleline']:
                 assert meta_flush['1_valid'], f"跨行取指时，Meta ECC错误应激活flush端口1，当前valid={meta_flush['1_valid']}"
                 assert meta_flush['1_bits_waymask'] == 0xF, f"跨行取指时，Meta错误应冲刷端口1所有路(0xF)，实际waymask=0x{meta_flush['1_bits_waymask']:x}"
-                print(f"  ✓ {scenario['name']}: Meta ECC错误正确冲刷所有路 (端口0和端口1)")
+                toffee.info(f"  ✓ {scenario['name']}: Meta ECC错误正确冲刷所有路 (端口0和端口1)")
             else:
-                print(f"  ✓ {scenario['name']}: Meta ECC错误正确冲刷所有路 (端口0)")
+                toffee.info(f"  ✓ {scenario['name']}: Meta ECC错误正确冲刷所有路 (端口0)")
                 
             # 清除操作
             await agent.clear_waylookup_read()
@@ -3268,29 +3269,29 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
                 
         except Exception as e:
             test_errors.append(f"Test 17.1-{scenario['name']}失败: {str(e)}")
-            print(f"  ✗ Test 17.1-{scenario['name']}失败: {e}")
+            toffee.info(f"  ✗ Test 17.1-{scenario['name']}失败: {e}")
 
     # 17.2: 只有Data ECC校验错误（冲刷特定路）
     # 文档依据：MainPipe.md第446行 "当s2_data_corrupt为真时，只有对应路会被冲刷"
     # verilog依据：ICacheMainPipe.v第2087-2090行 冲刷特定waymask
-    print("\n--- Test 17.2: 只有Data ECC校验错误 ---")
+    toffee.info("\n--- Test 17.2: 只有Data ECC校验错误 ---")
     
     # 测试两种场景：非跨行取指和跨行取指
     for scenario in test_scenarios:
         try:
-            print(f"\n  测试场景: {scenario['name']} (地址=0x{scenario['start_addr']:x})")
+            toffee.info(f"\n  测试场景: {scenario['name']} (地址=0x{scenario['start_addr']:x})")
             await agent.reset()
             await agent.drive_set_ecc_enable(True)
             await agent.drive_data_array_ready(True)
             
             params = calculate_waylookup_params(scenario['start_addr'])
-            print(f"  计算参数: doubleline={params['is_doubleline']}, vSetIdx_0=0x{params['vSetIdx_0']:x}, vSetIdx_1=0x{params['vSetIdx_1']:x}")
+            toffee.info(f"  计算参数: doubleline={params['is_doubleline']}, vSetIdx_0=0x{params['vSetIdx_0']:x}, vSetIdx_1=0x{params['vSetIdx_1']:x}")
             
             if params['is_doubleline']:
 
                 waymask_0 = 0x1 
                 waymask_1 = 0x2 
-                print(f"  跨行优化：设置waymask_0=0x{waymask_0:x}, waymask_1=0x{waymask_1:x}以确保SRAMhits")
+                toffee.info(f"  跨行优化：设置waymask_0=0x{waymask_0:x}, waymask_1=0x{waymask_1:x}以确保SRAMhits")
             else:
                 waymask_0 = params["waymask_0"]
                 waymask_1 = 0
@@ -3308,10 +3309,10 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
             # 监控流水线状态，确保环境准备就绪
             await bundle.step(2)
             status = await agent.monitor_pipeline_status()
-            print(f"  Pipeline status: {status}")
+            toffee.info(f"  Pipeline status: {status}")
             
             target_bank_0 = (params['start_addr'] >> 3) & 0x7  # 端口0的bank
-            print(f"  地址0x{params['start_addr']:x} -> bank {target_bank_0}")
+            toffee.info(f"  地址0x{params['start_addr']:x} -> bank {target_bank_0}")
             
             datas = [0] * 8
             codes = [0] * 8
@@ -3324,7 +3325,7 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
             # 跨行取指时，还需要为端口1对应的bank注入错误
             if params['is_doubleline']:
                 target_bank_1 = (params['nextline_addr'] >> 3) & 0x7  # 端口1的bank
-                print(f"  跨行地址0x{params['nextline_addr']:x} -> bank {target_bank_1}")
+                toffee.info(f"  跨行地址0x{params['nextline_addr']:x} -> bank {target_bank_1}")
                 
                 if target_bank_1 != target_bank_0:  # 避免重复注入同一个bank
                     # 确保产生 ECC 错误：数据的奇偶校验与ECC码不匹配
@@ -3334,10 +3335,10 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
                     datas[target_bank_1] = error_data_1
                     codes[target_bank_1] = wrong_ecc_1
                     injection_info.append(f"bank {target_bank_1}")
-                    print(f"  跨行模式：同时向{', '.join(injection_info)}注入错误")
-                    print(f"  Bank {target_bank_1}: data=0x{error_data_1:x}, correct_ecc={correct_ecc_1}, wrong_ecc={wrong_ecc_1}")
+                    toffee.info(f"  跨行模式：同时向{', '.join(injection_info)}注入错误")
+                    toffee.info(f"  Bank {target_bank_1}: data=0x{error_data_1:x}, correct_ecc={correct_ecc_1}, wrong_ecc={wrong_ecc_1}")
                 else:
-                    print(f"  跨行模式：两个端口使用同一个bank {target_bank_0}")
+                    toffee.info(f"  跨行模式：两个端口使用同一个bank {target_bank_0}")
             
             # 先注入ECC错误，然后执行fetch请求
             success = await agent.drive_data_array_response(datas=datas, codes=codes)
@@ -3345,7 +3346,7 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
             
             # 执行fetch请求（这会触发s0_fire=1，进而设置s1_codes_REG=1）
             # 确保跨行取指时nextlineStart被正确计算
-            print(f"  Fetch请求: start_addr=0x{params['start_addr']:x}, nextline_addr=0x{params['nextline_addr']:x}")
+            toffee.info(f"  Fetch请求: start_addr=0x{params['start_addr']:x}, nextline_addr=0x{params['nextline_addr']:x}")
             fetch_success = await agent.drive_fetch_request(
                 pcMemRead_addrs=[0, 0, 0, 0, params['start_addr']],
                 readValid=[0, 0, 0, 0, 1]
@@ -3356,18 +3357,18 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
             # 先等待s1_fire触发，确保io_metaArrayFlush_0_valid_REG被正确设置
             await bundle.step()
             status = await agent.monitor_pipeline_status()
-            print(f"  Pipeline status: {status}")
+            toffee.info(f"  Pipeline status: {status}")
             
             # 设置PMP响应（使用默认参数提供正常响应）
             await agent.drive_pmp_response()
             
             # 监控Data ECC状态
             data_ecc_status = await agent.monitor_data_ecc_detailed_status()
-            print(f"  Data ECC状态: corrupt_0={data_ecc_status.get('s2_data_corrupt_0', 'N/A')}")
+            toffee.info(f"  Data ECC状态: corrupt_0={data_ecc_status.get('s2_data_corrupt_0', 'N/A')}")
             
             # 监控meta flush状态
             meta_flush = await agent.monitor_meta_flush()
-            print(f"  Data错误情况下的flush状态: valid={meta_flush['0_valid']}, waymask=0x{meta_flush['0_bits_waymask']:x}")
+            toffee.info(f"  Data错误情况下的flush状态: valid={meta_flush['0_valid']}, waymask=0x{meta_flush['0_bits_waymask']:x}")
             
             # 验证Data ECC错误检测和flush行为
             if params['is_doubleline']:
@@ -3392,7 +3393,7 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
                 assert meta_flush['0_bits_waymask'] != 0xF and meta_flush['1_bits_waymask'] != 0xF, \
                     "Data错误不应该冲刷所有路(0xF)，这是Meta错误的行为"
                         
-                print(f"  ✓ {scenario['name']}: Data ECC错误正确处理 (两个端口都检测到错误)")
+                toffee.info(f"  ✓ {scenario['name']}: Data ECC错误正确处理 (两个端口都检测到错误)")
             else:
                 # 非跨行取指：只检查端口0
                 assert data_ecc_status.get('s2_data_corrupt_0') == True, \
@@ -3410,7 +3411,7 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
                 assert meta_flush['0_bits_waymask'] != 0xF, \
                     "Data错误不应该冲刷所有路(0xF)，这是Meta错误的行为"
                     
-                print(f"  ✓ {scenario['name']}: Data ECC错误正确冲刷特定路")
+                toffee.info(f"  ✓ {scenario['name']}: Data ECC错误正确冲刷特定路")
                 
             # 清除操作  
             await agent.clear_waylookup_read()
@@ -3419,23 +3420,23 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
             
         except Exception as e:
             test_errors.append(f"Test 17.2-{scenario['name']}失败: {str(e)}")
-            print(f"  ✗ Test 17.2-{scenario['name']}失败: {e}")
+            toffee.info(f"  ✗ Test 17.2-{scenario['name']}失败: {e}")
 
     # 17.3: 同时有Meta ECC校验错误和Data ECC校验错误
     # 文档依据：MainPipe.md第447行 "处理Meta ECC的优先级更高，将MetaArray的所有路冲刷"
-    print("\n--- Test 17.3: 同时有Meta和Data ECC错误 ---")
+    toffee.info("\n--- Test 17.3: 同时有Meta和Data ECC错误 ---")
     
     # 测试两种场景：非跨行取指和跨行取指
     for scenario in test_scenarios:
         try:
-            print(f"\n  测试场景: {scenario['name']} (地址=0x{scenario['start_addr']:x})")
+            toffee.info(f"\n  测试场景: {scenario['name']} (地址=0x{scenario['start_addr']:x})")
             await agent.reset()
             await agent.drive_set_ecc_enable(True)
             await agent.drive_data_array_ready(True)
             
             # 使用辅助函数计算完整参数
             params = calculate_waylookup_params(scenario['start_addr'])
-            print(f"  计算参数: doubleline={params['is_doubleline']}, vSetIdx_0=0x{params['vSetIdx_0']:x}, vSetIdx_1=0x{params['vSetIdx_1']:x}")
+            toffee.info(f"  计算参数: doubleline={params['is_doubleline']}, vSetIdx_0=0x{params['vSetIdx_0']:x}, vSetIdx_1=0x{params['vSetIdx_1']:x}")
             
             if params['is_doubleline']:
                 waymask_0 = 0x1 
@@ -3460,11 +3461,11 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
                 meta_codes_1=wrong_ecc_1 if params['is_doubleline'] else params['meta_codes_1']
             )
             
-            print(f"  注入Meta ECC错误: Port0(correct={params['meta_codes_0']}, wrong={wrong_ecc_0})" + 
+            toffee.info(f"  注入Meta ECC错误: Port0(correct={params['meta_codes_0']}, wrong={wrong_ecc_0})" + 
                   (f", Port1(correct={params['meta_codes_1']}, wrong={wrong_ecc_1})" if params['is_doubleline'] else ""))
             await bundle.step(2)
             status = await agent.monitor_pipeline_status()
-            print(f"  Pipeline status: {status}")
+            toffee.info(f"  Pipeline status: {status}")
             
             # 应用17.2的关键修复：先注入Data ECC错误，再执行fetch请求
             # 准备Data ECC错误注入（同时测试Meta和Data错误优先级）
@@ -3482,11 +3483,11 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
                     wrong_ecc_1 = 1 - correct_ecc_1
                     datas[target_bank_1] = error_data_1
                     codes[target_bank_1] = wrong_ecc_1
-                    print(f"  同时注入Data ECC错误到bank {target_bank_0} 和 bank {target_bank_1}")
+                    toffee.info(f"  同时注入Data ECC错误到bank {target_bank_0} 和 bank {target_bank_1}")
                 else:
-                    print(f"  同时注入Data ECC错误到bank {target_bank_0}")
+                    toffee.info(f"  同时注入Data ECC错误到bank {target_bank_0}")
             else:
-                print(f"  同时注入Data ECC错误到bank {target_bank_0}")
+                toffee.info(f"  同时注入Data ECC错误到bank {target_bank_0}")
             
             # 先注入Data错误
             await agent.drive_data_array_response(datas=datas, codes=codes)
@@ -3507,12 +3508,12 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
             
             # 监控meta corrupt状态
             meta_corrupt_status = await agent.monitor_meta_corrupt_status()
-            print(f"  Meta corrupt hit num: {meta_corrupt_status.get('s1_meta_corrupt_hit_num', 'N/A')}")
+            toffee.info(f"  Meta corrupt hit num: {meta_corrupt_status.get('s1_meta_corrupt_hit_num', 'N/A')}")
             
             # 监控meta flush状态
             meta_flush = await agent.monitor_meta_flush()
             
-            print(f"  同时错误情况下的flush - valid: {meta_flush['0_valid']}, waymask: 0x{meta_flush['0_bits_waymask']:x}")
+            toffee.info(f"  同时错误情况下的flush - valid: {meta_flush['0_valid']}, waymask: 0x{meta_flush['0_bits_waymask']:x}")
             
             # 验证：Meta优先级更高，应该冲刷所有路（不是特定路）
             assert meta_flush['0_valid'], f"Meta ECC错误时flush端口0必须激活，当前valid={meta_flush['0_valid']}"
@@ -3523,9 +3524,9 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
             if params['is_doubleline']:
                 assert meta_flush['1_valid'], f"跨行取指时，Meta ECC错误应激活flush端口1，当前valid={meta_flush['1_valid']}"
                 assert meta_flush['1_bits_waymask'] == 0xF, f"跨行取指时，Meta错误应冲刷端口1所有路(0xF)，实际waymask=0x{meta_flush['1_bits_waymask']:x}"
-                print(f"  ✓ {scenario['name']}: Meta优先级正确，冲刷所有路 (端口0和端口1)")
+                toffee.info(f"  ✓ {scenario['name']}: Meta优先级正确，冲刷所有路 (端口0和端口1)")
             else:
-                print(f"  ✓ {scenario['name']}: Meta优先级正确，冲刷所有路 (端口0)")
+                toffee.info(f"  ✓ {scenario['name']}: Meta优先级正确，冲刷所有路 (端口0)")
                 
             # 清除操作
             await agent.clear_waylookup_read()
@@ -3534,17 +3535,17 @@ async def test_cp17_metaarray_flush(icachemainpipe_env: ICacheMainPipeEnv):
             
         except Exception as e:
             test_errors.append(f"Test 17.3-{scenario['name']}失败: {str(e)}")
-            print(f"  ✗ Test 17.3-{scenario['name']}失败: {e}")
+            toffee.info(f"  ✗ Test 17.3-{scenario['name']}失败: {e}")
 
     # 总结测试结果 - 只有所有子测试都通过assert验证才算成功
     if test_errors:
-        print(f"\n✗ CP17测试失败，发现{len(test_errors)}个错误:")
+        toffee.info(f"\n✗ CP17测试失败，发现{len(test_errors)}个错误:")
         for i, error in enumerate(test_errors, 1):
-            print(f"  {i}. {error}")
+            toffee.info(f"  {i}. {error}")
         # 最后抛出所有错误
         raise Exception(f"CP17测试失败: {'; '.join(test_errors)}")
     else:
-        print("\n✓ CP17: MetaArray Flush功能测试 - 所有测试点通过assert验证")
+        toffee.info("\n✓ CP17: MetaArray Flush功能测试 - 所有测试点通过assert验证")
 
 
 @toffee_test.testcase
@@ -3557,7 +3558,7 @@ async def test_cp18_s2_mshr_match_data_update(icachemainpipe_env: ICacheMainPipe
     18.1: MSHR命中（匹配且本阶段有效）
     18.2: MSHR未命中
     """
-    print("\n=== CP18: S2 MSHR Match and Data Update Test ===")
+    toffee.info("\n=== CP18: S2 MSHR Match and Data Update Test ===")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
@@ -3565,7 +3566,7 @@ async def test_cp18_s2_mshr_match_data_update(icachemainpipe_env: ICacheMainPipe
     
     # ==================== 18.1: MSHR命中（匹配且本阶段有效） ====================
     try:
-        print("\n--- Test 18.1: MSHR命中（匹配且本阶段有效） ---")
+        toffee.info("\n--- Test 18.1: MSHR命中（匹配且本阶段有效） ---")
         
         # 重置环境
         await agent.reset()
@@ -3579,18 +3580,18 @@ async def test_cp18_s2_mshr_match_data_update(icachemainpipe_env: ICacheMainPipe
         test_ptag = (test_blkPaddr >> 6) & 0xFFFFF  # 提取ptag用于匹配
         test_mshr_data = 0x123456789ABCDEF0FEDCBA0987654321
         
-        print(f"  设置测试参数: vSetIdx=0x{test_vSetIdx:x}, blkPaddr=0x{test_blkPaddr:x}, ptag=0x{test_ptag:x}")
-        print("  1. 计算跨行取指的地址约束")
+        toffee.info(f"  设置测试参数: vSetIdx=0x{test_vSetIdx:x}, blkPaddr=0x{test_blkPaddr:x}, ptag=0x{test_ptag:x}")
+        toffee.info("  1. 计算跨行取指的地址约束")
         startAddr = (test_vSetIdx << 6) | 0x20  # 设置bit[5]=1以触发跨行取指
         nextlineStart = (startAddr & ~0x3F) + 64  # 下一个64字节对齐地址
         vSetIdx_1 = (nextlineStart >> 6) & 0xFF  # nextlineStart[13:6]
         nextline_blkPaddr = nextlineStart & ~0x3F  # 64字节对齐的物理地址
         nextline_ptag = (nextline_blkPaddr >> 6) & 0xFFFFF  # 第二路的ptag
-        print(f"    startAddr=0x{startAddr:x}, nextlineStart=0x{nextlineStart:x}, vSetIdx_1=0x{vSetIdx_1:x}")
-        print(f"    nextline_blkPaddr=0x{nextline_blkPaddr:x}, nextline_ptag=0x{nextline_ptag:x}")
+        toffee.info(f"    startAddr=0x{startAddr:x}, nextlineStart=0x{nextlineStart:x}, vSetIdx_1=0x{vSetIdx_1:x}")
+        toffee.info(f"    nextline_blkPaddr=0x{nextline_blkPaddr:x}, nextline_ptag=0x{nextline_ptag:x}")
         
         # 2. 设置WayLookup读取信息
-        print("  2. 设置WayLookup读取信息")
+        toffee.info("  2. 设置WayLookup读取信息")
         await agent.drive_waylookup_read(
             vSetIdx_0=test_vSetIdx,
             vSetIdx_1=vSetIdx_1,
@@ -3604,12 +3605,12 @@ async def test_cp18_s2_mshr_match_data_update(icachemainpipe_env: ICacheMainPipe
             meta_codes_1=0
         )
         # 3. 设置PMP响应
-        print("  3. 设置PMP响应")
+        toffee.info("  3. 设置PMP响应")
         await agent.drive_pmp_response(instr_0=0, mmio_0=0, instr_1=0, mmio_1=0)
         await bundle.step()
         
         # 4. 预先发送MSHR响应 - 关键修复：匹配第二路地址参数
-        print("  4. 预先发送MSHR响应")
+        toffee.info("  4. 预先发送MSHR响应")
         # s2_MSHR_hits_1检查的是第二路地址，所以MSHR响应需要匹配vSetIdx_1
         await agent.drive_mshr_response(
             blkPaddr=nextline_blkPaddr,
@@ -3620,7 +3621,7 @@ async def test_cp18_s2_mshr_match_data_update(icachemainpipe_env: ICacheMainPipe
         await bundle.step()
         
         # 5. 提供DataArray响应
-        print("  5. 提供DataArray响应")
+        toffee.info("  5. 提供DataArray响应")
         await agent.drive_data_array_response(
             datas=[0x1111111111111111 + i for i in range(8)],
             codes=[0] * 8
@@ -3628,7 +3629,7 @@ async def test_cp18_s2_mshr_match_data_update(icachemainpipe_env: ICacheMainPipe
         await bundle.step()
         
         # 6. 发送fetch请求启动流水线（最后发送以确保所有响应就绪）
-        print("  6. 发送fetch请求启动流水线")
+        toffee.info("  6. 发送fetch请求启动流水线")
         fetch_success = await agent.drive_fetch_request(
             pcMemRead_addrs=[0, 0, 0, 0, startAddr],
             readValid=[0, 0, 0, 0, 1],  # readValid_4=1
@@ -3639,59 +3640,59 @@ async def test_cp18_s2_mshr_match_data_update(icachemainpipe_env: ICacheMainPipe
             raise Exception("Fetch请求因RTL约束检查失败，地址不匹配")
         
         # 7. 等待流水线处理
-        print("  7. 等待流水线处理")
+        toffee.info("  7. 等待流水线处理")
         await bundle.step(2)  # 等待流水线传播
         
         # 8. 监控S2阶段MSHR匹配状态
-        print("  8. 监控S2阶段MSHR匹配状态")
+        toffee.info("  8. 监控S2阶段MSHR匹配状态")
         s2_mshr_status = await agent.monitor_s2_mshr_match_status()
         pipeline_status = await agent.monitor_pipeline_status()
         
-        print(f"    S2 MSHR hits_1: {s2_mshr_status.get('s2_MSHR_hits_1', 'N/A')}")
-        print(f"    流水线状态: s0_fire={pipeline_status.get('s0_fire')}, s2_fire={pipeline_status.get('s2_fire')}")
+        toffee.info(f"    S2 MSHR hits_1: {s2_mshr_status.get('s2_MSHR_hits_1', 'N/A')}")
+        toffee.info(f"    流水线状态: s0_fire={pipeline_status.get('s0_fire')}, s2_fire={pipeline_status.get('s2_fire')}")
         
         # 9. 检查bank级别的匹配和数据来源
-        print("  9. 检查bank级别的匹配和数据来源")
+        toffee.info("  9. 检查bank级别的匹配和数据来源")
         bank_hit_found = False
         for i in range(8):
             bank_hit = s2_mshr_status.get(f's2_bankMSHRHit_{i}', False)
             data_from_mshr = s2_mshr_status.get(f's2_data_is_from_MSHR_{i}', False)
             if bank_hit or data_from_mshr:
-                print(f"    Bank {i} - MSHR hit: {bank_hit}, data from MSHR: {data_from_mshr}")
+                toffee.info(f"    Bank {i} - MSHR hit: {bank_hit}, data from MSHR: {data_from_mshr}")
                 bank_hit_found = True
         
         # 10. 验证MSHR命中逻辑
-        print("  10. 验证MSHR命中逻辑")
+        toffee.info("  10. 验证MSHR命中逻辑")
         s2_mshr_hits_1 = s2_mshr_status.get('s2_MSHR_hits_1', False)
         s2_fire = pipeline_status.get('s2_fire', False)
         
         # Assert 1: 应该检测到MSHR命中
         assert s2_mshr_hits_1, f"18.1: 未检测到S2 MSHR命中，s2_MSHR_hits_1={s2_mshr_hits_1}"
-        print(f"    ✓ Assert 1 通过: S2 MSHR命中 s2_MSHR_hits_1={s2_mshr_hits_1}")
+        toffee.info(f"    ✓ Assert 1 通过: S2 MSHR命中 s2_MSHR_hits_1={s2_mshr_hits_1}")
         
         # Assert 2: 应该有bank级别的命中
         assert bank_hit_found, f"18.1: 预期有bank级别MSHR命中但未检测到"
-        print(f"    ✓ Assert 2 通过: 检测到bank级别MSHR命中")
+        toffee.info(f"    ✓ Assert 2 通过: 检测到bank级别MSHR命中")
         
         # Assert 3: 验证数据来源标记
         mshr_data_banks = [s2_mshr_status.get(f's2_data_is_from_MSHR_{i}', False) for i in range(8)]
         any_mshr_data = any(mshr_data_banks)
         assert any_mshr_data, f"18.1: 预期有数据来自MSHR但未检测到，s2_data_is_from_MSHR={mshr_data_banks}"
-        print(f"    ✓ Assert 3 通过: 检测到数据来自MSHR，banks={[i for i, v in enumerate(mshr_data_banks) if v]}")
+        toffee.info(f"    ✓ Assert 3 通过: 检测到数据来自MSHR，banks={[i for i, v in enumerate(mshr_data_banks) if v]}")
         
-        print("    √ 18.1 MSHR命中逻辑所有assert验证通过")
+        toffee.info("    √ 18.1 MSHR命中逻辑所有assert验证通过")
         
         # 清除操作
-        print("  ✓ 清除waylookup和fetch操作")
+        toffee.info("  ✓ 清除waylookup和fetch操作")
         await agent.clear_waylookup_read()
         await agent.clear_fetch_request()
     except Exception as e:
         errors.append(f"18.1: 测试过程中发生异常: {str(e)}")
-        print(f"    × 18.1测试异常: {e}")
+        toffee.info(f"    × 18.1测试异常: {e}")
     
     # ==================== 18.2: MSHR未命中 ====================
     try:
-        print("\n--- Test 18.2: MSHR未命中 ---")
+        toffee.info("\n--- Test 18.2: MSHR未命中 ---")
         
         # 重置环境
         await agent.reset()
@@ -3706,19 +3707,19 @@ async def test_cp18_s2_mshr_match_data_update(icachemainpipe_env: ICacheMainPipe
         mshr_blkPaddr = 0x60000   # 不匹配的MSHR地址
         request_ptag = (request_blkPaddr >> 6) & 0xFFFFF
         
-        print(f"  设置不匹配参数: 请求vSetIdx=0x{request_vSetIdx:x}, MSHR vSetIdx=0x{mshr_vSetIdx:x}")
-        print(f"  请求blkPaddr=0x{request_blkPaddr:x}, MSHR blkPaddr=0x{mshr_blkPaddr:x}")
-        print("  1. 计算跨行取指的地址约束")
+        toffee.info(f"  设置不匹配参数: 请求vSetIdx=0x{request_vSetIdx:x}, MSHR vSetIdx=0x{mshr_vSetIdx:x}")
+        toffee.info(f"  请求blkPaddr=0x{request_blkPaddr:x}, MSHR blkPaddr=0x{mshr_blkPaddr:x}")
+        toffee.info("  1. 计算跨行取指的地址约束")
         startAddr = (request_vSetIdx << 6) | 0x20  # 设置bit[5]=1以触发跨行取指
         nextlineStart = (startAddr & ~0x3F) + 64  # 下一个64字节对齐地址
         request_vSetIdx_1 = (nextlineStart >> 6) & 0xFF  # nextlineStart[13:6]
         nextline_blkPaddr = nextlineStart & ~0x3F  # 64字节对齐的物理地址
         nextline_ptag = (nextline_blkPaddr >> 6) & 0xFFFFF  # 第二路的ptag
-        print(f"    startAddr=0x{startAddr:x}, nextlineStart=0x{nextlineStart:x}, vSetIdx_1=0x{request_vSetIdx_1:x}")
-        print(f"    nextline_blkPaddr=0x{nextline_blkPaddr:x}, nextline_ptag=0x{nextline_ptag:x}")
+        toffee.info(f"    startAddr=0x{startAddr:x}, nextlineStart=0x{nextlineStart:x}, vSetIdx_1=0x{request_vSetIdx_1:x}")
+        toffee.info(f"    nextline_blkPaddr=0x{nextline_blkPaddr:x}, nextline_ptag=0x{nextline_ptag:x}")
         
         # 2. 设置WayLookup读取信息
-        print("  2. 设置WayLookup读取信息")
+        toffee.info("  2. 设置WayLookup读取信息")
         await agent.drive_waylookup_read(
             vSetIdx_0=request_vSetIdx,
             vSetIdx_1=request_vSetIdx_1,
@@ -3733,11 +3734,11 @@ async def test_cp18_s2_mshr_match_data_update(icachemainpipe_env: ICacheMainPipe
         )
         
         # 3. 设置PMP响应（关键步骤）
-        print("  3. 设置PMP响应（关键步骤）")
+        toffee.info("  3. 设置PMP响应（关键步骤）")
         await agent.drive_pmp_response(instr_0=0, mmio_0=0, instr_1=0, mmio_1=0)
         
         # 4. 发送不匹配的MSHR响应
-        print("  4. 发送不匹配的MSHR响应")
+        toffee.info("  4. 发送不匹配的MSHR响应")
         await agent.drive_mshr_response(
             blkPaddr=mshr_blkPaddr,
             vSetIdx=mshr_vSetIdx,
@@ -3746,14 +3747,14 @@ async def test_cp18_s2_mshr_match_data_update(icachemainpipe_env: ICacheMainPipe
         )
         
         # 5. 提供DataArray响应
-        print("  5. 提供DataArray响应")
+        toffee.info("  5. 提供DataArray响应")
         await agent.drive_data_array_response(
             datas=[0x2222222222222222 + i for i in range(8)],
             codes=[0] * 8
         )
         
         # 6. 发送fetch请求启动流水线
-        print("  6. 发送fetch请求启动流水线")
+        toffee.info("  6. 发送fetch请求启动流水线")
         fetch_success = await agent.drive_fetch_request(
             pcMemRead_addrs=[0, 0, 0, 0, startAddr],
             readValid=[0, 0, 0, 0, 1],  # readValid_4=1
@@ -3764,19 +3765,19 @@ async def test_cp18_s2_mshr_match_data_update(icachemainpipe_env: ICacheMainPipe
             raise Exception("Fetch请求因RTL约束检查失败，地址不匹配")
         
         # 7. 等待流水线处理
-        print("  7. 等待流水线处理")
+        toffee.info("  7. 等待流水线处理")
         await bundle.step(5)
         
         # 8. 监控S2阶段MSHR匹配状态
-        print("  8. 监控S2阶段MSHR匹配状态")
+        toffee.info("  8. 监控S2阶段MSHR匹配状态")
         s2_mshr_status = await agent.monitor_s2_mshr_match_status()
         pipeline_status = await agent.monitor_pipeline_status()
         
-        print(f"    S2 MSHR hits_1: {s2_mshr_status.get('s2_MSHR_hits_1', 'N/A')}")
-        print(f"    流水线状态: s0_fire={pipeline_status.get('s0_fire')}, s2_fire={pipeline_status.get('s2_fire')}")
+        toffee.info(f"    S2 MSHR hits_1: {s2_mshr_status.get('s2_MSHR_hits_1', 'N/A')}")
+        toffee.info(f"    流水线状态: s0_fire={pipeline_status.get('s0_fire')}, s2_fire={pipeline_status.get('s2_fire')}")
         
         # 9. 验证MSHR未命中逻辑
-        print("  9. 验证MSHR未命中逻辑")
+        toffee.info("  9. 验证MSHR未命中逻辑")
         any_bank_hit = False
         any_data_from_mshr = False
         for i in range(8):
@@ -3784,47 +3785,47 @@ async def test_cp18_s2_mshr_match_data_update(icachemainpipe_env: ICacheMainPipe
             data_from_mshr = s2_mshr_status.get(f's2_data_is_from_MSHR_{i}', False)
             if bank_hit:
                 any_bank_hit = True
-                print(f"    意外Bank {i} MSHR hit: {bank_hit}")
+                toffee.info(f"    意外Bank {i} MSHR hit: {bank_hit}")
             if data_from_mshr:
                 any_data_from_mshr = True
-                print(f"    意外Bank {i} data from MSHR: {data_from_mshr}")
+                toffee.info(f"    意外Bank {i} data from MSHR: {data_from_mshr}")
         
         s2_mshr_hits_1 = s2_mshr_status.get('s2_MSHR_hits_1', False)
         s2_fire = pipeline_status.get('s2_fire', False)
         
         # Assert 1: 不应该检测到MSHR命中
         assert not s2_mshr_hits_1, f"18.2: 预期MSHR未命中但检测到命中，s2_MSHR_hits_1={s2_mshr_hits_1}"
-        print(f"    ✓ Assert 1 通过: S2 MSHR未命中 s2_MSHR_hits_1={s2_mshr_hits_1}")
+        toffee.info(f"    ✓ Assert 1 通过: S2 MSHR未命中 s2_MSHR_hits_1={s2_mshr_hits_1}")
         
         # Assert 2: 不应该有bank级别的命中
         assert not any_bank_hit, f"18.2: 预期无bank级别MSHR命中但检测到命中"
-        print(f"    ✓ Assert 2 通过: 无bank级别MSHR命中")
+        toffee.info(f"    ✓ Assert 2 通过: 无bank级别MSHR命中")
         
         # Assert 3: 验证数据不来自MSHR
         assert not any_data_from_mshr, f"18.2: 预期数据不来自MSHR但检测到MSHR数据"
-        print(f"    ✓ Assert 3 通过: 数据不来自MSHR")
+        toffee.info(f"    ✓ Assert 3 通过: 数据不来自MSHR")
         
-        print("    √ 18.2 MSHR未命中逻辑所有assert验证通过")
+        toffee.info("    √ 18.2 MSHR未命中逻辑所有assert验证通过")
         
         # 清除操作
-        print("  ✓ 清除waylookup和fetch操作")
+        toffee.info("  ✓ 清除waylookup和fetch操作")
         await agent.clear_waylookup_read()
         await agent.clear_fetch_request()
         
     except Exception as e:
         errors.append(f"18.2: 测试过程中发生异常: {str(e)}")
-        print(f"    × 18.2测试异常: {e}")
+        toffee.info(f"    × 18.2测试异常: {e}")
     
     # ==================== 汇总测试结果 ====================
-    print(f"\n=== CP18测试完成 ===")
+    toffee.info(f"\n=== CP18测试完成 ===")
     if errors:
-        print("× 发现以下错误:")
+        toffee.info("× 发现以下错误:")
         for i, error in enumerate(errors, 1):
-            print(f"  {i}. {error}")
+            toffee.info(f"  {i}. {error}")
         # 抛出所有错误
         raise AssertionError(f"CP18测试失败，共{len(errors)}个错误: " + "; ".join(errors))
     else:
-        print("√ CP18: S2 MSHR Match and Data Update测试 - 所有测试点通过验证")
+        toffee.info("√ CP18: S2 MSHR Match and Data Update测试 - 所有测试点通过验证")
 
 
 @toffee_test.testcase
@@ -3838,7 +3839,7 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
     - s2_exception_out = (|s2_exception) ? s2_exception : {2{s2_l2_corrupt}}
     - 使用Arbiter合并多个端口的Miss请求，通过s2_has_send避免重复请求
     """
-    print("\n=== CP19: Miss请求发送逻辑和合并异常功能测试 ===")
+    toffee.info("\n=== CP19: Miss请求发送逻辑和合并异常功能测试 ===")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
@@ -3846,7 +3847,7 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
     
     # 19.1: 未发生Miss
     try:
-        print("\n--- 测试点19.1: 未发生Miss ---")
+        toffee.info("\n--- 测试点19.1: 未发生Miss ---")
         await agent.reset()
         await agent.setup_mshr_ready(True)
         await agent.drive_set_ecc_enable(True)
@@ -3883,9 +3884,9 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
         miss_status = await agent.monitor_miss_request_status()
         mshr_status = await agent.monitor_mshr_status()
         
-        print(f"  s2_fire: {pipeline_status.get('s2_fire')}")
-        print(f"  s2_should_fetch_0: {miss_status.get('s2_should_fetch_0')}")
-        print(f"  MSHR请求有效: {mshr_status.get('req_valid')}")
+        toffee.info(f"  s2_fire: {pipeline_status.get('s2_fire')}")
+        toffee.info(f"  s2_should_fetch_0: {miss_status.get('s2_should_fetch_0')}")
+        toffee.info(f"  MSHR请求有效: {mshr_status.get('req_valid')}")
         
         # 验证：命中情况下不应发送Miss请求
         if miss_status.get('s2_should_fetch_0') is not None:
@@ -3895,16 +3896,16 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
             
         await agent.clear_fetch_request()
         await agent.clear_waylookup_read()
-        print("  √ 19.1: 未发生Miss - 测试通过")
+        toffee.info("  √ 19.1: 未发生Miss - 测试通过")
         
     except Exception as e:
         error_msg = f"19.1测试失败: {str(e)}"
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
         errors.append(error_msg)
     
     # 19.2: 单口Miss
     try:
-        print("\n--- 测试点19.2: 单口Miss ---")
+        toffee.info("\n--- 测试点19.2: 单口Miss ---")
         await agent.reset()
         await agent.setup_mshr_ready(True)
         await agent.drive_set_ecc_enable(True)
@@ -3934,10 +3935,10 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
         )
         await bundle.step(2)
         miss_status = await agent.monitor_miss_request_status()
-        print(miss_status)
+        toffee.info(miss_status)
         
-        print(f"  s2_should_fetch_0: {miss_status.get('s2_should_fetch_0')}")
-        print(f"  MSHR请求发送: {miss_status.get('mshr_req_valid')}")
+        toffee.info(f"  s2_should_fetch_0: {miss_status.get('s2_should_fetch_0')}")
+        toffee.info(f"  MSHR请求发送: {miss_status.get('mshr_req_valid')}")
         
         # 验证：未命中且无异常非MMIO时应发送Miss请求
         if miss_status.get('s2_should_fetch_0') is not None:
@@ -3952,16 +3953,16 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
             
         await agent.clear_fetch_request()
         await agent.clear_waylookup_read()
-        print("  √ 19.2: 单口Miss - 测试通过")
+        toffee.info("  √ 19.2: 单口Miss - 测试通过")
         
     except Exception as e:
         error_msg = f"19.2测试失败: {str(e)}"
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
         errors.append(error_msg)
     
     # 19.3: 双口都需要Miss
     try:
-        print("\n--- 测试点19.3: 双口都需要Miss ---")
+        toffee.info("\n--- 测试点19.3: 双口都需要Miss ---")
         await agent.reset()
         await agent.setup_mshr_ready(True)
         await agent.drive_set_ecc_enable(True)
@@ -3998,9 +3999,9 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
         
         miss_status = await agent.monitor_miss_request_status()
         
-        print(f"  s2_should_fetch_0: {miss_status.get('s2_should_fetch_0')}")
-        print(f"  s2_should_fetch_1: {miss_status.get('s2_should_fetch_1')}")
-        print(f"  s2_doubleline: {miss_status.get('s2_doubleline')}")
+        toffee.info(f"  s2_should_fetch_0: {miss_status.get('s2_should_fetch_0')}")
+        toffee.info(f"  s2_should_fetch_1: {miss_status.get('s2_should_fetch_1')}")
+        toffee.info(f"  s2_doubleline: {miss_status.get('s2_doubleline')}")
         
         # 验证：双口都未命中时，两个should_fetch都应为1
         if miss_status.get('s2_should_fetch_0') is not None:
@@ -4018,16 +4019,16 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
             
         await agent.clear_fetch_request()
         await agent.clear_waylookup_read()
-        print("  √ 19.3: 双口都需要Miss - 测试通过")
+        toffee.info("  √ 19.3: 双口都需要Miss - 测试通过")
         
     except Exception as e:
         error_msg = f"19.3测试失败: {str(e)}"
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
         errors.append(error_msg)
     
     # 19.4: 重复请求屏蔽
     try:
-        print("\n--- 测试点19.4: 重复请求屏蔽 ---")
+        toffee.info("\n--- 测试点19.4: 重复请求屏蔽 ---")
         await agent.reset()
         await agent.setup_mshr_ready(False)  # MSHR不ready，模拟无法立即处理请求
         await agent.drive_set_ecc_enable(True)
@@ -4060,9 +4061,9 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
         
         miss_status = await agent.monitor_miss_request_status()
         
-        print(f"  s2_has_send_0: {miss_status.get('s2_has_send_0')}")
-        print(f"  MSHR ready: {bundle.io._mshr._req._ready.value}")
-        print(f"  MSHR req valid: {miss_status.get('mshr_req_valid')}")
+        toffee.info(f"  s2_has_send_0: {miss_status.get('s2_has_send_0')}")
+        toffee.info(f"  MSHR ready: {bundle.io._mshr._req._ready.value}")
+        toffee.info(f"  MSHR req valid: {miss_status.get('mshr_req_valid')}")
         
         # 验证：当MSHR不ready时，has_send机制防止重复发送
         # RTL逻辑：s2_has_send在发送后置1，防止重复请求
@@ -4072,16 +4073,16 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
         
         await agent.clear_fetch_request()
         await agent.clear_waylookup_read()
-        print("  √ 19.4: 重复请求屏蔽 - 测试通过")
+        toffee.info("  √ 19.4: 重复请求屏蔽 - 测试通过")
         
     except Exception as e:
         error_msg = f"19.4测试失败: {str(e)}"
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
         errors.append(error_msg)
     
     # 19.5: 仅ITLB/PMP异常
     try:
-        print("\n--- 测试点19.5: 仅ITLB/PMP异常 ---")
+        toffee.info("\n--- 测试点19.5: 仅ITLB/PMP异常 ---")
         await agent.reset()
         await agent.setup_mshr_ready(True)
         await agent.drive_set_ecc_enable(True)
@@ -4092,7 +4093,7 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
         test_addr = 0x1400
         # 使用辅助函数计算正确的ECC参数
         waylookup_params = calculate_waylookup_params(test_addr)
-        print(waylookup_params)
+        toffee.info(waylookup_params)
         await agent.drive_waylookup_read(
             vSetIdx_0=waylookup_params['vSetIdx_0'],
             vSetIdx_1=waylookup_params['vSetIdx_1'],
@@ -4116,9 +4117,9 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
         
         miss_status = await agent.monitor_miss_request_status()
         
-        print(f"  s2_exception_0: {miss_status.get('s2_exception_0')}")
-        print(f"  s2_exception_out_0: {miss_status.get('s2_exception_out_0')}")
-        print(f"  s2_l2_corrupt_0: {miss_status.get('s2_l2_corrupt_0')}")
+        toffee.info(f"  s2_exception_0: {miss_status.get('s2_exception_0')}")
+        toffee.info(f"  s2_exception_out_0: {miss_status.get('s2_exception_out_0')}")
+        toffee.info(f"  s2_l2_corrupt_0: {miss_status.get('s2_l2_corrupt_0')}")
         
         # 验证：仅ITLB异常时，exception_out保留ITLB异常，L2_corrupt为false
         # RTL: s2_exception_out_0 = (|s2_exception_0) ? s2_exception_0 : {2{s2_l2_corrupt_0}}
@@ -4131,16 +4132,16 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
         
         await agent.clear_fetch_request()
         await agent.clear_waylookup_read()
-        print("  √ 19.5: 仅ITLB/PMP异常 - 测试通过")
+        toffee.info("  √ 19.5: 仅ITLB/PMP异常 - 测试通过")
         
     except Exception as e:
         error_msg = f"19.5测试失败: {str(e)}"
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
         errors.append(error_msg)
     
     # 19.6: 仅L2异常 TODO:此处错误触发mismatch Assertion, 因此此处测试临时注释，后续查找详细原因
     # try:
-    #     print("\n--- 测试点19.6: 仅L2异常 ---")
+    #     toffee.info("\n--- 测试点19.6: 仅L2异常 ---")
     #     await agent.reset()
     #     await agent.setup_mshr_ready(True)
     #     await agent.drive_set_ecc_enable(True)
@@ -4151,7 +4152,7 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
     #     test_addr = 0x1800
     #     # 使用辅助函数计算正确的ECC参数
     #     waylookup_params = calculate_waylookup_params(test_addr)
-    #     print(waylookup_params)
+    #     toffee.info(waylookup_params)
     #     blk_paddr = (waylookup_params['ptag_0'] << 6) | ((test_addr >> 6) & 0x3F)  # 组合ptag和vSetIdx成为blkPaddr
     #     # 使用辅助函数计算正确的ECC参数
     #     waylookup_params = calculate_waylookup_params(test_addr)
@@ -4185,9 +4186,9 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
         
     #     miss_status = await agent.monitor_miss_request_status()
         
-    #     print(f"  s2_l2_corrupt_0: {miss_status.get('s2_l2_corrupt_0')}")
-    #     print(f"  s2_exception_0: {miss_status.get('s2_exception_0')}")
-    #     print(f"  s2_exception_out_0: {miss_status.get('s2_exception_out_0')}")
+    #     toffee.info(f"  s2_l2_corrupt_0: {miss_status.get('s2_l2_corrupt_0')}")
+    #     toffee.info(f"  s2_exception_0: {miss_status.get('s2_exception_0')}")
+    #     toffee.info(f"  s2_exception_out_0: {miss_status.get('s2_exception_out_0')}")
         
     #     # 验证：仅L2异常时，exception_out表示L2访问错误(AF)
     #     # RTL: s2_exception_out_0 = (|s2_exception_0) ? s2_exception_0 : {2{s2_l2_corrupt_0}}
@@ -4197,16 +4198,16 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
         
     #     await agent.clear_fetch_request()
     #     await agent.clear_waylookup_read()
-    #     print("  √ 19.6: 仅L2异常 - 测试通过")
+    #     toffee.info("  √ 19.6: 仅L2异常 - 测试通过")
         
     # except Exception as e:
     #     error_msg = f"19.6测试失败: {str(e)}"
-    #     print(f"  × {error_msg}")
+    #     toffee.info(f"  × {error_msg}")
     #     errors.append(error_msg)
     
     # 19.7: ITLB + L2同时出现
     # try:
-    #     print("\n--- 测试点19.7: ITLB + L2同时出现 ---")
+    #     toffee.info("\n--- 测试点19.7: ITLB + L2同时出现 ---")
     #     await agent.reset()
     #     await agent.setup_mshr_ready(True)
     #     await agent.drive_set_ecc_enable(True)
@@ -4251,9 +4252,9 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
         
     #     miss_status = await agent.monitor_miss_request_status()
         
-    #     print(f"  s2_exception_0: {miss_status.get('s2_exception_0')}")
-    #     print(f"  s2_l2_corrupt_0: {miss_status.get('s2_l2_corrupt_0')}")
-    #     print(f"  s2_exception_out_0: {miss_status.get('s2_exception_out_0')}")
+    #     toffee.info(f"  s2_exception_0: {miss_status.get('s2_exception_0')}")
+    #     toffee.info(f"  s2_l2_corrupt_0: {miss_status.get('s2_l2_corrupt_0')}")
+    #     toffee.info(f"  s2_exception_out_0: {miss_status.get('s2_exception_out_0')}")
         
     #     # 验证：ITLB + L2同时出现时，ITLB异常优先级更高
     #     # RTL: s2_exception_out_0 = (|s2_exception_0) ? s2_exception_0 : {2{s2_l2_corrupt_0}}
@@ -4266,16 +4267,16 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
         
     #     await agent.clear_fetch_request()
     #     await agent.clear_waylookup_read()
-    #     print("  √ 19.7: ITLB + L2同时出现 - 测试通过")
+    #     toffee.info("  √ 19.7: ITLB + L2同时出现 - 测试通过")
         
     # except Exception as e:
     #     error_msg = f"19.7测试失败: {str(e)}"
-    #     print(f"  × {error_msg}")
+    #     toffee.info(f"  × {error_msg}")
     #     errors.append(error_msg)
     
     # 19.8: s2阶段取指完成
     try:
-        print("\n--- 测试点19.8: s2阶段取指完成 ---")
+        toffee.info("\n--- 测试点19.8: s2阶段取指完成 ---")
         await agent.reset()
         await agent.setup_mshr_ready(True)
         await agent.drive_set_ecc_enable(True)
@@ -4311,10 +4312,10 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
         miss_status = await agent.monitor_miss_request_status()
         pipeline_status = await agent.monitor_pipeline_status()
         
-        print(f"  s2_should_fetch_0: {miss_status.get('s2_should_fetch_0')}")
-        print(f"  s2_should_fetch_1: {miss_status.get('s2_should_fetch_1')}")
-        print(f"  s2_fire: {pipeline_status.get('s2_fire')}")
-        print(f"  io_fetch_topdownIcacheMiss: {miss_status.get('io_fetch_topdownIcacheMiss_0')}")
+        toffee.info(f"  s2_should_fetch_0: {miss_status.get('s2_should_fetch_0')}")
+        toffee.info(f"  s2_should_fetch_1: {miss_status.get('s2_should_fetch_1')}")
+        toffee.info(f"  s2_fire: {pipeline_status.get('s2_fire')}")
+        toffee.info(f"  io_fetch_topdownIcacheMiss: {miss_status.get('io_fetch_topdownIcacheMiss_0')}")
         
         # 验证：当所有端口should_fetch都为低时，取指完成
         # RTL: io_fetch_topdownIcacheMiss_0 = s2_should_fetch_0 | s2_should_fetch_1
@@ -4327,26 +4328,26 @@ async def test_cp19_miss_request_logic(icachemainpipe_env: ICacheMainPipeEnv):
         topdown_miss = miss_status.get('io_fetch_topdownIcacheMiss_0', 0)
         assert topdown_miss == 0, "19.8: 无Miss时topdownIcacheMiss应为0"
         
-        print("  取指完成：所有端口should_fetch都为低")
+        toffee.info("  取指完成：所有端口should_fetch都为低")
         
         await agent.clear_fetch_request()
         await agent.clear_waylookup_read()
-        print("  √ 19.8: s2阶段取指完成 - 测试通过")
+        toffee.info("  √ 19.8: s2阶段取指完成 - 测试通过")
         
     except Exception as e:
         error_msg = f"19.8测试失败: {str(e)}"
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
         errors.append(error_msg)
     
     # 最终检查所有错误
     if errors:
-        print(f"\n× CP19测试完成，发现 {len(errors)} 个错误:")
+        toffee.info(f"\n× CP19测试完成，发现 {len(errors)} 个错误:")
         for error in errors:
-            print(f"  - {error}")
+            toffee.info(f"  - {error}")
         # 抛出所有错误的汇总
         raise AssertionError(f"CP19测试失败，共{len(errors)}个错误: {'; '.join(errors)}")
     else:
-        print("\n√ CP19: Miss请求发送逻辑和合并异常功能测试 - 所有测试点通过验证")
+        toffee.info("\n√ CP19: Miss请求发送逻辑和合并异常功能测试 - 所有测试点通过验证")
 
 
 @toffee_test.testcase
@@ -4361,7 +4362,7 @@ async def test_cp20_response_ifu(icachemainpipe_env: ICacheMainPipeEnv):
     20.3: 跨行取指
     20.4: RespStall
     """
-    print("\n=== CP20: Response IFU Test ===")
+    toffee.info("\n=== CP20: Response IFU Test ===")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
@@ -4370,7 +4371,7 @@ async def test_cp20_response_ifu(icachemainpipe_env: ICacheMainPipeEnv):
     
     # ==================== CP20.1: 正常命中并返回 ====================
     try:
-        print("\n--- CP20.1: 正常命中并返回 ---")
+        toffee.info("\n--- CP20.1: 正常命中并返回 ---")
         
         # 重置环境
         await agent.reset()
@@ -4380,11 +4381,11 @@ async def test_cp20_response_ifu(icachemainpipe_env: ICacheMainPipeEnv):
         
         # 监控流水线状态
         pipeline_status = await agent.monitor_pipeline_status()
-        print(f"初始流水线状态: s0_fire={pipeline_status.get('s0_fire')}, s2_fire={pipeline_status.get('s2_fire')}")
+        toffee.info(f"初始流水线状态: s0_fire={pipeline_status.get('s0_fire')}, s2_fire={pipeline_status.get('s2_fire')}")
         
         # 设置测试地址和参数
         params = calculate_waylookup_params(0x1000) 
-        print(f"  地址参数: start_addr=0x{params['start_addr']:x}, vSetIdx_0=0x{params['vSetIdx_0']:x}, ptag_0=0x{params['ptag_0']:x}, meta_codes_0={params['meta_codes_0']}, is_doubleline={params['is_doubleline']}")
+        toffee.info(f"  地址参数: start_addr=0x{params['start_addr']:x}, vSetIdx_0=0x{params['vSetIdx_0']:x}, ptag_0=0x{params['ptag_0']:x}, meta_codes_0={params['meta_codes_0']}, is_doubleline={params['is_doubleline']}")
         
         await agent.drive_waylookup_read(
             vSetIdx_0=params['vSetIdx_0'],
@@ -4424,7 +4425,7 @@ async def test_cp20_response_ifu(icachemainpipe_env: ICacheMainPipeEnv):
         
         # 监控流水线状态
         pipeline_status = await agent.monitor_pipeline_status()
-        print(f"处理后流水线状态: s0_fire={pipeline_status.get('s0_fire')}, s2_fire={pipeline_status.get('s2_fire')}")
+        toffee.info(f"处理后流水线状态: s0_fire={pipeline_status.get('s0_fire')}, s2_fire={pipeline_status.get('s2_fire')}")
         
         # 修复：在监控响应前再等待一个周期确保信号稳定
         await bundle.step(1)
@@ -4432,12 +4433,12 @@ async def test_cp20_response_ifu(icachemainpipe_env: ICacheMainPipeEnv):
         # 监控IFU响应
         fetch_response = await agent.monitor_fetch_response()
         
-        print(f"  响应有效性: {fetch_response['valid']}")
-        print(f"  异常状态_0: {fetch_response['exception_0']}")
-        print(f"  异常状态_1: {fetch_response['exception_1']}")
-        print(f"  PMP MMIO_0: {fetch_response['pmp_mmio_0']}")
-        print(f"  数据: 0x{fetch_response['data']:016x}" if fetch_response['data'] else "无数据")
-        print(f"  双行标志: {fetch_response['doubleline']}")
+        toffee.info(f"  响应有效性: {fetch_response['valid']}")
+        toffee.info(f"  异常状态_0: {fetch_response['exception_0']}")
+        toffee.info(f"  异常状态_1: {fetch_response['exception_1']}")
+        toffee.info(f"  PMP MMIO_0: {fetch_response['pmp_mmio_0']}")
+        toffee.info(f"  数据: 0x{fetch_response['data']:016x}" if fetch_response['data'] else "无数据")
+        toffee.info(f"  双行标志: {fetch_response['doubleline']}")
         
         # 清除请求
         await agent.clear_fetch_request()
@@ -4450,16 +4451,16 @@ async def test_cp20_response_ifu(icachemainpipe_env: ICacheMainPipeEnv):
         assert fetch_response['pmp_mmio_0'] == 0, f"非MMIO区域，实际pmp_mmio_0={fetch_response['pmp_mmio_0']}"
         assert fetch_response['doubleline'] == 0, f"非跨行取指，实际doubleline={fetch_response['doubleline']}"
         
-        print("  √ CP20.1: 正常命中并返回 - 测试通过")
+        toffee.info("  √ CP20.1: 正常命中并返回 - 测试通过")
         
     except Exception as e:
         error_msg = f"CP20.1测试失败: {str(e)}"
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
         errors.append(error_msg)
     
     # ==================== CP20.2: 异常返回 ====================
     try:
-        print("\n--- CP20.2: 异常返回 ---")
+        toffee.info("\n--- CP20.2: 异常返回 ---")
         
         # 重置环境
         await agent.reset()
@@ -4469,7 +4470,7 @@ async def test_cp20_response_ifu(icachemainpipe_env: ICacheMainPipeEnv):
         
         # 设置测试地址和参数 - ITLB异常情况
         params = calculate_waylookup_params(0x2000)
-        print(f"  异常测试地址参数: start_addr=0x{params['start_addr']:x}, vSetIdx_0=0x{params['vSetIdx_0']:x}, ptag_0=0x{params['ptag_0']:x}, meta_codes_0={params['meta_codes_0']}")
+        toffee.info(f"  异常测试地址参数: start_addr=0x{params['start_addr']:x}, vSetIdx_0=0x{params['vSetIdx_0']:x}, ptag_0=0x{params['ptag_0']:x}, meta_codes_0={params['meta_codes_0']}")
         
         await agent.drive_waylookup_read(
             vSetIdx_0=params['vSetIdx_0'],
@@ -4508,14 +4509,14 @@ async def test_cp20_response_ifu(icachemainpipe_env: ICacheMainPipeEnv):
         
         # 监控异常合并状态
         exception_status = await agent.monitor_exception_merge_status()
-        print(f"  异常合并状态: s1_itlb_exception_0={exception_status.get('s1_itlb_exception_0')}")
+        toffee.info(f"  异常合并状态: s1_itlb_exception_0={exception_status.get('s1_itlb_exception_0')}")
         
         # 监控IFU响应
         fetch_response = await agent.monitor_fetch_response()
         
-        print(f"  异常响应有效性: {fetch_response['valid']}")
-        print(f"  异常类型_0: {fetch_response['exception_0']}")
-        print(f"  ITLB PBMT_0: {fetch_response['itlb_pbmt_0']}")
+        toffee.info(f"  异常响应有效性: {fetch_response['valid']}")
+        toffee.info(f"  异常类型_0: {fetch_response['exception_0']}")
+        toffee.info(f"  ITLB PBMT_0: {fetch_response['itlb_pbmt_0']}")
         # 清除请求
         await agent.clear_fetch_request()
         await agent.clear_waylookup_read()
@@ -4524,16 +4525,16 @@ async def test_cp20_response_ifu(icachemainpipe_env: ICacheMainPipeEnv):
         assert fetch_response['valid'] == 1, f"异常情况也应有有效响应，实际valid={fetch_response['valid']}"
         assert fetch_response['exception_0'] == 0x2, f"应报告ITLB异常，实际exception_0={fetch_response['exception_0']}"
         
-        print("  √ CP20.2: 异常返回 - 测试通过")
+        toffee.info("  √ CP20.2: 异常返回 - 测试通过")
         
     except Exception as e:
         error_msg = f"CP20.2测试失败: {str(e)}"
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
         errors.append(error_msg)
     
     # ==================== CP20.3: 跨行取指 ====================
     try:
-        print("\n--- CP20.3: 跨行取指 ---")
+        toffee.info("\n--- CP20.3: 跨行取指 ---")
         
         # 重置环境
         await agent.reset()
@@ -4545,10 +4546,10 @@ async def test_cp20_response_ifu(icachemainpipe_env: ICacheMainPipeEnv):
         start_addr = 0x3020  # 0x3000 | 0x20，设置bit[5]=1触发跨行
         params = calculate_waylookup_params(start_addr)
         
-        print(f"  跨行地址计算:")
-        print(f"    起始地址: 0x{params['start_addr']:x} -> vSetIdx_0=0x{params['vSetIdx_0']:x}, ptag_0=0x{params['ptag_0']:x}, meta_codes_0={params['meta_codes_0']}")
-        print(f"    跨行地址: 0x{params['nextline_addr']:x} -> vSetIdx_1=0x{params['vSetIdx_1']:x}, ptag_1=0x{params['ptag_1']:x}, meta_codes_1={params['meta_codes_1']}")
-        print(f"    跨行标志: {params['is_doubleline']}")
+        toffee.info(f"  跨行地址计算:")
+        toffee.info(f"    起始地址: 0x{params['start_addr']:x} -> vSetIdx_0=0x{params['vSetIdx_0']:x}, ptag_0=0x{params['ptag_0']:x}, meta_codes_0={params['meta_codes_0']}")
+        toffee.info(f"    跨行地址: 0x{params['nextline_addr']:x} -> vSetIdx_1=0x{params['vSetIdx_1']:x}, ptag_1=0x{params['ptag_1']:x}, meta_codes_1={params['meta_codes_1']}")
+        toffee.info(f"    跨行标志: {params['is_doubleline']}")
         
         await agent.drive_waylookup_read(
             vSetIdx_0=params['vSetIdx_0'],
@@ -4596,12 +4597,12 @@ async def test_cp20_response_ifu(icachemainpipe_env: ICacheMainPipeEnv):
         # 监控IFU响应
         fetch_response = await agent.monitor_fetch_response()
         
-        print(f"  跨行响应有效性: {fetch_response['valid']}")
-        print(f"  双行标志: {fetch_response['doubleline']}")
-        print(f"  虚拟地址_0: 0x{fetch_response['vaddr_0']:x}" if fetch_response['vaddr_0'] else "无")
-        print(f"  虚拟地址_1: 0x{fetch_response['vaddr_1']:x}" if fetch_response['vaddr_1'] else "无")
-        print(f"  异常_0: {fetch_response['exception_0']}")
-        print(f"  异常_1: {fetch_response['exception_1']}")
+        toffee.info(f"  跨行响应有效性: {fetch_response['valid']}")
+        toffee.info(f"  双行标志: {fetch_response['doubleline']}")
+        toffee.info(f"  虚拟地址_0: 0x{fetch_response['vaddr_0']:x}" if fetch_response['vaddr_0'] else "无")
+        toffee.info(f"  虚拟地址_1: 0x{fetch_response['vaddr_1']:x}" if fetch_response['vaddr_1'] else "无")
+        toffee.info(f"  异常_0: {fetch_response['exception_0']}")
+        toffee.info(f"  异常_1: {fetch_response['exception_1']}")
         
         # 清除请求
         await agent.clear_fetch_request()
@@ -4613,16 +4614,16 @@ async def test_cp20_response_ifu(icachemainpipe_env: ICacheMainPipeEnv):
         assert fetch_response['exception_0'] == 0, f"第一路不应有异常，实际exception_0={fetch_response['exception_0']}"
         assert fetch_response['exception_1'] == 0, f"第二路不应有异常，实际exception_1={fetch_response['exception_1']}"
         
-        print("  √ CP20.3: 跨行取指 - 测试通过")
+        toffee.info("  √ CP20.3: 跨行取指 - 测试通过")
         
     except Exception as e:
         error_msg = f"CP20.3测试失败: {str(e)}"
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
         errors.append(error_msg)
     
     # ==================== CP20.4: RespStall ====================
     try:
-        print("\n--- CP20.4: RespStall ---")
+        toffee.info("\n--- CP20.4: RespStall ---")
         
         # 重置环境
         await agent.reset()
@@ -4634,7 +4635,7 @@ async def test_cp20_response_ifu(icachemainpipe_env: ICacheMainPipeEnv):
         
         # 设置RespStall测试地址参数
         params = calculate_waylookup_params(0x4000)
-        print(f"  RespStall测试地址参数: start_addr=0x{params['start_addr']:x}, vSetIdx_0=0x{params['vSetIdx_0']:x}, ptag_0=0x{params['ptag_0']:x}, meta_codes_0={params['meta_codes_0']}")
+        toffee.info(f"  RespStall测试地址参数: start_addr=0x{params['start_addr']:x}, vSetIdx_0=0x{params['vSetIdx_0']:x}, ptag_0=0x{params['ptag_0']:x}, meta_codes_0={params['meta_codes_0']}")
         
         await agent.drive_waylookup_read(
             vSetIdx_0=params['vSetIdx_0'],
@@ -4677,8 +4678,8 @@ async def test_cp20_response_ifu(icachemainpipe_env: ICacheMainPipeEnv):
         fetch_response_stalled = await agent.monitor_fetch_response()
         respStall_active = bundle.io._respStall.value
         
-        print(f"  RespStall激活状态: {respStall_active}")
-        print(f"  Stall时响应有效性: {fetch_response_stalled['valid']}")
+        toffee.info(f"  RespStall激活状态: {respStall_active}")
+        toffee.info(f"  Stall时响应有效性: {fetch_response_stalled['valid']}")
         
         # 验证RespStall效果 - 基于Verilog源码 s2_fire = s2_valid & ~io_respStall & ...
         assert respStall_active == 1, f"RespStall应该激活，实际值={respStall_active}"
@@ -4692,8 +4693,8 @@ async def test_cp20_response_ifu(icachemainpipe_env: ICacheMainPipeEnv):
         fetch_response_released = await agent.monitor_fetch_response()
         respStall_released = bundle.io._respStall.value
         
-        print(f"  RespStall解除状态: {respStall_released}")
-        print(f"  解除后响应有效性: {fetch_response_released['valid']}")
+        toffee.info(f"  RespStall解除状态: {respStall_released}")
+        toffee.info(f"  解除后响应有效性: {fetch_response_released['valid']}")
         
         # 清除请求
         await agent.clear_fetch_request()
@@ -4703,22 +4704,22 @@ async def test_cp20_response_ifu(icachemainpipe_env: ICacheMainPipeEnv):
         assert respStall_released == 0, f"RespStall应该解除，实际值={respStall_released}"
         assert fetch_response_released['valid'] == 1, f"解除RespStall后应有有效响应，实际valid={fetch_response_released['valid']}"
         
-        print("  √ CP20.4: RespStall - 测试通过")
+        toffee.info("  √ CP20.4: RespStall - 测试通过")
         
     except Exception as e:
         error_msg = f"CP20.4测试失败: {str(e)}"
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
         errors.append(error_msg)
     
     # ==================== 测试结果汇总 ====================
     if errors:
-        print(f"\n× CP20测试完成，发现 {len(errors)} 个错误:")
+        toffee.info(f"\n× CP20测试完成，发现 {len(errors)} 个错误:")
         for error in errors:
-            print(f"  - {error}")
+            toffee.info(f"  - {error}")
         # 抛出所有错误的汇总
         raise AssertionError(f"CP20测试失败，共{len(errors)}个错误: {'; '.join(errors)}")
     else:
-        print("\n√ CP20: 响应IFU功能测试 - 所有测试点通过验证")
+        toffee.info("\n√ CP20: 响应IFU功能测试 - 所有测试点通过验证")
 
 
 @toffee_test.testcase
@@ -4730,7 +4731,7 @@ async def test_cp21_l2_corrupt_report(icachemainpipe_env: ICacheMainPipeEnv):
     测试点21.1: L2 Corrupt单路 - s2阶段准备完成可以发射(s2_fire为高)，s2_MSHR_hits(0)和fromMSHR.bits.corrupt为高
     测试点21.2: 双路同时corrupt - 端口0和端口1都从L2 corrupt数据中获取
     """
-    print("\n=== CP21: L2 Corrupt Report Test ===")
+    toffee.info("\n=== CP21: L2 Corrupt Report Test ===")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
@@ -4738,7 +4739,7 @@ async def test_cp21_l2_corrupt_report(icachemainpipe_env: ICacheMainPipeEnv):
     
     # 测试点21.1: L2 Corrupt单路报告
     try:
-        print("\n--- 测试点21.1: L2 Corrupt单路报告 ---")
+        toffee.info("\n--- 测试点21.1: L2 Corrupt单路报告 ---")
         await agent.reset()
         
         # 设置环境准备就绪，确保能进入s0_fire
@@ -4753,7 +4754,7 @@ async def test_cp21_l2_corrupt_report(icachemainpipe_env: ICacheMainPipeEnv):
         test_vSetIdx = params['vSetIdx_0']
         test_ptag = params['ptag_0']
         
-        print(f"  测试参数: blkPaddr=0x{test_blkPaddr:x}, vSetIdx=0x{test_vSetIdx:x}, ptag=0x{test_ptag:x}")
+        toffee.info(f"  测试参数: blkPaddr=0x{test_blkPaddr:x}, vSetIdx=0x{test_vSetIdx:x}, ptag=0x{test_ptag:x}")
         
         test_corrupt_data = 0xBADD4A7A00000000
         
@@ -4788,7 +4789,7 @@ async def test_cp21_l2_corrupt_report(icachemainpipe_env: ICacheMainPipeEnv):
             corrupt=1
         )
         assert success, "MSHR响应注入失败"
-        print(f"  ✓ MSHR corrupt响应已注入")
+        toffee.info(f"  ✓ MSHR corrupt响应已注入")
         
         # 等待流水线推进到s2阶段
         await bundle.step(3)  # 给足够的时间让流水线推进
@@ -4797,8 +4798,8 @@ async def test_cp21_l2_corrupt_report(icachemainpipe_env: ICacheMainPipeEnv):
         mshr_match = await agent.monitor_mshr_match_status()
         exception_status = await agent.monitor_exception_merge_status()
         
-        print(f"  MSHR匹配: s1_bankMSHRHit_0={mshr_match.get('s1_bankMSHRHit_0')}")
-        print(f"  L2 corrupt状态: s2_l2_corrupt_0={exception_status.get('s2_l2_corrupt_0') if 's2_l2_corrupt_0' in exception_status else 'N/A'}")
+        toffee.info(f"  MSHR匹配: s1_bankMSHRHit_0={mshr_match.get('s1_bankMSHRHit_0')}")
+        toffee.info(f"  L2 corrupt状态: s2_l2_corrupt_0={exception_status.get('s2_l2_corrupt_0') if 's2_l2_corrupt_0' in exception_status else 'N/A'}")
         
         assert bundle.io._mshr._resp._bits._corrupt.value == 1, "MSHR响应corrupt标志应为1"
         
@@ -4807,13 +4808,13 @@ async def test_cp21_l2_corrupt_report(icachemainpipe_env: ICacheMainPipeEnv):
         await bundle.step()
         error_status = await agent.monitor_error_status()
         # 验证L2 corrupt错误报告
-        print(f"  错误状态: 端口0_valid={error_status.get('0_valid')}, 端口0_paddr=0x{error_status.get('0_paddr', 0):x}")
+        toffee.info(f"  错误状态: 端口0_valid={error_status.get('0_valid')}, 端口0_paddr=0x{error_status.get('0_paddr', 0):x}")
         assert error_status["0_valid"] == 1, "端口0错误报告未生效"
-        print("  ✓ 测试点21.1完成")
+        toffee.info("  ✓ 测试点21.1完成")
         
     except Exception as e:
         errors.append(f"测试点21.1失败: {str(e)}")
-        print(f"  × 测试点21.1失败: {e}")
+        toffee.info(f"  × 测试点21.1失败: {e}")
     
     finally:
         # 清理操作
@@ -4822,7 +4823,7 @@ async def test_cp21_l2_corrupt_report(icachemainpipe_env: ICacheMainPipeEnv):
         
     # 测试点21.2: 双路同时corrupt
     try:
-        print("\n--- 测试点21.2: 双路同时corrupt ---")
+        toffee.info("\n--- 测试点21.2: 双路同时corrupt ---")
         await agent.reset()
         
         # 设置环境准备就绪
@@ -4841,10 +4842,10 @@ async def test_cp21_l2_corrupt_report(icachemainpipe_env: ICacheMainPipeEnv):
         port0_ptag = params['ptag_0']
         port1_ptag = params['ptag_1']
         
-        print(f"  跨行参数:")
-        print(f"    crossline_addr=0x{crossline_addr:x}, is_doubleline={params['is_doubleline']}")
-        print(f"    端口0: vSetIdx=0x{port0_vSetIdx:x}, ptag=0x{port0_ptag:x}")
-        print(f"    端口1: vSetIdx=0x{port1_vSetIdx:x}, ptag=0x{port1_ptag:x}")
+        toffee.info(f"  跨行参数:")
+        toffee.info(f"    crossline_addr=0x{crossline_addr:x}, is_doubleline={params['is_doubleline']}")
+        toffee.info(f"    端口0: vSetIdx=0x{port0_vSetIdx:x}, ptag=0x{port0_ptag:x}")
+        toffee.info(f"    端口1: vSetIdx=0x{port1_vSetIdx:x}, ptag=0x{port1_ptag:x}")
         
         # 验证确实是跨行场景
         if not params['is_doubleline']:
@@ -4877,7 +4878,7 @@ async def test_cp21_l2_corrupt_report(icachemainpipe_env: ICacheMainPipeEnv):
          # 注入端口0的MSHR corrupt响应
         port0_blkPaddr = (port0_ptag << 6) | port0_vSetIdx
         test_corrupt_data_0 = 0xDEADBEEF00000000
-        print(f"  阶段1 - 端口0 MSHR响应: blkPaddr=0x{port0_blkPaddr:x}, vSetIdx=0x{port0_vSetIdx:x}")
+        toffee.info(f"  阶段1 - 端口0 MSHR响应: blkPaddr=0x{port0_blkPaddr:x}, vSetIdx=0x{port0_vSetIdx:x}")
         await agent.drive_mshr_response(
             blkPaddr=port0_blkPaddr,
             vSetIdx=port0_vSetIdx,
@@ -4890,7 +4891,7 @@ async def test_cp21_l2_corrupt_report(icachemainpipe_env: ICacheMainPipeEnv):
         port1_blkPaddr = (port1_ptag << 6) | port1_vSetIdx
         test_corrupt_data_1 = 0xCAFEBABE00000000
         
-        print(f"  阶段2 - 端口1 MSHR响应: blkPaddr=0x{port1_blkPaddr:x}, vSetIdx=0x{port1_vSetIdx:x}")
+        toffee.info(f"  阶段2 - 端口1 MSHR响应: blkPaddr=0x{port1_blkPaddr:x}, vSetIdx=0x{port1_vSetIdx:x}")
         await agent.drive_mshr_response(
             blkPaddr=port1_blkPaddr,
             vSetIdx=port1_vSetIdx,
@@ -4904,13 +4905,13 @@ async def test_cp21_l2_corrupt_report(icachemainpipe_env: ICacheMainPipeEnv):
         error_status = await agent.monitor_error_status()
         exception_status = await agent.monitor_exception_merge_status()
         
-        print(f"  最终双端口L2 corrupt状态:")
-        print(f"    s2_l2_corrupt_0={exception_status.get('s2_l2_corrupt_0', 'N/A')}")
-        print(f"    s2_l2_corrupt_1={exception_status.get('s2_l2_corrupt_1', 'N/A')}")
+        toffee.info(f"  最终双端口L2 corrupt状态:")
+        toffee.info(f"    s2_l2_corrupt_0={exception_status.get('s2_l2_corrupt_0', 'N/A')}")
+        toffee.info(f"    s2_l2_corrupt_1={exception_status.get('s2_l2_corrupt_1', 'N/A')}")
         
-        print(f"  最终错误报告:")
-        print(f"    端口0: valid={error_status.get('0_valid')}, paddr=0x{error_status.get('0_paddr', 0):x}")
-        print(f"    端口1: valid={error_status.get('1_valid')}, paddr=0x{error_status.get('1_paddr', 0):x}")
+        toffee.info(f"  最终错误报告:")
+        toffee.info(f"    端口0: valid={error_status.get('0_valid')}, paddr=0x{error_status.get('0_paddr', 0):x}")
+        toffee.info(f"    端口1: valid={error_status.get('1_valid')}, paddr=0x{error_status.get('1_paddr', 0):x}")
         # 验证双端口都检测到L2 corrupt
         assert exception_status.get('s2_l2_corrupt_0') == 1, "端口0应该检测到L2 corrupt"
         assert exception_status.get('s2_l2_corrupt_1') == 1, "端口1应该检测到L2 corrupt"
@@ -4921,11 +4922,11 @@ async def test_cp21_l2_corrupt_report(icachemainpipe_env: ICacheMainPipeEnv):
         assert error_status["0_valid"] == 1, "端口0应该有错误报告"
         assert error_status["1_valid"] == 1, "端口1应该有错误报告"
         
-        print("  ✓ 双端口跨行L2 corrupt测试完成 - 两个端口都成功检测到corrupt")
+        toffee.info("  ✓ 双端口跨行L2 corrupt测试完成 - 两个端口都成功检测到corrupt")
         
     except Exception as e:
         errors.append(f"测试点21.2失败: {str(e)}")
-        print(f"  × 测试点21.2失败: {e}")
+        toffee.info(f"  × 测试点21.2失败: {e}")
     
     finally:
         # 清理操作
@@ -4935,10 +4936,10 @@ async def test_cp21_l2_corrupt_report(icachemainpipe_env: ICacheMainPipeEnv):
     # 统一处理所有错误
     if errors:
         error_msg = "\n".join(errors)
-        print(f"\n× CP21测试存在错误:\n{error_msg}")
+        toffee.info(f"\n× CP21测试存在错误:\n{error_msg}")
         raise AssertionError(f"CP21: L2 Corrupt报告测试失败\n{error_msg}")
     else:
-        print("\n√ CP21: L2 Corrupt报告功能测试 - 所有测试点通过验证")
+        toffee.info("\n√ CP21: L2 Corrupt报告功能测试 - 所有测试点通过验证")
 
 
 @toffee_test.testcase
@@ -4947,7 +4948,7 @@ async def test_cp22_flush_mechanism(icachemainpipe_env: ICacheMainPipeEnv):
     CP22: 刷新机制功能测试
     测试流水线刷新控制逻辑
     """
-    print("\n=== CP22: 刷新机制功能测试 ===")
+    toffee.info("\n=== CP22: 刷新机制功能测试 ===")
     agent = icachemainpipe_env.agent
     bundle = icachemainpipe_env.bundle
     
@@ -4956,7 +4957,7 @@ async def test_cp22_flush_mechanism(icachemainpipe_env: ICacheMainPipeEnv):
     
     # 测试22.1: 全局刷新
     try:
-        print("\n--- 测试22.1: 全局刷新 ---")
+        toffee.info("\n--- 测试22.1: 全局刷新 ---")
         await agent.setup_mshr_ready(True)
         await agent.drive_set_ecc_enable(True)
         await agent.drive_data_array_ready(True)
@@ -4993,10 +4994,10 @@ async def test_cp22_flush_mechanism(icachemainpipe_env: ICacheMainPipeEnv):
         
         # 监控刷新前的流水线状态
         pipeline_status_before = await agent.monitor_pipeline_status()
-        print(f"  刷新前流水线状态:")
-        print(f"    s0_fire: {pipeline_status_before['s0_fire']}")
-        print(f"    s1_fire: {pipeline_status_before['s1_fire']}")
-        print(f"    s2_fire: {pipeline_status_before['s2_fire']}")
+        toffee.info(f"  刷新前流水线状态:")
+        toffee.info(f"    s0_fire: {pipeline_status_before['s0_fire']}")
+        toffee.info(f"    s1_fire: {pipeline_status_before['s1_fire']}")
+        toffee.info(f"    s2_fire: {pipeline_status_before['s2_fire']}")
         
         # 激活全局刷新
         await agent.drive_set_flush(True)
@@ -5007,13 +5008,13 @@ async def test_cp22_flush_mechanism(icachemainpipe_env: ICacheMainPipeEnv):
         fetch_response = await agent.monitor_fetch_response()
         mshr_status = await agent.monitor_mshr_status()
         
-        print(f"  刷新期间流水线状态:")
-        print(f"    flush信号: {bundle.io._flush.value}")
-        print(f"    s0_fire: {pipeline_status_during['s0_fire']}")
-        print(f"    s1_fire: {pipeline_status_during['s1_fire']}")
-        print(f"    s2_fire: {pipeline_status_during['s2_fire']}")
-        print(f"    fetch_resp_valid: {fetch_response['valid']}")
-        print(f"    mshr_req_valid: {mshr_status['req_valid']}")
+        toffee.info(f"  刷新期间流水线状态:")
+        toffee.info(f"    flush信号: {bundle.io._flush.value}")
+        toffee.info(f"    s0_fire: {pipeline_status_during['s0_fire']}")
+        toffee.info(f"    s1_fire: {pipeline_status_during['s1_fire']}")
+        toffee.info(f"    s2_fire: {pipeline_status_during['s2_fire']}")
+        toffee.info(f"    fetch_resp_valid: {fetch_response['valid']}")
+        toffee.info(f"    mshr_req_valid: {mshr_status['req_valid']}")
         
         # 根据verilog源码验证刷新逻辑
         # s0_fire = io_fetch_req_valid & s0_can_go & ~io_flush (行240)
@@ -5026,16 +5027,16 @@ async def test_cp22_flush_mechanism(icachemainpipe_env: ICacheMainPipeEnv):
         assert pipeline_status_during['s1_fire'] == 0, f"s1_fire在刷新期间应为0，实际值: {pipeline_status_during['s1_fire']}"  
         assert pipeline_status_during['s2_fire'] == 0, f"s2_fire在刷新期间应为0，实际值: {pipeline_status_during['s2_fire']}"
         
-        print("  √ 测试22.1通过: 全局刷新正确抑制所有阶段fire信号")
+        toffee.info("  √ 测试22.1通过: 全局刷新正确抑制所有阶段fire信号")
         
     except Exception as e:
         error_msg = f"测试22.1失败 - 全局刷新: {str(e)}"
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
         test_errors.append(error_msg)
     
     # 测试22.2: S0阶段刷新
     try:
-        print("\n--- 测试22.2: S0阶段刷新 ---")
+        toffee.info("\n--- 测试22.2: S0阶段刷新 ---")
         # 22.2已包含在22.1的全局刷新测试中，根据文档：s0_flush = true, s0_fire = false
         # 验证已在22.1中完成，这里添加额外验证
         
@@ -5045,64 +5046,64 @@ async def test_cp22_flush_mechanism(icachemainpipe_env: ICacheMainPipeEnv):
         # 当io_flush=1时，无论其他条件如何，s0_fire都应该为0
         assert pipeline_status['s0_fire'] == 0, f"S0刷新时s0_fire应为0，实际值: {pipeline_status['s0_fire']}"
         
-        print("  √ 测试22.2通过: S0阶段刷新正确抑制s0_fire信号")
+        toffee.info("  √ 测试22.2通过: S0阶段刷新正确抑制s0_fire信号")
         
     except Exception as e:
         error_msg = f"测试22.2失败 - S0阶段刷新: {str(e)}"
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
         test_errors.append(error_msg)
     
     # 测试22.3: S1阶段刷新  
     try:
-        print("\n--- 测试22.3: S1阶段刷新 ---")
+        toffee.info("\n--- 测试22.3: S1阶段刷新 ---")
         
         pipeline_status = await agent.monitor_pipeline_status()
         assert pipeline_status['s1_fire'] == 0, f"S1刷新时s1_fire应为0，实际值: {pipeline_status['s1_fire']}"
         
-        print("  √ 测试22.3通过: S1阶段刷新正确抑制s1_fire信号")
+        toffee.info("  √ 测试22.3通过: S1阶段刷新正确抑制s1_fire信号")
         
     except Exception as e:
         error_msg = f"测试22.3失败 - S1阶段刷新: {str(e)}"
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
         test_errors.append(error_msg)
     
     # 测试22.4: S2阶段刷新
     try:
-        print("\n--- 测试22.4: S2阶段刷新 ---")
+        toffee.info("\n--- 测试22.4: S2阶段刷新 ---")
         pipeline_status = await agent.monitor_pipeline_status()
         mshr_status = await agent.monitor_mshr_status()
         assert pipeline_status['s2_fire'] == 0, f"S2刷新时s2_fire应为0，实际值: {pipeline_status['s2_fire']}"
         assert mshr_status['req_valid'] == 0, f"S2刷新时MSHR请求应停止，实际req_valid: {mshr_status['req_valid']}"
         
-        print("  √ 测试22.4通过: S2阶段刷新正确抑制s2_fire和MSHR请求")
+        toffee.info("  √ 测试22.4通过: S2阶段刷新正确抑制s2_fire和MSHR请求")
         
     except Exception as e:
         error_msg = f"测试22.4失败 - S2阶段刷新: {str(e)}"
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
         test_errors.append(error_msg)
     
     # 清除环境，恢复正常状态测试
     try:
-        print("\n--- 刷新恢复测试 ---")
+        toffee.info("\n--- 刷新恢复测试 ---")
         await agent.drive_set_flush(False)  # 取消刷新
         await bundle.step(3)
         
         pipeline_status_after = await agent.monitor_pipeline_status()
         
-        print(f"  取消刷新后流水线状态:")
-        print(f"    flush信号: {bundle.io._flush.value}")
-        print(f"    s0_fire: {pipeline_status_after['s0_fire']}")
-        print(f"    s1_fire: {pipeline_status_after['s1_fire']}")
-        print(f"    s2_fire: {pipeline_status_after['s2_fire']}")
+        toffee.info(f"  取消刷新后流水线状态:")
+        toffee.info(f"    flush信号: {bundle.io._flush.value}")
+        toffee.info(f"    s0_fire: {pipeline_status_after['s0_fire']}")
+        toffee.info(f"    s1_fire: {pipeline_status_after['s1_fire']}")
+        toffee.info(f"    s2_fire: {pipeline_status_after['s2_fire']}")
         
         # 验证刷新取消后流水线可以正常工作
         assert bundle.io._flush.value == 0, f"刷新取消后flush信号应为0，实际值: {bundle.io._flush.value}"
         
-        print("  √ 刷新恢复测试通过: 取消刷新后流水线状态正常")
+        toffee.info("  √ 刷新恢复测试通过: 取消刷新后流水线状态正常")
         
     except Exception as e:
         error_msg = f"刷新恢复测试失败: {str(e)}"
-        print(f"  × {error_msg}")
+        toffee.info(f"  × {error_msg}")
         test_errors.append(error_msg)
     
     finally:
@@ -5116,10 +5117,10 @@ async def test_cp22_flush_mechanism(icachemainpipe_env: ICacheMainPipeEnv):
     
     # 汇总测试结果
     if test_errors:
-        print(f"\n× CP22测试完成，发现 {len(test_errors)} 个错误:")
+        toffee.info(f"\n× CP22测试完成，发现 {len(test_errors)} 个错误:")
         for i, error in enumerate(test_errors, 1):
-            print(f"  {i}. {error}")
+            toffee.info(f"  {i}. {error}")
         # 抛出所有错误
         raise Exception(f"CP22刷新机制测试失败: {'; '.join(test_errors)}")
     else:
-        print("\n√ CP22: 刷新机制功能测试 - 所有测试点通过验证")
+        toffee.info("\n√ CP22: 刷新机制功能测试 - 所有测试点通过验证")

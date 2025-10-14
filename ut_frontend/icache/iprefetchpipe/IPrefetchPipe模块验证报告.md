@@ -115,80 +115,152 @@ IPrefetchPipe包含以下主要组件：
 
 IPrefetchPipe模块的主要功能点包括：
 
-### 3.1 功能点1：预取请求接收与处理（CP1）
-- **功能描述**：S0阶段接收预取请求，解析地址信息，判断是否为双行预取
-- **关键特性**：
-  - 支持单行和双行预取模式
-  - 地址对齐检查
-  - FTQ索引传递
-  - 后端异常信息传递
+### 3.1 预取请求接收与处理（CP1）
+从 FTQ 接收预取请求，请求可能有效（ io.req.valid 为高），可能无效； IPrefetchPipe 可能处于空闲（ io.req.ready 为高），可能处于非空闲状态。 只有在请求有效且 IPrefetchPipe 处于空闲状态时，预取请求才会被接收（这里暂不考虑 s0 的刷新信号 s0_flush ，默认其为低）。 预取请求分为不同类型，包括硬件预取请求 (isSoftPrefetch = false)和软件预取请求 (isSoftPrefetch = true)。 cacheline 也分为单 cacheline 和双 cacheline。
+功能点CP1.1 硬件预取请求
+- cp1.1.1 预取请求可以继续: 当预取请求有效且 IPrefetchPipe 处于空闲状态时，预取请求应该被接收。s0_fire 信号在没有 s0 的刷新信号（ s0_flush 为低）时，应该被置为高。
+- cp1.1.2 预取请求被拒绝–预取请求无效: 当预取请求无效时，预取请求应该被拒绝。s0_fire 信号应该被置为低。
+- cp1.1.3 预取请求被拒绝–IPrefetchPipe 非空闲: 当 IPrefetchPipe 当前不可接受新事务（io.req.ready 为低）时，即使请求有效也会被拒绝，s0_fire 保持为低。
+- cp1.1.4 预取请求被拒绝–预取请求无效且 IPrefetchPipe 非空闲: 在请求无效且流水线忙碌双重条件下，s0_fire 与 s0_doubleline 均维持为低，用于验证双重抑制逻辑。
+- cp1.1.5 预取请求有效且为单 cacheline: 当预取请求有效且为单 cacheline 时，预取请求应该被接收。s0_fire 为高，s0_doubleline 应该被置低（false）。
+- cp1.1.6 预取请求有效且为双 cacheline: 当预取请求有效且为双 cacheline 时，预取请求应该被接收。s0_fire 为高，s0_doubleline 应该被置高（true）。
+功能点CP1.2 软件预取请求
+- cp1.2.1 软件预取请求可以继续: 当预取请求有效且 IPrefetchPipe 处于空闲状态时，软件预取请求应该被接收，s0_fire 为高。
+- cp1.2.2 软件预取请求被拒绝–预取请求无效: 当软件预取请求无效时，流水线保持静默，s0_fire 拉低。
+- cp1.2.3 软件预取请求被拒绝–IPrefetchPipe 非空闲: 当 IPrefetchPipe 忙碌时，软件预取请求被拒绝，s0_fire 为低。
+- cp1.2.4 软件预取请求被拒绝–预取请求无效且 IPrefetchPipe 非空闲: 双重抑制场景下，硬件拒绝请求，s0_fire 维持为低。
+- cp1.2.5 软件预取请求有效且为单 cacheline: 软件单行预取成功锁存，s0_fire 为高且 s0_doubleline 为低。
+- cp1.2.6 软件预取请求有效且为双 cacheline: 软件双行预取成功锁存，s0_fire 与 s0_doubleline 同时为高，触发双端口流程。
 
-### 3.2 功能点2：ITLB地址翻译（CP2）
-- **功能描述**：S1阶段进行虚拟地址到物理地址的翻译
-- **关键特性**：
-  - 双端口ITLB访问
-  - 异常检测（AF、PF、GPF）
-  - PBMT属性获取
-  - 缺失处理
+- 测试用例：TC13 test_cp1_receive_prefetch_requests - 覆盖硬件/软件预取、单/双 cacheline 以及非空闲抑制等场景，匹配 CP1 覆盖点。
+### 3.2 ITLB地址翻译（CP2）
+S1 阶段从双端口 ITLB 获取物理地址及异常信息，并在 miss 时触发重发逻辑。需要验证单/双端口返回、缺失重试以及异常、虚拟化信息的正确传播。
+功能点CP2.1 地址转换完成
+- cp2.1.1 ITLB 正常返回物理地址: ITLB 在一个周期内成功返回物理地址，s1_valid 与 itlb_finish 为高，验证单端口与双端口的命中场景。
+- cp2.1.2 ITLB 发生 TLB 缺失，需要重试: fromITLB(bits.miss) 为高时触发重发，待 miss 清除后 itlb_finish 恢复为高，确认重试路径。
+功能点CP2.2 处理 ITLB 异常
+- cp2.2.1 ITLB 发生页错误异常: s1_itlb_exception 指示 pf，miss 为低，验证页错误优先级。
+- cp2.2.2 ITLB 发生虚拟机页错误异常: s1_itlb_exception 指示 gpf，确保虚拟机异常被锁存。
+- cp2.2.3 ITLB 发生访问错误异常: s1_itlb_exception 指示 af，确认访问错误处理。
+功能点CP2.3 处理虚拟机物理地址（用于虚拟化）
+- cp2.3.1 发生虚拟机页错误异常返回虚拟机物理地址: pgf 时返回 gpaddr，并在多端口时遵循优先级。
+- cp2.3.2 ITLB 发生虚拟机页错误异常（非叶子页表）: isForVSnonLeafPTE 标记正确返回，支持虚拟化场景。
+功能点CP2.4 返回基于页面的内存类型 pbmt 信息
+- cp2.4.1 ITLB 有效时返回 pbmt 属性: pbmt.nc/pbmt.io 状态正确传递，驱动后续权限判定。
 
-### 3.3 功能点3：缓存元数据查询与命中检查（CP3）
-- **功能描述**：S1阶段查询MetaArray获取缓存元数据并进行命中检查
-- **关键特性**：
-  - 双路并行查询
-  - Tag比较与命中检测
-  - 有效位检查
-  - ECC校验码处理
+- 测试用例：TC14 test_cp2_receive_itlb_responses - 覆盖命中、缺失重发、三类异常及虚拟化信息返回流程，并与 CP2 覆盖点对齐。
 
-### 3.4 功能点4：PMP权限检查（CP4）
-- **功能描述**：S1阶段进行物理内存保护检查
-- **关键特性**：
-  - MMIO区域检测
-  - 指令访问权限验证
-  - 双端口并行检查
+### 3.3 缓存元数据查询与命中检查（CP3）
+MetaArray 返回标签、有效位以及 ECC 信息，用于判断是否命中并生成 waymask，同时支持双端口双行访问。
+功能点CP3.1 缓存标签比较和有效位检查
+- cp3.1.1 标签和有效位匹配流程: 验证各 way 标签与物理地址标签的比较以及有效位使用，确保比较逻辑覆盖所有路。
+- cp3.1.2 缓存未命中（标签不匹配或有效位为假）: waymask 输出全零，确认 miss 行为。
+功能点CP3.2 单路缓存命中
+- cp3.2.1 单路命中: 当标签匹配且有效位为真时，对应 waymask 置位，驱动后续命中记录。
 
-### 3.5 功能点5：异常处理与合并（CP5）
-- **功能描述**：收集各阶段的异常信息并进行合并处理
-- **关键特性**：
-  - ITLB异常收集
-  - PMP异常收集
-  - 异常优先级处理
-  - 双行异常独立处理
+- 测试用例：TC15 test_cp3_receive_imeta_responses_and_cache_hit_check - 构造命中/未命中、ECC 组合，触发 CP3 覆盖点。
 
-### 3.6 功能点6：WayLookup请求发送（CP6）
-- **功能描述**：S2阶段向WayLookup模块发送查找请求
-- **关键特性**：
-  - 命中信息传递
-  - 异常信息传递
-  - 双行并行处理
+### 3.4 PMP权限检查（CP4）
+PMP 端口对物理地址进行权限与 MMIO 判定，为异常合并提供数据基础。
+功能点CP4.1 访问被允许的内存区域
+- cp4.1.1 PMP 正常访问: instr=0 表示权限通过，确认无异常路径。
+功能点CP4.2 访问被禁止的内存区域
+- cp4.2.1 PMP 拒绝访问: instr=1 触发访问错误异常，验证禁止路径。
+功能点CP4.3 访问 MMIO 区域
+- cp4.3.1 MMIO 判定: mmio 信号为高时识别需走 MMIO 流程，避免发送 MissUnit。
 
-### 3.7 功能点7：状态机控制与请求处理（CP7）
-- **功能描述**：控制流水线状态转换和请求处理流程
-- **关键特性**：
-  - 五状态状态机
-  - 重发机制
-  - 阻塞条件检测
+- 测试用例：TC16 test_cp4_pmp_permission_check - 通过 API 驱动正常、拒绝与 MMIO 访问，匹配 CP4 覆盖点。
 
-### 3.8 功能点8：MSHR监控（CP8）
-- **功能描述**：监控MissUnit的MSHR状态
-- **关键特性**：
-  - MSHR匹配检测
-  - 命中/缺失判断
-  - 双行独立处理
+### 3.5 异常处理与合并（CP5）
+S1 合并后端、ITLB、PMP 的异常，并依据优先级输出到 S2，确保异常源判定正确。
+功能点CP5.1 仅 ITLB 产生异常
+- cp5.1.1 ITLB 异常独占: s1_itlb_exception 非零且其他源为零，输出 ITLB 异常。
+功能点CP5.2 仅 PMP 产生异常
+- cp5.2.1 PMP 异常独占: PMP instr=1 触发访问错误，其余异常源为零。
+功能点CP5.3 仅后端产生异常
+- cp5.3.1 后端异常独占: s1_backendException 非零时覆盖其他源。
+功能点CP5.4 ITLB 和 PMP 都产生异常
+- cp5.4.1 ITLB 优先于 PMP: 同时存在时输出 ITLB 异常。
+功能点CP5.5 ITLB 和 后端 都产生异常
+- cp5.5.1 后端优先于 ITLB: 输出后端异常。
+功能点CP5.6 PMP 和 后端 都产生异常
+- cp5.6.1 后端优先于 PMP: 输出后端异常。
+功能点CP5.7 ITLB、PMP 和 后端 都产生异常
+- cp5.7.1 多源异常: 后端异常仍具最高优先级。
+功能点CP5.8 无任何异常
+- cp5.8.1 清零场景: 所有异常源为零时，输出无异常。
 
-### 3.9 功能点9：MissUnit请求发送（CP9）
-- **功能描述**：向MissUnit发送缺失请求
-- **关键特性**：
-  - 缺失检测
-  - MMIO过滤
-  - 仲裁机制
+- 测试用例：TC17 test_cp5_exception_handling_and_merging - 构造不同组合的异常源，验证优先级与输出一致性。
 
-### 3.10 功能点10：刷新机制（CP10）
-- **功能描述**：处理各种刷新信号
-- **关键特性**：
-  - 全局刷新
-  - BPU刷新（S2/S3）
-  - ITLB流水线刷新
-  - 分阶段刷新控制
+### 3.6 WayLookup请求发送（CP6）
+在 S1 判定命中后驱动 WayLookup 写口，处理阻塞与软件预取跳过等情况。
+功能点CP6.1 正常发送请求到 WayLookup
+- cp6.1.1 WayLookup 入队成功: valid/ready 握手完成，携带正确 waymask、异常信息。
+功能点CP6.2 WayLookup 无法接收请求
+- cp6.2.1 WayLookup 阻塞: ready 为低，状态机停留等待。
+功能点CP6.3 软件预取请求不发送到 WayLookup
+- cp6.3.1 软件预取跳过: s1_isSoftPrefetch 为真时 valid 保持为 0。
+
+- 测试用例：TC18 test_cp6_send_request_to_waylookup - 验证入队、阻塞与软件预取跳过行为。
+
+### 3.7 状态机控制与请求处理（CP7）
+S1 状态机管理 itlbResend、metaResend、enqWay、enterS2 等阶段，控制请求推进。
+功能点CP7.1 初始为 m_idle 状态
+- cp7.1.1 正常流程推进，保持 m_idle 状态: itlb_finish、WayLookup、S2 均就绪时直接返回 idle。
+- cp7.1.2 ITLB 未完成，需要重发: itlb_finish 为低，next_state 进入 itlbResend。
+- cp7.1.3 ITLB 完成，WayLookup 未命中: itlb_finish 为真但 WayLookup 未 ready，next_state 指向 enqWay。
+功能点CP7.2 初始为 m_itlbResend 状态
+- cp7.2.1 ITLB 命中, MetaArray 空闲，需要 WayLookup 入队: itlb_finish 为真且 meta ready，高速返回 enqWay。
+- cp7.2.2 ITLB 命中, MetaArray 繁忙，等待 MetaArray 读请求: meta ready 为低，先转入 metaResend。
+功能点CP7.3 初始为 m_metaResend 状态
+- cp7.3.1 MetaArray 空闲，需要 WayLookup 入队: meta ready 为真，转回 enqWay。
+功能点CP7.4 初始为 m_enqWay 状态
+- cp7.4.1 WayLookup 入队完成或者为软件预取, S2 空闲, 重新进入空闲状态: ready 为真或软件预取且 s2_ready 为真，回到 idle。
+- cp7.4.2 WayLookup 入队完成或者为软件预取, S2 繁忙，需要 enterS2 状态: s2_ready 为低时进入 enterS2。
+功能点CP7.5 初始为 m_enterS2 状态
+- cp7.5.1 s2 阶段准备好，请求进入下流水级: s2_ready 为高后返回 idle。
+
+- 测试用例：TC19 test_cp7_state_machine_control_and_request_processing - 通过 API 组合触发所有状态转移。
+
+### 3.8 MSHR监控（CP8）
+S2 监听 MSHR 和 SRAM 命中信息，决定是否需 miss 请求并维护命中历史。
+功能点CP8.1 请求与 MSHR 匹配且有效
+- cp8.1.1 MSHR 命中: s2_MSHR_match/s2_MSHR_hits_valid 指示命中保持。
+功能点CP8.2 请求在 SRAM 中命中
+- cp8.2.1 SRAM 命中: waymask 任意位为 1，表示缓存命中。
+功能点CP8.3 请求未命中 MSHR 和 SRAM
+- cp8.3.1 全 miss: MSHR 未命中且 waymask 为空，等待 MissUnit 处理。
+
+- 测试用例：TC20 test_cp8_monitor_missunit_requests - 构造 MSHR 命中、SRAM 命中与全 miss 场景。
+
+### 3.9 MissUnit请求发送（CP9）
+对未命中请求进行仲裁并发送至 MissUnit，同时避免重复发送。
+功能点CP9.1 确定需要发送给 MissUnit 的请求
+- cp9.1.1 请求未命中且无异常，需要发送到 MissUnit: miss 为真且无异常、非 MMIO，仲裁器 valid 拉高。
+- cp9.1.2 请求命中或有异常，不需要发送到 MissUnit: 命中、异常或 MMIO 时 miss 拉低。
+- cp9.1.3 双行预取时，处理第二个请求的条件: s2_doubleline 为真时根据第一条状态决定第二条是否继续。
+功能点CP9.2 避免重复发送请求
+- cp9.2.1 在 s1_real_fire 时，复位 has_send: 新周期复位发送标记。
+- cp9.2.2 当请求成功发送时，更新 has_send: fire 为高后 has_send 置真。
+- cp9.2.3 避免重复发送请求: has_send 为真且仍 miss 时，仲裁器 valid 拉低。
+- cp9.2.4 正确发送需要的请求到 MissUnit: miss 为真且 has_send 为零时确保 valid 为高。
+- cp9.2.5 仲裁器正确仲裁多个请求: 双端口同时请求时只允许一个 ready&valid 成功。
+
+- 测试用例：TC21 test_cp9_send_request_to_missunit - 验证发送判定、has_send 控制及仲裁逻辑。
+
+### 3.10 刷新机制（CP10）
+刷新信号来自全局 flush 与 BPU 分级 flush，需同步状态机与 ITLB。
+功能点CP10.1 发生全局刷新
+- cp10.1.1 全局 flush: io.flush 为高时各级请求被清除，s0_fire/s1_valid/s2_valid 拉低。
+功能点CP10.2 来自 BPU 的刷新
+- cp10.2.1 BPU S0/S1 刷新: BPU S2/S3 valid 为高且请求非软件预取，触发对应阶段刷新探测。
+功能点CP10.3 刷新时状态机复位
+- cp10.3.1 状态机复位: s1_flush 为高时 state 返回 m_idle。
+功能点CP10.4 ITLB 管道同步刷新
+- cp10.4.1 ITLB flush: s1_flush 为高同时 io.itlbFlushPipe 拉高，确保 ITLB 同步清空。
+
+- 测试用例：TC22 test_cp10_flush_mechanism - 验证全局与 BPU 刷新、状态机复位及 ITLB FlushPipe 输出。
+
 
 ## 4. 验证方案
 
@@ -388,4 +460,3 @@ IPrefetchPipe模块的主要功能点包括：
 **IPrefetchPipe模块验证通过**
 
 基于全面的功能验证、接口验证和覆盖率分析，IPrefetchPipe模块满足设计规范要求，功能实现正确，接口设计合理，异常处理完善。可以进入下一阶段的集成验证。
-

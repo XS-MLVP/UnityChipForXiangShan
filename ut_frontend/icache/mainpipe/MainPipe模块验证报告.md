@@ -47,218 +47,172 @@ MainPipe包含以下主要组件：
 - **clock**: 系统时钟信号
 - **reset**: 系统复位信号
 
-#### 2.3.2 IO接口束（io）
-- **io.fromIFU**: 来自IFU的请求接口
-  - **io.fromIFU.req**: IFU请求信号
-    - **io.fromIFU.req.valid**: 请求有效信号
-    - **io.fromIFU.req.ready**: 请求就绪信号
-    - **io.fromIFU.req.bits**: 请求数据
-      - **io.fromIFU.req.bits.vaddr**: 虚拟地址
-      - **io.fromIFU.req.bits.paddr**: 物理地址
+#### 2.3.2 内部监控信号（ICacheMainPipe）
+- **ICacheMainPipe.s2.fire**: S2阶段握手触发信号，用于指示S2本周期完成一次有效事务。
+- **ICacheMainPipe.s2.valid**: S2阶段有效标志，对应RTL中的`s2_valid`寄存状态。
+- **ICacheMainPipe.s0_fire**: S0阶段握手触发信号，监控前段请求是否成功发射。
 
-- **io.toIFU**: 向IFU的响应接口
-  - **io.toIFU.resp**: IFU响应信号
-    - **io.toIFU.resp.valid**: 响应有效信号
-    - **io.toIFU.resp.bits**: 响应数据
-      - **io.toIFU.resp.bits.data**: 指令数据
-      - **io.toIFU.resp.bits.exception**: 异常标志
-      - **io.toIFU.resp.bits.corrupt**: 数据损坏标志
+#### 2.3.3 仲裁输入接口束（ICacheMainPipe__toMSHRArbiter_io_in）
+- **ICacheMainPipe__toMSHRArbiter_io_in[0].valid_T[4]**: 端口0送入MSHR仲裁器的请求有效位（bit4）。
+- **ICacheMainPipe__toMSHRArbiter_io_in[1].valid_T[4]**: 端口1送入MSHR仲裁器的请求有效位（bit4）。
 
-- **io.dataArray**: 数据阵列接口
-  - **io.dataArray.req**: 数据阵列请求
-    - **io.dataArray.req.valid**: 请求有效信号
-    - **io.dataArray.req.bits**: 请求参数
-      - **io.dataArray.req.bits.setIdx**: 集合索引
-      - **io.dataArray.req.bits.waymask**: 路掩码
-  - **io.dataArray.resp**: 数据阵列响应
-    - **io.dataArray.resp.data**: 返回的数据
+#### 2.3.4 IO接口束（io）
+- **io.fetch**: 取指请求/响应通道  
+  - **io.fetch.req.valid / ready**: Miss单元请求握手信号。  
+  - **io.fetch.req.bits.pcMemRead[i].startAddr / nextlineStart**: 第i路（跨行）地址信息。  
+  - **io.fetch.req.bits.readValid[i]**: 第i路请求是否有效。  
+  - **io.fetch.req.bits.backendException**: 后端补回数据异常通知。  
+  - **io.fetch.resp.valid**: Miss单元响应有效标志。  
+  - **io.fetch.resp.bits.data / doubleline / backendException**: 返给MainPipe的数据、跨行标记以及后端异常。  
+  - **io.fetch.resp.bits.vaddr[i] / paddr**: 端口i的虚拟地址向量及对齐后的物理地址。  
+  - **io.fetch.resp.bits.exception[i] / itlb_pbmt[i] / pmp_mmio[i]**: ITLB异常、PBMT属性、PMP/MMIO信息。  
+  - **io.fetch.resp.bits.isForVSnonLeafPTE / gpaddr**: VS非叶PTE标记及目标物理地址。  
+  - **io.fetch.topdownIcacheMiss / io.fetch.topdownItlbMiss**: Top-down计数器。
 
-- **io.metaArray**: 元数据阵列接口
-  - **io.metaArray.req**: 元数据请求
-  - **io.metaArray.resp**: 元数据响应
-    - **io.metaArray.resp.meta**: 元数据信息
-    - **io.metaArray.resp.valid**: 数据有效标志
+- **io.mshr**: 与MSHR的交互接口  
+  - **io.mshr.req.valid / ready**: MSHR请求握手信号。  
+  - **io.mshr.req.bits.blkPaddr / vSetIdx**: 请求块物理地址与集合索引。  
+  - **io.mshr.resp.valid**: MSHR返回有效。  
+  - **io.mshr.resp.bits.data / blkPaddr / vSetIdx / corrupt**: 补回数据、相关索引及corrupt标志。
 
-- **io.mshr**: MSHR接口
-  - **io.mshr.match**: MSHR匹配信号
-    - **io.mshr.match.valid**: 匹配有效信号
-    - **io.mshr.match.bits**: 匹配数据
-  - **io.mshr.update**: MSHR更新信号
+- **io.dataArray**: 数据阵列访问接口  
+  - **io.dataArray.toIData[0].valid / bits.waymask / bits.vSetIdx / bits.blkOffset**: S0阶段主端口读请求，携带目标路掩码与集合索引。  
+  - **io.dataArray.toIData[1].valid / bits.vSetIdx**: 辅助集合索引端口，仅包含`valid`与`vSetIdx`，用于额外广播集合索引。  
+  - **io.dataArray.toIData[2].valid / bits.vSetIdx**: 第二个辅助集合索引端口，结构同上，对应另一组集合索引广播需求。  
+  - **io.dataArray.toIData[3].valid / ready**: 写返握手（DataArray写忙反馈）。  
+  - **io.dataArray.fromIData.datas[j] / codes[j] (j=0..7)**: 读取出的指令数据与ECC校验码。
 
-- **io.flush**: 刷新控制信号
-- **io.fencei**: 指令缓存刷新信号
-- **io.pmp**: PMP检查接口
-  - **io.pmp.req**: PMP检查请求
-  - **io.pmp.resp**: PMP检查响应
-    - **io.pmp.resp.exception**: PMP异常标志
+- **io.wayLookupRead**: Meta阵列及Way信息读取接口  
+  - **io.wayLookupRead.valid / ready**: 请求握手。  
+  - **io.wayLookupRead.bits.entry.vSetIdx / waymask / meta_codes / ptag**: WayLookup返回的元数据向量。  
+  - **io.wayLookupRead.bits.entry.itlb.pbmt / exception**: ITLB属性与异常信息。  
+  - **io.wayLookupRead.bits.gpf.isForVSnonLeafPTE / gpaddr**: Guest页表信息。
 
-#### 2.3.3 MainPipe内部接口束
-- **MainPipe_.s0_valid**: S0阶段有效信号
-- **MainPipe_.s1_valid**: S1阶段有效信号  
-- **MainPipe_.s2_valid**: S2阶段有效信号
-- **MainPipe_.s0_req**: S0阶段请求数据
-- **MainPipe_.s1_req**: S1阶段请求数据
-- **MainPipe_.s2_req**: S2阶段请求数据
-- **MainPipe_.ecc_error**: ECC错误标志
-- **MainPipe_.exception_merged**: 合并后的异常信息
+- **io.metaArrayFlush**: 元数据冲刷接口  
+  - **io.metaArrayFlush[k].valid**: 第k路冲刷请求有效（k=0,1）。  
+  - **io.metaArrayFlush[k].bits.waymask / virIdx**: 待冲刷的路掩码与虚拟索引。
+
+- **io.touch**: 触发Way触摸/替换信息更新  
+  - **io.touch[k].valid / bits.way / bits.vSetIdx**: 第k路触摸请求。
+
+- **io.errors**: 错误上报接口  
+  - **io.errors[k].valid**: 端口k的错误上报有效。  
+  - **io.errors[k].bits.paddr / report_to_beu**: 错误对应的物理地址及是否需上报BEU。
+
+- **io.perfInfo**: 性能统计接口  
+  - **io.perfInfo.bank_hit[n]**: 第n个bank命中统计（n=0,1）。  
+  - **io.perfInfo.hit / only[0].hit / only[0].miss**: 命中及命中/未命中分类计数。  
+  - **io.perfInfo.miss[0].hit / miss / except**: Miss分类计数。  
+  - **io.perfInfo.except**: 异常统计计数。
+
+- **io.pmp**: PMP检查接口  
+  - **io.pmp[0/1].req.bits.addr**: 待检查的物理地址。  
+  - **io.pmp[0/1].resp.instr / resp.mmio**: PMP返回的指令权限和MMIO标志。
+
+- **io.hartId / io.flush / io.ecc_enable / io.respStall**: 控制与状态类信号，分别表示硬件线程编号、全局刷新、ECC开关以及IFU响应阻塞控制。
 
 ---
 
 ## 3. 验证功能点
 
-### 3.1 冒烟测试
-- **test_smoke: 基本功能冒烟测试**
-  - 验证模块的基本可用性
-  - 测试关键路径的正常工作
-  - 验证模块集成的兼容性
-  - 确保基础功能的快速验证
+### 3.1 访问 DataArray 的单路（CP11）
+MainPipe 在 S0 阶段依据 WayLookup 返回的命中信息、ITLB 结果以及 DataArray 的写忙状态决定是否推进流水、并向DataArray 发起读访问。
+- 功能点CP11.1 访问 DataArray 的单路: Way 命中、ITLB 正常且 DataArray 可读时，s0_fire 与 toIData.valid 拉高，正常读取单路数据。
+- 功能点CP11.2 不访问 DataArray（Way 未命中）: Way 未命中时仍会产生 toIData.valid，但 waymask 全零表示数据无效，命中逻辑拒绝本次结果。
+- 功能点CP11.3 不访问 DataArray（ITLB 查询失败）: ITLB 查询失败时保持访问节奏，toIData.valid 仍为 1，同时向后级传递 ITLB 异常用于后续合并。
+- 功能点CP11.4 不访问 DataArray（写忙阻塞）: DataArray 正在写忙（toIData.last.ready=0）时阻塞 s0_fire/fetch_req_ready，防止流水推进。
+- 测试用例:TC12 test_cp11_dataarray_access — 组合驱动 WayLookup、Fetch 与 DataArray ready，覆盖四种访问分支并核对 toIData/s0_fire 行为。
 
-### 3.2 API功能测试
-- **test_basic_control_api: 基本控制API验证**
-  - 验证flush、ecc_enable、resp_stall等基本控制信号
-  - 测试信号设置和读取的正确性
-  - 验证接口兼容性和稳定性
-  - 确保基础API的可靠性
+### 3.2 Meta ECC 校验 (CP12)
+S1 阶段对 WayLookup 带回的 meta 与 ECC 校验码做奇偶校验，确保命中表项的元数据可靠。
+功能点CP12.1 无 ECC 错误: Way 未命中或单路命中且编码正确时，s1_meta_corrupt 维持为 0。
+功能点CP12.2 单路命中的 ECC 错误: 单路命中但 meta ECC 校验失败时，置位 s1_meta_corrupt 并通过 io.errors(i) 报告 BEU。
+功能点CP12.3 多路命中触发 ECC 错误: 多路同时命中视为必然 ECC 故障，同样触发错误上报。
+功能点CP12.4 ECC 功能关闭: 关闭 ecc_enable 时强制清除 s1_meta_corrupt，忽略校验差异。
+测试用例:TC13 test_cp12_meta_ecc_check — 构造不同 waymask/ECC 情形，验证错误检测、报告及 ecc_enable 掩蔽逻辑。
 
-- **test_drive_apis: 驱动API验证**
-  - 验证data_array_ready驱动功能
-  - 测试waylookup_read多参数设置
-  - 验证fetch_request复杂参数驱动
-  - 确保驱动功能的完整性
+### 3.3 PMP 检查 (CP13)
+S1 阶段将物理地址送入 PMP 判断执行权限、MMIO 属性，并在下一拍供异常合并使用。
+功能点CP13.1 无 PMP 异常: 无异常时 s1_pmp_exception 清零。
+功能点CP13.2 通道0 PMP 异常: PMP 仅在通道 0 拒绝访问。
+功能点CP13.3 通道1 PMP 异常: PMP 仅在通道 1 拒绝访问。
+功能点CP13.4 双通道 PMP 异常: 两个通道同时出现 PMP 异常。
+功能点CP13.5 无 MMIO 映射: 两个通道均不属于 MMIO 区域。
+功能点CP13.6 通道0 映射 MMIO: 通道 0 被判定为 MMIO。
+功能点CP13.7 通道1 映射 MMIO: 通道 1 被判定为 MMIO。
+功能点CP13.8 双通道映射 MMIO: 两个通道都落在 MMIO 区域。
+测试用例:TC14 test_cp13_pmp_check — 在代理中逐项驱动 PMP 响应矩阵，核对 exception/mmio 信号。
 
-- **test_monitoring_apis: 监控API验证**
-  - 验证DataArray、Meta ECC、PMP、MSHR、Data ECC状态监控
-  - 测试状态读取的实时性和准确性
-  - 验证监控数据的一致性
-  - 确保监控功能的可靠性
+### 3.4 异常合并 (CP14)
+将 ITLB 与 PMP 异常按优先级合并生成 s1_exception_out，确保向后级传递唯一的异常类型。
+功能点CP14.1 无异常: 无异常时 s1_exception_out 全零。
+功能点CP14.2 仅 ITLB 异常: 仅 ITLB 异常时输出与 s1_itlb_exception 对齐。
+功能点CP14.3 仅 PMP 异常: 仅 PMP 异常时输出与 s1_pmp_exception 对齐。
+功能点CP14.4 ITLB 与 PMP 同时异常: ITLB 与 PMP 并发时，优先保留 ITLB 异常编码。
+测试用例:TC15 test_cp14_exception_merge — 设置不同异常组合，观察合并结果与优先级。
 
-- **test_enhanced_monitoring_apis: 增强监控API验证**
-  - 验证高级监控功能
-  - 测试复杂状态的监控能力
-  - 验证监控数据的完整性
-  - 确保增强功能的正确性
+### 3.5 MSHR 匹配和数据选择 (CP15)
+S1 阶段优先匹配 MSHR 返回的数据，避免重复访问 SRAM 并处理 corrupt 情况。
+功能点CP15.1 命中 MSHR: 命中有效 MSHR 时，s1_datas 选用 fromMSHR，s1_data_is_from_MSHR=1。
+功能点CP15.2 未命中 MSHR: 未命中 MSHR 时改用 SRAM 数据。
+功能点CP15.3 MSHR 数据 corrupt: MSHR 数据带 corrupt 标记时视为未命中，回退至 SRAM 数据路径。
+测试用例:TC16 test_cp15_mshr_match_data_select — 控制 MSHR 响应与 corrupt 标志，检查数据选择路径。
 
-- **test_error_injection_apis: 错误注入API验证**
-  - 验证错误注入机制的有效性
-  - 测试各种错误类型的注入
-  - 验证错误处理的正确性
-  - 确保错误注入的可控性
+### 3.6 Data ECC 校验 (CP16)
+S2 对数据路径做 ECC 校验，决定是否上报 BEU 并标记 s2_data_corrupt。
+功能点CP16.1 无 Data ECC 错误: 数据正确且来源 SRAM 时 s2_data_corrupt 维持假。
+功能点CP16.2 单 Bank ECC 错误: 单 bank ECC 错误触发 s2_data_corrupt 与错误上报。
+功能点CP16.3 多 Bank ECC 错误: 多 bank ECC 错误同样触发错误上报并记录全部损坏 bank。
+功能点CP16.4 ECC 功能关闭: ecc_enable 关闭时忽略所有 Data ECC 错误。
+测试用例:TC17 test_cp16_data_ecc_check — 注入单/多 bank 错误及 ecc_enable 关闭场景，验证上报路径。
 
-- **test_signal_bindings: 信号绑定验证**
-  - 验证信号绑定的正确性
-  - 测试接口映射的准确性
-  - 验证信号传输的完整性
-  - 确保绑定机制的稳定性
+### 3.7 冲刷 MetaArray (CP17)
+在检测到元数据或数据损坏时，通过 toMetaFlush 清除 MetaArray 对应路，为重新取数做准备。
+功能点CP17.1 Meta ECC 错误冲刷: 仅 Meta ECC 错误时冲刷整组 way。
+功能点CP17.2 Data ECC 错误冲刷: 仅 Data ECC 错误时冲刷具体出错路。
+功能点CP17.3 Meta+Data 同时错误冲刷: Meta 与 Data 同时错误时以 Meta 优先，整组清除。
+测试用例:TC18 test_cp17_metaarray_flush — 触发不同错误组合，核对 toMetaFlush.valid 与 waymask。
 
-- **test_comprehensive_signal_interface: 综合信号接口验证**
-  - 验证所有信号接口的协调工作
-  - 测试复杂信号交互场景
-  - 验证接口整体功能的正确性
-  - 确保综合功能的可靠性
+### 3.8 监控 MSHR 匹配与数据更新 (CP18)
+S2 阶段持续监控与 MSHR 的匹配关系，决定 s2_datas 的来源及命中状态。
+功能点CP18.1 MSHR 命中数据更新: MSHR 命中且阶段有效时，s2_MSHR_hits/s2_bankMSHRHit 拉高，数据来自 MSHR。
+功能点CP18.2 MSHR 未命中保持数据: 未命中 MSHR 时保持 SRAM 数据或进入 Miss 流程，s2_MSHR_hits 维持低。
+测试用例:TC19 test_cp18_s2_mshr_match_data_update — 控制 s1_fire 与 MSHR 响应，验证 s2 数据、命中标记更新。
 
-- **test_data_array_response: DataArray响应API验证**
-  - 验证DataArray响应数据和校验码设置
-  - 测试响应数据的正确性
-  - 验证响应时序的准确性
-  - 确保响应机制的可靠性
+### 3.9 Miss 请求发送逻辑和合并异常 (CP19)
+根据 s2_should_fetch 判断是否向 Miss 单元发起请求，并在 S2 合并 ITLB/PMP/L2 异常。
+功能点CP19.1 未发生 Miss: 已命中或存在异常/MMIO 时不发送 Miss 请求。
+功能点CP19.2 单口 Miss 请求: 单端口 Miss 时向 Arbiter 提交单条请求。
+功能点CP19.3 双口 Miss 请求: 双端口同时 Miss 时分别发起请求并由仲裁器顺序处理。
+功能点CP19.4 重复请求屏蔽: s2_has_send 防止重复请求，fire 后拉高阻止再次发送。
+功能点CP19.5 仅 ITLB/PMP 异常: 仅 ITLB/PMP 异常时保留原异常，不新增 AF。
+功能点CP19.6 仅 L2 异常: 仅 L2 corrupt 时输出 AF 异常。
+功能点CP19.7 ITLB+L2 同步异常: ITLB 与 L2 同时存在时保持 ITLB 优先。
+功能点CP19.8 S2 取指完成: 所有端口 s2_should_fetch 为 0 时标记取指完成（s2_fetch_finish）。
+测试用例:TC20 test_cp19_miss_request_logic — 覆盖 Miss/异常组合，确认仲裁、去重及异常合并逻辑。
 
-- **test_pmp_response: PMP响应API验证**
-  - 验证PMP响应的instr和mmio信号设置
-  - 测试双通道PMP响应
-  - 验证PMP状态的准确报告
-  - 确保PMP功能的完整性
+### 3.10 响应 IFU (CP20)
+S2 在数据准备完毕且未被 respStall 阻塞时向 IFU 返回命中数据或异常信息。
+功能点CP20.1 正常命中返回: 正常命中时 toIFU.valid 与数据字段正确输出，异常位清零。
+功能点CP20.2 异常路径返回: 发生 ITLB/PMP/L2 异常时按端口填充 exception/pmp_mmio/itlb_pbmt。
+功能点CP20.3 跨行取指响应: 跨行请求时 doubleline=1，并携带第二路数据及异常状态。
+功能点CP20.4 RespStall 阻塞: respStall 拉高时 s2_fire/toIFU.valid 维持低，保留当前状态。
+测试用例:TC21 test_cp20_response_ifu — 模拟命中、异常、跨行与 respStall，检查 IFU 接口打包结果。
 
-- **test_mshr_response: MSHR响应API验证**
-  - 验证MSHR响应的blkPaddr、vSetIdx、data、corrupt设置
-  - 测试响应数据的正确性
-  - 验证响应时序的准确性
-  - 确保MSHR功能的完整性
+### 3.11 L2 Corrupt 报告 (CP21)
+当 L2 补回数据标记 corrupt 时，S2 需额外通过 io.errors(i) 上报，区分单路与双路场景。
+功能点CP21.1 单路 L2 Corrupt 报告: 单路 corrupt 时对应 s2_l2_corrupt 与 io.errors(i).bits.source.l2 拉高。
+功能点CP21.2 双路 L2 Corrupt 报告: 双路同时 corrupt 时两个端口均上报 L2 错误。
+测试用例:TC22 test_cp21_l2_corrupt_report — 注入单/双端口 corrupt，核对错误接口输出。
 
-### 3.3 DataArray访问功能
-- **CP11: 访问DataArray的单路验证**
-  - 验证根据WayLookup信息决定是否访问DataArray
-  - 测试路命中时向DataArray发送读取请求
-  - 验证ITLB查询成功且DataArray无写操作时的访问
-  - 测试Way未命中、ITLB查询失败、DataArray写操作时的阻塞
-  - 确保toData.valid信号的正确控制
+### 3.12 刷新机制 (CP22)
+全局 flush 信号向 S0/S1/S2 逐级传播，阻断 fire/valid 并清除未决请求。
+功能点CP22.1 全局刷新: 全局 flush 时三段 flush 信号同时拉高，流水全面清空。
+功能点CP22.2 S0 刷新: S0 flush 时 s0_fire 归零，阻止新请求进入。
+功能点CP22.3 S1 刷新: S1 flush 时 s1_valid/s1_fire 清零。
+功能点CP22.4 S2 刷新: S2 flush 时 s2_valid、toMSHRArbiter.io.in.valid 以及 s2_fire 同步拉低。
+测试用例:TC23 test_cp22_flush_mechanism — 驱动 flush 并观测三段 fire/valid 及 MSHR 请求屏蔽行为。
 
-### 3.4 ECC功能验证
-- **CP12: Meta ECC校验验证**
-  - 验证元数据ECC校验功能：无ECC错误、单路命中ECC错误、多路命中、ECC功能关闭
-  - 测试waymask对ECC校验的影响
-  - 验证s1_meta_corrupt信号的正确生成
-  - 确保Meta完整性检查的准确性
-
-- **CP16: Data ECC校验验证**
-  - 验证S2阶段数据ECC校验：无ECC错误、单Bank/多Bank ECC错误、ECC功能关闭
-  - 测试s2_data_corrupt信号的生成
-  - 验证数据来源对ECC校验的影响（MSHR vs SRAM）
-  - 确保数据完整性保护
-
-### 3.5 内存保护功能
-- **CP13: PMP检查验证**
-  - 验证物理内存保护机制：无异常、通道0/1异常、双通道异常
-  - 测试MMIO区域映射检查：无映射、单通道/双通道MMIO映射
-  - 验证s1_pmp_exception和s1_pmp_mmio信号
-  - 确保内存访问权限控制
-
-### 3.6 异常处理功能
-- **CP14: 异常合并验证**
-  - 验证ITLB与PMP异常的合并：无异常、单一异常、同时异常
-  - 测试异常优先级：ITLB优先于PMP
-  - 验证s1_exception_out信号的生成
-  - 确保异常处理的正确性
-
-### 3.7 MSHR管理功能
-- **CP15: MSHR匹配和数据选择验证**
-  - 验证MSHR匹配逻辑：命中MSHR、未命中MSHR、MSHR数据corrupt
-  - 测试数据选择：MSHR数据 vs SRAM数据
-  - 验证s1_MSHR_hits和s1_data_is_from_MSHR信号
-  - 确保性能优化的正确实现
-
-- **CP18: S2阶段MSHR匹配与数据更新验证**
-  - 验证S2阶段MSHR匹配：匹配且有效、未命中情况
-  - 测试数据更新逻辑：根据s1_fire状态更新s2数据
-  - 验证s2_MSHR_hits、s2_hits、s2_data_corrupt的更新
-  - 确保MSHR状态管理的正确性
-
-### 3.8 缓存管理功能
-- **CP17: MetaArray冲刷验证**
-  - 验证Meta/Data ECC错误时的冲刷机制
-  - 测试冲刷策略：Meta错误冲刷全路、Data错误冲刷对应路
-  - 验证toMetaFlush信号和waymask的生成
-  - 确保重取准备的正确性
-
-- **CP22: 流水线刷新机制验证**
-  - 验证全局刷新信号io.flush的传播
-  - 测试各阶段刷新：S0、S1、S2阶段刷新
-  - 验证刷新对流水线状态的影响
-  - 确保刷新机制的协调性
-
-### 3.9 请求处理功能
-- **CP19: Miss请求发送逻辑和异常合并验证**
-  - 验证Miss请求条件：未命中、ECC错误触发请求
-  - 测试请求仲裁：单口Miss、双口Miss、重复请求屏蔽
-  - 验证异常合并：ITLB/PMP异常、L2异常、异常优先级
-  - 确保Miss处理和异常报告的正确性
-
-- **CP20: 响应IFU验证**
-  - 验证向IFU的响应生成：正常命中返回、异常返回、跨行取指
-  - 测试响应控制：RespStall处理
-  - 验证toIFU信号的正确打包
-  - 确保取指流程的完整性
-
-### 3.10 错误报告功能
-- **CP21: L2 Corrupt报告验证**
-  - 验证L2 Cache corrupt检测：单路corrupt、双路corrupt
-  - 测试错误报告生成：io.errors信号
-  - 验证s2_l2_corrupt标志的处理
-  - 确保错误报告的准确性
-
-### 3.11 API测试功能
-- **测试用例**: test_data_array_response, test_pmp_response, test_mshr_response
-  - 验证各种响应API的功能
-  - 测试接口的正确性和稳定性
 
 ---
 

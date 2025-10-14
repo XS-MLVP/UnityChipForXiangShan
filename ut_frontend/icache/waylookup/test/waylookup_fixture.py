@@ -20,21 +20,21 @@ async def waylookup_env(toffee_request: toffee_test.ToffeeRequest):
     waylookup_env.dut.reset.value = 0
     waylookup_env.dut.Step(10)
     
-    print("--- [FIXTURE SETUP] Defining WayLookup functional coverage groups... ---")
+    toffee.info("--- [FIXTURE SETUP] Defining WayLookup functional coverage groups... ---")
     coverage_groups = create_waylookup_coverage_groups(waylookup_env.bundle, dut)
-    # print(f"all signals: {waylookup_env.dut.GetInternalSignalList(use_vpi=False)}")
+    # toffee.info(f"all signals: {waylookup_env.dut.GetInternalSignalList(use_vpi=False)}")
     
     # Add all coverage groups to the test request
     for coverage_group in coverage_groups:
         toffee_request.add_cov_groups(coverage_group)
-        print(f"Added coverage group: {coverage_group.name}")
+        toffee.info(f"Added coverage group: {coverage_group.name}")
     
     yield waylookup_env
 
     # Sample all coverage groups at the end
     for coverage_group in coverage_groups:
         dut.StepRis(coverage_group.sample)
-        print(f"Sampled coverage group: {coverage_group.name}")
+        toffee.info(f"Sampled coverage group: {coverage_group.name}")
 
     cur_loop = asyncio.get_event_loop()
     for task in asyncio.all_tasks(cur_loop):

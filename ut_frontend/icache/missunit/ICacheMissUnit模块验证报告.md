@@ -124,191 +124,86 @@ ICacheMissUnit包含以下主要组件：
 ---
 
 ## 3. 验证功能点
+### 3.1 入队操作 (CP28)
+MissUnit 内部的 priorityFIFO 负责缓存预取 MSHR 的编号，本功能点覆盖 FIFO 入队路径的各种状态。
+- 功能点CP28.1 队未满，正常入队：当队列未满、`io.enq.ready=1` 且 `io.enq.valid=1` 时可以顺利入队，指针 `enq_ptr.value` 顺序递增且 `enq_ptr.flag` 保持不翻转。
+- 功能点CP28.2 队未满，入队后标记位翻转：当入队指针位于队尾（索引 9）时再次入队，`enq_ptr.value` 回绕为 0 且 `enq_ptr.flag` 翻转，实现环形 FIFO。
+- 功能点CP28.3 队满，入队就绪信号为低，无法入队：当 `(enq_ptr.value == deq_ptr.value) && (enq_ptr.flag ^ deq_ptr.flag)` 为真时视为队满，`io.enq.ready=0` 阻止新的请求，`enq_ptr` 保持不变。
+- 测试用例：TC13 test_FIFO_moudle - 依次送入 10 条请求确认正常入队及指针累加，并通过第 11 条请求观察就绪信号拉低、指针保持不变。
 
-### 3.1 冒烟测试
-- **CP01: 基本功能冒烟测试**
-  - 验证模块的基本可用性
-  - 测试关键路径的正常工作
-  - 验证模块集成的兼容性
-  - 确保基础功能的快速验证
+### 3.2 出队操作 (CP29)
+该功能点验证 priorityFIFO 的出队语义以及环形指针的正确性。
+- 功能点CP29.1 队非空，正常出队：当 FIFO 有效且 `io.deq.ready=1` 时，`io.deq.fire` 触发数据吐出，`deq_ptr.value` 顺序递增。
+- 功能点CP29.2 队非空，出队后标记位翻转：当 `deq_ptr.value` 为 9 时出队，指针回绕至 0 并翻转 `deq_ptr.flag`。
+- 功能点CP29.3 队空，出队有效信号为低：当 `enq_ptr` 与 `deq_ptr` 完全一致时视为队空，`io.deq.valid=0`，出队握手被禁止。
+- 测试用例：TC13 test_FIFO_moudle - 先填满再逐条出队查看指针递增与回绕；TC18 test_fifo_priority_ordering - 在全部元素出队后确认队空时 valid 维持低电平。
 
-### 3.2 基本控制功能
-- **CP02: Bundle接口fetch请求驱动验证**
-  - 验证fetch请求输入信号的驱动功能
-  - 测试fetch_req_valid信号的设置
-  - 验证fetch_req_bits_blkPaddr的地址驱动
-  - 确保fencei信号的正确控制
+### 3.3 刷新清空操作（CP30）
+flush 信号应即时清空 priorityFIFO 的读写指针和标志位，保证刷新后队列重新可用。
+- 功能点CP30.1 flush 清空：当 `io.flush=1` 时，将 `enq_ptr.value`、`deq_ptr.value`、`flag` 全部复位为 0，同时 `empty=1`、`full=0`。
+- 测试用例：TC05 test_set_flush - 直接驱动 flush 信号验证指针复位；TC13 test_FIFO_moudle - 在 FIFO 填满后施加 flush，确认队列恢复初始状态并可再次入队。
 
-- **CP03: Bundle接口ready信号读取验证**
-  - 验证fetch_req_ready信号的读取正确性
-  - 测试ready信号状态的实时反映
-  - 验证信号取值范围的合理性
-  - 确保信号读取的一致性
+### 3.4 处理取指缺失请求 （CP31）
+MissUnit 需要接收来自取指端的缺失请求、区分新旧 miss，并按照低索引优先策略分配 fetch MSHR。
+- 功能点CP31.1 接受新的取指请求：当 `io.fetch.req.valid=1` 且 `fetchHit=0` 时，`io.fetch.req.ready=1` 并将请求送入空闲 fetch MSHR。
+- 功能点CP31.2 处理已有的取指请求：当同地址 miss 再次到来时 `fetchHit=1`，`fetchDemux.io.in.valid` 保持 0，表示命中已有 MSHR 并阻止再次分配。
+- 功能点CP31.3 低索引优先进入 MSHR：fetchDemux 以编号 0→3 的顺序寻找空位，优先分配低索引 fetch MSHR。
+- 测试用例：TC07 test_send_fetch_request - 发送不同地址 miss 验证新请求被接收；TC14 test_mshr_hit_detection - 驱动重复地址确认命中判定；TC16 test_low_index_priority_fetch - 连续 miss 观察低索引 MSHR 依次被占用。
 
-- **CP04: Fencei功能验证**
-  - 验证fencei信号对所有MSHR的清理功能
-  - 测试fencei=1时MSHR状态的重置
-  - 验证fencei=0后MSHR的恢复
-  - 确保fencei处理的原子性
+### 3.5 处理预取缺失请求 （CP32）
+预取命中与分配策略与取指通路类似，同时增加 FIFO 排队行为。
+- 功能点CP32.1 接受新的预取请求：当 `io.prefetch_req.valid=1` 且 `prefetchHit=0` 时，`io.prefetch_req.ready=1` 并写入空闲 prefetch MSHR。
+- 功能点CP32.2 处理已有的预取请求：命中已有 MSHR 时 `prefetchHit=1`，请求被吸收但不再下发新的分配。
+- 功能点CP32.3 低索引优先进入 MSHR：prefetchDemux 按索引 0→9 分配空闲 MSHR，优先占用低编号。
+- 功能点CP32.4 先进入 MSHR 的优先进入 prefetchArb：预取 MSHR 的编号按入队顺序写入 priorityFIFO，出队顺序与入队一致，保证仲裁 FIFO 语义。
+- 测试用例：TC08 test_send_prefetch_request - 检查新 miss 被接收；TC14 test_mshr_hit_detection - 复用 fetch miss 建立的 MSHR 观察命中；TC17 test_low_index_priority_prefetch - 验证低索引优先；TC18 test_fifo_priority_ordering - 验证 FIFO 先入先出。
 
-- **CP05: Flush信号控制验证**
-  - 验证flush信号的设置和清除
-  - 测试flush信号的响应机制
-  - 验证flush对系统状态的影响
-  - 确保flush操作的正确性
+### 3.6 MSHR 管理与查找 (CP33)
+该功能点覆盖 MSHR 查找命中、资源释放及取指/预取共享命中等场景。
+- 功能点CP33.1 MSHR 查找命中逻辑：新的 fetch/prefetch 请求能够遍历全部 MSHR，并在命中时拉高 `fetchHit` 或 `prefetchHit`。
+- 功能点CP33.2 MSHR 状态的更新与释放：Grant 流程完成后，对应 MSHR 有效位被清零，`io.req.ready` 恢复为 1，允许接收后续 miss。
+- 功能点CP33.3 Prefetch 与 fetch 地址相同时命中：当预取与取指请求地址一致且 fetch valid 时，`prefetchHit` 仍置 1，避免重复 miss。
+- 功能点CP33.4 新请求未命中任何 MSHR：当查找未命中已有 miss 时，`fetchHit`/`prefetchHit` 均为 0，以便分配新槽。
+- 测试用例：TC14 test_mshr_hit_detection - 覆盖命中与未命中分支；TC15 test_mshr_release_after_grant - 验证 Grant 完成后的 MSHR 释放；TC26 test_prefetch_same_address_as_fetch - 观测预取与取指同地址命中；TC07/TC08 - 验证首次 miss 时命中标志为 0。
 
-- **CP06: Victim Way设置验证**
-  - 验证victim way的配置功能
-  - 测试所有可能的way值(0-3)
-  - 验证victim way信号的正确传播
-  - 确保替换策略的参数设置
+### 3.7 acquireArb 仲裁 (CP34)
+acquireArb 负责在 fetch 与 prefetch MSHR 之间进行固定优先级仲裁。
+- 功能点CP34.1 acquireArb 仲裁：当 fetch 与 prefetch 同时请求时，acquireArb 优先输出源 ID < 4 的 fetch 请求。
+- 功能点CP34.2 只有 prefetch 请求时被选中：当所有 fetch MSHR 空闲或无请求时，pre-fetch MSHR 的 acquire 可以被仲裁并送出。
+- 测试用例：TC19 test_acquire_arbitration_priority - 先触发预取再触发取指，记录仲裁顺序并确认 fetch 优先；同用例中在 fetch 完成后验证预取请求最终被送出。
 
-### 3.3 请求发送功能
-- **CP07: Fetch请求发送验证**
-  - 验证fetch请求的发送能力
-  - 测试4个fetch MSHR的容量限制
-  - 验证第5个请求的正确拒绝
-  - 确保请求发送的准确性
+### 3.8 Grant 数据接收与 Refill (CP35)
+MissUnit 必须正确收集 TileLink Grant 的多拍数据并根据 last_fire 状态完成 refill。
+- 功能点CP35.1/CP35.2 正常完整 Grant 流程：在连续两个 beat 的 Grant 中，`readBeatCnt` 递增、`respDataReg` 收集数据，最后一个 beat 置 `last_fire=1`，下一拍 `last_fire_r=1`。
+- 功能点CP35.3 Grant 完成后释放 MSHR：`last_fire_r=1` 时，根据 `grant.bits.source` 无效化对应 MSHR。
+- 功能点CP35.4 Grant 带有 corrupt 标志：当 `grant.bits.corrupt=1` 时，模块记录 `corrupt_r`，后续响应携带污染标志。
+- 测试用例：TC20 test_grant_beat_collection - 手动逐拍驱动 Grant 检查 beat 累计与 last_fire；TC10 test_api_full_fetch_flow - 完整 miss 流程中验证 last_fire_r 与 MSHR 释放；TC11 test_api_grant_with_corruption - 检查 corrupt 标志传递。
 
-- **CP08: Prefetch请求发送验证**
-  - 验证prefetch请求的发送能力
-  - 测试10个prefetch MSHR的容量限制
-  - 验证第11个请求的正确拒绝
-  - 确保prefetch发送的可靠性
+### 3.9 替换策略更新 (CP36)
+当 acquire 成功发送时需要通知替换策略更新被淘汰的路，同时在响应阶段生成 waymask。
+- 功能点CP36.1 正常替换更新：当 `io.mem.acquire.fire` 成功时，`io.victim.vSetIdx.valid` 拉高并输出正在替换的集合索引。
+- 功能点CP36.2 生成 waymask：在 Grant 完成后，根据 L2 返回的 `mshr_resp.bits.way` 生成独热 `waymask`，用于 SRAM 写回与响应。
+- 测试用例：TC21 test_victim_way_update - 在 acquire fire 时读取 victim 接口确认 valid 与 bits；TC22 test_waymask_generation - 通过设置不同 victim way 并完成 Grant，检查响应中的 waymask。
 
-### 3.4 API流程功能
-- **CP09: Fetch请求生成Acquire验证**
-  - 验证fetch请求正确生成acquire
-  - 测试source ID的正确分配
-  - 验证地址映射的准确性
-  - 确保请求与acquire的关联
+### 3.10 写回 SRAM (CP37)
+当 miss refill 完整返回时，需要根据刷新/腐化状态决定是否写回 meta/data SRAM。
+- 功能点CP37.1 生成写使能：在 `last_fire_r=1` 且无 flush/fencei/corrupt 条件下，`io.meta_write.valid` 与 `io.data_write.valid` 同时拉高。
+- 功能点CP37.2 正常写入内容：写口携带的 virIdx、phyTag、data、waymask 等字段与 MSHR 记录一致。
+- 功能点CP37.3 有 flush/fencei 时不写 SRAM：当 flush 或 fencei 有效时，即使数据返回也保持写 SRAM 使能为 0。
+- 功能点CP37.4 处理 corrupt 数据：当 `corrupt_r=1` 时禁止写 SRAM，但依旧产生 fetch 响应并将 corrupt 标志向外传播。
+- 测试用例：TC23 test_sram_write_conditions - 验证正常写回路径；TC24 test_no_write_with_flush_fencei - 在 flush/fencei 或 corrupt 条件下确认写使能抑制且返回带有 corrupt 标志。
 
-- **CP10: 完整Fetch流程验证**
-  - 验证端到端的fetch处理流程
-  - 测试victim way的设置时序
-  - 验证Grant响应的正确处理
-  - 确保完整流程的功能正确性
+### 3.11 向 mainPipe/prefetchPipe 发出 Miss 完成响应（CP38）
+MissUnit 在 Grant 完成后一拍需要向取指前端返回 miss 完成信息。
+- 功能点CP38.1 正常 Miss 完成响应：当 `last_fire_r=1` 时，`io.fetch_resp.valid=1`，并输出 blkPaddr、vSetIdx、waymask、data、corrupt 等字段。
+- 测试用例：TC10 test_api_full_fetch_flow - 完整 miss 流程中检查 fetch_resp 的内容；TC11 test_api_grant_with_corruption - 验证响应携带 corrupt 标志并仍然有效；TC23 test_sram_write_conditions - 在正常写回场景中确认 fetch_resp 数据与写回字段一致。
 
-- **CP11: Grant数据损坏处理验证**
-  - 验证corrupt标志的正确传播
-  - 测试数据损坏时的响应生成
-  - 验证corrupt数据的处理机制
-  - 确保错误处理的完整性
-
-- **CP12: 完整Prefetch流程验证**
-  - 验证端到端的prefetch处理流程
-  - 测试prefetch source ID的分配
-  - 验证prefetch响应的生成
-  - 确保prefetch功能的正确性
-
-### 3.5 FIFO功能验证
-- **CP13: FIFO模块综合验证**
-  - 验证Priority FIFO的完整功能
-  - 测试FIFO满状态的阻塞机制
-  - 验证指针回环和队列操作
-  - 确保FIFO调度的正确性
-
-### 3.6 MSHR管理功能
-- **CP14: MSHR命中检测验证**
-  - 验证fetch请求命中现有MSHR
-  - 测试prefetch请求命中检测
-  - 验证相同地址的命中逻辑
-  - 确保MSHR查找的准确性
-
-- **CP15: MSHR释放验证**
-  - 验证Grant完成后MSHR的释放
-  - 测试MSHR状态的正确更新
-  - 验证MSHR生命周期管理
-  - 确保资源释放的及时性
-
-### 3.7 优先级策略功能
-- **CP16: Fetch MSHR低索引优先级验证**
-  - 验证fetchDemux的索引分配策略
-  - 测试低索引MSHR的优先使用
-  - 验证MSHR占用状态的更新
-  - 确保优先级算法的正确性
-
-- **CP17: Prefetch MSHR低索引优先级验证**
-  - 验证prefetchDemux的索引分配
-  - 测试chosen信号的正确指示
-  - 验证低索引MSHR的优先使用
-  - 确保prefetch优先级的实现
-
-- **CP18: FIFO优先级顺序验证**
-  - 验证prefetch请求的FIFO顺序
-  - 测试source ID的递增分配
-  - 验证先入先出的调度逻辑
-  - 确保队列顺序的公平性
-
-- **CP19: Acquire仲裁优先级验证**
-  - 验证fetch优先于prefetch的仲裁
-  - 测试混合请求的处理顺序
-  - 验证仲裁逻辑的公平性
-  - 确保优先级策略的实施
-
-### 3.8 数据传输功能
-- **CP20: Grant多Beat数据收集验证**
-  - 验证multi-beat数据的收集
-  - 测试last_fire信号的正确生成
-  - 验证数据拼装的完整性
-  - 确保数据传输的可靠性
-
-- **CP21: Victim Way更新验证**
-  - 验证acquire fire时victim信号生成
-  - 测试victim vSetIdx的正确传播
-  - 验证替换策略的更新机制
-  - 确保victim信息的准确性
-
-- **CP22: Waymask生成验证**
-  - 验证根据victim way生成waymask
-  - 测试独热编码的正确性
-  - 验证不同way的waymask生成
-  - 确保waymask逻辑的准确性
-
-### 3.9 SRAM写回功能
-- **CP23: SRAM写回条件验证**
-  - 验证正常情况下的SRAM写入
-  - 测试Meta和Data写信号的生成
-  - 验证写回条件的判断逻辑
-  - 确保写回控制的正确性
-
-- **CP24: Flush/Fencei写回抑制验证**
-  - 验证flush/fencei时不写SRAM
-  - 测试写回抑制机制的正确性
-  - 验证响应仍能正常生成
-  - 确保异常处理的完整性
-
-### 3.10 特殊情况处理
-- **CP25: Flush/Fencei MSHR行为验证**
-  - 验证flush对prefetch MSHR的影响
-  - 测试fencei对所有MSHR的清理
-  - 验证异常信号的处理机制
-  - 确保状态管理的正确性
-
-- **CP26: 相同地址处理验证**
-  - 验证prefetch与fetch相同地址的处理
-  - 测试特殊命中条件的检测
-  - 验证地址冲突的解决机制
-  - 确保冲突处理的合理性
-
-- **CP27: Demux选择信号验证**
-  - 验证demux chosen信号的正确性
-  - 测试MSHR索引选择的准确性
-  - 验证选择逻辑的一致性
-  - 确保demux功能的可靠性
-
-### 3.11 断言验证功能
-- **CP28: Priority FIFO入队断言验证**
-  - 验证enq信号的断言条件
-  - 测试入队操作的时序约束
-  - 验证违规条件的检测
-  - 确保断言机制的有效性
-
-- **CP29: Priority FIFO出队断言验证**
-  - 验证deq信号的断言条件
-  - 测试出队操作的时序约束
-  - 验证握手协议的正确性
-  - 确保断言保护的完整性
+### 3.12 处理 flush / fencei (CP39)
+Flush/Fencei 需要同时作用于未发射与已发射的 miss，确保刷新语义正确。
+- 功能点CP39.1 MSHR 未发射前 fencei：当 `io.fencei=1` 时，fetch/prefetch MSHR 的 `io.req.ready` 与 `io.acquire.valid` 均被拉低，未发射请求被取消。
+- 功能点CP39.2 MSHR 未发射前 flush：`io.flush` 仅阻塞 prefetch MSHR（fetch MSHR 的 flush 恒为 0），此时预取请求 ready 拉低而取指通路仍可发射。
+- 功能点CP39.3 MSHR 已发射后 flush/fencei：当请求已发射且收到刷新信号时，不再写 SRAM，但仍保持 fetch 响应有效。
+- 测试用例：TC04 test_fencei_work - 在 fencei 拉高时检查所有 MSHR ready/valid 被清空；TC25 test_flush_fencei_mshr_behavior - 对 flush 与 fencei 分别验证取指/预取通路的阻断范围；TC24 test_no_write_with_flush_fencei - 在数据返回时施加刷新，确认写回抑制但响应仍产生。
 
 ---
 
@@ -366,8 +261,6 @@ ICacheMissUnit包含以下主要组件：
 | TC25 | test_flush_fencei_mshr_behavior |  验证Flush/Fencei MSHR行为 |
 | TC26 | test_prefetch_same_address_as_fetch |  验证相同地址处理 |
 | TC27 | test_demux_chosen_signal |  验证Demux选择信号 |
-| TC28 | test_trigger_priorityFIFO_enq_assert |  验证Priority FIFO入队断言 |
-| TC29 | test_trigger_priorityFIFO_deq_assert |  验证Priority FIFO出队断言 |
 
 ### 5.2 测试数据
 - **固定测试向量**：使用预定义的测试地址确保测试的可重复性
@@ -428,43 +321,6 @@ missunit/
 - 极端异常情况
 - 部分初始化代码路径
 
-##### 替换策略覆盖（CP36）
-
-| 覆盖点 | 功能描述 | 覆盖状态 |
-|--------|----------|----------|
-| CP36.1 | Acquire成功时更新victim | ✓ 已覆盖 |
-
-##### SRAM写回覆盖（CP37）
-
-| 覆盖点 | 功能描述 | 覆盖状态 |
-|--------|----------|----------|
-| CP37.1 | 正常SRAM写入 | ✓ 已覆盖 |
-| CP37.2 | Flush/Fencei时不写SRAM | ✓ 已覆盖 |
-| CP37.3 | Fetch响应总是生成 | ✓ 已覆盖 |
-| CP37.4 | Corrupt数据响应 | ✓ 已覆盖 |
-
-##### Miss完成覆盖（CP38）
-
-| 覆盖点 | 功能描述 | 覆盖状态 |
-|--------|----------|----------|
-| CP38.1 | 正常Miss完成响应 | ✓ 已覆盖 |
-
-##### 异常处理覆盖（CP39）
-
-| 覆盖点 | 功能描述 | 覆盖状态 |
-|--------|----------|----------|
-| CP39.1 | MSHR未发射前fencei | ✓ 已覆盖 |
-| CP39.2 | MSHR未发射前flush | ✓ 已覆盖 |
-| CP39.3 | MSHR已发射后flush/fencei | ✓ 已覆盖 |
-
-#### 8.2.3 覆盖率统计总结
-
-- **总覆盖点数**: 31个
-- **已覆盖数**: 31个
-- **功能覆盖率**: 100%
-- **关键功能覆盖**: 100%
-- **边界条件覆盖**: 100%
-- **异常处理覆盖**: 100%
 
 ---
 

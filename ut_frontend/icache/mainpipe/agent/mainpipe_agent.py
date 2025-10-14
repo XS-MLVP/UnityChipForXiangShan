@@ -1,5 +1,6 @@
 from toffee import Agent
 from ..bundle import ICacheMainPipeBundle
+import toffee
 
 
 class ICacheMainPipeAgent(Agent):
@@ -18,12 +19,12 @@ class ICacheMainPipeAgent(Agent):
         self.bundle.io._fetch._req._valid.value = 1
         await self.bundle.step()
         
-        print( f"\nBefore setting: s0_fire is: ",self.bundle.ICacheMainPipe._s0_fire.value)
+        toffee.info( f"\nBefore setting: s0_fire is: ",self.bundle.ICacheMainPipe._s0_fire.value)
 
         self.bundle.io._flush.value = 1
         await self.bundle.step()
 
-        print( f"After setting: s0_fire is: ",self.bundle.ICacheMainPipe._s0_fire.value)
+        toffee.info( f"After setting: s0_fire is: ",self.bundle.ICacheMainPipe._s0_fire.value)
     
     async def reset(self):
         """Reset state"""
@@ -36,19 +37,19 @@ class ICacheMainPipeAgent(Agent):
         """设置全局冲刷信号"""
         self.bundle.io._flush.value = int(value)
         await self.bundle.step()
-        print(f"Flush signal set to {value}")
+        toffee.info(f"Flush signal set to {value}")
 
     async def drive_set_ecc_enable(self, value: bool):
         """设置ECC使能信号"""
         self.bundle.io._ecc_enable.value = int(value)
         await self.bundle.step()
-        print(f"ECC enable set to {value}")
+        toffee.info(f"ECC enable set to {value}")
 
     async def drive_resp_stall(self, stall: bool = False):
         """驱动IFU响应暂停信号，用于测试反压。"""
         self.bundle.io._respStall.value = int(stall)
         await self.bundle.step()
-        print(f"Response stall set to {stall}")
+        toffee.info(f"Response stall set to {stall}")
     # ==================== 驱动API ====================
     async def drive_data_array_ready(self, ready: bool):
         """
@@ -60,7 +61,7 @@ class ICacheMainPipeAgent(Agent):
         # DataArray有4个toIData接口(0-3)，只有toIData_3有ready输入信号作为反压控制点
         self.bundle.io._dataArray._toIData._3._ready.value = int(ready)
         await self.bundle.step()
-        print(f"DataArray ready signal set to {ready}")
+        toffee.info(f"DataArray ready signal set to {ready}")
     
     async def drive_waylookup_read(self,
                                  vSetIdx_0: int = 0,
@@ -124,7 +125,7 @@ class ICacheMainPipeAgent(Agent):
         """
         self.bundle.io._wayLookupRead._valid.value = 0
         await self.bundle.step()
-        print("WayLookup read request cleared")
+        toffee.info("WayLookup read request cleared")
         
     async def drive_fetch_request(self,
                                 pcMemRead_addrs: list = None,
@@ -170,13 +171,13 @@ class ICacheMainPipeAgent(Agent):
         expected_vSetIdx_1 = (pcMemRead_nextlineStarts[4] >> 6) & 0xFF  # [13:6]
         
         if wayLookup_vSetIdx_0 != expected_vSetIdx_0 or wayLookup_vSetIdx_1 != expected_vSetIdx_1:
-            print(f"RTL约束违反: vSetIdx不匹配，无法发起fetch请求!")
-            print(f"  pcMemRead_4_startAddr[13:6] = 0x{expected_vSetIdx_0:02x}, wayLookup_vSetIdx_0 = 0x{wayLookup_vSetIdx_0:02x}")
-            print(f"  pcMemRead_4_nextlineStart[13:6] = 0x{expected_vSetIdx_1:02x}, wayLookup_vSetIdx_1 = 0x{wayLookup_vSetIdx_1:02x}")
+            toffee.info(f"RTL约束违反: vSetIdx不匹配，无法发起fetch请求!")
+            toffee.info(f"  pcMemRead_4_startAddr[13:6] = 0x{expected_vSetIdx_0:02x}, wayLookup_vSetIdx_0 = 0x{wayLookup_vSetIdx_0:02x}")
+            toffee.info(f"  pcMemRead_4_nextlineStart[13:6] = 0x{expected_vSetIdx_1:02x}, wayLookup_vSetIdx_1 = 0x{wayLookup_vSetIdx_1:02x}")
             return False
         
         # 设置fetch请求信号（ready是输出信号，不需要等待）
-        print("start driving fetch request")
+        toffee.info("start driving fetch request")
         for j in range(5):
             startpre = getattr(self.bundle.io._fetch._req._bits._pcMemRead, f"_{j}")
             start = getattr(startpre, "_startAddr")
@@ -203,7 +204,7 @@ class ICacheMainPipeAgent(Agent):
         """
         self.bundle.io._fetch._req._valid.value = 0
         await self.bundle.step()
-        print("Fetch request cleared")
+        toffee.info("Fetch request cleared")
 
     async def drive_pmp_response(self,
                                  instr_0: int = 0,
@@ -234,7 +235,7 @@ class ICacheMainPipeAgent(Agent):
             codes = [0] * 8
             
         if len(datas) == 8 and len(codes) == 8:
-            print("start driving data array response")
+            toffee.info("start driving data array response")
             for i in range(8):
                 getattr(self.bundle.io._dataArray._fromIData._datas, f"_{i}").value = datas[i]
                 getattr(self.bundle.io._dataArray._fromIData._codes, f"_{i}").value = codes[i]
@@ -242,12 +243,12 @@ class ICacheMainPipeAgent(Agent):
             # 只显示非零的数据和码，便于调试
             non_zero_datas = [(i, hex(d)) for i, d in enumerate(datas) if d != 0]
             non_zero_codes = [(i, c) for i, c in enumerate(codes) if c != 0]
-            print(f"DataArray response set: datas[:2]={[hex(d) for d in datas[:2]]}, codes[:2]={codes[:2]}")
+            toffee.info(f"DataArray response set: datas[:2]={[hex(d) for d in datas[:2]]}, codes[:2]={codes[:2]}")
             if non_zero_datas or non_zero_codes:
-                print(f"Non-zero injections: datas={non_zero_datas}, codes={non_zero_codes}")
+                toffee.info(f"Non-zero injections: datas={non_zero_datas}, codes={non_zero_codes}")
             return True
         else:
-            print(f"参数错误: datas长度={len(datas)}, codes长度={len(codes)}, 都需要为8")
+            toffee.info(f"参数错误: datas长度={len(datas)}, codes长度={len(codes)}, 都需要为8")
             return False
 
     async def drive_mshr_response(self, 
@@ -264,13 +265,13 @@ class ICacheMainPipeAgent(Agent):
         - blkPaddr[41:6]用于ptag匹配，vSetIdx用于地址匹配
         """
         # 直接设置MSHR响应，让valid信号保持有效以便S1/S2阶段检测
-        print("start driving MSHR response")
+        toffee.info("start driving MSHR response")
         self.bundle.io._mshr._resp._valid.value = 1
         self.bundle.io._mshr._resp._bits._blkPaddr.value = blkPaddr
         self.bundle.io._mshr._resp._bits._vSetIdx.value = vSetIdx
         self.bundle.io._mshr._resp._bits._data.value = data
         self.bundle.io._mshr._resp._bits._corrupt.value = corrupt
-        print(f"MSHR response set: blkPaddr=0x{blkPaddr:x}, vSetIdx=0x{vSetIdx:x}, corrupt={corrupt}")
+        toffee.info(f"MSHR response set: blkPaddr=0x{blkPaddr:x}, vSetIdx=0x{vSetIdx:x}, corrupt={corrupt}")
         return True
     # ==================== 监控API ====================
     
@@ -454,7 +455,7 @@ class ICacheMainPipeAgent(Agent):
                 "s2_l2_corrupt_1": s2_l2_corrupt_1.value if s2_l2_corrupt_1 else None,
             }
         except Exception as e:
-            print(f"Warning: Could not access internal exception signals: {e}")
+            toffee.info(f"Warning: Could not access internal exception signals: {e}")
             return {}
 
     async def monitor_mshr_match_status(self) -> dict:
@@ -486,7 +487,7 @@ class ICacheMainPipeAgent(Agent):
                 "s1_bankMSHRHit_7": s1_bankMSHRHit_7.value if s1_bankMSHRHit_7 else None,
             }
         except Exception as e:
-            print(f"Warning: Could not access internal MSHR match signals: {e}")
+            toffee.info(f"Warning: Could not access internal MSHR match signals: {e}")
             return {}
 
     async def monitor_data_ecc_detailed_status(self) -> dict:
@@ -515,7 +516,7 @@ class ICacheMainPipeAgent(Agent):
                 "s2_bank_corrupt": s2_bank_corrupt,
             }
         except Exception as e:
-            print(f"Warning: Could not access detailed data ECC signals: {e}")
+            toffee.info(f"Warning: Could not access detailed data ECC signals: {e}")
             return {"ecc_enable": self.bundle.io._ecc_enable.value}
 
     async def monitor_s2_mshr_match_status(self) -> dict:
@@ -537,8 +538,8 @@ class ICacheMainPipeAgent(Agent):
                 signal = self.dut.GetInternalSignal(f"ICacheMainPipe_top.ICacheMainPipe.s2_data_is_from_MSHR_{i}", use_vpi=False)
                 s2_data_is_from_MSHR.append(signal.value if signal else None)
             
-            if not hasattr(self, '_debug_mshr_printed_detail'):
-                self._debug_mshr_printed_detail = True
+            if not hasattr(self, '_debug_mshr_toffee.infoed_detail'):
+                self._debug_mshr_toffee.infoed_detail = True
             
             return {
                 "s2_MSHR_hits_1": s2_MSHR_hits_1.value,
@@ -562,7 +563,7 @@ class ICacheMainPipeAgent(Agent):
                 "s2_data_is_from_MSHR_all": s2_data_is_from_MSHR  # 提供完整的数组形式
             }
         except Exception as e:
-            print(f"Warning: Could not access S2 MSHR match signals: {e}")
+            toffee.info(f"Warning: Could not access S2 MSHR match signals: {e}")
             return {}
 
     async def monitor_miss_request_status(self) -> dict:
@@ -601,13 +602,13 @@ class ICacheMainPipeAgent(Agent):
             if s2_should_fetch_0 is not None:
                 result["s2_should_fetch_0"] = s2_should_fetch_0.value
             else:
-                print("DEBUG: s2_should_fetch_0 is None")
+                toffee.info("DEBUG: s2_should_fetch_0 is None")
                 result["s2_should_fetch_0"] = None
                 
             if s2_should_fetch_1 is not None:
                 result["s2_should_fetch_1"] = s2_should_fetch_1.value
             else:
-                print("DEBUG: s2_should_fetch_1 is None")
+                toffee.info("DEBUG: s2_should_fetch_1 is None")
                 result["s2_should_fetch_1"] = None
             
             # 添加其他重要信号
@@ -627,7 +628,7 @@ class ICacheMainPipeAgent(Agent):
                 
             return result
         except Exception as e:
-            print(f"Warning: Could not access miss request signals: {e}")
+            toffee.info(f"Warning: Could not access miss request signals: {e}")
             return {
                 "mshr_req_valid": self.bundle.io._mshr._req._valid.value,
                 "mshr_req_ready": self.bundle.io._mshr._req._ready.value,
@@ -638,7 +639,7 @@ class ICacheMainPipeAgent(Agent):
         监控Meta corrupt相关状态，增强Meta ECC监控
         """
         s1_meta_corrupt_hit_num = self.dut.GetInternalSignal("ICacheMainPipe_top.ICacheMainPipe.s1_meta_corrupt_hit_num", use_vpi=False)
-        print(f"DEBUG: monitor_meta_corrupt_status - s1_meta_corrupt_hit_num: {s1_meta_corrupt_hit_num.value}")
+        toffee.info(f"DEBUG: monitor_meta_corrupt_status - s1_meta_corrupt_hit_num: {s1_meta_corrupt_hit_num.value}")
             
         if s1_meta_corrupt_hit_num is not None:
             return {
@@ -646,7 +647,7 @@ class ICacheMainPipeAgent(Agent):
                     "ecc_enable": self.bundle.io._ecc_enable.value
             }
         else:
-            print("ERROR: can't access s1_meta_corrupt_hit_num")
+            toffee.info("ERROR: can't access s1_meta_corrupt_hit_num")
 
 
 
@@ -727,13 +728,13 @@ class ICacheMainPipeAgent(Agent):
                 inject_info.append(f"Port1(ptag=0x{ptag_1:x}, correct={correct_ecc_1}, wrong={final_meta_code_1})")
             
             if inject_info:
-                print(f"Injected Meta ECC error: {', '.join(inject_info)}")
+                toffee.info(f"Injected Meta ECC error: {', '.join(inject_info)}")
             else:
-                print("No Meta ECC error injected (both ports use correct ECC)")
+                toffee.info("No Meta ECC error injected (both ports use correct ECC)")
                 
             return True
         except Exception as e:
-            print(f"Failed to inject Meta ECC error: {e}")
+            toffee.info(f"Failed to inject Meta ECC error: {e}")
             return False
 
     async def inject_multi_way_hit(self,
@@ -755,10 +756,10 @@ class ICacheMainPipeAgent(Agent):
                 ptag_0=ptag_0,
                 ptag_1=ptag_1
             )
-            print(f"Injected multi-way hit: waymask={bin(waymask_0)}")
+            toffee.info(f"Injected multi-way hit: waymask={bin(waymask_0)}")
             return True
         except Exception as e:
-            print(f"Failed to inject multi-way hit: {e}")
+            toffee.info(f"Failed to inject multi-way hit: {e}")
             return False
 
     async def inject_data_ecc_error(self,
@@ -791,16 +792,16 @@ class ICacheMainPipeAgent(Agent):
                 
                 success = await self.drive_data_array_response(datas=datas, codes=codes)
                 if success:
-                    print(f"Injected Data ECC error in bank {bank_index}: data=0x{error_data:x}, correct_ecc={correct_ecc}, wrong_ecc={wrong_code}")
+                    toffee.info(f"Injected Data ECC error in bank {bank_index}: data=0x{error_data:x}, correct_ecc={correct_ecc}, wrong_ecc={wrong_code}")
                     return True
                 else:
-                    print("Failed to inject Data ECC error: Incomplete data")
+                    toffee.info("Failed to inject Data ECC error: Incomplete data")
                     return False
             else:
-                print(f"Invalid bank index: {bank_index}")
+                toffee.info(f"Invalid bank index: {bank_index}")
                 return False
         except Exception as e:
-            print(f"Failed to inject Data ECC error: {e}")
+            toffee.info(f"Failed to inject Data ECC error: {e}")
             return False
 
     async def inject_l2_corrupt_response(self,
@@ -819,13 +820,13 @@ class ICacheMainPipeAgent(Agent):
                 corrupt=corrupt
             )
             if success:
-                print(f"Injected L2 corrupt response: paddr=0x{blkPaddr:x}")
+                toffee.info(f"Injected L2 corrupt response: paddr=0x{blkPaddr:x}")
                 return True
             else:
-                print("Failed to inject L2 corrupt response: MSHR not ready")
+                toffee.info("Failed to inject L2 corrupt response: MSHR not ready")
                 return False
         except Exception as e:
-            print(f"Failed to inject L2 corrupt response: {e}")
+            toffee.info(f"Failed to inject L2 corrupt response: {e}")
             return False
 
     async def setup_mshr_ready(self, ready: bool = True):

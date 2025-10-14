@@ -133,10 +133,9 @@ def define_missunit_coverage_groups(bundle, dut):
     g = CovGroup("MissUnit_Main_Coverage")
 
     # =================================================================
-    # CP 31.1: accept new fetch 31.2:process existed fetch 
-    #    31.3:low index fetch priority enqueue to MSHR
-    # Monitoring target：fetch request interface and its internal state
-    #                    MSHR interface and its internal state      
+    # CP 31.1: 接受新的fetch 31.2:处理已经存在的 fetch 
+    #    31.3: 低索引优先
+    # 监控目标：fetch request接口和其内部状态，MSHR接口和其内部状态      
     # =================================================================
     def low_index_priority(dic) -> bool:
         if dic["MSHR_1_acquire_valid"].value == 1:
@@ -178,10 +177,9 @@ def define_missunit_coverage_groups(bundle, dut):
     )
 
     # =================================================================
-    # CP 32.1: accept new prefetch 32.2:process existed prefetch 
-    #    32.3:low index prefetch priority enqueue to MSHR
-    # Monitoring target：presfetch request interface and its internal state
-    #                    MSHR interface and its internal state      
+    # CP 32.1: 接受新的prefetch 32.2:处理已经存在的 prefetch
+    #    32.3: 新请求命中已有MSHR
+    # 监控目标：prefetch request接口和其内部状态，MSHR接口和其内部状态
     # =================================================================
 
     g.add_watch_point(
@@ -254,7 +252,7 @@ def define_missunit_coverage_groups(bundle, dut):
             "fetch_1_acquire_valid": bundle.ICacheMissUnit_._fetchMSHRs._1._io._acquire_valid,
             "fetch_2_acquire_valid": bundle.ICacheMissUnit_._fetchMSHRs._2._io._acquire_valid,
             "fetch_3_acquire_valid": bundle.ICacheMissUnit_._fetchMSHRs._3._io._acquire_valid,
-            "prefetch_arb_valid": bundle.ICacheMissUnit_._prefetchMSHRs._0._io._acquire_valid,  # 简化监控
+            "prefetch_arb_valid": bundle.ICacheMissUnit_._prefetchMSHRs._0._io._acquire_valid, 
         },
         bins={
             # 34.1: Fetch请求优先于prefetch请求
