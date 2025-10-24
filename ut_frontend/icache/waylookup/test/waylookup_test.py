@@ -845,48 +845,73 @@ async def test_cp23_flush_operations(waylookup_env: WayLookupEnv):
     """Test CP23: Flush operation - complete test of flush resetting read/write pointers and GPF information"""
     agent = waylookup_env.agent
     bundle = waylookup_env.bundle
-    
+    def init_data(data_dict):
+        data_dict = {}  
     toffee.info("\n--- CP23: Flush Operation Test ---")
+    status_before = {}
+    status_after = {}
     
     # Step 1: Write some data to make the queue non-empty
     toffee.info("Step 1: Filling the queue with data")
     await agent.fill_queue(5)
-    
+    await bundle.step()
+    await agent.drive_read_entry()
     # Step 2: Write data with a GPF exception
-    toffee.info("Step 2: Writing GPF exception data")
-    write_result = await agent.drive_write_entry_with_gpf(
-        vSetIdx_0=0x50, vSetIdx_1=0x60,
-        gpf_gpaddr=0xDEADBEEF,
-        timeout_cycles=20
-    )
-    assert write_result["send_success"] is True, "write GPF info failed."
+    # toffee.info("Step 2: Writing GPF exception data")
+    # write_result = await agent.drive_write_entry_with_gpf(
+    #    vSetIdx_0=0x50, vSetIdx_1=0x60,
+    #    gpf_gpaddr=0xDEADBEEF,
+    #    timeout_cycles=20
+    # )
+    # assert write_result["send_success"] is True, "write GPF info failed."
 
     status_before = await agent.get_queue_status()
-    pointers_before = await agent.get_pointers()
-    toffee.info(f"Status before flush: empty={status_before['empty']}, count={status_before['count']}")
-    toffee.info(f"Pointer values before flush: read={pointers_before['read_ptr_value']}, write={pointers_before['write_ptr_value']}")
-    
-    # Step 3: Execute flush operation (CP23.1, CP23.2, CP23.3)
-    toffee.info("Step 3: Executing flush operation")
+    # execute flush operation
     bundle.io._flush.value = 1
     await bundle.step()
     assert bundle.io._flush.value == 1, "Flush signal should be high"
-    
     bundle.io._flush.value = 0  
     await bundle.step(2)  # Wait for the flush to take effect
-    
-    # Step 4: Verify the status after flush
-    toffee.info("Step 4: Verifying status after flush")
     status_after = await agent.get_queue_status()
-    pointers_after = await agent.get_pointers()
+    assert status_before["write_ptr_value"] != 0 and status_before["read_ptr_value"] != 0, "the value of read or write always 0"
+    assert status_after["write_ptr_value"] == 0 and status_after["read_ptr_value"] == 0, "flush operation cant clear value status completely."
+    toffee.info("cp23.1 and cp23.2 value flush test successfully.")
+
+    init_data(status_after)
+    init_data(status_before)
+    await agent.fill_queue(32)
+    await bundle.step()
+    await agent.drain_queue()
+    await bundle.step()
+    status_before = await agent.get_queue_status()
+    # execute flush operation
+    bundle.io._flush.value = 1
+    await bundle.step()
+    assert bundle.io._flush.value == 1, "Flush signal should be high"
+    bundle.io._flush.value = 0  
+    await bundle.step(2)  # Wait for the flush to take effect
+    status_after = await agent.get_queue_status()
+    assert status_before["write_ptr_flag"] != 0 and status_before["read_ptr_flag"] != 0, "the flag of read or write always 0"
+    assert status_after["write_ptr_flag"] == 0 and status_after["read_ptr_flag"] == 0, "flush operation cant clear flag status completely."
+    toffee.info("cp23.1 and cp23.2 flag flush test successfully.")
+
+
+    write_result = await agent.drive_write_entry_with_gpf(vSetIdx_0=0x50, vSetIdx_1=0x60)
+    await bundle.step()
+    assert write_result["send_success"] is True, "write GPF info failed."
+    gpf_status_before = await agent.get_gpf_status()
     
-    toffee.info(f"Status after flush: empty={status_after['empty']}, count={status_after['count']}")
-    toffee.info(f"Pointers after flush: read={pointers_after['read_ptr_value']}, write={pointers_after['write_ptr_value']}")
-    
-    # Verify CP23 requirements
-    assert status_after['empty'] == True, "CP23: Queue should be empty after flush"
-    assert pointers_after['read_ptr_value'] == 0, "CP23.1: Read pointer should be reset to 0 after flush"
-    assert pointers_after['write_ptr_value'] == 0, "CP23.2: Write pointer should be reset to 0 after flush"
+    # execute flush operation
+    bundle.io._flush.value = 1
+    await bundle.step()
+    assert bundle.io._flush.value == 1, "Flush signal should be high"
+    bundle.io._flush.value = 0  
+    await bundle.step(2)  # Wait for the flush to take effect
+    gpf_status_after = await agent.get_gpf_status()
+    assert gpf_status_before["gpf_entry_valid"] != 0 and gpf_status_before["gpf_entry_bits"] != 0, "the valid or bits of gpf always 0"
+    assert gpf_status_after["gpf_entry_valid"] == 0 and gpf_status_after["gpf_entry_bits"] == 0, "flush operation cant clear gpf status completely."
+    toffee.info("cp23.3 gpf flush test successfully.")
+
     toffee.info("✓ CP23.1-CP23.3: Flush operation correctly reset read pointer, write pointer, and GPF information")
 
 
@@ -1130,14 +1155,15 @@ async def test_cp26_read_operations(waylookup_env: WayLookupEnv):
 
 @toffee_test.testcase
 async def test_cp27_write_operations(waylookup_env: WayLookupEnv):
-    """Test CP27: Write operations - test scenarios like GPF stop, queue full, ITLB exception, etc."""
+    """ Write operations - test scenarios like GPF stop, queue full, ITLB exception, etc."""
     agent = waylookup_env.agent
     bundle = waylookup_env.bundle
+    dut = waylookup_env.dut
     
     toffee.info("\n--- CP27: Write Operation Test ---")
     
-    # Step 1: Test normal write (CP27.3)
-    toffee.info("Step 1: Testing normal write (CP27.3)")
+    # Test normal write (CP27.3)
+    toffee.info("Testing normal write (CP27.3)")
     normal_write_result = await agent.drive_write_entry(
         vSetIdx_0=0xAA, vSetIdx_1=0xBB,
         waymask_0=0x1, waymask_1=0x2,
@@ -1148,34 +1174,9 @@ async def test_cp27_write_operations(waylookup_env: WayLookupEnv):
         toffee.info("✓ CP27.3: Normal write operation successful")
     await agent.drive_read_entry() # release this normal entry.
     await bundle.step()
-    # Step 2: Test write with ITLB exception - not bypassed (CP27.4.2)
-    toffee.info("Step 2: Testing write with ITLB exception - not bypassed (CP27.4.2)")
-    
-    # Set write signal but not read signal to ensure it's not bypassed
-    bundle.io._read._ready.value = 0
-    await bundle.step()
-    
-    itlb_write_result = await agent.drive_write_entry_with_gpf(
-        vSetIdx_0=0xCC, vSetIdx_1=0xDD,
-        gpf_gpaddr=0xCAFEBABE,
-        timeout_cycles=20
-    )
-    
-    assert itlb_write_result["send_success"] is True, "write with ITLB exception failed."
-    assert itlb_write_result["itlb_exception_0"] == 2 and itlb_write_result["itlb_exception_1"] == 2, "ITLB exception should be set to GPF"
-    toffee.info("✓ CP27.4.2: Write operation with ITLB exception (not bypassed) successful")
-    
-    # Step 3: Test write with ITLB exception - bypassed for direct read (CP27.4.1)
-    toffee.info("Step 3: Testing write with ITLB exception - bypassed for direct read (CP27.4.1)")
-    
-    read_itlb_result = await agent.drive_read_entry() # read itlb exception entry.
-    await bundle.step()
-    toffee.info(read_itlb_result)
-    assert read_itlb_result["read_success"] and read_itlb_result["itlb_exception_0"] == 2 and read_itlb_result["itlb_exception_1"] == 2 , "Read Itlb exection info failed."
-    toffee.info("✓ CP27.4.1: ITLB exception write operation was bypassed for direct read")
-
-    # Step 4: Test write ready invalid condition (CP27.2) - try to fill the queue
-    toffee.info("Step 4: Testing write ready invalid condition (CP27.2)")
+   
+    # Test write ready invalid condition (CP27.2) - try to fill the queue
+    toffee.info("Testing write ready invalid condition (CP27.2)")
     
     # Try to fill the queue
     written_count = 0
@@ -1190,6 +1191,7 @@ async def test_cp27_write_operations(waylookup_env: WayLookupEnv):
             assert write_result["send_success"] is True, "not full, should write in successfully."
         else:
             assert write_result["send_success"] is False, "full ,should write in failed."
+            assert bool(bundle.io._write._ready.value) == False,"When queue full write ready should stop."
             toffee.info(f"Write operation failed at attempt {i+1}, queue is likely full")
             break
         written_count += 1
@@ -1204,13 +1206,121 @@ async def test_cp27_write_operations(waylookup_env: WayLookupEnv):
     if written_count < 35:
         toffee.info("✓ CP27.2: Write ready correctly becomes invalid when queue is full")
     
+    # Test GPF stop condition (CP27.1)
+    # clear queue
+    bundle.io._flush.value = 1
+    await bundle.step(2)
+    bundle.io._flush.value = 0
+    await bundle.step(2)
+    # fill some data to queue
+    await agent.fill_queue(5)
+    await bundle.step()
+    before_gpf_status = await agent.get_gpf_status()
+    before_queue_status = await agent.get_queue_status()
+    assert before_gpf_status["write_ready"] == True, "before gpf write should ready."
+    # trigger gpf stop
+    write_result = await agent.drive_write_entry_with_gpf(vSetIdx_0=0x50, vSetIdx_1=0x60)
+    await bundle.step()
+    after_gpf_status = await agent.get_gpf_status()
+    after_queue_status = await agent.get_queue_status()
+    assert after_gpf_status["write_ready"] == False, "after gpf write ready should stop."
+    
+    # test for cp27.4: ITLB exception write
+    toffee.info("Testing CP27.4: ITLB exception write scenarios")
+    # reset env
+    bundle.io._flush.value = 1
+    await bundle.step(2)
+    bundle.io._flush.value = 0
+    await bundle.step(2)
+
+    # ---------------- CP27.4.1 ----------------
+    toffee.info("  CP27.4.1: ITLB exception write with bypassed read")
+    # queue should be empty so can_bypass can toggle high
+    queue_status = await agent.get_queue_status()
+    assert queue_status["empty"], "Queue must be empty before bypass scenario"
+    # snapshot write pointer before issuing the GPF write
+    before_ptrs = await agent.get_pointers()
+    # prepare read side to accept the bypassed data in the next cycle
+    bundle.io._read._ready.value = 1
+    await bundle.step()  # commit ready before write handshake
+
+    bypass_result = await agent.drive_write_entry_with_gpf(
+        vSetIdx_0=0x11,
+        vSetIdx_1=0x21,
+        gpf_gpaddr=0xCAFEDABE
+    )
+    assert bypass_result["send_success"] is True, "Bypass GPF write should complete handshake"
+    read_fire = (bundle.io._read._valid.value == 1 and bundle.io._read._ready.value == 1)
+    assert dut.GetInternalSignal("WayLookup_top.WayLookup.can_bypass", use_vpi=False).value == 1 and read_fire, "not bypass or read not fire."
+    await bundle.step()
+    gpf_status = await agent.get_gpf_status()
+    assert gpf_status["gpf_entry_valid"] is False, "GPF entry must be invalid when bypassing read"
+    assert gpf_status["gpf_entry_bits"] == bypass_result["gpf_gpaddr"], "GPF bits should capture current write gpaddr"
+    assert gpf_status["gpfPtr_value"] == before_ptrs["write_ptr_value"], "gpfPtr should latch the pre-increment write pointer value"
+    assert gpf_status["gpfPtr_flag"] == bool(before_ptrs["write_ptr_flag"]), "gpfPtr flag should match write pointer flag"
+    
+    toffee.info("✓ CP27.4.1: Bypass ITLB exception write behaves as expected")
+
+    # ---------------- CP27.4.2 ----------------
+    toffee.info("  CP27.4.2: ITLB exception write without bypass")
+    # create a normal entry to keep FIFO non-empty (disables bypass)
+    # reset env
+    bundle.io._flush.value = 1
+    await bundle.step(2)
+    bundle.io._flush.value = 0
+    await bundle.step(2)
+    
+    # Ensure read.ready is low from the start to prevent automatic drain
+    bundle.io._read._ready.value = 0
+    await bundle.step()
+    
+    # Fill queue with 1 entry and verify it worked
+    fill_result = await agent.fill_queue(1)
+    await bundle.step()
+    assert len(fill_result) == 1, f"Should have filled 1 entry, but got {len(fill_result)}"
+    
+    # Verify queue is not empty (no bypass condition)
+    queue_status = await agent.get_queue_status()
+    assert not queue_status["empty"], "Queue must be non-empty to disable bypass"
+    can_bypass = dut.GetInternalSignal("WayLookup_top.WayLookup.can_bypass", use_vpi=False).value
+    assert can_bypass == 0, f"can_bypass should be 0 when queue is not empty, got {can_bypass}"
+    
+    # capture pointer before ITLB exception write
+    before_ptrs = await agent.get_pointers()
+
+    non_bypass_result = await agent.drive_write_entry_with_gpf(
+        vSetIdx_0=0x22,
+        vSetIdx_1=0x32,
+        gpf_gpaddr=0xFEEDC0DE
+    )
+    await bundle.step()
+    assert non_bypass_result["send_success"] is True, "Non-bypass GPF write should complete handshake"
+    
+    # Verify can_bypass remained 0 during write
+    can_bypass_after = dut.GetInternalSignal("WayLookup_top.WayLookup.can_bypass", use_vpi=False).value
+    assert can_bypass_after == 0, f"can_bypass should remain 0, got {can_bypass_after}"
+    
+    await bundle.step()
+
+    gpf_status = await agent.get_gpf_status()
+    assert gpf_status["gpf_entry_valid"] is True, "GPF entry must remain valid when not bypassing"
+    assert gpf_status["gpf_entry_bits"] == non_bypass_result["gpf_gpaddr"], "GPF bits should capture current write gpaddr"
+    assert gpf_status["gpfPtr_value"] == before_ptrs["write_ptr_value"], "gpfPtr should latch the pre-increment write pointer value"
+    assert gpf_status["gpfPtr_flag"] == bool(before_ptrs["write_ptr_flag"]), "gpfPtr flag should match write pointer flag"
+    toffee.info("✓ CP27.4.2: Non-bypass ITLB exception write behaves as expected")
+
+
+
     toffee.info("✓ CP27: Various write operation scenarios test completed")
+
+
 
 
 @toffee_test.testcase
 async def test_pointer_wraparound(waylookup_env: WayLookupEnv):
     """Test the wraparound functionality of the pointer circular queue"""
     agent = waylookup_env.agent
+    bundle = waylookup_env.bundle
     
     toffee.info("\n--- Pointer Wraparound Test ---")
     
@@ -1235,6 +1345,7 @@ async def test_pointer_wraparound(waylookup_env: WayLookupEnv):
             ptag_0=i * 0x1000, ptag_1=i * 0x2000,
             timeout_cycles=10
         )
+        await bundle.step()
         
         if not write_result["send_success"]:
             toffee.info(f"Write stopped after {writes_done} successful writes (likely queue full).")

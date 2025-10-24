@@ -145,14 +145,14 @@ class WayLookupAgent(Agent):
                 write_info.update(actual_bits)
 
                 self.bundle.io._write._valid.value = 0
-                await self.bundle.step()
+                # await self.bundle.step()
                 return write_info
 
             toffee.info(f"Write not ready yet (cycle {i+1}), write_ready={self.bundle.io._write._ready.value}")
 
         toffee.info(f"Timeout: Write request not accepted after {timeout_cycles} cycles")
         self.bundle.io._write._valid.value = 0
-        await self.bundle.step()
+        # await self.bundle.step()
         return write_info
 
     async def drive_write_entry_with_gpf(self,
@@ -310,6 +310,7 @@ class WayLookupAgent(Agent):
             "write_ready": bool(self.bundle.io._write._ready.value),
             "read_valid": bool(self.bundle.io._read._valid.value),
             "gpf_entry_valid": bool(self.dut.GetInternalSignal("WayLookup_top.WayLookup.gpf_entry_valid", use_vpi=False).value),
+            "gpf_entry_bits": self.dut.GetInternalSignal("WayLookup_top.WayLookup.gpf_entry_bits_gpaddr", use_vpi=False).value,
             "gpfPtr_flag": bool(self.dut.GetInternalSignal("WayLookup_top.WayLookup.gpfPtr_flag", use_vpi=False).value),
             "gpfPtr_value": self.dut.GetInternalSignal("WayLookup_top.WayLookup.gpfPtr_value", use_vpi=False).value
         }
