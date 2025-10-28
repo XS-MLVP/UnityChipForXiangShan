@@ -1,15 +1,6 @@
 import toffee.funcov as fc
 from toffee.funcov import CovGroup
-
-
-
-def module_name_with(names, path):
-    """Helper function to generate module names with path prefix"""
-    if isinstance(names, list):
-        return [f"{path}.{name}" for name in names]
-    else:
-        return f"{path}.{names}"
-
+from comm import module_name_with
 
 def define_waylookup_coverage(bundle, dut):
     """
@@ -80,7 +71,7 @@ def define_waylookup_coverage(bundle, dut):
     )
     
     # Mark function for CP24 - Pointer Updates
-    g.mark_function("CP24_Pointer_Updates_Enhanced", _M(["test_cp24_pointer_updates"]), 
+    g.mark_function("CP24_Pointer_Updates_Enhanced", _M(["test_cp24_pointer_updates","test_pointer_wraparound"]), 
                    bin_name=["CP24.1_valid_read_fire", "CP24.2_valid_write_fire", "CP24.3_queue_empty", "CP24.4_queue_full"])
     
     # =================================================================
@@ -119,7 +110,10 @@ def define_waylookup_coverage(bundle, dut):
     )
     
     # Mark function for CP25 - Update Operations
-    g.mark_function("CP25_Update_Operations_Precise", _M("test_cp25_update_operations"), 
+    g.mark_function("CP25_Update_Operations_Precise", _M(["test_cp25_update_operations", 
+                                                          "test_bundle_interface_comprehensive",
+                                                          "test_bundle_signal_ranges_and_limits",
+                                                          "test_bundle_signal_coverage_complete"]), 
                    bin_name=["CP25.1_hit_update_trigger", "CP25.2_miss_update_trigger", 
                             "CP25.3_no_update_vset_diff", "CP25.3_no_update_corrupt"])
     
@@ -155,7 +149,7 @@ def define_waylookup_coverage(bundle, dut):
     )
     
     # Mark function for CP26 - Read Operations
-    g.mark_function("CP26_Read_Operations_Corrected", _M(["test_cp26_read_operations"]), 
+    g.mark_function("CP26_Read_Operations_Corrected", _M(["test_cp26_read_operations","test_read_entry_api","test_bypass_functionality"]), 
                    bin_name=["CP26.1_bypass_read", "CP26.2_read_invalid", "CP26.3_normal_read", 
                             "CP26.4_5_gpf_hit_consumed", "CP26.6_gpf_miss_read"])
     
@@ -206,7 +200,10 @@ def define_waylookup_coverage(bundle, dut):
     )
     
     # Mark function for CP27 - Write Operations
-    g.mark_function("CP27_Write_Operations_Corrected", _M(["test_cp27_write_operations"]), 
+    g.mark_function("CP27_Write_Operations_Corrected", _M(["test_cp27_write_operations", 
+                                                           "test_write_entry_api", 
+                                                           "test_bypass_functionality",
+                                                           "test_bundle_readback_consistency"]), 
                    bin_name=["CP27.1_stall_gpf_wait", "CP27.2_stall_queue_full", "CP27.3_normal_write", 
                             "CP27.4.1_itlb_write_bypassed", "CP27.4.2_itlb_write_not_bypassed"])
     
@@ -274,7 +271,10 @@ def define_waylookup_coverage(bundle, dut):
     )
     
     # Mark function for Comprehensive Scenarios
-    g.mark_function("CP_Comprehensive_Scenarios", _M(["test_comprehensive_queue_operations", "test_bundle_interface_comprehensive"]), 
+    g.mark_function("CP_Comprehensive_Scenarios", _M(["test_comprehensive_queue_operations", 
+                                                      "test_bundle_interface_comprehensive",
+                                                      "test_queue_status_apis",
+                                                      "test_helper_apis"]), 
                    bin_name=["CP_COMBO.1_multi_operation", "CP_COMBO.2_write_then_flush", "CP_COMBO.3_all_idle"])
     
     return g
@@ -318,7 +318,7 @@ def define_flush_timing_coverage(dut):
     def _M(name):
         return module_name_with(name, "../../test/waylookup_test")
     
-    g.mark_function("CP23_Flush_Timing_Effects", _M("test_cp23_flush_operations"), 
+    g.mark_function("CP23_Flush_Timing_Effects", _M(["test_cp23_flush_operations","test_smoke","test_basic_control_apis"]), 
                    bin_name=["CP23_TIMING.1_flush_effect_read_ptr", "CP23_TIMING.2_flush_effect_write_ptr", "CP23_TIMING.3_flush_effect_gpf"])
     
     return g

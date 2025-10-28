@@ -1036,30 +1036,47 @@ async def test_cp25_update_operations(waylookup_env: WayLookupEnv):
     assert read_back_entry["waymask_0"] == initial_entry["waymask_0"], "The waymask should not be updated when the corrupt flag is set"
     toffee.info("✓ CP25.3: When the corrupt flag is set, the entry is not updated")
 
-    # --- Test Case 4: Miss Update (CP25.2) - waymask cleared ---
-    toffee.info("\nStep 4: Test miss update (CP25.2) - waymask cleared")
+    # --- Test Case 4: Miss Update (CP25.2) - waymask cleared for multiple positions ---
+    toffee.info("\nStep 4: Test miss update (CP25.2) - waymask cleared for positions 0-14")
     await agent.reset_dut()
-    initial_entry_for_miss = {
-        "vSetIdx_0": 0xAA, "vSetIdx_1": 0xBB,
-        "waymask_0": 0x2, "waymask_1": 0x2, # Initial waymask is 2
-        "ptag_0": 0x5555, "ptag_1": 0x6666
-    }
-    await agent.drive_write_entry(**initial_entry_for_miss)
-
-    # Drive an update that matches vSetIdx, but mismatches ptag, AND has matching waymask
-    # This should trigger the 'else if (io_update_bits_waymask == entries_X_waymask_Y)' branch
-    await agent.drive_update_entry(
-        blkPaddr=(0x9999 << 6),  # Mismatch ptag
-        vSetIdx=0xAA,            # Match vSetIdx
-        waymask=0x2,             # Match initial waymask
-        corrupt=False
-    )
-    await bundle.step(2)  # Allow time for the update to process
-
-    read_back_entry_after_miss = await agent.drive_read_entry()
-    assert read_back_entry_after_miss["read_success"]
-    assert read_back_entry_after_miss["waymask_0"] == 0x0, "update fail, waymask should be cleared."
-    toffee.info("✓ CP25.2: miss update success, waymask is cleared")
+    
+    # Fill queue with 15 entries to cover positions 0-14
+    test_entries = []
+    for i in range(15):
+        entry = {
+            "vSetIdx_0": 0xA0 + i, "vSetIdx_1": 0xB0 + i,
+            "waymask_0": (i % 4), "waymask_1": ((i + 1) % 4),  # Use different waymask values
+            "ptag_0": 0x5000 + i, "ptag_1": 0x6000 + i
+        }
+        write_result = await agent.drive_write_entry(**entry)
+        if write_result["send_success"]:
+            test_entries.append(entry)
+            toffee.info(f"Filled entry {i} with waymask_0={entry['waymask_0']}")
+        else:
+            break
+    
+    await bundle.step(2)
+    
+    # Test waymask clearing for each position by reading and updating
+    for i, entry in enumerate(test_entries):
+        toffee.info(f"Testing waymask clearing for position {i}")
+        
+        # Drive update that matches vSetIdx but mismatches ptag, with matching waymask
+        await agent.drive_update_entry(
+            blkPaddr=(0x9999 << 6),  # Mismatch ptag to ensure miss condition
+            vSetIdx=entry["vSetIdx_0"],  # Match vSetIdx
+            waymask=entry["waymask_0"],  # Match waymask to trigger clearing
+            corrupt=False
+        )
+        await bundle.step(2)
+        
+        # Read the entry to verify waymask was cleared
+        read_result = await agent.drive_read_entry()
+        assert read_result["read_success"], f"Failed to read entry {i}"
+        assert read_result["waymask_0"] == 0x0, f"Position {i}: waymask should be cleared, got {read_result['waymask_0']}"
+        toffee.info(f"✓ Position {i}: waymask cleared from {entry['waymask_0']} to 0")
+    
+    toffee.info("✓ CP25.2: waymask clearing tested for all positions 0-14")
 
     # --- Test Case 5: Miss Update (CP25.2) - waymask NOT cleared ---
     toffee.info("\nStep 5: Test miss update (CP25.2) - waymask not cleared")
