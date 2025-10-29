@@ -1328,6 +1328,70 @@ async def test_cp27_write_operations(waylookup_env: WayLookupEnv):
 
 
 
+    # ---------------- Coverage Booster ----------------
+    toffee.info("  Extra: drive all queue slots to hit remaining pbmt/meta/exception registers")
+    await agent.reset_dut()
+    coverage_entries = []
+
+    for slot in range(32):
+        entry_payload = {
+            "vSetIdx_0": (0x40 + slot) & 0xFF,
+            "vSetIdx_1": (0x80 + slot) & 0xFF,
+            "waymask_0": slot & 0x3,
+            "waymask_1": (slot + 1) & 0x3,
+            "ptag_0": 0x4000 + slot,
+            "ptag_1": 0x8000 + slot,
+            "itlb_exception_0": 1 | ((slot >> 1) & 0x1),  # ensure non-zero but avoid value 2
+            "itlb_exception_1": 3,
+            "itlb_pbmt_0": 1 + (slot % 3),
+            "itlb_pbmt_1": 1 + ((slot + 1) % 3),
+            "meta_codes_0": 1,
+            "meta_codes_1": 1,
+            "timeout_cycles": 30
+        }
+        write_status = await agent.drive_write_entry(**entry_payload)
+        assert write_status["send_success"], f"Coverage write handshake failed at slot {slot}"
+        coverage_entries.append(entry_payload)
+        await bundle.step()
+
+    for slot, payload in enumerate(coverage_entries):
+        new_waymask = (~payload["waymask_0"]) & 0x3
+
+        await agent.drive_update_entry(
+            blkPaddr=payload["ptag_0"] << 6,
+            vSetIdx=payload["vSetIdx_0"],
+            waymask=new_waymask,
+            corrupt=False
+        )
+        await bundle.step()
+
+        await agent.drive_update_entry(
+            blkPaddr=payload["ptag_1"] << 6,
+            vSetIdx=payload["vSetIdx_1"],
+            waymask=new_waymask,
+            corrupt=False
+        )
+        await bundle.step()
+
+        await agent.drive_update_entry(
+            blkPaddr=((payload["ptag_0"] ^ 0x3F) << 6),
+            vSetIdx=payload["vSetIdx_0"],
+            waymask=new_waymask,
+            corrupt=False
+        )
+        await bundle.step()
+
+        await agent.drive_update_entry(
+            blkPaddr=((payload["ptag_1"] ^ 0x3F) << 6),
+            vSetIdx=payload["vSetIdx_1"],
+            waymask=new_waymask,
+            corrupt=False
+        )
+        await bundle.step()
+
+    await agent.drain_queue()
+    await bundle.step()
+
     toffee.info("✓ CP27: Various write operation scenarios test completed")
 
 
