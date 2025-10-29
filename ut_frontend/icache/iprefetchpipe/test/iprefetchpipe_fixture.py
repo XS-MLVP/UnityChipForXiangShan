@@ -4,7 +4,7 @@ import toffee_test
 from toffee import start_clock
 from dut.IPrefetchPipe import DUTIPrefetchPipe
 from ..env import IPrefetchPipeEnv
-from .watch_point import get_cover_group_of_receive_prefetch_quest
+from ..env.watch_point import create_iprefetchpipe_coverage_groups
 
 @toffee_test.fixture
 async def iprefetchpipe_env(toffee_request: toffee_test.ToffeeRequest):
@@ -12,12 +12,22 @@ async def iprefetchpipe_env(toffee_request: toffee_test.ToffeeRequest):
     dut.InitClock("clock")
     start_clock(dut)
     iprefetchpipe_env = IPrefetchPipeEnv(dut)
-    toffee_request.add_cov_groups([get_cover_group_of_receive_prefetch_quest(dut)])
     iprefetchpipe_env.dut.reset.value = 1
     iprefetchpipe_env.dut.Step(10)
     iprefetchpipe_env.dut.reset.value = 0
     iprefetchpipe_env.dut.Step(10)
+    #all_signals = dut.GetInternalSignalList(use_vpi=True)
+    #for signal in all_signals:
+    #    toffee.info(f"Internal Signal: {signal}")
+    coverage_groups = create_iprefetchpipe_coverage_groups(iprefetchpipe_env.bundle, dut)
+    for coverage_group in coverage_groups:
+        toffee_request.add_cov_groups(coverage_group)
+        toffee.info(f"Added coverage group: {coverage_group.name}")
     yield iprefetchpipe_env
+    # Sample all coverage groups at the end
+    for coverage_group in coverage_groups:
+        dut.StepRis(coverage_group.sample)
+        toffee.info(f"Sampled coverage group: {coverage_group.name}")
 
     cur = asyncio.get_event_loop()
     for task in asyncio.all_tasks(cur):
