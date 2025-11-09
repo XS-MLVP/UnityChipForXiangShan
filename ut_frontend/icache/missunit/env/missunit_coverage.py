@@ -1,5 +1,120 @@
-import toffee.funcov as fc
+from comm import module_name_with
 from toffee.funcov import CovGroup
+
+MISSUNIT_TEST_PREFIX = "../../test/missunit_test"
+
+
+def _mark_tests(names):
+    """Helper to build fully-qualified test names for reverse mapping."""
+    return module_name_with(names, MISSUNIT_TEST_PREFIX)
+
+
+def define_basic_coverage(bundle, dut):
+    """
+    Basic API/control coverage shared by smoke/bundle tests.
+    """
+    g = CovGroup("MissUnit_Basic_Coverage")
+
+    g.add_watch_point(
+        {"fencei": bundle.io._fencei},
+        bins={"fencei_high": lambda d: d["fencei"].value == 1},
+        name="basic_fencei_control",
+    )
+    g.mark_function(
+        "basic_fencei_control",
+        _mark_tests(["test_smoke", "test_fencei_work"]),
+        bin_name=["fencei_high"],
+    )
+
+    g.add_watch_point(
+        {"flush": bundle.io._flush},
+        bins={"flush_high": lambda d: d["flush"].value == 1},
+        name="basic_flush_control",
+    )
+    g.mark_function(
+        "basic_flush_control",
+        _mark_tests(["test_set_flush"]),
+        bin_name=["flush_high"],
+    )
+
+    g.add_watch_point(
+        {"victim_way": bundle.io._victim._way},
+        bins={
+            "victim_way_0": lambda d: d["victim_way"].value == 0,
+            "victim_way_1": lambda d: d["victim_way"].value == 1,
+            "victim_way_2": lambda d: d["victim_way"].value == 2,
+            "victim_way_3": lambda d: d["victim_way"].value == 3,
+        },
+        name="basic_victim_way_program",
+    )
+    g.mark_function(
+        "basic_victim_way_program",
+        _mark_tests(["test_set_victim_way"]),
+        bin_name=["victim_way_0", "victim_way_1", "victim_way_2", "victim_way_3"],
+    )
+
+    g.add_watch_point(
+        {
+            "fetch_ready": bundle.io._fetch._req._ready,
+            "fetch_valid": bundle.io._fetch._req._valid,
+        },
+        bins={
+            "fetch_handshake": lambda d: d["fetch_ready"].value == 1 and d["fetch_valid"].value == 1,
+        },
+        name="basic_fetch_handshake",
+    )
+    g.mark_function(
+        "basic_fetch_handshake",
+        _mark_tests(
+            [
+                "test_bundle_drive_fetch_req_inputs",
+                "test_bundle_read_fetch_req_ready",
+                "test_send_fetch_request",
+                "test_api_fetch_request_generates_acquire",
+                "test_api_full_fetch_flow",
+            ]
+        ),
+        bin_name=["fetch_handshake"],
+    )
+
+    g.add_watch_point(
+        {
+            "prefetch_ready": bundle.io._prefetch_req._ready,
+            "prefetch_valid": bundle.io._prefetch_req._valid,
+        },
+        bins={
+            "prefetch_handshake": lambda d: d["prefetch_ready"].value == 1 and d["prefetch_valid"].value == 1,
+        },
+        name="basic_prefetch_handshake",
+    )
+    g.mark_function(
+        "basic_prefetch_handshake",
+        _mark_tests(
+            [
+                "test_send_prefetch_request",
+                "test_api_full_prefetch_flow",
+            ]
+        ),
+        bin_name=["prefetch_handshake"],
+    )
+
+    g.add_watch_point(
+        {
+            "grant_valid": bundle.io._mem._grant._valid,
+            "grant_corrupt": bundle.io._mem._grant._bits._corrupt,
+        },
+        bins={
+            "grant_corrupt_seen": lambda d: d["grant_valid"].value == 1 and d["grant_corrupt"].value == 1,
+        },
+        name="basic_grant_corrupt_monitor",
+    )
+    g.mark_function(
+        "basic_grant_corrupt_monitor",
+        _mark_tests(["test_api_grant_with_corruption"]),
+        bin_name=["grant_corrupt_seen"],
+    )
+
+    return g
 
 
 def define_fifo_coverage(bundle,dut):
@@ -12,14 +127,23 @@ def define_fifo_coverage(bundle,dut):
     """
     g = CovGroup("MissUnit_FIFO")
     # create FIFO_internalsignals for FIFO functional coverage
-    FIFO_dict = {"enq_ptr_value":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.enq_ptr_value",\
-                "enq_ptr_flag":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.enq_ptr_flag",\
-                "enq_ptr_new_value":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.enq_ptr_new_value",\
-                "deq_ptr_value":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.deq_ptr_value",\
-                "deq_ptr_flag":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.deq_ptr_flag",\
-                "deq_ptr_new_value":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.deq_ptr_new_value",\
-                "full":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.full"
-                }
+    FIFO_dict = {
+        # FIFO enq/deq internal signals
+        "enq_ptr_value":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.enq_ptr_value",\
+        "enq_ptr_flag":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.enq_ptr_flag",\
+        "enq_ptr_new_value":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.enq_ptr_new_value",\
+        "enq_ready":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.__Vtogcov__io_enq_ready",\
+        "enq_valid":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.__Vtogcov__io_enq_valid",\
+        "deq_ptr_value":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.deq_ptr_value",\
+        "deq_ptr_flag":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.deq_ptr_flag",\
+        "deq_ptr_new_value":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.deq_ptr_new_value",\
+        "deq_ready":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.__Vtogcov__io_deq_ready",\
+        "deq_valid":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.__Vtogcov__io_deq_valid",\
+        "dep_bits":"ICacheMissUnit_top.ICacheMissUnit._priorityFIFO_io_deq_bits",\
+        "full":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.full",\
+
+        "enq_bits":"ICacheMissUnit_top.ICacheMissUnit._prefetchDemux_io_chosen",\
+        }
     # =================================================================
     # CP 28.1 & 28.2 & 28.3: 正常入队 vs 入队翻转 vs 队满阻塞
     # 监控目标：prefetch请求接口和其内部状态
@@ -27,12 +151,12 @@ def define_fifo_coverage(bundle,dut):
     g.add_watch_point(
         # 使用字典作为target，让lambda函数更易读
         {
-            "enq_ready": bundle.priorityFIFO._io_enq._ready,
-            "enq_valid": bundle.priorityFIFO._io_enq._valid_T_probe,
+            "enq_ready": dut.GetInternalSignal(FIFO_dict["enq_ready"], use_vpi=False),
+            "enq_valid": dut.GetInternalSignal(FIFO_dict["enq_valid"], use_vpi=False),
             "enq_ptr_value": dut.GetInternalSignal(FIFO_dict["enq_ptr_value"], use_vpi=False),
             "enq_ptr_new_value": dut.GetInternalSignal(FIFO_dict["enq_ptr_new_value"], use_vpi=False),
             "enq_ptr_flag": dut.GetInternalSignal(FIFO_dict["enq_ptr_flag"], use_vpi=False),
-            "enq_bits": bundle.prefetchDemux._io_chosen,
+            "enq_bits": dut.GetInternalSignal(FIFO_dict["enq_bits"], use_vpi=False),
             "deq_ptr_value": dut.GetInternalSignal(FIFO_dict["deq_ptr_value"], use_vpi=False),
             "deq_ptr_flag": dut.GetInternalSignal(FIFO_dict["deq_ptr_flag"], use_vpi=False),
             "full": dut.GetInternalSignal(FIFO_dict["full"], use_vpi=False)
@@ -60,6 +184,11 @@ def define_fifo_coverage(bundle,dut):
         },
         name="CP_Enqueue_Normal_vs_Full"
     )
+    g.mark_function(
+        "CP_Enqueue_Normal_vs_Full",
+        _mark_tests("test_FIFO_moudle_CP28_CP29_enq_and_deq_operation"),
+        bin_name=["enq_when_not_full", "enq_when_will_full", "enq_blocked_when_full"],
+    )
     # =================================================================
     # CP 29.1 & 29.2 & 29.3: 正常出队 vs 出队翻转 vs 队空阻塞
     # 监控目标：prefetch请求接口和其内部状态
@@ -67,11 +196,11 @@ def define_fifo_coverage(bundle,dut):
     g.add_watch_point(
         # 使用字典作为target，让lambda函数更易读
         {
-            "deq_ready": bundle.priorityFIFO._io_deq._ready_T,
-            "deq_valid": bundle.priorityFIFO._io_deq._valid,
+            "deq_ready": dut.GetInternalSignal(FIFO_dict["deq_ready"], use_vpi=False),
+            "deq_valid": dut.GetInternalSignal(FIFO_dict["deq_valid"], use_vpi=False),
             "enq_ptr_value": dut.GetInternalSignal(FIFO_dict["enq_ptr_value"], use_vpi=False),
             "enq_ptr_flag": dut.GetInternalSignal(FIFO_dict["enq_ptr_flag"], use_vpi=False),
-            "deq_bits": bundle.priorityFIFO._io_deq_bits,
+            "deq_bits": dut.GetInternalSignal(FIFO_dict["dep_bits"], use_vpi=False),
             "deq_ptr_value": dut.GetInternalSignal(FIFO_dict["deq_ptr_value"], use_vpi=False),
             "deq_ptr_new_value":dut.GetInternalSignal(FIFO_dict["deq_ptr_new_value"], use_vpi=False),
             "deq_ptr_flag": dut.GetInternalSignal(FIFO_dict["deq_ptr_flag"], use_vpi=False),
@@ -98,6 +227,11 @@ def define_fifo_coverage(bundle,dut):
         },
         name="CP_Dequeue_Normal_vs_null"
     )
+    g.mark_function(
+        "CP_Dequeue_Normal_vs_null",
+        _mark_tests("test_FIFO_moudle_CP28_CP29_enq_and_deq_operation"),
+        bin_name=["deq_when_not_null", "deq_when_will_wrap", "deq_blocked_when_null"],
+    )
 
     # =================================================================
     # CP 30: flush
@@ -123,6 +257,11 @@ def define_fifo_coverage(bundle,dut):
         },
         name="CP_flush"
     )
+    g.mark_function(
+        "CP_flush",
+        _mark_tests("test_FIFO_moudle_CP30_flush_operation"),
+        bin_name=["after_flush"],
+    )
 
     return g
 
@@ -130,7 +269,16 @@ def define_missunit_coverage_groups(bundle, dut):
     """
     define functional coverage groups of ICacheMissUnit.
     """
-    g = CovGroup("MissUnit_Main_Coverage")
+    main_cov = CovGroup("MissUnit_Main_Coverage")
+    timing_cov = CovGroup("MissUnit_Timing_Coverage")
+    MISSUNIT_dict ={
+        "fetch_demux_valid":"ICacheMissUnit_top.ICacheMissUnit.fetchDemux.__Vtogcov__io_in_valid",\
+        "fetch_hit":"ICacheMissUnit_top.ICacheMissUnit.fetchHit",\
+        "prefetch_demux_valid":"ICacheMissUnit_top.ICacheMissUnit.prefetchDemux.__Vtogcov__io_in_valid",\
+        "prefetch_hit":"ICacheMissUnit_top.ICacheMissUnit.prefetchHit",\
+        "last_fire":"ICacheMissUnit_top.ICacheMissUnit.last_fire",\
+        "last_fire_r":"ICacheMissUnit_top.ICacheMissUnit.last_fire_r",\
+    }
 
     # =================================================================
     # CP 31.1: 接受新的fetch 31.2:处理已经存在的 fetch 
@@ -149,12 +297,12 @@ def define_missunit_coverage_groups(bundle, dut):
                 return True
         else:
             return False
-    g.add_watch_point(
+    main_cov.add_watch_point(
         {
             "fetch_req_ready": bundle.io._fetch._req._ready,
             "fetch_req_valid": bundle.io._fetch._req._valid,
-            "fetch_demux_valid": bundle.fetchDemux._io_in_valid_T_1,
-            "fetch_hit":bundle.ICacheMissUnit_.fetchHit,
+            "fetch_demux_valid": dut.GetInternalSignal(MISSUNIT_dict["fetch_demux_valid"], use_vpi=False),
+            "fetch_hit":dut.GetInternalSignal(MISSUNIT_dict["fetch_hit"], use_vpi=False),
             "MSHR_0_acquire_valid":bundle.ICacheMissUnit_._fetchMSHRs._0._io._acquire_valid,
             "MSHR_1_acquire_valid":bundle.ICacheMissUnit_._fetchMSHRs._1._io._acquire_valid,
             "MSHR_2_acquire_valid":bundle.ICacheMissUnit_._fetchMSHRs._2._io._acquire_valid,
@@ -175,6 +323,11 @@ def define_missunit_coverage_groups(bundle, dut):
         },
         name="fetch_req_new_vs_hit"
     )
+    main_cov.mark_function(
+        "fetch_req_new_vs_hit",
+        _mark_tests("test_MISSUNIT_CP31_fetch_miss_process"),
+        bin_name=["CP31.1", "CP31.2", "CP31.3"],
+    )
 
     # =================================================================
     # CP 32.1: 接受新的prefetch 32.2:处理已经存在的 prefetch
@@ -182,12 +335,12 @@ def define_missunit_coverage_groups(bundle, dut):
     # 监控目标：prefetch request接口和其内部状态，MSHR接口和其内部状态
     # =================================================================
 
-    g.add_watch_point(
+    main_cov.add_watch_point(
         {
             "prefetch_req_ready": bundle.io._prefetch_req._ready,
             "prefetch_req_valid": bundle.io._prefetch_req._valid,
-            "prefetch_demux_valid": bundle.prefetchDemux._io_in_valid_T_1,
-            "prefetch_hit":bundle.ICacheMissUnit_.prefetchHit,
+            "prefetch_demux_valid": dut.GetInternalSignal(MISSUNIT_dict["prefetch_demux_valid"], use_vpi=False),
+            "prefetch_hit":dut.GetInternalSignal(MISSUNIT_dict["prefetch_hit"], use_vpi=False),
         },
         bins={
             # 功能点 32.1: 接受新的预取请求
@@ -203,12 +356,17 @@ def define_missunit_coverage_groups(bundle, dut):
         # 这里不需要覆盖点
         name="prefetch_req_new_vs_hit"
     )
+    main_cov.mark_function(
+        "prefetch_req_new_vs_hit",
+        _mark_tests("test_MISSUNIT_CP32_prefetch_miss_process"),
+        bin_name=["CP32.1", "CP32.2"],
+    )
 
     # =================================================================
     # CP 33: MSHR查找命中逻辑
     # 监控目标：MSHR查找接口和命中状态
     # =================================================================
-    g.add_watch_point(
+    main_cov.add_watch_point(
         {
             "fetch_req_valid": bundle.io._fetch._req._valid,
             "fetch_req_blkPaddr": bundle.io._fetch._req._bits._blkPaddr,
@@ -216,8 +374,8 @@ def define_missunit_coverage_groups(bundle, dut):
             "prefetch_req_valid": bundle.io._prefetch_req._valid,
             "prefetch_req_blkPaddr": bundle.io._prefetch_req._bits._blkPaddr,
             "prefetch_req_vSetIdx": bundle.io._prefetch_req._bits._vSetIdx,
-            "fetch_hit": bundle.ICacheMissUnit_.fetchHit,
-            "prefetch_hit": bundle.ICacheMissUnit_.prefetchHit,
+            "fetch_hit": dut.GetInternalSignal(MISSUNIT_dict["fetch_hit"], use_vpi=False),
+            "prefetch_hit":dut.GetInternalSignal(MISSUNIT_dict["prefetch_hit"], use_vpi=False),
         },
         bins={
             # 33.1: Fetch请求命中现有MSHR
@@ -239,12 +397,27 @@ def define_missunit_coverage_groups(bundle, dut):
         },
         name="MSHR_lookup_hit_logic"
     )
+    main_cov.mark_function(
+        "MSHR_lookup_hit_logic",
+        _mark_tests(
+            [
+                "test_MISSUNIT_CP33_MSHR_manage",
+                "test_MISSUNIT_addational_all_mshr_lookup_coverage",
+            ]
+        ),
+        bin_name=[
+            "CP33.1_fetch_hit_existing",
+            "CP33.2_prefetch_hit_existing",
+            "CP33.3_prefetch_hit_fetch_same",
+            "CP33.4_no_hit",
+        ],
+    )
 
     # =================================================================
     # CP 34: acquireArb仲裁逻辑
     # 监控目标：仲裁器的选择逻辑和优先级
     # =================================================================
-    g.add_watch_point(
+    main_cov.add_watch_point(
         {
             "acquire_valid": bundle.io._mem._acquire._valid,
             "acquire_source": bundle.io._mem._acquire._bits._source,
@@ -273,19 +446,24 @@ def define_missunit_coverage_groups(bundle, dut):
         },
         name="acquire_arbitration_logic"
     )
+    main_cov.mark_function(
+        "acquire_arbitration_logic",
+        _mark_tests("test_MISSUNIT_CP34_acquireArb_arbitration"),
+        bin_name=["CP34.1_fetch_priority", "CP34.2_prefetch_selected"],
+    )
 
     # =================================================================
     # CP 35: Grant数据接收与处理
     # 监控目标：Grant数据收集和状态更新
     # =================================================================
-    g.add_watch_point(
+    main_cov.add_watch_point(
         {
             "grant_valid": bundle.io._mem._grant._valid,
             "grant_opcode": bundle.io._mem._grant._bits._opcode,
             "grant_source": bundle.io._mem._grant._bits._source,
             "grant_corrupt": bundle.io._mem._grant._bits._corrupt,
-            "last_fire": bundle.ICacheMissUnit_.last_fire,
-            "last_fire_r": bundle.ICacheMissUnit_.last_fire_r,
+            "last_fire": dut.GetInternalSignal(MISSUNIT_dict["last_fire"], use_vpi=False),
+            "last_fire_r": dut.GetInternalSignal(MISSUNIT_dict["last_fire_r"], use_vpi=False),
         },
         bins={
             # 35.1: 第一个beat数据接收
@@ -308,12 +486,22 @@ def define_missunit_coverage_groups(bundle, dut):
         },
         name="grant_data_collection"
     )
+    main_cov.mark_function(
+        "grant_data_collection",
+        _mark_tests("test_MISSUNIT_CP35_grant_accept_and_refill"),
+        bin_name=[
+            "CP35.1_first_beat",
+            "CP35.2_last_beat",
+            "CP35.3_grant_corrupt",
+            "CP35.4_grant_completion",
+        ],
+    )
 
     # =================================================================
     # CP 36: 替换策略更新
     # 监控目标：victim更新信号
     # =================================================================
-    g.add_watch_point(
+    main_cov.add_watch_point(
         {
             "victim_valid": bundle.io._victim._vSetIdx._valid,
             "victim_bits": bundle.io._victim._vSetIdx._bits,
@@ -328,12 +516,17 @@ def define_missunit_coverage_groups(bundle, dut):
         },
         name="victim_replacement_update"
     )
+    main_cov.mark_function(
+        "victim_replacement_update",
+        _mark_tests("test_MISSUNIT_CP36_Replacer"),
+        bin_name=["CP36.1_victim_update"],
+    )
 
     # =================================================================
     # CP 37: SRAM写回操作
     # 监控目标：Meta/Data写操作信号
     # =================================================================
-    g.add_watch_point(
+    timing_cov.add_watch_point(
         {
             "meta_write_valid": bundle.io._meta_write._valid,
             "data_write_valid": bundle.io._data_write._valid,
@@ -341,7 +534,7 @@ def define_missunit_coverage_groups(bundle, dut):
             "fetch_resp_corrupt": bundle.io._fetch._resp._bits._corrupt,
             "flush": bundle.io._flush,
             "fencei": bundle.io._fencei,
-            "last_fire_r": bundle.ICacheMissUnit_.last_fire_r,
+            "last_fire_r": dut.GetInternalSignal(MISSUNIT_dict["last_fire_r"], use_vpi=False),
         },
         bins={
             # 37.1: 正常写SRAM（无flush/fencei/corrupt）
@@ -369,15 +562,25 @@ def define_missunit_coverage_groups(bundle, dut):
         },
         name="sram_write_operations"
     )
+    timing_cov.mark_function(
+        "sram_write_operations",
+        _mark_tests("test_MISSUNIT_CP37_SRAM_writeback"),
+        bin_name=[
+            "CP37.1_normal_sram_write",
+            "CP37.2_no_write_with_flush",
+            "CP37.3_fetch_resp_always",
+            "CP37.4_corrupt_response",
+        ],
+    )
 
     # =================================================================
     # CP 38: Miss 完成响应
     # 监控目标：向 mainPipe/prefetchPipe 发出 Miss 完成响应
     # =================================================================
-    g.add_watch_point(
+    timing_cov.add_watch_point(
         {
             "fetch_resp_valid": bundle.io._fetch._resp._valid,
-            "last_fire_r": bundle.ICacheMissUnit_.last_fire_r,
+            "last_fire_r": dut.GetInternalSignal(MISSUNIT_dict["last_fire_r"], use_vpi=False),
             "mshr_resp_blkPaddr": dut.GetInternalSignal("ICacheMissUnit_top.ICacheMissUnit.mshr_resp_blkPaddr", use_vpi=False),
             "mshr_resp_vSetIdx": dut.GetInternalSignal("ICacheMissUnit_top.ICacheMissUnit.mshr_resp_vSetIdx", use_vpi=False),
             "fetch_resp_blkPaddr": bundle.io._fetch._resp._bits._blkPaddr,
@@ -397,12 +600,17 @@ def define_missunit_coverage_groups(bundle, dut):
         },
         name="miss_completion_response"
     )
+    timing_cov.mark_function(
+        "miss_completion_response",
+        _mark_tests("test_MISSUNIT_CP38_mainpipe_iprefetchpipe_response"),
+        bin_name=["CP38.1_normal_miss_completion"],
+    )
 
     # =================================================================
     # CP 39: 处理 flush/fencei
     # 监控目标：flush/fencei对MSHR状态和写回操作的影响
     # =================================================================
-    g.add_watch_point(
+    main_cov.add_watch_point(
         {
             "fencei": bundle.io._fencei,
             "flush": bundle.io._flush,
@@ -430,16 +638,21 @@ def define_missunit_coverage_groups(bundle, dut):
         },
         name="flush_fencei_mshr_handling"
     )
+    main_cov.mark_function(
+        "flush_fencei_mshr_handling",
+        _mark_tests("test_MISSUNIT_CP39_flush_fencei_operation"),
+        bin_name=["CP39.1_fencei_before_fire", "CP39.2_flush_before_fire"],
+    )
 
     # =================================================================
     # CP 39.3: MSHR 已发射后 flush/fencei 的处理
     # 监控目标：发射后的写回抑制
     # =================================================================
-    g.add_watch_point(
+    timing_cov.add_watch_point(
         {
             "flush": bundle.io._flush,
             "fencei": bundle.io._fencei,
-            "last_fire_r": bundle.ICacheMissUnit_.last_fire_r,
+            "last_fire_r": dut.GetInternalSignal(MISSUNIT_dict["last_fire_r"], use_vpi=False),
             "meta_write_valid": bundle.io._meta_write._valid,
             "data_write_valid": bundle.io._data_write._valid,
             "fetch_resp_valid": bundle.io._fetch._resp._valid,
@@ -456,14 +669,22 @@ def define_missunit_coverage_groups(bundle, dut):
         },
         name="flush_fencei_after_fire"
     )
+    timing_cov.mark_function(
+        "flush_fencei_after_fire",
+        _mark_tests("test_MISSUNIT_CP39_flush_fencei_operation"),
+        bin_name=["CP39.3_flush_fencei_after_fire"],
+    )
 
-    return g
+    return main_cov, timing_cov
 
 def create_all_coverage_groups(bundle, dut):
     """
     创建所有覆盖点组合,包括FIFO和主要功能覆盖点
     """
+    basic_coverage = define_basic_coverage(bundle, dut)
     fifo_coverage = define_fifo_coverage(bundle, dut)
-    main_coverage = define_missunit_coverage_groups(bundle, dut)
-    
-    return [fifo_coverage, main_coverage]
+    main_coverage, timing_coverage = define_missunit_coverage_groups(bundle, dut)
+    return {
+        "regular": [basic_coverage, fifo_coverage, main_coverage],
+        "timing": [timing_coverage],
+    }
