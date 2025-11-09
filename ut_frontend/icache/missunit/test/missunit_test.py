@@ -3,6 +3,44 @@ from ..env import ICacheMissUnitEnv
 import toffee_test
 import toffee
 
+def get_internal_signal(dut, signal_name:str):
+    signal_dict = {
+        "enq_ptr_value":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.enq_ptr_value",\
+        "enq_ptr_flag":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.enq_ptr_flag",\
+        "enq_ptr_new_value":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.enq_ptr_new_value",\
+        "enq_ready":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.__Vtogcov__io_enq_ready",\
+        "enq_valid":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.__Vtogcov__io_enq_valid",\
+        "deq_ptr_value":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.deq_ptr_value",\
+        "deq_ptr_flag":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.deq_ptr_flag",\
+        "deq_ptr_new_value":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.deq_ptr_new_value",\
+        "deq_ready":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.__Vtogcov__io_deq_ready",\
+        "deq_valid":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.__Vtogcov__io_deq_valid",\
+        "fifo_deq_bits":"ICacheMissUnit_top.ICacheMissUnit._priorityFIFO_io_deq_bits",\
+        "full":"ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.full",\
+
+        "enq_bits":"ICacheMissUnit_top.ICacheMissUnit._prefetchDemux_io_chosen",\
+        
+        "fetch_demux_valid":"ICacheMissUnit_top.ICacheMissUnit.fetchDemux.__Vtogcov__io_in_valid",\
+        "fetch_hit":"ICacheMissUnit_top.ICacheMissUnit.fetchHit",\
+        "prefetch_demux_valid":"ICacheMissUnit_top.ICacheMissUnit.prefetchDemux.__Vtogcov__io_in_valid",\
+        "prefetch_hit":"ICacheMissUnit_top.ICacheMissUnit.prefetchHit",\
+        "last_fire":"ICacheMissUnit_top.ICacheMissUnit.last_fire",\
+        "last_fire_r":"ICacheMissUnit_top.ICacheMissUnit.last_fire_r",\
+        "io_mem_acquire_bits_source":"ICacheMissUnit_top.io_mem_acquire_bits_source",\
+        "readBeatCnt":"ICacheMissUnit_top.ICacheMissUnit.readBeatCnt",\
+        "respDataReg_0":"ICacheMissUnit_top.ICacheMissUnit.respDataReg_0",\
+        "respDataReg_1":"ICacheMissUnit_top.ICacheMissUnit.respDataReg_1",\
+        "id_r":"ICacheMissUnit_top.ICacheMissUnit.id_r",\
+        "corrupt_r":"ICacheMissUnit_top.ICacheMissUnit.corrupt_r",\
+        "victim_valid":"ICacheMissUnit_top.io_victim_vSetIdx_valid",\
+        "mshr_resp_way":"ICacheMissUnit_top.ICacheMissUnit.mshr_resp_way",\
+        "mshr_resp_blkPaddr":"ICacheMissUnit_top.ICacheMissUnit.mshr_resp_blkPaddr",\
+        "mshr_resp_vSetIdx":"ICacheMissUnit_top.ICacheMissUnit.mshr_resp_vSetIdx",\
+        "refill_done_r_counter":"ICacheMissUnit_top.ICacheMissUnit.refill_done_r_counter",\
+    }
+    return dut.GetInternalSignal(signal_dict[signal_name], use_vpi=False).value
+
+
 
 @toffee_test.testcase
 async def test_smoke(icachemissunit_env: ICacheMissUnitEnv):
@@ -390,829 +428,858 @@ async def test_api_full_prefetch_flow(icachemissunit_env: ICacheMissUnitEnv):
     toffee.info("API Full End-to-End PREFETCH Flow test passed.")
 
 @toffee_test.testcase
-async def test_FIFO_moudle(icachemissunit_env: ICacheMissUnitEnv):
+async def test_FIFO_moudle_CP28_CP29_enq_and_deq_operation(icachemissunit_env: ICacheMissUnitEnv):
     """
-    Goal: Correctly test FIFO by considering the high priority of fetch requests.
+    Covers FIFO CP28.x (enqueue behaviors) and CP29.x (dequeue behaviors) by
+    directly driving prefetch requests and observing FIFO internals.
     """
-    toffee.info("\n--- Testing FIFO (Considering Fetch Priority) ---")
     dut = icachemissunit_env.dut
     agent = icachemissunit_env.agent
     bundle = icachemissunit_env.bundle
-    acquire_info_list = []
+    toffee.info("\n--- [FIFO Test] CP28/CP29 enqueue & dequeue operations ---")
 
-    # 2. 填满 FIFO
-    toffee.info("Step 2: Enqueue 10 prefetch requests to fill the FIFO.")
-    for i in range(10):
-        await agent.drive_send_prefetch_req(0x1000 + i * 0x1000, 0x1A + i)
-        acquire_info = await agent.drive_get_acquire_request(timeout_cycles=10)
-        assert acquire_info is not None, f"Failed to get acquire for request{i}"
-        await agent.drive_acknowledge_acquire(cycles=1)
-        acquire_info_list.append(acquire_info)
-        toffee.info(f"the prefetch chosen is {bundle.prefetchDemux._io_chosen.value} now")
+    def fifo_state():
+        names = [
+            "enq_ptr_value", "enq_ptr_flag",
+            "deq_ptr_value", "deq_ptr_flag",
+            "full", "enq_ready", "deq_ready", "deq_valid"
+        ]
+        return {name: int(get_internal_signal(dut, name)) for name in names}
 
-    await agent.bundle.step(5)
-    # CP28.2 队满，入队翻转
-    assert dut.GetInternalSignal("ICacheMissUnit_top.ICacheMissUnit.priorityFIFO.enq_ptr_flag", use_vpi=False).value == 1
+    async def step_and_sample(cycles: int = 1):
+        await bundle.step(cycles)
+        return fifo_state()
 
+    async def send_prefetch(slot_idx: int):
+        blk = 0x8000 + slot_idx * 0x1000
+        vset = (0x10 + slot_idx) & 0xFF
+        info = await agent.drive_send_prefetch_req(blkPaddr=blk, vSetIdx=vset)
+        assert info["send_success"], f"Prefetch {slot_idx} should enter FIFO"
+        return info
 
-    # 3. 测试队满阻塞
-    toffee.info("Step 3: Test blocking when FIFO is full.")
-    send_result = await agent.drive_send_prefetch_req(blkPaddr=0xDEAD, vSetIdx=0, timeout_cycles=3)
-    assert send_result["send_success"] is False and bundle.io._prefetch_req._ready.value == 0, "FIFO should be full and starting block the request."
-
-
-    # 4. 出队一个元素
-    toffee.info(f"acquire_info_list is {acquire_info_list}")
-    toffee.info("Step 4: Dequeue one item from the FIFO.")
-    await agent.drive_respond_with_grant(source_id=acquire_info_list[0]["source"], data_beats=[0x1, 0x2])
-    response_info = await agent.drive_get_fetch_response(timeout_cycles=10)
-    assert response_info is not None, "Failed to get fetch response after dequeueing an item."
-    toffee.info(f"Dequeued item and received fetch response: {response_info}")
-    del acquire_info_list[0]
-
-    # 5. 测试指针回环入队
-    toffee.info("Step 5: Test enqueue after making space in the FIFO.")
-    send_result = await agent.drive_send_prefetch_req(blkPaddr=0xCAFE, vSetIdx=10)
-    acquire_info = await agent.drive_get_acquire_request(timeout_cycles=10)
-    assert acquire_info is not None, f"Failed to get acquire for request{i}"
-    await agent.drive_acknowledge_acquire(cycles=1)
-    acquire_info_list.append(acquire_info)
-    assert send_result["send_success"] is True, "Failed to enqueue into the freed FIFO slot."
-
-    # 6.顺序出队所有元素,并驱动drive_acknowledge_acquire以触发空队出列
-    await agent.bundle.step(5)
-    for i in acquire_info_list:
-        toffee.info(f"this acquire_info is {i}")
-        await agent.drive_respond_with_grant(source_id=i["source"],data_beats=[0x1,0x2])
-        response_info = await agent.drive_get_fetch_response(timeout_cycles=10)
-        toffee.info(f"#{i} response_info is {response_info}")
-        assert response_info is not None, "Failed to get prefetch response after dequeueing an item"
-
-
-    await agent.drive_respond_with_grant(source_id=acquire_info_list[0]["source"], data_beats=[0x1, 0x2])
-    response_info = await agent.drive_get_fetch_response(timeout_cycles=10)
-    assert response_info is None, "Expected no fetch response after flushing the FIFO."
-    await agent.bundle.step(5)
-
- 
-    # 8. 测试Flush操作
-    toffee.info("Step 8: Test flush operation.")
-    # Flush 应该能清空 prefetch MSHR 和 FIFO，以及 fetch MSHR
-    await agent.drive_set_flush(True)
-    await agent.bundle.step(1)
+    # Ensure control signals are deasserted and FIFO starts empty
+    await agent.fencei_func(0)
     await agent.drive_set_flush(False)
-    await agent.bundle.step(5)
-    
-    # 验证：flush后，所有资源都被释放，可以发送一个新的 prefetch 请求
-    toffee.info("  - Verifying a new prefetch can be sent after flush.")
-    send_result = await agent.drive_send_prefetch_req(blkPaddr=0xB000, vSetIdx=1)
-    assert send_result["send_success"] is True, "Failed to send a request after a flush operation."
-    
-    toffee.info("--- FIFO Test (Considering Fetch Priority) Completed ---")
+    bundle.io._mem._acquire._ready.value = 0
+    await bundle.step()
+
+    state = fifo_state()
+    assert state["enq_ptr_value"] == 0 and state["deq_ptr_value"] == 0
+    assert state["enq_ptr_flag"] == 0 and state["deq_ptr_flag"] == 0
+    assert state["full"] == 0 and state["enq_ready"] == 1
+
+    # ---------------------------
+    # CP28.1/CP28.2/CP28.3 checks
+    # ---------------------------
+    toffee.info("CP28.1: Enqueuing 9 entries without flag flip.")
+    for i in range(9):
+        await send_prefetch(i)
+        state = await step_and_sample()
+    assert state["enq_ptr_value"] == i + 1, f"Enqueue pointer should advance to {i+1}"
+    assert state["enq_ptr_flag"] == 0, "Flag must not flip before wrap"
+    assert state["full"] == 0, "FIFO must not report full before wrap"
+    assert state["enq_ready"] == 1, "Internal enqueue ready remains high while not full"
+
+    toffee.info("CP28.2: Enqueue hitting tail causes wrap & flag flip.")
+    await send_prefetch(9)
+    state = await step_and_sample()
+    assert state["enq_ptr_value"] == 0, "Pointer should wrap to 0 after slot 9"
+    assert state["enq_ptr_flag"] == 1, "Flag should flip when pointer wraps"
+    assert state["full"] == 1, "FIFO should report full after 10th enqueue"
+    assert state["enq_ptr_value"] == state["deq_ptr_value"], "Full condition requires equal pointers"
+    assert state["enq_ptr_flag"] ^ state["deq_ptr_flag"] == 1, "Full condition requires flag mismatch"
+    assert state["enq_ready"] == 0, "Internal enqueue ready must drop when FIFO full"
+
+    toffee.info("CP28.3: Further enqueue blocked while FIFO is full.")
+    reject_info = await agent.drive_send_prefetch_req(
+        blkPaddr=0xDEAD_BEEF, vSetIdx=0x55, timeout_cycles=5
+    )
+    assert reject_info["send_success"] is False, "Request must be rejected when FIFO is full"
+    state = fifo_state()
+    assert state["full"] == 1 and state["enq_ready"] == 0
+
+    # ---------------------------
+    # CP29.1/CP29.2/CP29.3 checks
+    # ---------------------------
+    toffee.info("CP29.x: Start draining FIFO via memory acquires.")
+
+    async def acknowledge_next_acquire():
+        acquire = await agent.drive_get_and_acknowledge_acquire(timeout_cycles=80, ack_cycles=1)
+        assert acquire is not None, "Expected acquire request while FIFO is non-empty"
+        return await step_and_sample()
+
+    # Allow pending MSHR scheduling to run before draining
+    await bundle.step(5)
+
+    toffee.info("CP29.1: Normal dequeue without flag flip for first nine entries.")
+    for expected_value in range(1, 10):
+        state = await acknowledge_next_acquire()
+        assert state["deq_ptr_value"] == expected_value, f"Dequeue pointer should advance to {expected_value}"
+        assert state["deq_ptr_flag"] == 0, "Flag must remain 0 before wrap"
+        assert state["deq_valid"] == 1, "FIFO should still report valid data"
+
+    toffee.info("CP29.2: Dequeue at tail wraps pointer and flips flag.")
+    wrap_state = await acknowledge_next_acquire()
+    assert wrap_state["deq_ptr_value"] == 0, "Pointer should wrap to 0 on final dequeue"
+    assert wrap_state["deq_ptr_flag"] == 1, "Flag should flip after wrap on dequeue"
+
+    toffee.info("CP29.3: FIFO empty -> io.deq.valid must be low, enqueues allowed again.")
+    await bundle.step()
+    empty_state = fifo_state()
+    assert empty_state["deq_valid"] == 0, "Dequeue valid should drop when FIFO empty"
+    assert empty_state["enq_ptr_value"] == empty_state["deq_ptr_value"]
+    assert empty_state["enq_ptr_flag"] == empty_state["deq_ptr_flag"]
+    assert empty_state["enq_ready"] == 1, "Internal ready must reassert once FIFO empties"
+
+    toffee.info("FIFO CP28/CP29 behavioral checks completed successfully.")
 
 
 @toffee_test.testcase
-async def test_mshr_hit_detection(icachemissunit_env: ICacheMissUnitEnv):
+async def test_FIFO_moudle_CP30_flush_operation(icachemissunit_env: ICacheMissUnitEnv):
     """
-    测试点 CP33: MSHR查找命中逻辑
-    - 测试fetch/prefetch请求命中现有MSHR
-    - 测试prefetch与fetch相同地址时的命中检测
+    Covers FIFO CP30: flush clears pointers/flags and reopens enqueue interface.
     """
-    toffee.info("\n--- Testing MSHR Hit Detection Logic ---")
-    agent = icachemissunit_env.agent
-    bundle = icachemissunit_env.bundle
-    
-    test_addr = 0x2000
-    test_idx = 0x2B
-    
-    # Step 1: 发送一个fetch请求，建立MSHR
-    toffee.info("Step 1: Send initial fetch request to establish MSHR")
-    send_result = await agent.drive_send_fetch_request(blkPaddr=test_addr, vSetIdx=test_idx)
-    assert send_result["send_success"] is True, "Initial fetch request should succeed"
-    
-    await bundle.step(2)
-    
-    # Step 2: 发送相同地址的fetch请求，应该命中
-    toffee.info("Step 2: Send same fetch request, should hit existing MSHR")
-    bundle.io._fetch._req._valid.value = 1
-    bundle.io._fetch._req._bits._blkPaddr.value = test_addr
-    bundle.io._fetch._req._bits._vSetIdx.value = test_idx
-    await bundle.step()
-    
-    # 验证fetch hit
-    assert bundle.ICacheMissUnit_.fetchHit.value == 1, "Fetch request should hit existing MSHR"
-    assert bundle.io._fetch._req._ready.value == 1, "Ready should be high for hit request"
-    
-    bundle.io._fetch._req._valid.value = 0
-    await bundle.step()
-    
-    # Step 3: 发送相同地址的prefetch请求，应该命中
-    toffee.info("Step 3: Send prefetch request with same address, should hit")
-    bundle.io._prefetch_req._valid.value = 1
-    bundle.io._prefetch_req._bits._blkPaddr.value = test_addr
-    bundle.io._prefetch_req._bits._vSetIdx.value = test_idx
-    await bundle.step()
-    
-    # 验证prefetch hit
-    assert bundle.ICacheMissUnit_.prefetchHit.value == 1, "Prefetch request should hit existing MSHR"
-    assert bundle.io._prefetch_req._ready.value == 1, "Ready should be high for hit request"
-    
-    bundle.io._prefetch_req._valid.value = 0
-    await bundle.step()
-    
-    toffee.info("MSHR hit detection test completed successfully.")
-
-@toffee_test.testcase
-async def test_low_index_priority_fetch(icachemissunit_env: ICacheMissUnitEnv):
-    """
-    测试点 CP31.3: 低索引优先级策略(fetch MSHR)
-    验证fetchDemux优先分配低索引的MSHR
-    """
-    toffee.info("\n--- Testing Low Index Priority for Fetch MSHRs ---")
-    agent = icachemissunit_env.agent
-    bundle = icachemissunit_env.bundle
-    
-    # 验证所有fetch MSHR都ready
-    for i in range(4):
-        mshr_ready = getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{i}")._io._req_ready.value
-        assert mshr_ready == 1, f"Fetch MSHR {i} should be ready initially"
-    
-    # 发送请求，应该分配给MSHR 0
-    toffee.info("Sending first fetch request - should go to MSHR 0")
-    send_result = await agent.drive_send_fetch_request(blkPaddr=0x1000, vSetIdx=0x10)
-    assert send_result["send_success"] is True, "First request should succeed"
-    await bundle.step()
-    
-    # 验证MSHR 0被占用，其他仍然ready
-    assert getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_0")._io._req_ready.value == 0, "MSHR 0 should be occupied"
-    for i in range(1, 4):
-        mshr_ready = getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{i}")._io._req_ready.value
-        assert mshr_ready == 1, f"Fetch MSHR {i} should still be ready"
-    
-    # 发送第二个请求，应该分配给MSHR 1
-    toffee.info("Sending second fetch request - should go to MSHR 1")
-    send_result = await agent.drive_send_fetch_request(blkPaddr=0x2000, vSetIdx=0x20)
-    assert send_result["send_success"] is True, "Second request should succeed"
-    await bundle.step()
-    
-    # 验证MSHR 1被占用
-    assert getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_1")._io._req_ready.value == 0, "MSHR 1 should be occupied"
-    for i in range(2, 4):
-        mshr_ready = getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{i}")._io._req_ready.value
-        assert mshr_ready == 1, f"Fetch MSHR {i} should still be ready"
-    
-    toffee.info("Low index priority test for fetch MSHRs completed successfully.")
-
-@toffee_test.testcase
-async def test_low_index_priority_prefetch(icachemissunit_env: ICacheMissUnitEnv):
-    """
-    测试点 CP32.3: 低索引优先级策略(prefetch MSHR)
-    验证prefetchDemux优先分配低索引的MSHR
-    """
-    toffee.info("\n--- Testing Low Index Priority for Prefetch MSHRs ---")
-    agent = icachemissunit_env.agent
-    bundle = icachemissunit_env.bundle
-    
-    # 发送第一个prefetch请求，应该分配给MSHR 0，chosen应该为0
-    assert bundle.prefetchDemux._io_chosen.value == 0,f"The first prefetch request should go to MSHR 0"
-    send_result = await agent.drive_send_prefetch_req(blkPaddr=0x3000, vSetIdx=0x30)
-    assert send_result["send_success"] is True, "First prefetch request should succeed"
-    await bundle.step()
-
-    
-    # 验证MSHR 0被占用,其他的未被占用
-    assert getattr(bundle.ICacheMissUnit_._prefetchMSHRs, f"_0")._io._req_ready.value == 0, "Prefetch MSHR 0 should be occupied"
-    for i in range(1, 10):
-        mshr_ready = getattr(bundle.ICacheMissUnit_._prefetchMSHRs, f"_{i}")._io._req_ready.value
-        assert mshr_ready == 1, f"preFetch MSHR {i} should still be ready"
-    
-    # 检查chosen值应该为1（最低索引）
-    assert bundle.prefetchDemux._io_chosen.value == 1,f"The second prefetch request should go to MSHR 1"
-    # 发送第二个prefetch请求，应该分配给MSHR 1
-    toffee.info("Sending second prefetch request - should go to MSHR 1")
-    send_result = await agent.drive_send_prefetch_req(blkPaddr=0x4000, vSetIdx=0x40)
-    assert send_result["send_success"] is True, "Second prefetch request should succeed"
-    await bundle.step()
-    
-    # 验证MSHR 1被占用
-    assert getattr(bundle.ICacheMissUnit_._prefetchMSHRs, f"_1")._io._req_ready.value == 0, "Prefetch MSHR 1 should be occupied"
-    for i in range(2, 10):
-        mshr_ready = getattr(bundle.ICacheMissUnit_._prefetchMSHRs, f"_{i}")._io._req_ready.value
-        assert mshr_ready == 1, f"preFetch MSHR {i} should still be ready"
-    
-    toffee.info("Low index priority test for prefetch MSHRs completed successfully.")
-
-@toffee_test.testcase
-async def test_fifo_priority_ordering(icachemissunit_env: ICacheMissUnitEnv):
-    """
-    测试点: 验证prefetch MSHR的FIFO优先级顺序
-    确保先入队的prefetch请求先被处理
-    """
-    toffee.info("\n--- Testing FIFO Priority Ordering for Prefetch ---")
-    agent = icachemissunit_env.agent
-    bundle = icachemissunit_env.bundle
     dut = icachemissunit_env.dut
-    # 发送多个prefetch请求填充FIFO
-    toffee.info("Filling FIFO with prefetch requests")
-    acquire_list = []
-    for i in range(5):  # 发送5个请求
-        blkPaddr = 0x5000 + i * 0x1000
-        vSetIdx = 0x50 + i
-        
-        send_result = await agent.drive_send_prefetch_req(blkPaddr=blkPaddr, vSetIdx=vSetIdx)
-        assert send_result["send_success"] is True, f"Prefetch request {i} should succeed"
-        
-        # 等待acquire产生
-        acquire_info = await agent.drive_get_acquire_request(timeout_cycles=5)
-        assert acquire_info is not None, f"Should get acquire for request {i}"
-        acquire_list.append(acquire_info)
-        
-        # 确认acquire
-        await agent.drive_acknowledge_acquire(cycles=1)
-        
-        toffee.info(f"Request {i}: source_id={acquire_info['source']}")
-    
-    # 验证source ID的顺序应该是递增的（4, 5, 6, 7, 8），符合FIFO顺序
-    toffee.info("Verifying FIFO ordering of source IDs")
-    for i in range(len(acquire_list)):
-        expected_source = 4 + i  # prefetch MSHR从4开始
-        actual_source = acquire_list[i]["source"]
-        assert actual_source == expected_source, f"Request {i} source should be {expected_source}, got {actual_source}"
-    
-    toffee.info("FIFO priority ordering test completed successfully.")
-
-@toffee_test.testcase
-async def test_acquire_arbitration_priority(icachemissunit_env: ICacheMissUnitEnv):
-    """
-    测试点 CP34: acquireArb仲裁逻辑
-    验证fetch请求优先于prefetch请求的场景
-    """
-    toffee.info("\n--- Testing Acquire Arbitration Priority ---")
     agent = icachemissunit_env.agent
     bundle = icachemissunit_env.bundle
-    
-    # 测试策略：使用不同的地址确保两个请求都会产生acquire
-    toffee.info("Step 1: Send prefetch request to unique address")
-    
-    # 发送prefetch请求到一个独特的地址
-    prefetch_result = await agent.drive_send_prefetch_req(blkPaddr=0x8000, vSetIdx=0x80)
-    assert prefetch_result["send_success"] is True, "Prefetch request should succeed"
-    
-    # 等待prefetch进入MSHR并准备好acquire
-    await bundle.step(2)
-    
-    # 发送fetch请求到另一个独特的地址
-    toffee.info("Step 2: Send fetch request to different address")
-    fetch_result = await agent.drive_send_fetch_request(blkPaddr=0x9000, vSetIdx=0x90)
-    assert fetch_result["send_success"] is True, "Fetch request should succeed"
-    
-    # 等待两个acquire请求都准备好
-    await bundle.step(3)
-    
-    # 收集所有的acquire请求
-    acquire_requests = []
-    toffee.info("Step 3: Collecting acquire requests...")
-    
-    for attempt in range(3):  # 尝试获取多个acquire请求
-        acquire_info = await agent.drive_get_and_acknowledge_acquire(timeout_cycles=5)
-        if acquire_info is not None:
-            acquire_requests.append(acquire_info)
-            toffee.info(f"  Acquire {len(acquire_requests)}: source={acquire_info['source']}, address=0x{acquire_info['address']:x}")
-        else:
-            toffee.info(f"  No more acquire requests found (attempt {attempt + 1})")
-            break
-    
-    toffee.info(f"Total acquire requests collected: {len(acquire_requests)}")
-    
-    # 检查仲裁结果
-    fetch_sources = [req["source"] for req in acquire_requests if req["source"] < 4]
-    prefetch_sources = [req["source"] for req in acquire_requests if req["source"] >= 4]
-    
-    toffee.info(f"Fetch sources: {fetch_sources}")
-    toffee.info(f"Prefetch sources: {prefetch_sources}")
-    
-    # 验证至少有一个请求被处理
-    assert len(acquire_requests) >= 1, "Should get at least one acquire request"
-    
-    # 如果只有fetch请求，说明prefetch可能被过滤了或者命中了缓存
-    if len(prefetch_sources) == 0 and len(fetch_sources) > 0:
-        toffee.info("ⓘ Only fetch requests generated acquires (prefetch may have been filtered)")
-        toffee.info("✓ Test passed: Fetch requests are being processed correctly")
-    elif len(prefetch_sources) > 0 and len(fetch_sources) > 0:
-        toffee.info("✓ Test passed: Both fetch and prefetch requests generated acquires")
-        # 检查优先级
-        if len(acquire_requests) >= 2:
-            first_is_fetch = acquire_requests[0]["source"] < 4
-            if first_is_fetch:
-                toffee.info("✓ Fetch request has priority (processed first)")
-            else:
-                toffee.info("ⓘ Prefetch request processed first (fair arbitration)")
-    elif len(prefetch_sources) > 0 and len(fetch_sources) == 0:
-        toffee.info("ⓘ Only prefetch requests generated acquires")
-        toffee.info("✓ Test passed: Prefetch requests are being processed correctly")
-    else:
-        toffee.info("⚠ No acquire requests generated - this may indicate an issue")
-        assert False, "No acquire requests were generated"
-    
-    toffee.info("✓ Arbitration logic test completed successfully")
 
-@toffee_test.testcase
-async def test_grant_beat_collection(icachemissunit_env: ICacheMissUnitEnv):
-    """
-    测试点 CP35: Grant数据接收与beat收集
-    验证多beat数据的正确收集和last_fire信号
-    """
-    toffee.info("\n--- Testing Grant Beat Collection ---")
-    agent = icachemissunit_env.agent
-    bundle = icachemissunit_env.bundle
-    
-    # 发送fetch请求
-    test_addr = 0x8000
-    test_idx = 0x80
-    send_result = await agent.drive_send_fetch_request(blkPaddr=test_addr, vSetIdx=test_idx)
-    assert send_result["send_success"] is True, "Fetch request should succeed"
-    
-    # 获取acquire
-    acquire_info = await agent.drive_get_acquire_request()
-    assert acquire_info is not None, "Should get acquire request"
-    await agent.drive_acknowledge_acquire(cycles=1)
-    
-    # 设置victim way
-    await agent.drive_set_victim_way(way=1)
-    
-    # 发送第一个beat的Grant
-    toffee.info("Sending first beat of Grant data")
-    first_beat_data = 0x1111111122222222
-    bundle.io._mem._grant._valid.value = 1
-    bundle.io._mem._grant._bits._opcode.value = 0x5  # opcode[0] = 1
-    bundle.io._mem._grant._bits._source.value = acquire_info["source"]
-    bundle.io._mem._grant._bits._data.value = first_beat_data
-    bundle.io._mem._grant._bits._corrupt.value = 0
-    await bundle.step()
-    
-    # 验证last_fire应该为0（还有更多beat）
-    assert bundle.ICacheMissUnit_.last_fire.value == 0, "last_fire should be 0 for first beat"
-    
-    # 发送第二个beat的Grant
-    toffee.info("Sending second beat of Grant data")
-    second_beat_data = 0x3333333344444444
-    bundle.io._mem._grant._bits._data.value = second_beat_data
-    await bundle.step()
-    
-    # 验证last_fire应该为1（最后一个beat）
-    assert bundle.ICacheMissUnit_.last_fire.value == 1, "last_fire should be 1 for last beat"
-    
-    bundle.io._mem._grant._valid.value = 0
-    await bundle.step()
-    
-    # 验证last_fire_r为1
-    assert bundle.ICacheMissUnit_.last_fire_r.value == 1, "last_fire_r should be 1 after last beat"
-    
-    toffee.info("Grant beat collection test completed successfully.")
+    def fifo_state():
+        names = [
+            "enq_ptr_value", "enq_ptr_flag",
+            "deq_ptr_value", "deq_ptr_flag",
+            "full", "enq_ready", "deq_valid"
+        ]
+        return {name: int(get_internal_signal(dut, name)) for name in names}
 
-@toffee_test.testcase
-async def test_victim_way_update(icachemissunit_env: ICacheMissUnitEnv):
-    """
-    测试点 CP36: 替换策略更新
-    验证acquire fire时victim信号的正确生成
-    """
-    toffee.info("\n--- Testing Victim Way Update ---")
-    agent = icachemissunit_env.agent
-    bundle = icachemissunit_env.bundle
-    
-    # 发送fetch请求
-    send_result = await agent.drive_send_fetch_request(blkPaddr=0x9000, vSetIdx=0x90)
-    assert send_result["send_success"] is True, "Fetch request should succeed"
-    
-    # 等待acquire信号
-    await bundle.step(3)
-    
-    # 验证当acquire valid时，检查victim信号
-    if bundle.io._mem._acquire._valid.value == 1:
-        toffee.info("Acquire is valid, checking victim signals")
-        
-        # 设置acquire ready来触发fire
-        bundle.io._mem._acquire._ready.value = 1
-        await bundle.step()
-        
-        # 验证victim valid信号
-        assert bundle.io._victim._vSetIdx._valid.value == 1, "Victim valid should be high when acquire fires"
-        
-        # 验证victim bits包含正确的vSetIdx
-        victim_idx = bundle.io._victim._vSetIdx._bits.value
-        expected_idx = 0x90
-        assert victim_idx == expected_idx, f"Victim vSetIdx should be {hex(expected_idx)}, got {hex(victim_idx)}"
-        
-        bundle.io._mem._acquire._ready.value = 0
-    
-    toffee.info("Victim way update test completed successfully.")
+    async def send_prefetch(slot_idx: int):
+        blk = 0xA000 + slot_idx * 0x1000
+        vset = (0x20 + slot_idx) & 0xFF
+        info = await agent.drive_send_prefetch_req(blkPaddr=blk, vSetIdx=vset)
+        assert info["send_success"], f"Prefetch {slot_idx} should enqueue before flush"
 
-@toffee_test.testcase
-async def test_sram_write_conditions(icachemissunit_env: ICacheMissUnitEnv):
-    """
-    测试点 CP37: SRAM写回条件
-    验证在不同条件下Meta/Data写信号的生成
-    """
-    toffee.info("\n--- Testing SRAM Write Conditions ---")
-    agent = icachemissunit_env.agent
-    bundle = icachemissunit_env.bundle
-    
-    # 测试正常写入情况
-    toffee.info("Testing normal SRAM write (no flush/fencei)")
-    test_addr = 0xA000
-    test_idx = 0xA0
-    
-    # 完整的fetch流程
-    send_result = await agent.drive_send_fetch_request(blkPaddr=test_addr, vSetIdx=test_idx)
-    acquire_info = await agent.drive_get_acquire_request()
-    await agent.drive_acknowledge_acquire(cycles=1)
-    await agent.drive_set_victim_way(way=2)
-    
-    # 发送正常的Grant数据
-    grant_data = [0xAAAAAAAABBBBBBBB, 0xCCCCCCCCDDDDDDDD]
-    await agent.drive_respond_with_grant(source_id=acquire_info['source'], data_beats=grant_data)
-    
-    await bundle.step(2)  # 等待写信号稳定
-    
-    # 验证在last_fire_r=1时，meta_write和data_write都有效（假设无flush/fencei）
-    if bundle.ICacheMissUnit_.last_fire_r.value == 1:
-        toffee.info("Checking SRAM write signals")
-        if bundle.io._flush.value == 0 and bundle.io._fencei.value == 0:
-            # 在正常情况下应该写SRAM
-            toffee.info("Normal condition: should write to SRAM")
-            # Note: 实际的write valid可能还依赖于其他条件，这里主要验证逻辑
-        
-        # 验证fetch响应总是生成
-        assert bundle.io._fetch._resp._valid.value == 1, "Fetch response should always be generated"
-    
-    toffee.info("SRAM write conditions test completed successfully.")
+    toffee.info("\n--- [FIFO Test] CP30 flush operation ---")
 
-@toffee_test.testcase
-async def test_no_write_with_flush_fencei(icachemissunit_env: ICacheMissUnitEnv):
-    """
-    测试点 CP37.2: 有flush/fencei时不写SRAM但仍发送响应
-    专门测试flush/fencei条件下的SRAM写回抑制
-    """
-    toffee.info("\n--- Testing No SRAM Write with Flush/Fencei ---")
-    agent = icachemissunit_env.agent
-    bundle = icachemissunit_env.bundle
-    
-    # 测试flush情况
-    toffee.info("Step 1: Testing with flush signal")
-    test_addr = 0xB000
-    test_idx = 0xB0
-    
-    # 发送fetch请求
-    send_result = await agent.drive_send_fetch_request(blkPaddr=test_addr, vSetIdx=test_idx)
-    acquire_info = await agent.drive_get_acquire_request()
-    await agent.drive_acknowledge_acquire(cycles=1)
-    await agent.drive_set_victim_way(way=1)
-    
-    # 在发送Grant之前设置flush信号
-    toffee.info("Setting flush signal before Grant")
-    bundle.io._flush.value = 1
-    await bundle.step(1)
-    
-    # 发送Grant数据
-    grant_data = [0x1111111122222222, 0x3333333344444444]
-    await agent.drive_respond_with_grant(source_id=acquire_info['source'], data_beats=grant_data)
-    
-    # 等待处理完成并检查信号
-    await bundle.step(3)
-    
-    # 验证CP37.2覆盖点条件
-    if bundle.ICacheMissUnit_.last_fire_r.value == 1:
-        meta_write_valid = bundle.io._meta_write._valid.value
-        data_write_valid = bundle.io._data_write._valid.value
-        fetch_resp_valid = bundle.io._fetch._resp._valid.value
-        flush_active = bundle.io._flush.value
-        
-        toffee.info(f"Flush scenario - meta_write_valid: {meta_write_valid}, data_write_valid: {data_write_valid}")
-        toffee.info(f"                fetch_resp_valid: {fetch_resp_valid}, flush: {flush_active}")
-        
-        # CP37.2 期望：flush时不写SRAM但仍发送响应
-        if flush_active == 1:
-            toffee.info("✓ CP37.2 condition detected: flush active, checking SRAM write suppression")
-            if meta_write_valid == 0 and data_write_valid == 0 and fetch_resp_valid == 1:
-                toffee.info("✓ CP37.2 Coverage achieved: No SRAM write but fetch response generated")
-            else:
-                toffee.info(f"ⓘ CP37.2 partial: write suppression may depend on other conditions")
-        
-        # 响应应该总是生成
-        assert fetch_resp_valid == 1, "Fetch response should always be generated even with flush"
-    
-    # 清除flush信号
-    bundle.io._flush.value = 0
-    await bundle.step(2)
-    
-    # 测试fencei情况
-    toffee.info("Step 2: Testing with fencei signal")
-    test_addr = 0xC000
-    test_idx = 0xC0
-    
-    # 发送另一个fetch请求
-    send_result = await agent.drive_send_fetch_request(blkPaddr=test_addr, vSetIdx=test_idx)
-    acquire_info = await agent.drive_get_acquire_request()
-    await agent.drive_acknowledge_acquire(cycles=1)
-    await agent.drive_set_victim_way(way=3)
-    
-    # 在发送Grant之前设置fencei信号
-    toffee.info("Setting fencei signal before Grant")
-    bundle.io._fencei.value = 1
-    await bundle.step(1)
-    
-    # 发送Grant数据
-    grant_data = [0x5555555566666666, 0x7777777788888888]
-    await agent.drive_respond_with_grant(source_id=acquire_info['source'], data_beats=grant_data)
-    
-    # 等待处理完成并检查信号
-    await bundle.step(3)
-    
-    # 验证CP37.2覆盖点条件（fencei版本）
-    if bundle.ICacheMissUnit_.last_fire_r.value == 1:
-        meta_write_valid = bundle.io._meta_write._valid.value
-        data_write_valid = bundle.io._data_write._valid.value
-        fetch_resp_valid = bundle.io._fetch._resp._valid.value
-        fencei_active = bundle.io._fencei.value
-        
-        toffee.info(f"Fencei scenario - meta_write_valid: {meta_write_valid}, data_write_valid: {data_write_valid}")
-        toffee.info(f"                 fetch_resp_valid: {fetch_resp_valid}, fencei: {fencei_active}")
-        
-        # CP37.2 期望：fencei时不写SRAM但仍发送响应
-        if fencei_active == 1:
-            toffee.info("✓ CP37.2 condition detected: fencei active, checking SRAM write suppression")
-            if meta_write_valid == 0 and data_write_valid == 0 and fetch_resp_valid == 1:
-                toffee.info("✓ CP37.2 Coverage achieved: No SRAM write but fetch response generated")
-            else:
-                toffee.info(f"ⓘ CP37.2 partial: write suppression may depend on other conditions")
-        
-        # 响应应该总是生成
-        assert fetch_resp_valid == 1, "Fetch response should always be generated even with fencei"
-    
-    # 清除fencei信号
-    bundle.io._fencei.value = 0
-    await bundle.step(2)
-    
-    toffee.info("No SRAM write with flush/fencei test completed successfully.")
-
-@toffee_test.testcase
-async def test_flush_fencei_mshr_behavior(icachemissunit_env: ICacheMissUnitEnv):
-    """
-    测试点 CP38: flush/fencei对MSHR的影响
-    验证flush只影响prefetch MSHR，fencei影响所有MSHR
-    """
-    toffee.info("\n--- Testing Flush/Fencei MSHR Behavior ---")
-    agent = icachemissunit_env.agent
-    bundle = icachemissunit_env.bundle
-    
-    # 测试fencei清除所有MSHR
-    toffee.info("Testing fencei clears all MSHRs")
-    
-    # 先发送一些请求占用MSHR
-    await agent.drive_send_fetch_request(blkPaddr=0xB000, vSetIdx=0xB0)
-    await agent.drive_send_prefetch_req(blkPaddr=0xC000, vSetIdx=0xC0)
-    await bundle.step(2)
-    
-    # 验证MSHR被占用
-    fetch_0_ready_before = getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_0")._io._req_ready.value
-    prefetch_0_ready_before = getattr(bundle.ICacheMissUnit_._prefetchMSHRs, f"_0")._io._req_ready.value
-    toffee.info(f"Before fencei - Fetch MSHR 0 ready: {fetch_0_ready_before}, Prefetch MSHR 0 ready: {prefetch_0_ready_before}")
-    
-    # 应用fencei
-    await agent.fencei_func(1)
-    await bundle.step(5)
-    
-    # 验证所有MSHR的req_ready都变为0
-    for i in range(4):
-        fetch_ready = getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{i}")._io._req_ready.value
-        assert fetch_ready == 0, f"Fetch MSHR {i} should not be ready during fencei"
-    
-    for i in range(10):
-        prefetch_ready = getattr(bundle.ICacheMissUnit_._prefetchMSHRs, f"_{i}")._io._req_ready.value
-        assert prefetch_ready == 0, f"Prefetch MSHR {i} should not be ready during fencei"
-    
-    # 清除fencei
+    # Ensure flush/fencei are low and FIFO empty
     await agent.fencei_func(0)
-    await bundle.step(5)
-    
-    # 测试flush只影响prefetch MSHR
-    toffee.info("Testing flush affects only prefetch MSHRs")
-    
-    # 发送fetch和prefetch请求
-    await agent.drive_send_fetch_request(blkPaddr=0xD000, vSetIdx=0xD0)
-    await agent.drive_send_prefetch_req(blkPaddr=0xE000, vSetIdx=0xE0)
-    await bundle.step(2)
-    
-    # 应用flush
-    await agent.drive_set_flush(True)
-    await bundle.step(2)
-    
-    # 验证fetch MSHR不受影响，prefetch MSHR受影响
-    # Note: 具体的行为可能需要根据实际实现调整验证逻辑
-    
     await agent.drive_set_flush(False)
-    await bundle.step(2)
-    
-    toffee.info("Flush/Fencei MSHR behavior test completed successfully.")
+    await bundle.step()
+    state = fifo_state()
+    assert state["enq_ptr_value"] == state["deq_ptr_value"] == 0
+    assert state["enq_ptr_flag"] == state["deq_ptr_flag"] == 0
+    assert state["full"] == 0 and state["enq_ready"] == 1 and state["deq_valid"] == 0
 
-@toffee_test.testcase 
-async def test_mshr_release_after_grant(icachemissunit_env: ICacheMissUnitEnv):
-    """
-    测试点: MSHR在Grant完成后的正确释放
-    验证MSHR状态更新与释放逻辑
-    """
-    toffee.info("\n--- Testing MSHR Release After Grant ---")
-    agent = icachemissunit_env.agent
-    bundle = icachemissunit_env.bundle
-    
-    # 发送fetch请求
-    test_addr = 0xF000
-    test_idx = 0xF0
-    send_result = await agent.drive_send_fetch_request(blkPaddr=test_addr, vSetIdx=test_idx)
-    assert send_result["send_success"] is True, "Fetch request should succeed"
-    await bundle.step(3)
-    
-    # 检查是否有acquire请求生成（说明进入了MSHR）
-    acquire_info = await agent.drive_get_acquire_request(timeout_cycles=5)
-    if acquire_info is None:
-        toffee.info("⚠ No acquire generated - request may have hit cache")
-        toffee.info("✓ Test skipped: Cannot test MSHR release without miss")
-        return
-    
-    toffee.info(f"Acquire generated: source={acquire_info['source']}, address=0x{acquire_info['address']:x}")
-    
-    # 验证对应的MSHR被占用
-    mshr_source = acquire_info['source']
-    if mshr_source < 4:  # fetch MSHR
-        mshr_ready = getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{mshr_source}")._io._req_ready.value
-        toffee.info(f"Fetch MSHR {mshr_source} req_ready = {mshr_ready}")
-        if mshr_ready == 1:
-            toffee.info("⚠ MSHR is still ready - request may not have been processed as expected")
-    else:
-        toffee.info(f"Prefetch MSHR source {mshr_source} - skipping ready check")
-    
-    # 完成acquire handshake
-    await agent.drive_acknowledge_acquire(cycles=1)
-    await agent.drive_set_victim_way(way=3)
-    
-    grant_data = [0x1234567890ABCDEF, 0xFEDCBA0987654321]
-    await agent.drive_respond_with_grant(source_id=acquire_info['source'], data_beats=grant_data)
-    
-    # 等待Grant处理完成
-    await bundle.step(5)
-    
-    # 验证MSHR状态（对于fetch MSHR）
-    if mshr_source < 4:
-        final_mshr_ready = getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{mshr_source}")._io._req_ready.value
-        toffee.info(f"After Grant: Fetch MSHR {mshr_source} req_ready = {final_mshr_ready}")
-        if final_mshr_ready == 1:
-            toffee.info(f"✓ MSHR {mshr_source} successfully released after Grant")
-        else:
-            toffee.info(f"ⓘ MSHR {mshr_source} still busy - may need more time or different conditions")
-    else:
-        toffee.info(f"✓ Grant processed for prefetch MSHR {mshr_source}")
-    
-    toffee.info("MSHR release after grant test completed successfully.")
-
-@toffee_test.testcase
-async def test_waymask_generation(icachemissunit_env: ICacheMissUnitEnv):
-    """
-    测试点: waymask生成逻辑
-    验证根据victim way正确生成waymask
-    """
-    toffee.info("\n--- Testing Waymask Generation ---")
-    agent = icachemissunit_env.agent
-    bundle = icachemissunit_env.bundle
-    
-    test_ways = [0, 1, 2, 3]  # 测试所有4种way
-    
-    for way in test_ways:
-        toffee.info(f"Testing waymask generation for way {way}")
-        
-        # 发送请求
-        test_addr = 0x10000 + way * 0x1000
-        test_idx = 0x10 + way
-        
-        send_result = await agent.drive_send_fetch_request(blkPaddr=test_addr, vSetIdx=test_idx)
-        assert send_result["send_success"] is True, f"Fetch request for way {way} should succeed"
-        
-        # 处理acquire
-        acquire_info = await agent.drive_get_acquire_request()
-        await agent.drive_acknowledge_acquire(cycles=1)
+    # Fill a few entries to put FIFO into non-empty state
+    for i in range(5):
+        await send_prefetch(i)
         await bundle.step()
-        
-        # 在发送Grant之前设置victim way（这是关键时序）
-        await agent.drive_set_victim_way(way=way)
-        toffee.info(f"Set victim way to {way} before Grant")
-        
-        # 发送Grant
-        grant_data = [0x1111111111111111, 0x2222222222222222]
-        await agent.drive_respond_with_grant(source_id=acquire_info['source'], data_beats=grant_data)
-        
-        # 获取响应并验证waymask
-        response_info = await agent.drive_get_fetch_response(timeout_cycles=10)
-        assert response_info is not None, f"Should get fetch response for way {way}"
-        
-        expected_waymask = 1 << way  # 独热编码
-        actual_waymask = response_info["waymask"]
-        
-        toffee.info(f"Way {way}: Expected waymask={expected_waymask}, Actual waymask={actual_waymask}")
-        
-        # 对于way 0，waymask应该是1，这是正确的
-        # 对于其他way，可能需要调整测试策略
-        if way == 0:
-            assert actual_waymask == expected_waymask, f"Waymask for way {way} should be {expected_waymask}, got {actual_waymask}"
-            toffee.info(f"✓ Way {way} waymask generation verified: {actual_waymask}")
-        else:
-            # 对于非0 way，先观察实际行为
-            toffee.info(f"ⓘ Way {way} waymask generation observed: expected={expected_waymask}, actual={actual_waymask}")
-            if actual_waymask == expected_waymask:
-                toffee.info(f"✓ Way {way} waymask generation works correctly!")
-            else:
-                toffee.info(f"ⓘ Way {way} waymask differs from expected - may need timing adjustment")
-        
-        await bundle.step(3)
-    
-    toffee.info("Waymask generation test completed successfully.")
+    filled_state = fifo_state()
+    assert filled_state["enq_ptr_value"] == 5
+    assert filled_state["deq_valid"] == 1
+
+    # Drive flush high and check pointers/flags reset immediately
+    await agent.drive_set_flush(True)
+    await bundle.step()
+    flushed_state = fifo_state()
+    assert flushed_state["enq_ptr_value"] == 0
+    assert flushed_state["deq_ptr_value"] == 0
+    assert flushed_state["enq_ptr_flag"] == 0
+    assert flushed_state["deq_ptr_flag"] == 0
+    assert flushed_state["full"] == 0
+    assert flushed_state["enq_ready"] == 1
+    assert flushed_state["deq_valid"] == 0
+
+    # Clear flush and ensure FIFO remains empty/ready
+    await agent.drive_set_flush(False)
+    await bundle.step()
+    post_state = fifo_state()
+    assert post_state == flushed_state
+    toffee.info("FIFO CP30 flush behavior verified successfully.")
+
 
 @toffee_test.testcase
-async def test_prefetch_same_address_as_fetch(icachemissunit_env: ICacheMissUnitEnv):
+async def test_MISSUNIT_CP31_fetch_miss_process(icachemissunit_env: ICacheMissUnitEnv):
     """
-    测试点: prefetch请求与fetch请求地址相同时的hit检测
-    验证文档中提到的特殊hit条件
+    Covers MISSUNIT CP31.x: fetch miss acceptance, duplicate filtering, and low-index MSHR allocation.
     """
-    toffee.info("\n--- Testing Prefetch Hit on Same Address as Fetch ---")
+    dut = icachemissunit_env.dut
     agent = icachemissunit_env.agent
     bundle = icachemissunit_env.bundle
-    
-    test_addr = 0x20000
-    test_idx = 0x200
-    
-    # 同时发送fetch和prefetch请求到相同地址
-    toffee.info("Sending fetch and prefetch requests to same address simultaneously")
-    
-    # 设置fetch请求
-    bundle.io._fetch._req._valid.value = 1
-    bundle.io._fetch._req._bits._blkPaddr.value = test_addr
-    bundle.io._fetch._req._bits._vSetIdx.value = test_idx
-    
-    # 设置prefetch请求到相同地址
-    bundle.io._prefetch_req._valid.value = 1
-    bundle.io._prefetch_req._bits._blkPaddr.value = test_addr
-    bundle.io._prefetch_req._bits._vSetIdx.value = test_idx
-    
-    await bundle.step()
-    
-    # 验证prefetch hit（由于与fetch地址相同）
-    prefetch_hit = bundle.ICacheMissUnit_.prefetchHit.value
-    toffee.info(f"Prefetch hit status: {prefetch_hit}")
-    
-    # 根据文档，当prefetch与fetch地址相同且fetch valid时，prefetch应该hit
-    assert prefetch_hit == 1, "Prefetch should hit when address matches concurrent fetch request"
-    
-    # 清理
-    bundle.io._fetch._req._valid.value = 0
-    bundle.io._prefetch_req._valid.value = 0
-    await bundle.step()
-    
-    toffee.info("Prefetch same address as fetch test completed successfully.")
 
-@toffee_test.testcase
-async def test_demux_chosen_signal(icachemissunit_env: ICacheMissUnitEnv):
-    """
-    测试点: Demux chosen信号的正确性
-    验证demux选择的MSHR索引是否正确
-    """
-    toffee.info("\n--- Testing Demux Chosen Signal ---")
-    agent = icachemissunit_env.agent
-    bundle = icachemissunit_env.bundle
-    
-    # 清空所有MSHR
-    await agent.fencei_func(1)
-    await bundle.step(5)
+    def fetch_mshr_ready_vec():
+        return [
+            int(getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{i}")._io._req_ready.value)
+            for i in range(4)
+        ]
+
+    async def send_fetch_once(blk, vset):
+        info = await agent.drive_send_fetch_request(blkPaddr=blk, vSetIdx=vset)
+        assert info["send_success"], f"Fetch ({hex(blk)}, {hex(vset)}) should be accepted"
+        await bundle.step()
+
+    toffee.info("\n--- [MISSUNIT] CP31 fetch miss process ---")
+
     await agent.fencei_func(0)
-    await bundle.step(5)
-    
-    # 发送prefetch请求并观察chosen信号
-    for expected_chosen in range(3):  # 测试前3个MSHR
-        toffee.info(f"Sending prefetch request {expected_chosen}")
-        
-        # 记录发送前的chosen值
-        chosen_before = bundle.prefetchDemux._io_chosen.value
-        toffee.info(f"Chosen before request {expected_chosen}: {chosen_before}")
-        
-        send_result = await agent.drive_send_prefetch_req(
-            blkPaddr=0x30000 + expected_chosen * 0x1000, 
-            vSetIdx=0x300 + expected_chosen
+    await agent.drive_set_flush(False)
+    await bundle.step()
+
+    assert fetch_mshr_ready_vec() == [1, 1, 1, 1], "Fetch MSHRs must start idle"
+
+    fetch_reqs = [
+        (0x1000, 0x10),
+        (0x2000, 0x20),
+        (0x3000, 0x30),
+        (0x4000, 0x40),
+    ]
+
+    toffee.info("CP31.1 & CP31.3: new misses take lowest-index available fetch MSHRs.")
+    for idx, (blk, vset) in enumerate(fetch_reqs):
+        await send_fetch_once(blk, vset)
+        ready_vec = fetch_mshr_ready_vec()
+        expected = [0 if j <= idx else 1 for j in range(4)]
+        assert ready_vec == expected, (
+            f"Low-index allocation violated after request #{idx}: expected {expected}, got {ready_vec}"
         )
-        assert send_result["send_success"] is True, f"Prefetch request {expected_chosen} should succeed"
-        
-        await bundle.step(2)
-        
-        # 验证对应的MSHR被占用
-        mshr_ready = getattr(bundle.ICacheMissUnit_._prefetchMSHRs, f"_{expected_chosen}")._io._req_ready.value
-        assert mshr_ready == 0, f"Prefetch MSHR {expected_chosen} should be occupied"
-        
-        toffee.info(f"MSHR {expected_chosen} successfully occupied")
-    
-    toffee.info("Demux chosen signal test completed successfully.")
+
+    toffee.info("CP31.2: duplicate miss hits existing entry and is filtered.")
+    dup_blk, dup_vset = fetch_reqs[0]
+    await send_fetch_once(dup_blk, dup_vset)
+    fetch_hit = int(get_internal_signal(dut, "fetch_hit"))
+    demux_valid = int(get_internal_signal(dut, "fetch_demux_valid"))
+    assert fetch_hit == 1, "Duplicate miss should assert fetch_hit"
+    assert demux_valid == 0, "Duplicate miss should not re-enter fetch demux"
+    assert fetch_mshr_ready_vec() == [0, 0, 0, 0], "Duplicate miss must not consume additional MSHR"
+
+    toffee.info("MISSUNIT CP31 checks completed successfully.")
+
+
+@toffee_test.testcase
+async def test_MISSUNIT_CP32_prefetch_miss_process(icachemissunit_env: ICacheMissUnitEnv):
+    """
+    Covers MISSUNIT CP32.x: prefetch miss acceptance, duplicate filtering, and FIFO ordering.
+    """
+    dut = icachemissunit_env.dut
+    agent = icachemissunit_env.agent
+    bundle = icachemissunit_env.bundle
+
+    def prefetch_mshr_ready_vec():
+        return [
+            int(getattr(bundle.ICacheMissUnit_._prefetchMSHRs, f"_{i}")._io._req_ready.value)
+            for i in range(10)
+        ]
+
+    async def send_prefetch_once(blk, vset):
+        info = await agent.drive_send_prefetch_req(blkPaddr=blk, vSetIdx=vset)
+        assert info["send_success"], f"Prefetch ({hex(blk)}, {hex(vset)}) should be accepted"
+        await bundle.step()
+
+    toffee.info("\n--- [MISSUNIT] CP32 prefetch miss process ---")
+
+    await agent.fencei_func(0)
+    await agent.drive_set_flush(False)
+    await bundle.step()
+
+    assert prefetch_mshr_ready_vec() == [1] * 10, "Prefetch MSHRs must start idle"
+
+    prefetch_reqs = [
+        (0x6000, 0x11),
+        (0x7000, 0x12),
+        (0x8000, 0x13),
+    ]
+
+    toffee.info("CP32.1: enqueue new prefetch misses and observe FIFO pointer advance.")
+    for idx, (blk, vset) in enumerate(prefetch_reqs):
+        await send_prefetch_once(blk, vset)
+        enq_ptr = int(get_internal_signal(dut, "enq_ptr_value"))
+        assert enq_ptr == (idx + 1) % 10
+
+    toffee.info("CP32.3 & CP32.4: drain FIFO in-order and verify priorityFIFO head indices.")
+    for expected_idx, (blk, vset) in enumerate(prefetch_reqs):
+        fifo_head = int(get_internal_signal(dut, "fifo_deq_bits"))
+        assert fifo_head == expected_idx, (
+            f"priorityFIFO head mismatch before dequeue #{expected_idx}: expected {expected_idx}, got {fifo_head}"
+        )
+        acquire = await agent.drive_get_and_acknowledge_acquire(timeout_cycles=80, ack_cycles=1)
+        assert acquire is not None, "Expected acquire for enqueued prefetch"
+        assert acquire["source"] == 4 + expected_idx, (
+            f"Prefetch acquire source mismatch: expected {4 + expected_idx}, got {acquire['source']}"
+        )
+        await bundle.step()
+
+    toffee.info("CP32.2: duplicate prefetch hit should be filtered.")
+    dup_blk, dup_vset = prefetch_reqs[1]
+    await send_prefetch_once(dup_blk, dup_vset)
+    prefetch_hit = int(get_internal_signal(dut, "prefetch_hit"))
+    demux_valid = int(get_internal_signal(dut, "prefetch_demux_valid"))
+    assert prefetch_hit == 1, "Duplicate prefetch should assert prefetch_hit"
+    assert demux_valid == 0, "Prefetch demux must stall when hit occurs"
+
+    toffee.info("MISSUNIT CP32 checks completed successfully.")
+
+@toffee_test.testcase
+async def test_MISSUNIT_CP33_MSHR_manage(icachemissunit_env: ICacheMissUnitEnv):
+    """
+    Covers MISSUNIT CP33.1/CP33.2: MSHR lookup hits within same pipe and across fetch/prefetch groups.
+    """
+    dut = icachemissunit_env.dut
+    agent = icachemissunit_env.agent
+    bundle = icachemissunit_env.bundle
+
+    def prefetch_mshr_ready_vec():
+        return [
+            int(getattr(bundle.ICacheMissUnit_._prefetchMSHRs, f"_{i}")._io._req_ready.value)
+            for i in range(10)
+        ]
+
+    async def send_fetch(blk, vset):
+        info = await agent.drive_send_fetch_request(blkPaddr=blk, vSetIdx=vset)
+        assert info["send_success"], f"Fetch ({hex(blk)}, {hex(vset)}) should handshake"
+        await bundle.step()
+
+    async def send_prefetch(blk, vset):
+        info = await agent.drive_send_prefetch_req(blkPaddr=blk, vSetIdx=vset)
+        assert info["send_success"], f"Prefetch ({hex(blk)}, {hex(vset)}) should handshake"
+        await bundle.step()
+
+    toffee.info("\n--- [MISSUNIT] CP33 MSHR manage ---")
+
+    await agent.fencei_func(0)
+    await agent.drive_set_flush(False)
+    await bundle.step()
+
+    fetch_addr = 0x9000
+    fetch_idx = 0x21
+
+    toffee.info("CP33.1a: Create a fetch MSHR entry.")
+    await send_fetch(fetch_addr, fetch_idx)
+
+    toffee.info("CP33.1b: Duplicate fetch should assert fetchHit (same-pipe lookup).")
+    await send_fetch(fetch_addr, fetch_idx)
+    fetch_hit = int(get_internal_signal(dut, "fetch_hit"))
+    fetch_demux_valid = int(get_internal_signal(dut, "fetch_demux_valid"))
+    assert fetch_hit == 1, "Duplicate fetch should hit existing entry"
+    assert fetch_demux_valid == 0, "Fetch demux must not forward duplicate request"
+
+    toffee.info("CP33.2a: Prefetch of same line should see fetch MSHRs via lookups.")
+    # Drive fetch/prefetch concurrently to cover CP33.3 (same-cycle same-line lookup).
+    bundle.io._fetch._req._bits._blkPaddr.value = fetch_addr
+    bundle.io._fetch._req._bits._vSetIdx.value = fetch_idx
+    bundle.io._fetch._req._valid.value = 1
+    bundle.io._prefetch_req._bits._blkPaddr.value = fetch_addr
+    bundle.io._prefetch_req._bits._vSetIdx.value = fetch_idx
+    bundle.io._prefetch_req._valid.value = 1
+    await bundle.step()
+    bundle.io._fetch._req._valid.value = 0
+    bundle.io._prefetch_req._valid.value = 0
+    prefetch_hit = int(get_internal_signal(dut, "prefetch_hit"))
+    prefetch_demux_valid = int(get_internal_signal(dut, "prefetch_demux_valid"))
+    assert prefetch_hit == 1, "Prefetch should detect existing fetch MSHR entry"
+    assert prefetch_demux_valid == 0, "Prefetch demux must stay idle when hit occurs"
+
+    toffee.info("CP33.1c: Allocate a standalone prefetch entry (miss expected).")
+    prefetch_addr = 0xB000
+    prefetch_idx = 0x35
+    ready_before_prefetch = prefetch_mshr_ready_vec()
+    await send_prefetch(prefetch_addr, prefetch_idx)
+    ready_after_prefetch = prefetch_mshr_ready_vec()
+    assert ready_before_prefetch[0] == 1 and ready_after_prefetch[0] == 0, \
+        "Unique prefetch should consume the lowest-index prefetch MSHR"
+    assert ready_before_prefetch[1:] == ready_after_prefetch[1:], \
+        "Only one prefetch MSHR should be consumed for a single miss"
+
+    toffee.info("CP33.1d: Duplicate prefetch should assert prefetchHit (same-pipe lookup).")
+    await send_prefetch(prefetch_addr, prefetch_idx)
+    dup_prefetch_hit = int(get_internal_signal(dut, "prefetch_hit"))
+    dup_prefetch_demux_valid = int(get_internal_signal(dut, "prefetch_demux_valid"))
+    assert dup_prefetch_hit == 1, "Duplicate prefetch should hit existing prefetch MSHR entry"
+    assert dup_prefetch_demux_valid == 0, "Prefetch demux remains idle on duplicate hit"
+    assert prefetch_mshr_ready_vec() == ready_after_prefetch, \
+        "Duplicate prefetch must not allocate additional MSHRs"
+
+    toffee.info("CP33.2b: Fetch same line should detect prefetch MSHR entry.")
+    await send_fetch(prefetch_addr, prefetch_idx)
+    fetch_hit_cross = int(get_internal_signal(dut, "fetch_hit"))
+    fetch_demux_valid_cross = int(get_internal_signal(dut, "fetch_demux_valid"))
+    assert fetch_hit_cross == 1, "Fetch should detect prefetch MSHR entry"
+    assert fetch_demux_valid_cross == 0, "Fetch demux remains idle on hit"
+
+    toffee.info("MISSUNIT CP33 checks completed successfully.")
+
+@toffee_test.testcase
+async def test_MISSUNIT_CP34_acquireArb_arbitration(icachemissunit_env: ICacheMissUnitEnv):
+    """
+    Covers MISSUNIT CP34.1: acquireArb prioritizes fetch MSHRs over prefetch MSHRs.
+    """
+    agent = icachemissunit_env.agent
+    bundle = icachemissunit_env.bundle
+
+    async def send_fetch(blk, vset):
+        info = await agent.drive_send_fetch_request(blkPaddr=blk, vSetIdx=vset)
+        assert info["send_success"], "Fetch request should handshake"
+        await bundle.step()
+
+    async def send_prefetch(blk, vset):
+        info = await agent.drive_send_prefetch_req(blkPaddr=blk, vSetIdx=vset)
+        assert info["send_success"], "Prefetch request should handshake"
+        await bundle.step()
+
+    toffee.info("\n--- [MISSUNIT] CP34 acquire arbiter ---")
+
+    await agent.fencei_func(0)
+    await agent.drive_set_flush(False)
+    await bundle.step()
+
+    async def next_acquire_source():
+        acquire = await agent.drive_get_and_acknowledge_acquire(timeout_cycles=40, ack_cycles=1)
+        assert acquire is not None, "Expected acquire from arbiter"
+        return acquire["source"]
+
+    toffee.info("CP34.1a: Three independent fetches should consume sources 0/1/2 in order.")
+    fetch_seq = [
+        (0xC000, 0x40),
+        (0xC010, 0x41),
+        (0xC020, 0x42),
+    ]
+    for expected_src, (blk, vset) in enumerate(fetch_seq):
+        await send_fetch(blk=blk, vset=vset)
+        src = await next_acquire_source()
+        assert src == expected_src, f"Fetch #{expected_src} should use source {expected_src}, got {src}"
+
+    toffee.info("CP34.1b: Prefetch should use prefetch source (>=4) once fetch slots are occupied.")
+    await send_prefetch(blk=0xD000, vset=0x50)
+    prefetch_src = await next_acquire_source()
+    assert prefetch_src == 4, f"Prefetch acquire should use source 4, got {prefetch_src}"
+
+    toffee.info("MISSUNIT CP34 checks completed successfully.")
+
+
+@toffee_test.testcase
+async def test_MISSUNIT_CP35_grant_accept_and_refill(icachemissunit_env: ICacheMissUnitEnv):
+    """
+    Covers MISSUNIT CP35.x: grant beat handling, readBeatCnt sequencing, last_fire/id tracking, and corrupt flag behavior.
+    """
+    agent = icachemissunit_env.agent
+    bundle = icachemissunit_env.bundle
+    dut = icachemissunit_env.dut
+
+    def fetch_mshr_ready_vec():
+        return [
+            int(getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{i}")._io._req_ready.value)
+            for i in range(4)
+        ]
+
+    async def send_fetch_for_acquire(blk, vset):
+        info = await agent.drive_send_fetch_request(blkPaddr=blk, vSetIdx=vset)
+        assert info["send_success"], "Fetch request should handshake"
+        await bundle.step()
+        acquire = await agent.drive_get_and_acknowledge_acquire(timeout_cycles=40, ack_cycles=1)
+        assert acquire is not None, "Expected acquire after fetch miss"
+        return acquire["source"]
+
+    def sample_grant_state():
+        return {
+        "readBeatCnt": int(get_internal_signal(dut, "readBeatCnt")),
+        "last_fire": int(get_internal_signal(dut, "last_fire")),
+        "last_fire_r": int(get_internal_signal(dut, "last_fire_r")),
+        "id_r": int(get_internal_signal(dut, "id_r")),
+        "corrupt_r": int(get_internal_signal(dut, "corrupt_r")),
+        }
+
+    toffee.info("\n--- [MISSUNIT] CP35 grant accept & refill ---")
+
+    await agent.fencei_func(0)
+    await agent.drive_set_flush(False)
+    await bundle.step()
+
+    # CP35.0 / CP35.3-start: MSHR occupancy before grants
+    toffee.info("CP35.0/35.3-start: verify fetch MSHR idle → occupied after request.")
+    initial_ready = fetch_mshr_ready_vec()
+    assert initial_ready == [1, 1, 1, 1], "Fetch MSHRs should start idle"
+    source = await send_fetch_for_acquire(blk=0xE000, vset=0x60)
+    busy_ready = fetch_mshr_ready_vec()
+    busy_index = next((i for i, r in enumerate(busy_ready) if r == 0), None)
+    assert busy_index is not None, "One fetch MSHR should be occupied after sending request"
+    toffee.info(f"CP35.3-start: fetch MSHR {busy_index} busy (vector {busy_ready})")
+
+    # CP35.1: first grant beat
+    toffee.info("CP35.1: apply first grant beat and check readBeatCnt toggles.")
+    data_beat0 = 0x11223344556677889900AABBCCDDEEFF
+    await agent.drive_respond_with_grant(
+        source_id=source,
+        data_beats=[data_beat0],
+        is_corrupt_list=[False],
+    )
+    state_after_first = sample_grant_state()
+    assert int(get_internal_signal(dut, "respDataReg_0")) == data_beat0, "respDataReg_0 should capture first beat data"
+    assert state_after_first["readBeatCnt"] == 1, "readBeatCnt should increment after first beat"
+
+    # CP35.2 + CP35.4: second beat, last_fire, corrupt latch
+    toffee.info("CP35.2/CP35.4: send second grant beat.")
+    data_beat1 = 0xFFEEDDCCBBAA00998877665544332211
+    await agent.drive_respond_with_grant(
+        source_id=source,
+        data_beats=[data_beat1],
+        is_corrupt_list=[True],
+    )
+    state_after_second = sample_grant_state()
+    resp1 = int(get_internal_signal(dut, "respDataReg_1"))
+    assert resp1 == data_beat1, "respDataReg_1 should capture second beat data"
+    assert state_after_second["readBeatCnt"] == 0, "readBeatCnt should reset after second beat"
+    assert state_after_second["corrupt_r"] == 1, "corrupt_r should latch high during corrupt beat"
+
+    # CP35.3-end: check last_fire_r/id_r/corrupt_r latch and release MSHR
+    toffee.info("CP35.3-end: verify last_fire_r/id_r latch.")
+    state_after_last_fire = sample_grant_state()
+    assert state_after_last_fire["last_fire_r"] == 1, "last_fire_r should latch high in the next cycle"
+    assert state_after_last_fire["id_r"] == source, "id_r should capture grant source"
+    assert state_after_last_fire["corrupt_r"] == 1, "corrupt_r remains high until response window completes"
+
+    await bundle.step()
+    state_after_clear = sample_grant_state()
+    assert state_after_clear["corrupt_r"] == 0, "corrupt_r should clear after response window"
+    assert state_after_clear["last_fire_r"] == 0, "last_fire_r should drop after one cycle"
+
+    final_ready = fetch_mshr_ready_vec()
+    assert final_ready == initial_ready, "Fetch MSHR should be released after grant completes"
+    toffee.info(f"CP35.3-end: fetch MSHR released (vector {final_ready})")
+
+    toffee.info("MISSUNIT CP35 checks completed successfully.")
+
+@toffee_test.testcase
+async def test_MISSUNIT_CP36_Replacer(icachemissunit_env: ICacheMissUnitEnv):
+    """
+    Covers MISSUNIT CP36.x: Replacer update (victim set idx + waymask).
+    """
+    agent = icachemissunit_env.agent
+    bundle = icachemissunit_env.bundle
+    dut = icachemissunit_env.dut
+
+    toffee.info("\n--- [MISSUNIT] CP36 replacer update ---")
+
+    await agent.fencei_func(0)
+    await agent.drive_set_flush(False)
+    await bundle.step()
+
+    toffee.info("CP36.1: send fetch miss and check victim vSetIdx update.")
+    victim_way = 2
+    await agent.drive_set_victim_way(victim_way)
+    test_addr = 0xF000
+    test_vset = 0x70
+    send_result = await agent.drive_send_fetch_request(test_addr, test_vset)
+    assert send_result["send_success"], "Fetch miss should be accepted for replacer test"
+
+    acquire = await agent.drive_get_acquire_request(timeout_cycles=40)
+    assert acquire is not None, "Expected acquire for replacer test"
+
+    # CP36.1: victim should update on acquire fire
+    bundle.io._mem._acquire._ready.value = 1
+    await bundle.step()
+    victim_valid = int(get_internal_signal(dut, "victim_valid"))
+    victim_bits = bundle.io._victim._vSetIdx._bits.value
+    assert victim_valid == 1, "Victim update valid should be asserted on acquire fire"
+    assert victim_bits == test_vset, f"Victim vSetIdx should match request ({test_vset}), got {victim_bits}"
+    bundle.io._mem._acquire._ready.value = 0
+    await bundle.step()
+
+    toffee.info("CP36.2: verify replacer waymask matches victim way.")
+    grant_data = [
+        0x0123456789ABCDEF_0123456789ABCDEF,
+        0xFEDCBA9876543210_FEDCBA9876543210,
+    ]
+    await agent.drive_respond_with_grant(
+        source_id=acquire["source"],
+        data_beats=grant_data,
+        is_corrupt_list=[False, False],
+    )
+    response = await agent.drive_get_fetch_response()
+    assert response is not None, "Fetch response should be produced after grant"
+    expected_waymask = 1 << victim_way
+    observed_way = int(get_internal_signal(dut, "mshr_resp_way"))
+    assert observed_way == victim_way, \
+        f"mshr_resp_way should match victim way {victim_way}, got {observed_way}"
+    assert response["waymask"] == expected_waymask, \
+        f"Waymask should match victim way {victim_way}, expected {expected_waymask:#x}, got {response['waymask']:#x}"
+
+    toffee.info("MISSUNIT CP36 checks completed successfully.")
+
+@toffee_test.testcase
+async def test_MISSUNIT_CP37_SRAM_writeback(icachemissunit_env: ICacheMissUnitEnv):
+    """
+    Covers MISSUNIT CP37.x: SRAM writeback controls/data.
+    """
+    agent = icachemissunit_env.agent
+    bundle = icachemissunit_env.bundle
+    dut = icachemissunit_env.dut
+
+    def expected_waymask(way):
+        return 1 << way
+
+    toffee.info("\n--- [MISSUNIT] CP37 SRAM writeback ---")
+
+    await agent.fencei_func(0)
+    await agent.drive_set_flush(False)
+    await bundle.step()
+
+    test_addr = 0x12345000
+    test_vset = 0x5A
+    victim_way = 1
+
+    await agent.drive_set_victim_way(victim_way)
+    send_result = await agent.drive_send_fetch_request(test_addr, test_vset)
+    assert send_result["send_success"], "Fetch miss should be accepted for SRam writeback test"
+
+    acquire = await agent.drive_get_acquire_request(timeout_cycles=40)
+    assert acquire is not None, "Expected acquire for SRAM writeback test"
+    await agent.drive_acknowledge_acquire(cycles=1)
+
+    grant_data = [
+        0x11112222333344445555666677778888,
+        0x9999AAAABBBBCCCCDDDDEEEEFFFF0000,
+    ]
+    await agent.drive_respond_with_grant(
+        source_id=acquire["source"],
+        data_beats=grant_data,
+        is_corrupt_list=[False, False],
+    )
+
+    response = await agent.drive_get_fetch_response()
+    assert response is not None, "Fetch response should be produced after grant"
+
+    # CP37.1: meta/data write valids asserted when difftest_valid true
+    assert bundle.io._meta_write._valid.value == 1, "meta_write.valid should be high when difftest_valid"
+    assert bundle.io._data_write._valid.value == 1, "data_write.valid should be high when difftest_valid"
+
+    # CP37.2: meta/data contents reflect miss info
+    meta_bits = bundle.io._meta_write._bits
+    data_bits = bundle.io._data_write._bits
+    expected_phy = test_addr >> 6
+    assert meta_bits._virIdx.value == test_vset, "meta virIdx mismatch"
+    assert meta_bits._phyTag.value == expected_phy, "meta phyTag mismatch"
+    assert meta_bits._waymask.value == expected_waymask(victim_way), "meta waymask mismatch"
+    assert meta_bits._bankIdx.value == (test_vset & 0x1), "meta bankIdx mismatch"
+
+    assert data_bits._virIdx.value == test_vset, "data virIdx mismatch"
+    assert data_bits._waymask.value == expected_waymask(victim_way), "data waymask mismatch"
+    assert data_bits._data.value == int(response["data"]), "data payload mismatch"
+
+    toffee.info("MISSUNIT CP37 checks completed successfully.")
+
+@toffee_test.testcase
+async def test_MISSUNIT_CP38_mainpipe_iprefetchpipe_response(icachemissunit_env: ICacheMissUnitEnv):
+    """
+    Covers MISSUNIT CP38.x: fetch response generation for fetch/prefetch paths.
+    """
+    agent = icachemissunit_env.agent
+    bundle = icachemissunit_env.bundle
+    dut = icachemissunit_env.dut
+
+    async def run_miss_and_capture(fetch=True, corrupt=False):
+        addr = 0x2000 if fetch else 0x3000
+        vset = 0x22 if fetch else 0x33
+        if fetch:
+            result = await agent.drive_send_fetch_request(addr, vset)
+        else:
+            result = await agent.drive_send_prefetch_req(addr, vset)
+        assert result["send_success"], "Miss request should be accepted"
+        acquire = await agent.drive_get_acquire_request(timeout_cycles=40)
+        assert acquire is not None, "Expected acquire after miss"
+        await agent.drive_acknowledge_acquire(cycles=1)
+        grant_words = [
+            0xAAAABBBBCCCCDDDDEEEEFFFF11112222,
+            0x3333444455556666777788889999AAAA,
+        ]
+        await agent.drive_respond_with_grant(
+            source_id=acquire["source"],
+            data_beats=grant_words,
+            is_corrupt_list=[corrupt, corrupt],
+        )
+        resp = await agent.drive_get_fetch_response()
+        assert resp is not None, "Fetch response should be produced"
+        return resp, addr, vset, corrupt
+
+    toffee.info("\n--- [MISSUNIT] CP38 main/prefetch response ---")
+
+    await agent.fencei_func(0)
+    await agent.drive_set_flush(False)
+    await bundle.step()
+
+    resp_fetch, fetch_addr, fetch_vset, _ = await run_miss_and_capture(fetch=True, corrupt=False)
+    assert resp_fetch["blkPaddr"] == fetch_addr, "fetch blkPaddr mismatch"
+    assert resp_fetch["vSetIdx"] == fetch_vset, "fetch vSetIdx mismatch"
+    assert resp_fetch["data"] == bundle.io._data_write._bits._data.value, "fetch data payload mismatch"
+    assert resp_fetch["corrupt"] is False, "fetch corrupt flag should be false"
+
+    resp_prefetch, prefetch_addr, prefetch_vset, _ = await run_miss_and_capture(fetch=False, corrupt=True)
+    assert resp_prefetch["blkPaddr"] == prefetch_addr, "prefetch blkPaddr mismatch"
+    assert resp_prefetch["vSetIdx"] == prefetch_vset, "prefetch vSetIdx mismatch"
+    assert resp_prefetch["corrupt"] is True, "prefetch corrupt flag should propagate"
+
+    toffee.info("MISSUNIT CP38 checks completed successfully.")
+
+@toffee_test.testcase
+async def test_MISSUNIT_CP39_flush_fencei_operation(icachemissunit_env: ICacheMissUnitEnv):
+    """
+    Covers MISSUNIT CP39.x: flush/fencei behavior before and after MSHR fire.
+    """
+    agent = icachemissunit_env.agent
+    bundle = icachemissunit_env.bundle
+    dut = icachemissunit_env.dut
+
+    async def send_fetch(addr, vset):
+        info = await agent.drive_send_fetch_request(addr, vset)
+        assert info["send_success"], "Fetch miss should be accepted"
+
+    async def wait_for_acquire():
+        acquire = await agent.drive_get_acquire_request(timeout_cycles=40)
+        assert acquire is not None, "Expected acquire"
+        return acquire
+
+    def fetch_mshr_ready_vec():
+        return [
+            int(getattr(bundle.ICacheMissUnit_._fetchMSHRs, f"_{i}")._io._req_ready.value)
+            for i in range(4)
+        ]
+
+    toffee.info("\n--- [MISSUNIT] CP39 flush/fencei ---")
+
+    await agent.fencei_func(0)
+    await agent.drive_set_flush(False)
+    await bundle.step()
+
+    # CP39.1: fencei before fire should block all MSHRs
+    toffee.info("CP39.1: assert fencei before any acquire fires.")
+    await agent.fencei_func(1)
+    await bundle.step()
+    ready_vec = fetch_mshr_ready_vec()
+    assert ready_vec == [0, 0, 0, 0], "Fencei should force all fetch MSHRs ready low"
+    acquire = await agent.drive_get_acquire_request(timeout_cycles=5)
+    assert acquire is None, "Fencei asserted -> no acquire should be observed"
+    await agent.fencei_func(0)
+
+    # CP39.2: flush prevents prefetch MSHR from firing
+    toffee.info("CP39.2: assert flush, only fetch requests may fire.")
+    await agent.drive_set_flush(True)
+    await send_fetch(0x5000, 0x50)
+    prefetch = await agent.drive_send_prefetch_req(0x7000, 0x70)
+    assert not prefetch["send_success"], "Prefetch request should be blocked under flush"
+    acquire_fetch = await wait_for_acquire()
+    assert acquire_fetch["source"] == 0, "Only fetch MSHR should fire under flush"
+    await agent.drive_acknowledge_acquire(cycles=2)
+    for _ in range(6):
+        if bundle.io._mem._acquire._valid.value == 0:
+            break
+        await bundle.step()
+    else:
+        raise AssertionError("Acquire valid should drop after handshake")
+    prefetch_acquire = await agent.drive_get_acquire_request(timeout_cycles=5)
+    assert prefetch_acquire is None, "Prefetch should be blocked under flush"
+    await agent.drive_set_flush(False)
+
+    # CP39.3: flush after fire suppresses SRAM writes but still responds
+    toffee.info("CP39.3: assert flush after acquire fired, ensure SRAM write suppressed.")
+    await send_fetch(0x8000, 0x80)
+    acquire = await wait_for_acquire()
+    await agent.drive_acknowledge_acquire(cycles=1)
+    await agent.drive_set_flush(True)
+    grant_data = [
+        0xAAAA5555AAAA5555AAAA5555AAAA5555,
+        0xBBBB6666BBBB6666BBBB6666BBBB6666,
+    ]
+    await agent.drive_respond_with_grant(
+        source_id=acquire["source"],
+        data_beats=grant_data,
+        is_corrupt_list=[False, False],
+    )
+    resp = await agent.drive_get_fetch_response()
+    assert resp is not None, "Fetch response should still be produced under flush"
+    assert bundle.io._meta_write._valid.value == 0, "meta write should be suppressed when flush asserted after fire"
+    assert bundle.io._data_write._valid.value == 0, "data write should be suppressed when flush asserted after fire"
+    await agent.drive_set_flush(False)
+
+    toffee.info("MISSUNIT CP39 checks completed successfully.")
+
+@toffee_test.testcase
+async def test_MISSUNIT_addational_all_mshr_lookup_coverage(icachemissunit_env: ICacheMissUnitEnv):
+    """
+    Drives enough fetch/prefetch misses to exercise every MSHR instance
+    (4 fetch + 10 prefetch) and then re-issues matching requests to trigger
+    both io_lookUps_0_hit and io_lookUps_1_hit in every entry. This ensures
+    the per-instance RTL files (ICacheMSHR*.sv) are covered.
+    """
+    agent = icachemissunit_env.agent
+    bundle = icachemissunit_env.bundle
+    dut = icachemissunit_env.dut
+
+    toffee.info("\n--- [MISSUNIT] CP40 full MSHR lookup coverage ---")
+    await agent.fencei_func(0)
+    await agent.drive_set_flush(False)
+
+    fetch_slots = 4
+    prefetch_slots = 10
+
+    fetch_miss_list = [(0x1000 + i * 0x1000, 0x10 + i) for i in range(fetch_slots)]
+    prefetch_miss_list = [(0xA000 + i * 0x1000, 0x60 + i) for i in range(prefetch_slots)]
+
+    async def allocate_and_collect(miss_list, sender):
+        acquire_sources = []
+        for idx, (addr, vset) in enumerate(miss_list):
+            await agent.drive_set_victim_way(idx & 0x3)
+            info = await sender(addr, vset)
+            assert info["send_success"], f"MSHR allocation {idx} should succeed"
+            acquire = await agent.drive_get_acquire_request(timeout_cycles=40)
+            assert acquire is not None, "Expected acquire for miss"
+            acquire_sources.append(acquire["source"])
+            await agent.drive_acknowledge_acquire(cycles=1)
+        return acquire_sources
+
+    fetch_sources = await allocate_and_collect(fetch_miss_list, agent.drive_send_fetch_request)
+
+    async def send_prefetch(addr, vset):
+        result = await agent.drive_send_prefetch_req(addr, vset, timeout_cycles=20)
+        return result
+
+    prefetch_sources = []
+    for idx, (addr, vset) in enumerate(prefetch_miss_list):
+        result = await send_prefetch(addr, vset)
+        assert result["send_success"], f"Prefetch miss {idx} should be accepted"
+        acquire = await agent.drive_get_acquire_request(timeout_cycles=40)
+        assert acquire is not None, "Prefetch miss should generate acquire"
+        prefetch_sources.append(acquire["source"])
+        await agent.drive_acknowledge_acquire(cycles=1)
+
+    toffee.info("Prefetch requests probing existing fetch entries (cross-hit).")
+    for addr, vset in fetch_miss_list:
+        info = await agent.drive_send_prefetch_req(addr, vset, timeout_cycles=5)
+        assert info["send_success"], "Prefetch request should still handshake"
+        dup = await agent.drive_get_acquire_request(timeout_cycles=5)
+        assert dup is None, "Prefetch hit must not create a new acquire"
+
+    toffee.info("Fetch requests probing existing prefetch entries (cross-hit).")
+    for addr, vset in prefetch_miss_list:
+        info = await agent.drive_send_fetch_request(addr, vset)
+        assert info["send_success"], "Fetch request should still handshake"
+        dup = await agent.drive_get_acquire_request(timeout_cycles=5)
+        assert dup is None, "Fetch hit must not create a new acquire"
+
+    async def service_grants(source_id):
+        grant_data = [
+            0x11112222333344445555666677778888,
+            0x9999AAAABBBBCCCCDDDDEEEEFFFF0000,
+        ]
+        await agent.drive_respond_with_grant(
+            source_id=source_id,
+            data_beats=grant_data,
+            is_corrupt_list=[False, False],
+        )
+        await bundle.step()
+
+    for source in fetch_sources + prefetch_sources:
+        await service_grants(source)
+
+    toffee.info("Re-issuing after refill completes to confirm entries free again.")
+    fetch_sources_second = await allocate_and_collect(fetch_miss_list, agent.drive_send_fetch_request)
+    prefetch_sources_second = await allocate_and_collect(prefetch_miss_list, agent.drive_send_prefetch_req)
+
+    for source in fetch_sources_second + prefetch_sources_second:
+        await service_grants(source)
+
+    toffee.info("CP40: All MSHR entries exercised; hits observed without extra acquires and entries verified free after refill.")
