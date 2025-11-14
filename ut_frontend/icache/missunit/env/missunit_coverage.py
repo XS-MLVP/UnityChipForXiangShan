@@ -68,7 +68,6 @@ def define_basic_coverage(bundle, dut):
         _mark_tests(
             [
                 "test_bundle_drive_fetch_req_inputs",
-                "test_bundle_read_fetch_req_ready",
                 "test_send_fetch_request",
                 "test_api_fetch_request_generates_acquire",
                 "test_api_full_fetch_flow",

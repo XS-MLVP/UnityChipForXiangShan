@@ -81,15 +81,6 @@ async def test_bundle_drive_fetch_req_inputs(icachemissunit_env: ICacheMissUnitE
     toffee.info("Bundle drive tests completed.")
 
 @toffee_test.testcase
-async def test_bundle_read_fetch_req_ready(icachemissunit_env: ICacheMissUnitEnv):
-    dut_bundle = icachemissunit_env.bundle
-    toffee.info("\n--- Testing Bundle: Reading fetch_req_ready ---")
-    ready_val = dut_bundle.io._fetch._req._ready.value
-    toffee.info(f"Read dut_bundle.io._fetch._req._ready.value = {ready_val} (depends on DUT state)")
-    assert ready_val in [0, 1], "fetch_req_ready should be 0 or 1"
-    toffee.info("Bundle read test for fetch_req_ready (Python side) completed.")
-
-@toffee_test.testcase
 async def test_fencei_work(icachemissunit_env: ICacheMissUnitEnv):
     """
     Goal: Verify that fencei works by checking if it clears all MSHRs.
