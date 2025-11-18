@@ -1,4 +1,4 @@
-from comm import module_name_with
+from comm import module_name_with, UT_FCOV
 from toffee.funcov import CovGroup
 
 MISSUNIT_TEST_PREFIX = "../../test/missunit_test"
@@ -13,7 +13,7 @@ def define_basic_coverage(bundle, dut):
     """
     Basic API/control coverage shared by smoke/bundle tests.
     """
-    g = CovGroup("MissUnit_Basic_Coverage")
+    g = CovGroup(UT_FCOV("MissUnit_Basic_Coverage"))
 
     g.add_watch_point(
         {"fencei": bundle.io._fencei},
@@ -124,7 +124,7 @@ def define_fifo_coverage(bundle,dut):
         bundle: The top-level ICacheMissUnitBundle object.
         dut: The DUT object for accessing internal signals.
     """
-    g = CovGroup("MissUnit_FIFO")
+    g = CovGroup(UT_FCOV("MissUnit_FIFO"))
     # create FIFO_internalsignals for FIFO functional coverage
     FIFO_dict = {
         # FIFO enq/deq internal signals
@@ -268,8 +268,8 @@ def define_missunit_coverage_groups(bundle, dut):
     """
     define functional coverage groups of ICacheMissUnit.
     """
-    main_cov = CovGroup("MissUnit_Main_Coverage")
-    timing_cov = CovGroup("MissUnit_Timing_Coverage")
+    main_cov = CovGroup(UT_FCOV("MissUnit_Main_Coverage"))
+    timing_cov = CovGroup(UT_FCOV("MissUnit_Timing_Coverage"))
     MISSUNIT_dict ={
         "fetch_demux_valid":"ICacheMissUnit_top.ICacheMissUnit.fetchDemux.__Vtogcov__io_in_valid",\
         "fetch_hit":"ICacheMissUnit_top.ICacheMissUnit.fetchHit",\
@@ -288,14 +288,23 @@ def define_missunit_coverage_groups(bundle, dut):
         if dic["MSHR_1_acquire_valid"].value == 1:
             if dic["MSHR_0_acquire_valid"].value == 1:
                 return True
+            else:
+                return False
         elif dic["MSHR_2_acquire_valid"].value == 1:
             if dic["MSHR_0_acquire_valid"].value == 1 and dic["MSHR_1_acquire_valid"].value == 1:
                 return True
+            else:
+                return False
         elif dic["MSHR_3_acquire_valid"].value == 1:
             if dic["MSHR_0_acquire_valid"].value == 1 and dic["MSHR_1_acquire_valid"].value == 1 and dic["MSHR_2_acquire_valid"].value == 1:
                 return True
+            else:
+                return False
         else:
-            return False
+            if dic["MSHR_0_acquire_valid"].value == 0 and dic["MSHR_1_acquire_valid"].value == 0 and dic["MSHR_2_acquire_valid"].value == 0 and dic["MSHR_3_acquire_valid"].value == 0:
+                return True
+            else:
+                return False
     main_cov.add_watch_point(
         {
             "fetch_req_ready": bundle.io._fetch._req._ready,
