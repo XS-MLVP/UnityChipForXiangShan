@@ -160,7 +160,9 @@ class ICacheMissUnitAgent(Agent):
                                data_beats: list,
                                beat_size_code: int = 6,
                                op_code: int = 5,
-                               is_corrupt_list: list = None
+                               is_corrupt_list: list = None,
+                               pre_beat_hook=None,
+                               post_beat_hook=None
                               ):
         num_beats = len(data_beats)
         if is_corrupt_list is None:
@@ -182,9 +184,14 @@ class ICacheMissUnitAgent(Agent):
             self.bundle.io._mem._grant._valid.value = 1
         
             toffee.info(f"Sending Grant beat {i+1}/{num_beats}: data={hex(current_beat_data)}, corrupt={current_corrupt}")
+            if pre_beat_hook is not None:
+                await pre_beat_hook(i)
+            await self.bundle.step()
+            if post_beat_hook is not None:
+                await post_beat_hook(i)
+            self.bundle.io._mem._grant._valid.value = 0
             await self.bundle.step()
 
-        self.bundle.io._mem._grant._valid.value = 0
         toffee.info(f"Grant transmission finished for source_id={source_id}.")
     
     async def drive_get_fetch_response(self, timeout_cycles: int = 20) -> dict | None:
