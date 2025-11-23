@@ -1,18 +1,19 @@
 class BreakpointSetter():
-	matchType = 0
-	action = 0
-	tdata2 = 0
-	select = False
-	chain = False
-	addr = 0
-	valid = False
+	def __init__(self):
+		self.matchType = 0
+		self.action = 0
+		self.tdata2 = 0
+		self.select = False
+		self.chain = False
+		self.addr = 0
+		self.valid = False
 
 class FrontendTriggerReq():
-	bpSetter = BreakpointSetter()
-	tEnableVec = [False, False, False, False]
-	debugMode = False
-	triggerCanRaiseBPExp = False
-	fsIsOff = False
+	def __init__(self):
+		self.bpSetter = BreakpointSetter()
+		self.tEnableVec = [False, False, False, False]
+		self.debugMode = False
+		self.triggerCanRaiseBPExp = False
 
 
 
