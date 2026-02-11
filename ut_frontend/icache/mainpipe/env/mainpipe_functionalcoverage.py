@@ -1,4 +1,5 @@
 from toffee.funcov import CovGroup
+from comm import module_name_with
 
 
 def define_mainpipe_coverage(bundle, dut):
@@ -11,7 +12,10 @@ def define_mainpipe_coverage(bundle, dut):
         dut: The DUT object for accessing internal signals.
     """
     g = CovGroup("MainPipe_Coverage")
-    
+
+    def _M(name):
+        return module_name_with(name, "../../test/mainpiepe_test")
+
     # Create MainPipe internal signals dictionary for coverage
     MainPipe_dict = {
         # Pipeline stage control signals
@@ -186,7 +190,24 @@ def define_mainpipe_coverage(bundle, dut):
         },
         name="CP11_DataArray_Access"
     )
-    
+
+    g.mark_function("CP11_DataArray_Access", _M("test_cp11_dataarray_access"),
+                   bin_name=["CP11.1_s0_access_dataarray", "CP11.2_way_miss_still_access",
+                            "CP11.3_itlb_fail_still_access", "CP11.4_dataarray_write_busy",
+                            "CP11.5_flush_blocks_access"])
+    g.mark_function("CP11_DataArray_Access", _M("test_smoke"),
+                   bin_name=["CP11.1_s0_access_dataarray", "CP11.5_flush_blocks_access"])
+    g.mark_function("CP11_DataArray_Access", _M("test_basic_control_api"),
+                   bin_name=["CP11.5_flush_blocks_access"])
+    g.mark_function("CP11_DataArray_Access", _M("test_drive_apis"),
+                   bin_name=["CP11.1_s0_access_dataarray", "CP11.4_dataarray_write_busy"])
+    g.mark_function("CP11_DataArray_Access", _M("test_monitoring_apis"),
+                   bin_name=["CP11.1_s0_access_dataarray"])
+    g.mark_function("CP11_DataArray_Access", _M("test_signal_bindings"),
+                   bin_name=["CP11.1_s0_access_dataarray", "CP11.5_flush_blocks_access"])
+    g.mark_function("CP11_DataArray_Access", _M("test_comprehensive_signal_interface"),
+                   bin_name=["CP11.1_s0_access_dataarray"])
+
     # =================================================================
     # CP 12: Meta ECC 校验
     # =================================================================
@@ -240,7 +261,14 @@ def define_mainpipe_coverage(bundle, dut):
         },
         name="CP12_Meta_ECC_Check"
     )
-    
+
+    g.mark_function("CP12_Meta_ECC_Check", _M("test_cp12_meta_ecc_check"),
+                   bin_name=["CP12.1_no_ecc_error", "CP12.2_single_way_ecc_error_0",
+                            "CP12.3_multi_way_hit_0", "CP12.4_single_way_ecc_error_1",
+                            "CP12.6_ecc_disabled"])
+    g.mark_function("CP12_Meta_ECC_Check", _M("test_error_injection_apis"),
+                   bin_name=["CP12.2_single_way_ecc_error_0", "CP12.3_multi_way_hit_0"])
+
     # =================================================================
     # CP 13: PMP 检查
     # 监控目标：物理内存保护检查和MMIO区域检测
@@ -303,7 +331,18 @@ def define_mainpipe_coverage(bundle, dut):
         },
         name="CP13_PMP_Check"
     )
-    
+
+    g.mark_function("CP13_PMP_Check", _M("test_cp13_pmp_check"),
+                   bin_name=["CP13.1_no_pmp_exception", "CP13.2_channel0_pmp_exception",
+                            "CP13.3_channel1_pmp_exception", "CP13.4_both_channels_pmp_exception",
+                            "CP13.5_no_mmio_mapping", "CP13.6_channel0_mmio",
+                            "CP13.7_channel1_mmio", "CP13.8_both_channels_mmio"])
+    g.mark_function("CP13_PMP_Check", _M("test_pmp_response"),
+                   bin_name=["CP13.1_no_pmp_exception", "CP13.2_channel0_pmp_exception",
+                            "CP13.3_channel1_pmp_exception", "CP13.4_both_channels_pmp_exception",
+                            "CP13.5_no_mmio_mapping", "CP13.6_channel0_mmio",
+                            "CP13.7_channel1_mmio", "CP13.8_both_channels_mmio"])
+
     # =================================================================
     # CP 14: 异常合并
     # 监控目标：ITLB和PMP异常合并
@@ -355,7 +394,13 @@ def define_mainpipe_coverage(bundle, dut):
         },
         name="CP14_Exception_Merge"
     )
-    
+
+    g.mark_function("CP14_Exception_Merge", _M("test_cp14_exception_merge"),
+                   bin_name=["CP14.1_no_exception", "CP14.2_only_itlb_exception",
+                            "CP14.3_only_pmp_exception", "CP14.4_itlb_pmp_both_itlb_priority"])
+    g.mark_function("CP14_Exception_Merge", _M("test_enhanced_monitoring_apis"),
+                   bin_name=["CP14.1_no_exception"])
+
     # =================================================================
     # CP 15: MSHR 匹配和数据选择
     # =================================================================
@@ -397,7 +442,14 @@ def define_mainpipe_coverage(bundle, dut):
         },
         name="CP15_MSHR_Match_Data_Select"
     )
-    
+
+    g.mark_function("CP15_MSHR_Match_Data_Select", _M("test_cp15_mshr_match_data_select"),
+                   bin_name=["CP15.1_mshr_hit", "CP15.2_mshr_miss", "CP15.3_mshr_corrupt"])
+    g.mark_function("CP15_MSHR_Match_Data_Select", _M("test_mshr_response"),
+                   bin_name=["CP15.1_mshr_hit", "CP15.2_mshr_miss"])
+    g.mark_function("CP15_MSHR_Match_Data_Select", _M("test_enhanced_monitoring_apis"),
+                   bin_name=["CP15.2_mshr_miss"])
+
     # =================================================================
     # CP 16: Data ECC 校验
     # =================================================================
@@ -473,7 +525,16 @@ def define_mainpipe_coverage(bundle, dut):
         },
         name="CP16_Data_ECC_Check"
     )
-    
+
+    g.mark_function("CP16_Data_ECC_Check", _M("test_cp16_data_ecc_check"),
+                   bin_name=["CP16.1_no_ecc_error", "CP16.2_single_bank_ecc_error_port0",
+                            "CP16.2_single_bank_ecc_error_port1", "CP16.3_multi_bank_ecc_error_port0",
+                            "CP16.3_multi_bank_ecc_error_port1", "CP16.4_data_ecc_disabled"])
+    g.mark_function("CP16_Data_ECC_Check", _M("test_data_array_response"),
+                   bin_name=["CP16.1_no_ecc_error"])
+    g.mark_function("CP16_Data_ECC_Check", _M("test_error_injection_apis"),
+                   bin_name=["CP16.2_single_bank_ecc_error_port0"])
+
     # =================================================================
     # CP 17: 冲刷 MetaArray
     # =================================================================
@@ -538,7 +599,16 @@ def define_mainpipe_coverage(bundle, dut):
         },
         name="CP17_MetaArray_Flush"
     )
-    
+
+    g.mark_function("CP17_MetaArray_Flush", _M("test_cp17_metaarray_flush"),
+                   bin_name=["CP17.1_meta_ecc_error_port0", "CP17.1_meta_ecc_error_port1",
+                            "CP17.2_data_ecc_error_port0", "CP17.2_data_ecc_error_port1",
+                            "CP17.3_both_errors_meta_priority_port0", "CP17.3_both_errors_meta_priority_port1"])
+    g.mark_function("CP17_MetaArray_Flush", _M("test_error_injection_apis"),
+                   bin_name=["CP17.1_meta_ecc_error_port0", "CP17.2_data_ecc_error_port0"])
+    g.mark_function("CP17_MetaArray_Flush", _M("test_comprehensive_signal_interface"),
+                   bin_name=["CP17.1_meta_ecc_error_port0"])
+
     # =================================================================
     # CP 18: 监控 MSHR 匹配与数据更新
     # =================================================================
@@ -619,7 +689,13 @@ def define_mainpipe_coverage(bundle, dut):
         },
         name="CP18_MSHR_Match_Data_Update"
     )
-    
+
+    g.mark_function("CP18_MSHR_Match_Data_Update", _M("test_cp18_s2_mshr_match_data_update"),
+                   bin_name=["CP18.1_mshr_hit_single_line", "CP18.1_mshr_hit_double_line",
+                            "CP18.2_mshr_miss_single_line", "CP18.2_mshr_miss_double_line"])
+    g.mark_function("CP18_MSHR_Match_Data_Update", _M("test_mshr_response"),
+                   bin_name=["CP18.2_mshr_miss_single_line"])
+
     # =================================================================
     # CP 19: Miss 请求发送逻辑和合并异常
     # =================================================================
@@ -739,7 +815,18 @@ def define_mainpipe_coverage(bundle, dut):
         },
         name="CP19_Miss_Request_Exception_Merge"
     )
-    
+
+    g.mark_function("CP19_Miss_Request_Exception_Merge", _M("test_cp19_miss_request_logic"),
+                   bin_name=["CP19.1_no_miss_needed", "CP19.2_single_port_miss_port0",
+                            "CP19.2_single_port_miss_port1", "CP19.3_dual_port_miss",
+                            "CP19.4_duplicate_request_blocked", "CP19.5_only_itlb_pmp_exception",
+                            "CP19.6_only_l2_exception", "CP19.7_itlb_l2_both_itlb_priority",
+                            "CP19.8_s2_fetch_finish"])
+    g.mark_function("CP19_Miss_Request_Exception_Merge", _M("test_cp19_7_itlb_l2_both_priority"),
+                   bin_name=["CP19.7_itlb_l2_both_itlb_priority"])
+    g.mark_function("CP19_Miss_Request_Exception_Merge", _M("test_enhanced_monitoring_apis"),
+                   bin_name=["CP19.1_no_miss_needed"])
+
     # =================================================================
     # CP 20: 响应 IFU
     # =================================================================
@@ -838,7 +925,15 @@ def define_mainpipe_coverage(bundle, dut):
         },
         name="CP20_Response_IFU"
     )
-    
+
+    g.mark_function("CP20_Response_IFU", _M("test_cp20_response_ifu"),
+                   bin_name=["CP20.1_normal_hit_response", "CP20.2_exception_response",
+                            "CP20.3_doubleline_fetch", "CP20.4_resp_stall_block"])
+    g.mark_function("CP20_Response_IFU", _M("test_monitoring_apis"),
+                   bin_name=["CP20.1_normal_hit_response"])
+    g.mark_function("CP20_Response_IFU", _M("test_basic_control_api"),
+                   bin_name=["CP20.4_resp_stall_block"])
+
     # =================================================================
     # CP 21: L2 Corrupt 报告
     # =================================================================
@@ -891,7 +986,12 @@ def define_mainpipe_coverage(bundle, dut):
         },
         name="CP21_L2_Corrupt_Report"
     )
-    
+
+    g.mark_function("CP21_L2_Corrupt_Report", _M("test_cp21_l2_corrupt_report"),
+                   bin_name=["CP21.1_l2_corrupt_single", "CP21.2_dual_port_corrupt"])
+    g.mark_function("CP21_L2_Corrupt_Report", _M("test_error_injection_apis"),
+                   bin_name=["CP21.1_l2_corrupt_single"])
+
     # =================================================================
     # CP 22: 刷新机制
     # =================================================================
@@ -943,7 +1043,20 @@ def define_mainpipe_coverage(bundle, dut):
         },
         name="CP22_Flush_Mechanism"
     )
-    
+
+    g.mark_function("CP22_Flush_Mechanism", _M("test_cp22_flush_mechanism"),
+                   bin_name=["CP22.1_global_flush", "CP22.2_s0_flush_effect",
+                            "CP22.3_s1_flush_effect", "CP22.4_s2_flush_effect"])
+    g.mark_function("CP22_Flush_Mechanism", _M("test_smoke"),
+                   bin_name=["CP22.1_global_flush", "CP22.2_s0_flush_effect"])
+    g.mark_function("CP22_Flush_Mechanism", _M("test_basic_control_api"),
+                   bin_name=["CP22.1_global_flush", "CP22.2_s0_flush_effect",
+                            "CP22.3_s1_flush_effect", "CP22.4_s2_flush_effect"])
+    g.mark_function("CP22_Flush_Mechanism", _M("test_signal_bindings"),
+                   bin_name=["CP22.1_global_flush", "CP22.2_s0_flush_effect"])
+    g.mark_function("CP22_Flush_Mechanism", _M("test_comprehensive_signal_interface"),
+                   bin_name=["CP22.1_global_flush"])
+
     return g
 
 

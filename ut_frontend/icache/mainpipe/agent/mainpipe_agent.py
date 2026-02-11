@@ -538,8 +538,8 @@ class ICacheMainPipeAgent(Agent):
                 signal = self.dut.GetInternalSignal(f"ICacheMainPipe_top.ICacheMainPipe.s2_data_is_from_MSHR_{i}", use_vpi=False)
                 s2_data_is_from_MSHR.append(signal.value if signal else None)
             
-            if not hasattr(self, '_debug_mshr_toffee.infoed_detail'):
-                self._debug_mshr_toffee.infoed_detail = True
+            if not hasattr(self, '_debug_mshr_infoed_detail'):
+                self._debug_mshr_infoed_detail = True
             
             return {
                 "s2_MSHR_hits_1": s2_MSHR_hits_1.value,
