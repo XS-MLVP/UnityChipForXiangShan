@@ -9,10 +9,11 @@ from ..env.watch_point import create_iprefetchpipe_coverage_groups
 @toffee_test.fixture
 async def iprefetchpipe_env(toffee_request: toffee_test.ToffeeRequest):
     dut = toffee_request.create_dut(DUTIPrefetchPipe)
+    # Keep reset high before first clock activity to exercise reset init paths.
+    dut.reset.value = 1
     dut.InitClock("clock")
     start_clock(dut)
     iprefetchpipe_env = IPrefetchPipeEnv(dut)
-    iprefetchpipe_env.dut.reset.value = 1
     iprefetchpipe_env.dut.Step(10)
     iprefetchpipe_env.dut.reset.value = 0
     iprefetchpipe_env.dut.Step(10)
