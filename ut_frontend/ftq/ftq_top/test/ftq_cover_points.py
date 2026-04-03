@@ -51,10 +51,17 @@ def redirect_from_ifu_cov_points(g, dut, bundle):
         ("ftq_idx", range_bin, "ftq idx low (0-31)"),
         ("ftq_offset", non_zero_bin, "ftq offset non-zero")
     ]
+    with open("all_signals.txt", "w") as f:
+        f.write("==== ALL SIGNALS ====\n")
+        for name in dut.GetInternalSignalList():
+            f.write(name + "\n")
+
 
     for attr, bin_template, name_suffix in prefixed_signals:
         signal = getattr(dut, f"{prefix}{attr}")
         full_name = f"IFU redirect {name_suffix}"
+        if signal is None:
+            raise RuntimeError(f"{prefix}{attr} is None!")
         g.add_cover_point(signal.value, bin_template, name=full_name, once=True)
     g.add_cover_point(dut.ifu_flush.value, {"ifu_flush is 1": fc.Eq(1)}, name="IFU flush is 1", once=True)
 

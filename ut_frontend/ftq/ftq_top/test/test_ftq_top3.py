@@ -56,6 +56,8 @@ async def test_example_integration(ftq_env):
             fallThruError=s3_packet.fallThruError
         )
         await ftq_env.ftq_agent.bundle.step(1)
+        assert dut.io_fromBpu_resp_bits_s1_pc_3.value == s1_packet.pc
+        print(f"{s1_packet.pc} == {dut.io_fromBpu_resp_bits_s1_pc_3.value}?")
         s3_redirect_fire = s3_valid and s3_hasRedirect
         s2_redirect_fire = s2_valid and s2_hasRedirect
         s1_enqueue_fire = s1_valid and await ftq_env.ftq_agent.get_fromBpu_resp_ready()

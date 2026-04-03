@@ -1,4 +1,5 @@
-from toffee import *  
+from toffee import *
+from ut_frontend.bpu.tagesc import bundle  
 
 class IfuPdSlotBundle(Bundle):
     brType = Signal()
@@ -162,6 +163,177 @@ class FromIfuBundle(Bundle):
     pdWb_bits_pc_14 = Signal()
     pdWb_bits_pc_15 = Signal()
 
+# class FtqBundle(Bundle):
+
+    
+#     fromBackend = FromBackendBundle.from_prefix("fromBackend_")  
+#     fromIfu = FromIfuBundle.from_prefix("fromIfu_")  
+#     fromBpu = FromBpuBundle.from_prefix("fromBpu_")
+#     toIfu = ToIfuBundle.from_prefix("toIfu_")
+#     toICache = ToICacheBundle.from_prefix("toICache_")  
+#     toPrefetch = ToPrefetchBundle.from_prefix("toPrefetch_")  
+
+#     fromBpuNew = BranchPredictionResp.from_prefix("fromBpu_resp_bits_")
+
+
+class BranchPredictionBundle(Bundle):
+    # Pins every stage share
+    pc_3 = Signal()
+    full_pred_3_br_taken_mask_0 = Signal()
+    full_pred_3_br_taken_mask_1 = Signal()
+    full_pred_3_slot_valids_0 = Signal()
+    full_pred_3_slot_valids_1 = Signal()
+    full_pred_3_targets_0 = Signal()
+    full_pred_3_targets_1 = Signal()
+    full_pred_3_offsets_0 = Signal()
+    full_pred_3_offsets_1 = Signal()
+    full_pred_3_fallThroughAddr = Signal()
+    full_pred_3_fallThroughErr = Signal()
+    full_pred_3_is_br_sharing = Signal()
+    full_pred_3_hit = Signal()
+
+    # Only for s2 and s3
+    # valid_3 = Signal()
+    # hasRedirect_3 = Signal()
+    # ftq_idx_flag = Signal()  
+    # ftq_idx_value = Signal()  
+
+class BranchPredictionBundleforS23(BranchPredictionBundle):
+
+    # Only for s2 and s3
+    valid_3 = Signal()
+    hasRedirect_3 = Signal()
+    ftq_idx_flag = Signal()  
+    ftq_idx_value = Signal()  
+
+
+class LastStageFtbEntryBundle(Bundle):
+    isCall = Signal()
+    isRet = Signal()
+    isJalr = Signal()
+    valid = Signal()
+    brSlots_0_offset = Signal()
+    brSlots_0_sharing = Signal()
+    brSlots_0_valid = Signal()
+    brSlots_0_lower = Signal()
+    brSlots_0_tarStat = Signal()
+    tailSlot_offset = Signal()         
+    tailSlot_sharing = Signal()
+    tailSlot_valid = Signal()
+    tailSlot_lower = Signal()
+    tailSlot_tarStat = Signal()
+    pftAddr = Signal()
+    carry = Signal()
+    last_may_be_rvi_call = Signal()
+    strong_bias_0 = Signal()
+    strong_bias_1 = Signal()
+
+class LastStageSpecInfoBundle(Bundle):
+    histPtr_flag = Signal()
+    histPtr_value = Signal()
+    ssp = Signal()
+    sctr = Signal()
+    TOSW_flag = Signal()
+    TOSW_value = Signal()
+    TOSR_flag = Signal()
+    TOSR_value = Signal()
+    NOS_flag = Signal()
+    NOS_value = Signal()
+    topAddr = Signal()
+    sc_disagree_0 = Signal()
+    sc_disagree_1 = Signal()
+
+class LastStageMetaBundle(Bundle):
+    last_stage_meta = Signal()
+
+class BranchPredictionResp(Bundle):
+    valid = Signal()  
+    ready = Signal()
+    s1 = BranchPredictionBundle.from_prefix("bits_s1_")
+    s2 = BranchPredictionBundleforS23.from_prefix("bits_s2_")  
+    s3 = BranchPredictionBundleforS23.from_prefix("bits_s3_")
+
+    last_stage_spec_info = LastStageSpecInfoBundle.from_prefix("bits_last_stage_spec_info_")
+    last_stage_meta = LastStageMetaBundle.from_prefix("bits_")
+    last_stage_ftb_entry = LastStageFtbEntryBundle.from_prefix("bits_last_stage_ftb_entry_")
+
+    def selected_resp(self) -> BranchPredictionBundle:
+        if self.s3.valid_3.value and self.s3.hasRedirect_3.value:
+            print("s3 selected")
+            return self.s3
+        elif self.s2.valid_3.value and self.s2.hasRedirect_3.value:
+            print("s2 selected")
+            return self.s2
+        elif self.valid.value:
+            print("s1 selected")
+            return self.s1 
+        else:
+            print("No stage selected, fallback to s1")
+            return self.s1  # fallback
+
+class toBpu_redirect(Bundle):
+    valid = Signal()
+    bits_level = Signal()
+    bits_cfiUpdate_pc = Signal()
+    bits_cfiUpdate_pd_valid = Signal()
+    bits_cfiUpdate_pd_isRVC = Signal()
+    bits_cfiUpdate_pd_isCall = Signal()
+    bits_cfiUpdate_pd_isRet = Signal()
+    bits_cfiUpdate_ssp = Signal()
+    bits_cfiUpdate_sctr = Signal()
+    bits_cfiUpdate_TOSW_flag = Signal()
+    bits_cfiUpdate_TOSW_value = Signal()
+    bits_cfiUpdate_TOSR_flag = Signal()
+    bits_cfiUpdate_TOSR_value = Signal()
+    bits_cfiUpdate_NOS_flag = Signal()
+    bits_cfiUpdate_NOS_value = Signal()
+    bits_cfiUpdate_histPtr_flag = Signal()
+    bits_cfiUpdate_histPtr_value = Signal()
+    bits_cfiUpdate_br_hit = Signal()
+    bits_cfiUpdate_jr_hit = Signal()
+    bits_cfiUpdate_sc_hit = Signal()
+    bits_cfiUpdate_target = Signal()
+    bits_cfiUpdate_taken = Signal()
+    bits_cfiUpdate_shift = Signal()
+    bits_cfiUpdate_addIntoHist = Signal()
+    bits_debugIsCtrl = Signal()
+    bits_debugIsMemVio = Signal()
+    bits_BTBMissBubble = Signal()
+
+
+class toBpu_update(Bundle):
+    valid = Signal()
+    bits_pc = Signal()
+
+    # spec info (provides bits_spec_info_histPtr_value etc.)
+    bits_spec_info_histPtr_value = Signal()
+
+    # ftb entry (provides bits_ftb_entry_* fields)
+    bits_ftb_entry = LastStageFtbEntryBundle.from_prefix("bits_ftb_entry_")
+
+    bits_cfi_idx_valid = Signal()
+    bits_cfi_idx_bits = Signal()
+
+    bits_br_taken_mask_0 = Signal()
+    bits_br_taken_mask_1 = Signal()
+    bits_jmp_taken = Signal()
+
+    bits_mispred_mask_0 = Signal()
+    bits_mispred_mask_1 = Signal()
+    bits_mispred_mask_2 = Signal()
+
+    bits_false_hit = Signal()
+    bits_old_entry = Signal()
+
+    bits_meta = Signal()
+    bits_full_target = Signal()
+
+
+class toBpuBundle(Bundle):
+    redirect = toBpu_redirect.from_prefix("redirect_")
+    update = toBpu_update.from_prefix("update_")
+
+
 class FtqBundle(Bundle):
 
     
@@ -171,4 +343,7 @@ class FtqBundle(Bundle):
     toIfu = ToIfuBundle.from_prefix("toIfu_")
     toICache = ToICacheBundle.from_prefix("toICache_")  
     toPrefetch = ToPrefetchBundle.from_prefix("toPrefetch_")  
+    # fromBpuNew = BranchPredictionResp.from_prefix("fromBpu_resp_")
+    toBpu = toBpuBundle.from_prefix("toBpu_")
+
 
