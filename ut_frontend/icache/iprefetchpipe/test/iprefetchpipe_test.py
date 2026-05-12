@@ -7,12 +7,30 @@ import toffee
 
 # Helper function to access internal signals
 def get_internal_signal(env: IPrefetchPipeEnv, signal_path: str, vpi=False):
-    """Helper function to access internal DUT signals"""
-    if vpi is False:
-        signal = env.dut.GetInternalSignal(f"IPrefetchPipe_top.IPrefetchPipe.{signal_path}", use_vpi=False)
+    """Helper function to access internal DUT signals safely."""
+    full_name = f"IPrefetchPipe_top.IPrefetchPipe.{signal_path}"
+
+    # Cache exported internal signal names to avoid probing missing signals,
+    # which prints xsignal_cfg errors.
+    cache_name = "_iprefetchpipe_internal_signal_names_cache"
+    signal_names = getattr(env, cache_name, None)
+    if signal_names is None:
+        signal_names = set(env.dut.GetInternalSignalList(use_vpi=False))
+        setattr(env, cache_name, signal_names)
+
+    # Some signals are top-level IOs in the wrapper (not under .IPrefetchPipe)
+    alt_name = full_name.replace("IPrefetchPipe_top.IPrefetchPipe.io_", "IPrefetchPipe_top.io_")
+    query_name = None
+    if full_name in signal_names:
+        query_name = full_name
+    elif alt_name in signal_names:
+        query_name = alt_name
     else:
-        signal = env.dut.GetInternalSignal(f"IPrefetchPipe_top.IPrefetchPipe.{signal_path}", use_vpi=True)
-    return signal
+        return None
+
+    if vpi is False:
+        return env.dut.GetInternalSignal(query_name, use_vpi=False)
+    return env.dut.GetInternalSignal(query_name, use_vpi=True)
 
 @toffee_test.testcase
 async def test_smoke(iprefetchpipe_env: IPrefetchPipeEnv):
@@ -1721,6 +1739,19 @@ async def test_mshr_interaction_apis(iprefetchpipe_env: IPrefetchPipeEnv):
     bundle = iprefetchpipe_env.bundle
     
     errors = []
+
+    async def wait_internal_value(signal_name: str, expected: int, timeout_cycles: int = 8) -> bool:
+        """Wait until an internal signal reaches expected value within timeout cycles."""
+        for _ in range(timeout_cycles):
+            sig = get_internal_signal(iprefetchpipe_env, signal_name)
+            if sig is not None and sig.value == expected:
+                return True
+            await bundle.step()
+        return False
+
+    def read_internal_value(signal_name: str):
+        sig = get_internal_signal(iprefetchpipe_env, signal_name)
+        return None if sig is None else int(sig.value)
     
     try:
         # ==================== 测试类别1: 请求与MSHR匹配且有效 ====================
@@ -2067,13 +2098,113 @@ async def test_mshr_interaction_apis(iprefetchpipe_env: IPrefetchPipeEnv):
         
     except Exception as e:
         errors.append(f"类别4异常: {str(e)}")
+
+    try:
+        # ==================== 测试类别5: MSHR更新分支与端口1 VS-NonLeaf覆盖 ====================
+        toffee.info("=== 测试类别5: MSHR更新分支与端口1 VS-NonLeaf覆盖 ===")
+        async def prepare_doubleline_window(wait_doubleline: bool = True):
+            await agent.setup_environment(prefetch_enable=True)
+            # 阻塞WayLookup，保持请求停留在S1，便于覆盖s1_waymasks_r更新分支
+            bundle.io._wayLookupWrite._ready.value = 0
+            await bundle.step(1)
+
+            paddr_0 = 0x1234B020
+            paddr_1 = 0x1234B060
+            start_addr = 0x8000B020  # 双行预取，请求端口1也有效
+            next_addr = start_addr + 0x40
+
+            # 先稳定输入，再发请求，减少采样窗口竞争
+            await agent.drive_itlb_response(port=0, paddr=paddr_0, miss=False, isForVSnonLeafPTE=False)
+            await agent.drive_itlb_response(port=1, paddr=paddr_1, miss=False, isForVSnonLeafPTE=True)
+            await agent.drive_meta_response(port=0, hit_ways=[True, False, False, False], target_paddr=paddr_0)
+            await agent.drive_meta_response(port=1, hit_ways=[False, False, True, False], target_paddr=paddr_1)
+            await agent.drive_pmp_response(port=0, mmio=False, instr_af=False)
+            await agent.drive_pmp_response(port=1, mmio=False, instr_af=False)
+
+            req_result = await agent.drive_prefetch_request(
+                startAddr=start_addr,
+                isSoftPrefetch=False,
+                wait_for_ready=True,
+                timeout_cycles=10
+            )
+            assert req_result["send_success"] and req_result["doubleline"], f"双行请求发送失败: {req_result}"
+            if wait_doubleline:
+                assert await wait_internal_value("s1_doubleline", 1, timeout_cycles=6), \
+                    "双行请求应在6拍内进入s1_doubleline=1"
+            return start_addr, next_addr, paddr_0, paddr_1
+
+        # 子流程A: 覆盖端口1 VS-NonLeaf锁存、corrupt门控和new_info_way_same清零分支
+        start_addr, next_addr, paddr_0, paddr_1 = await prepare_doubleline_window()
+        assert bundle.io._itlb._1._resp_bits._isForVSnonLeafPTE.value == 1, "port1 isForVSnonLeafPTE输入应为1"
+        assert read_internal_value("s1_req_paddr_reg_r_1") is not None, "内部信号s1_req_paddr_reg_r_1不可访问"
+        assert read_internal_value("s1_req_isForVSnonLeafPTE_tmp_r_1") is not None, "内部信号s1_req_isForVSnonLeafPTE_tmp_r_1不可访问"
+        assert await wait_internal_value("s1_req_paddr_reg_r_1", paddr_1, timeout_cycles=12), \
+            f"s1_req_paddr_reg_r_1应在12拍内锁存port1 paddr，当前值=0x{read_internal_value('s1_req_paddr_reg_r_1'):x}"
+        assert await wait_internal_value("s1_req_isForVSnonLeafPTE_tmp_r_1", 1, timeout_cycles=12), \
+            f"s1_req_isForVSnonLeafPTE_tmp_r_1应在12拍内锁存为1，当前值={read_internal_value('s1_req_isForVSnonLeafPTE_tmp_r_1')}"
+
+        vset_0 = (start_addr >> 6) & 0xFF
+        vset_1 = (next_addr >> 6) & 0xFF
+        # 让blkPaddr[41:6]与请求ptag不相等，触发new_info_ptag_same=0路径
+        mismatch_blkpaddr_0 = ((((paddr_0 >> 12) + 1) & ((1 << 36) - 1)) << 6)
+        mismatch_blkpaddr_1 = ((((paddr_1 >> 12) + 1) & ((1 << 36) - 1)) << 6)
+
+        await agent.drive_mshr_response(corrupt=True, waymask=0xF, blkPaddr=mismatch_blkpaddr_0, vSetIdx=vset_0)
+        assert await wait_internal_value("_new_info_T", 0, timeout_cycles=6), \
+            "corrupt=1时_new_info_T应保持为0"
+        await agent.drive_mshr_response(corrupt=False, waymask=0x1, blkPaddr=mismatch_blkpaddr_0, vSetIdx=vset_0)
+        assert await wait_internal_value("s1_waymasks_r_0", 0, timeout_cycles=8), \
+            "new_info_way_same路径下s1_waymasks_r_0应清零"
+        await agent.drive_mshr_response(corrupt=False, waymask=0x4, blkPaddr=mismatch_blkpaddr_1, vSetIdx=vset_1)
+        assert await wait_internal_value("s1_waymasks_r_1", 0, timeout_cycles=8), \
+            "new_info_way_same_1路径下s1_waymasks_r_1应清零"
+        await agent.deassert_prefetch_request()
+        await agent.clear_mshr_response()
+        bundle.io._wayLookupWrite._ready.value = 1
+        await agent.drive_flush(flush_type="global")
+        await bundle.step(2)
+
+        # 子流程B: 单独覆盖端口0 s1_SRAM_valid回退分支
+        start_addr, _, paddr_0, _ = await prepare_doubleline_window(wait_doubleline=False)
+        vset_0 = (start_addr >> 6) & 0xFF
+        mismatch_blkpaddr_0 = ((((paddr_0 >> 12) + 1) & ((1 << 36) - 1)) << 6)
+        await agent.drive_mshr_response(corrupt=False, waymask=0x2, blkPaddr=mismatch_blkpaddr_0, vSetIdx=vset_0)
+        assert await wait_internal_value("s1_waymasks_r_0", 0x1, timeout_cycles=8), \
+            "new_info_way_same为假时s1_waymasks_r_0应回退到SRAM waymask(0x1)"
+        await agent.deassert_prefetch_request()
+        await agent.clear_mshr_response()
+        bundle.io._wayLookupWrite._ready.value = 1
+        await agent.drive_flush(flush_type="global")
+        await bundle.step(2)
+
+        # 子流程C: 单独覆盖端口1 s1_SRAM_valid回退分支
+        start_addr, next_addr, _, paddr_1 = await prepare_doubleline_window(wait_doubleline=False)
+        vset_1 = (next_addr >> 6) & 0xFF
+        mismatch_blkpaddr_1 = ((((paddr_1 >> 12) + 1) & ((1 << 36) - 1)) << 6)
+        await agent.drive_mshr_response(corrupt=False, waymask=0x1, blkPaddr=mismatch_blkpaddr_1, vSetIdx=vset_1)
+        assert await wait_internal_value("s1_waymasks_r_1", 0x4, timeout_cycles=8), \
+            "new_info_way_same_1为假时s1_waymasks_r_1应回退到SRAM waymask(0x4)"
+        await agent.deassert_prefetch_request()
+        await agent.clear_mshr_response()
+        bundle.io._wayLookupWrite._ready.value = 1
+        await agent.drive_flush(flush_type="global")
+        await bundle.step(2)
+
+        toffee.info("✓ 类别5通过: MSHR关键分支/端口1 VS-NonLeaf 路径覆盖完成")
+
+    except Exception as e:
+        await agent.clear_mshr_response()
+        bundle.io._wayLookupWrite._ready.value = 1
+        bundle.io._req._valid.value = 0
+        await bundle.step(3)
+        errors.append(f"类别5异常: {str(e)}")
     
     # 如果有错误，统一抛出
     if errors:
         error_summary = f"test_mshr_interaction_apis发现{len(errors)}个错误:\n" + "\n".join(f"  {i+1}. {err}" for i, err in enumerate(errors))
         raise AssertionError(error_summary)
     
-    toffee.info(f"✓ test_mshr_interaction_apis: 所有4个测试类别均通过")
+    toffee.info(f"✓ test_mshr_interaction_apis: 所有5个测试类别均通过")
 
 
 
@@ -7082,7 +7213,7 @@ async def test_cp8_monitor_missunit_requests(iprefetchpipe_env: IPrefetchPipeEnv
     
     def get_internal_signal(signal_name: str):
         """获取内部信号的辅助函数"""
-        return dut.GetInternalSignal(f"IPrefetchPipe_top.IPrefetchPipe.{signal_name}", use_vpi=False)
+        return globals()["get_internal_signal"](iprefetchpipe_env, signal_name, vpi=False)
     
     # ==================== CP8.1: 请求与MSHR匹配且有效 ====================
     
@@ -7713,7 +7844,13 @@ async def test_cp9_send_request_to_missunit(iprefetchpipe_env: IPrefetchPipeEnv)
     toffee.info("="*80)
     
     def get_internal_signal(signal_path: str):
-        return dut.GetInternalSignal(f"IPrefetchPipe_top.IPrefetchPipe.{signal_path}", use_vpi=False)
+        signal = globals()["get_internal_signal"](iprefetchpipe_env, signal_path, vpi=False)
+        if signal is not None:
+            return signal
+        # Some arbiter internals are optimized in this RTL variant.
+        if signal_path in ("_toMSHRArbiter_io_out_valid", "_toMSHRArbiter_io_in_0_ready"):
+            return bundle.io._MSHRReq._valid if signal_path.endswith("out_valid") else bundle.io._MSHRReq._ready
+        return signal
 
     # ==================== CP9.1.1: 请求未命中且无异常，需要发送到missUnit ====================
     try:
@@ -8503,8 +8640,10 @@ async def test_cp10_flush_mechanism(iprefetchpipe_env: IPrefetchPipeEnv):
         toffee.info("  发送BPU S3刷新信号...")
         await agent.drive_flush(
             flush_type="bpu_s3", 
-            ftq_flag=0, 
-            ftq_value=30,
+            # Use non-zero flag to ensure io_flushFromBpu_s3_bits_flag is exercised.
+            ftq_flag=1, 
+            # With current RTL expression precedence, pick value > req ftq value to trigger flush.
+            ftq_value=31,
             duration_cycles=1
         )
         

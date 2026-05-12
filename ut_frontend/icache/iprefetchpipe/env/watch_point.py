@@ -1,5 +1,6 @@
 import toffee.funcov as fc
 from toffee.funcov import CovGroup
+from comm import module_name_with
 from dut.IPrefetchPipe import DUTIPrefetchPipe
 
 def check_prefetch_start_address(dut: DUTIPrefetchPipe) -> bool:
@@ -40,6 +41,10 @@ def define_iprefetchpipe_coverage(bundle, dut):
         dut: DUT对象，用于访问内部信号
     """
     g = CovGroup("IPrefetchPipe_Coverage")
+
+    # 反标
+    def _M(name):
+        return module_name_with(name, "../../test/iprefetchpipe_test")
     
     # 创建IPrefetchPipe内部信号字典，便于访问（根据实际可访问的信号更新）
     IPrefetchPipe_dict = {
@@ -91,10 +96,10 @@ def define_iprefetchpipe_coverage(bundle, dut):
         "s2_mmio_0": "IPrefetchPipe_top.IPrefetchPipe.s2_mmio_0",
         "s2_mmio_1": "IPrefetchPipe_top.IPrefetchPipe.s2_mmio_1",
         # 仲裁器相关信号
-        "toMSHRArbiter_io_in_0_valid": "IPrefetchPipe._toMSHRArbiter_io_in_0_valid_T_2",
-        "toMSHRArbiter_io_in_1_valid": "IPrefetchPipe._toMSHRArbiter_io_in_1_valid_T_2",
-        "toMSHRArbiter_io_in_0_ready": "IPrefetchPipe._toMSHRArbiter_io_in_0_ready",
-        "toMSHRArbiter_io_in_1_ready": "IPrefetchPipe._toMSHRArbiter_io_in_1_ready",
+        "toMSHRArbiter_io_in_0_valid": "IPrefetchPipe_top.IPrefetchPipe._toMSHRArbiter_io_in_0_valid_T_2",
+        "toMSHRArbiter_io_in_1_valid": "IPrefetchPipe_top.IPrefetchPipe._toMSHRArbiter_io_in_1_valid_T_2",
+        "toMSHRArbiter_io_in_0_ready": "IPrefetchPipe_top.IPrefetchPipe._toMSHRArbiter_io_in_0_ready",
+        "toMSHRArbiter_io_in_1_ready": "IPrefetchPipe_top.IPrefetchPipe._toMSHRArbiter_io_in_1_ready",
         # CP10刷新机制相关内部信号
         "from_bpu_s0_flush_probe": "IPrefetchPipe_top.IPrefetchPipe.from_bpu_s0_flush_probe",
         "from_bpu_s1_flush_probe": "IPrefetchPipe_top.IPrefetchPipe.from_bpu_s1_flush_probe",
@@ -170,6 +175,29 @@ def define_iprefetchpipe_coverage(bundle, dut):
                                                                d["s0_doubleline"].value == 1),
         },
         name="CP1_Prefetch_Request_Reception"
+    )
+    g.mark_function(
+        "CP1_Prefetch_Request_Reception",
+        _M(
+            [
+                "test_cp1_receive_prefetch_requests",
+                "test_prefetch_request_apis",
+                "test_basic_control_apis",
+                "test_smoke",
+                "test_full_iprefetch_pipeline",
+            ]
+        ),
+        bin_name=[
+            "CP1_1_1_hw_prefetch_can_continue",
+            "CP1_1_2_hw_prefetch_rejected_invalid",
+            "CP1_1_3_hw_prefetch_rejected_not_ready",
+            "CP1_1_5_hw_prefetch_single_cacheline",
+            "CP1_1_6_hw_prefetch_double_cacheline",
+            "CP1_2_1_sw_prefetch_can_continue",
+            "CP1_2_2_sw_prefetch_rejected_invalid",
+            "CP1_2_5_sw_prefetch_single_cacheline",
+            "CP1_2_6_sw_prefetch_double_cacheline",
+        ],
     )
     
     # =================================================================
@@ -316,6 +344,34 @@ def define_iprefetchpipe_coverage(bundle, dut):
         },
         name="CP2_ITLB_Response_Processing"
     )
+    g.mark_function(
+        "CP2_ITLB_Response_Processing",
+        _M(
+            [
+                "test_cp2_receive_itlb_responses",
+                "test_itlb_interaction_apis",
+                "test_full_iprefetch_pipeline",
+            ]
+        ),
+        bin_name=[
+            "CP2_1_1_itlb_normal_paddr_return_port0",
+            "CP2_1_1_itlb_normal_paddr_return_dual_port",
+            "CP2_1_2_itlb_miss_retry_port0",
+            "CP2_1_2_itlb_miss_retry_port1",
+            "CP2_1_2_itlb_retry_completed",
+            "CP2_2_1_itlb_page_fault_port0",
+            "CP2_2_2_itlb_guest_page_fault_port0",
+            "CP2_2_3_itlb_access_fault_port0",
+            "CP2_2_1_itlb_page_fault_port1",
+            "CP2_2_2_itlb_guest_page_fault_port1",
+            "CP2_2_3_itlb_access_fault_port1",
+            "CP2_3_1_gpf_return_gpaddr_port0",
+            "CP2_3_1_gpf_return_gpaddr_port1",
+            "CP2_3_2_gpf_vs_nonleaf_pte",
+            "CP2_4_return_pbmt_info_port0",
+            "CP2_4_return_pbmt_info_port1",
+        ],
+    )
     
     # =================================================================
     # CP 3: 接收来自IMeta（缓存元数据）的响应并检查缓存命中覆盖点
@@ -337,15 +393,15 @@ def define_iprefetchpipe_coverage(bundle, dut):
             "meta_valid_1_way3": bundle.io._metaRead._fromIMeta._entryValid._1._3,
             
             # 端口0的4路标签（通过GetInternalSignal获取）
-            "meta_tag_0_way0": dut.GetInternalSignal("IPrefetchPipe_top.IPrefetchPipe.io_metaRead_fromIMeta_metas_0_0_tag", use_vpi=False),
-            "meta_tag_0_way1": dut.GetInternalSignal("IPrefetchPipe_top.IPrefetchPipe.io_metaRead_fromIMeta_metas_0_1_tag", use_vpi=False),
-            "meta_tag_0_way2": dut.GetInternalSignal("IPrefetchPipe_top.IPrefetchPipe.io_metaRead_fromIMeta_metas_0_2_tag", use_vpi=False),
-            "meta_tag_0_way3": dut.GetInternalSignal("IPrefetchPipe_top.IPrefetchPipe.io_metaRead_fromIMeta_metas_0_3_tag", use_vpi=False),
+            "meta_tag_0_way0": dut.GetInternalSignal("IPrefetchPipe_top.io_metaRead_fromIMeta_metas_0_0_tag", use_vpi=False),
+            "meta_tag_0_way1": dut.GetInternalSignal("IPrefetchPipe_top.io_metaRead_fromIMeta_metas_0_1_tag", use_vpi=False),
+            "meta_tag_0_way2": dut.GetInternalSignal("IPrefetchPipe_top.io_metaRead_fromIMeta_metas_0_2_tag", use_vpi=False),
+            "meta_tag_0_way3": dut.GetInternalSignal("IPrefetchPipe_top.io_metaRead_fromIMeta_metas_0_3_tag", use_vpi=False),
             # 端口1的4路标签
-            "meta_tag_1_way0": dut.GetInternalSignal("IPrefetchPipe_top.IPrefetchPipe.io_metaRead_fromIMeta_metas_1_0_tag", use_vpi=False),
-            "meta_tag_1_way1": dut.GetInternalSignal("IPrefetchPipe_top.IPrefetchPipe.io_metaRead_fromIMeta_metas_1_1_tag", use_vpi=False),
-            "meta_tag_1_way2": dut.GetInternalSignal("IPrefetchPipe_top.IPrefetchPipe.io_metaRead_fromIMeta_metas_1_2_tag", use_vpi=False),
-            "meta_tag_1_way3": dut.GetInternalSignal("IPrefetchPipe_top.IPrefetchPipe.io_metaRead_fromIMeta_metas_1_3_tag", use_vpi=False),
+            "meta_tag_1_way0": dut.GetInternalSignal("IPrefetchPipe_top.io_metaRead_fromIMeta_metas_1_0_tag", use_vpi=False),
+            "meta_tag_1_way1": dut.GetInternalSignal("IPrefetchPipe_top.io_metaRead_fromIMeta_metas_1_1_tag", use_vpi=False),
+            "meta_tag_1_way2": dut.GetInternalSignal("IPrefetchPipe_top.io_metaRead_fromIMeta_metas_1_2_tag", use_vpi=False),
+            "meta_tag_1_way3": dut.GetInternalSignal("IPrefetchPipe_top.io_metaRead_fromIMeta_metas_1_3_tag", use_vpi=False),
             
             # 物理地址（用于提取标签进行比较）
             "s1_req_paddr_0": dut.GetInternalSignal("IPrefetchPipe_top.IPrefetchPipe.s1_req_paddr_0", use_vpi=False),
@@ -443,6 +499,31 @@ def define_iprefetchpipe_coverage(bundle, dut):
         },
         name="CP3_IMeta_Response_And_Cache_Hit_Check"
     )
+    g.mark_function(
+        "CP3_IMeta_Response_And_Cache_Hit_Check",
+        _M(
+            [
+                "test_cp3_receive_imeta_responses_and_cache_hit_check",
+                "test_meta_array_apis",
+                "test_all_bundle_signals",
+                "test_full_iprefetch_pipeline",
+            ]
+        ),
+        bin_name=[
+            "CP3_1_tag_compare_and_valid_check_port0_way0",
+            "CP3_1_tag_compare_and_valid_check_port0_way1",
+            "CP3_1_tag_compare_and_valid_check_port0_way2",
+            "CP3_1_tag_compare_and_valid_check_port0_way3",
+            "CP3_1_tag_compare_and_valid_check_port1_way0",
+            "CP3_1_tag_compare_and_valid_check_port1_way1",
+            "CP3_1_tag_compare_and_valid_check_port1_way2",
+            "CP3_1_tag_compare_and_valid_check_port1_way3",
+            "CP3_1_cache_miss_port0",
+            "CP3_1_cache_miss_port1",
+            "CP3_2_cache_hit_port0",
+            "CP3_2_cache_hit_port1",
+        ],
+    )
     
     # =================================================================
     # CP 4: PMP（物理内存保护）权限检查覆盖点
@@ -492,6 +573,24 @@ def define_iprefetchpipe_coverage(bundle, dut):
                                                   d["pmp_1_mmio"].value == 1),
         },
         name="CP4_PMP_Permission_Check"
+    )
+    g.mark_function(
+        "CP4_PMP_Permission_Check",
+        _M(
+            [
+                "test_cp4_pmp_permission_check",
+                "test_pmp_interaction_apis",
+                "test_full_iprefetch_pipeline",
+            ]
+        ),
+        bin_name=[
+            "CP4_1_access_allowed_port0",
+            "CP4_1_access_allowed_port1",
+            "CP4_2_access_forbidden_port0",
+            "CP4_2_access_forbidden_port1",
+            "CP4_3_mmio_access_port0",
+            "CP4_3_mmio_access_port1",
+        ],
     )
     
     # =================================================================
@@ -607,6 +706,28 @@ def define_iprefetchpipe_coverage(bundle, dut):
         },
         name="CP5_Exception_Handling_And_Merging"
     )
+    g.mark_function(
+        "CP5_Exception_Handling_And_Merging",
+        _M(
+            [
+                "test_cp5_exception_handling_and_merging",
+                "test_itlb_interaction_apis",
+                "test_pmp_interaction_apis",
+                "test_dut_interface_internal_signals",
+                "test_full_iprefetch_pipeline",
+            ]
+        ),
+        bin_name=[
+            "CP5_1_itlb_exception_only",
+            "CP5_2_pmp_exception_only",
+            "CP5_3_backend_exception_only",
+            "CP5_4_itlb_and_pmp_exception",
+            "CP5_5_itlb_and_backend_exception",
+            "CP5_6_pmp_and_backend_exception",
+            "CP5_7_all_exceptions",
+            "CP5_8_no_exception",
+        ],
+    )
     
     # =================================================================
     # CP 6: 发送请求到WayLookup模块覆盖点
@@ -645,6 +766,24 @@ def define_iprefetchpipe_coverage(bundle, dut):
                                                          d["s1_isSoftPrefetch"].value == 0),
         },
         name="CP6_WayLookup_Request_Sending"
+    )
+    g.mark_function(
+        "CP6_WayLookup_Request_Sending",
+        _M(
+            [
+                "test_cp6_send_request_to_waylookup",
+                "test_waylookup_interaction_apis",
+                "test_all_bundle_signals",
+                "test_full_iprefetch_pipeline",
+            ]
+        ),
+        bin_name=[
+            "CP6_1_normal_send_to_waylookup",
+            "CP6_2_waylookup_not_ready",
+            "CP6_3_soft_prefetch_no_waylookup",
+            "CP6_1_waylookup_request_fired",
+            "CP6_1_hw_prefetch_with_s1_valid",
+        ],
     )
     
     # =================================================================
@@ -723,6 +862,28 @@ def define_iprefetchpipe_coverage(bundle, dut):
                                                  d["s2_ready"].value == 1),
         },
         name="CP7_State_Machine_Control_And_Request_Processing"
+    )
+    g.mark_function(
+        "CP7_State_Machine_Control_And_Request_Processing",
+        _M(
+            [
+                "test_cp7_state_machine_control_and_request_processing",
+                "test_status_query_apis",
+                "test_basic_control_apis",
+                "test_full_iprefetch_pipeline",
+            ]
+        ),
+        bin_name=[
+            "CP7_1_1_idle_normal_flow",
+            "CP7_1_2_idle_to_itlb_resend",
+            "CP7_1_3_idle_to_enq_way",
+            "CP7_2_1_itlb_resend_to_enq_way",
+            "CP7_2_2_itlb_resend_to_meta_resend",
+            "CP7_3_meta_resend_to_enq_way",
+            "CP7_4_1_enq_way_to_idle",
+            "CP7_4_2_enq_way_to_enter_s2",
+            "CP7_5_enter_s2_to_idle",
+        ],
     )
     
     # =================================================================
@@ -818,6 +979,24 @@ def define_iprefetchpipe_coverage(bundle, dut):
         },
         name="CP8_MissUnit_Monitoring"
     )
+    g.mark_function(
+        "CP8_MissUnit_Monitoring",
+        _M(
+            [
+                "test_cp8_monitor_missunit_requests",
+                "test_mshr_interaction_apis",
+                "test_full_iprefetch_pipeline",
+            ]
+        ),
+        bin_name=[
+            "CP8_1_mshr_match_and_valid_port0",
+            "CP8_1_mshr_match_and_valid_port1",
+            "CP8_2_sram_hit_port0",
+            "CP8_2_sram_hit_port1",
+            "CP8_3_miss_mshr_and_sram_port0",
+            "CP8_3_miss_mshr_and_sram_port1",
+        ],
+    )
     
     # =================================================================
     # CP 9: 发送请求到missUnit覆盖点
@@ -853,10 +1032,11 @@ def define_iprefetchpipe_coverage(bundle, dut):
             "s2_MSHR_match_1": dut.GetInternalSignal(IPrefetchPipe_dict["s2_MSHR_match_1"], use_vpi=False),
             
             # 仲裁器相关信号
-            "toMSHRArbiter_io_in_0_valid": dut.GetInternalSignal(IPrefetchPipe_dict["toMSHRArbiter_io_in_0_valid"], use_vpi=True),
-            "toMSHRArbiter_io_in_1_valid": dut.GetInternalSignal(IPrefetchPipe_dict["toMSHRArbiter_io_in_1_valid"], use_vpi=True),
-            "toMSHRArbiter_io_in_0_ready": dut.GetInternalSignal(IPrefetchPipe_dict["toMSHRArbiter_io_in_0_ready"], use_vpi=True),
-            "toMSHRArbiter_io_in_1_ready": dut.GetInternalSignal(IPrefetchPipe_dict["toMSHRArbiter_io_in_1_ready"], use_vpi=True),
+            "toMSHRArbiter_io_in_0_valid": dut.GetInternalSignal(IPrefetchPipe_dict["toMSHRArbiter_io_in_0_valid"], use_vpi=False),
+            "toMSHRArbiter_io_in_1_valid": dut.GetInternalSignal(IPrefetchPipe_dict["toMSHRArbiter_io_in_1_valid"], use_vpi=False),
+            # Some RTL variants optimize away this local ready wire; use MSHRReq.ready directly.
+            "toMSHRArbiter_io_in_0_ready": bundle.io._MSHRReq._ready,
+            "toMSHRArbiter_io_in_1_ready": dut.GetInternalSignal(IPrefetchPipe_dict["toMSHRArbiter_io_in_1_ready"], use_vpi=False),
             
             # bundle中的MSHR相关信号
             "mshr_req_valid": bundle.io._MSHRReq._valid,
@@ -989,6 +1169,35 @@ def define_iprefetchpipe_coverage(bundle, dut):
         },
         name="CP9_Send_Request_To_MissUnit"
     )
+    g.mark_function(
+        "CP9_Send_Request_To_MissUnit",
+        _M(
+            [
+                "test_cp9_send_request_to_missunit",
+                "test_mshr_interaction_apis",
+                "test_dut_interface_internal_signals",
+                "test_all_bundle_signals",
+                "test_full_iprefetch_pipeline",
+            ]
+        ),
+        bin_name=[
+            "CP9_1_1_miss_no_exception_send_port0",
+            "CP9_1_1_miss_no_exception_send_port1",
+            "CP9_1_2_sram_hit_no_send_port0",
+            "CP9_1_2_mshr_hit_no_send_port0",
+            "CP9_1_2_exception_no_send_port0",
+            "CP9_1_2_mmio_no_send_port0",
+            "CP9_1_3_doubleline_second_request",
+            "CP9_2_1_s1_real_fire_reset_has_send",
+            "CP9_2_2_request_sent_update_has_send_port0",
+            "CP9_2_2_request_sent_update_has_send_port1",
+            "CP9_2_3_avoid_duplicate_send_port0",
+            "CP9_2_3_avoid_duplicate_send_port1",
+            "CP9_2_4_correct_send_to_missunit_port0",
+            "CP9_2_4_correct_send_to_missunit_port1",
+            "CP9_2_5_arbiter_correct_arbitration",
+        ],
+    )
     
     # =================================================================
     # CP 10: 刷新机制覆盖点
@@ -1059,6 +1268,25 @@ def define_iprefetchpipe_coverage(bundle, dut):
             ),
         },
         name="CP10_Flush_Mechanism"
+    )
+    g.mark_function(
+        "CP10_Flush_Mechanism",
+        _M(
+            [
+                "test_cp10_flush_mechanism",
+                "test_smoke",
+                "test_basic_control_apis",
+                "test_status_query_apis",
+                "test_full_iprefetch_pipeline",
+            ]
+        ),
+        bin_name=[
+            "CP10_1_global_flush",
+            "CP10_2_bpu_s0_flush",
+            "CP10_2_bpu_s1_flush",
+            "CP10_3_flush_state_reset",
+            "CP10_4_itlb_pipe_flush",
+        ],
     )
     
     return g
